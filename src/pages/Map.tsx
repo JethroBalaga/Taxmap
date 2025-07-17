@@ -10,7 +10,7 @@ const Map: React.FC = () => {
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>
-        <MapCon/>
+      <MapCon/>
       </IonContent>
     </IonPage>
   );

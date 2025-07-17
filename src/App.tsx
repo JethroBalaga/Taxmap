@@ -40,7 +40,7 @@ const App: React.FC = () => (
     <IonReactRouter>
       <IonRouterOutlet>
         <Route exact path="/map">
-          <Map />
+          <Map/>
         </Route>
         <Route exact path="/">
           <Redirect to="/map" />
