@@ -1,4 +1,3 @@
-// src/components/MapWithMarkers.tsx
 import React, { useEffect, useRef, useState } from 'react';
 import { MapContainer, TileLayer, useMap } from 'react-leaflet';
 import L from 'leaflet';
@@ -23,15 +22,15 @@ const TILE_LAYER_URL = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 // Component to handle markers display
 const MarkersLayer = () => {
   const map = useMap();
-  const [markers, setMarkers] = useState<L.Marker[]>([]);
+  const markersRef = useRef<L.Marker[]>([]);
   const blueMarkerIcon = createBlueMarkerIcon();
 
   useEffect(() => {
     // Clear existing markers
-    markers.forEach(marker => marker.removeFrom(map));
+    markersRef.current.forEach(marker => marker.removeFrom(map));
     
     // Create new markers from geoTags
-    const newMarkers = geoTags.map(tag => {
+    markersRef.current = geoTags.map(tag => {
       const marker = L.marker([tag.Latitude, tag.Longitude], {
         icon: blueMarkerIcon
       }).addTo(map);
@@ -45,13 +44,17 @@ const MarkersLayer = () => {
       
       return marker;
     });
-    
-    setMarkers(newMarkers);
+
+    // Auto-fit to markers if there are any
+    if (geoTags.length > 0) {
+      const markerGroup = new L.FeatureGroup(markersRef.current);
+      map.fitBounds(markerGroup.getBounds().pad(0.2));
+    }
 
     return () => {
-      newMarkers.forEach(marker => marker.removeFrom(map));
+      markersRef.current.forEach(marker => marker.removeFrom(map));
     };
-  }, [geoTags]);
+  }, [geoTags.length]); // Only update when number of tags changes
 
   return null;
 };
@@ -150,7 +153,7 @@ const MapController = () => {
 };
 
 // Main map component
-const MapWithMarkers: React.FC = () => {
+const MapCon: React.FC = () => {
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
@@ -187,4 +190,4 @@ const MapWithMarkers: React.FC = () => {
   );
 };
 
-export default MapWithMarkers;
+export default MapCon;
