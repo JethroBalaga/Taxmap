@@ -1,12 +1,21 @@
-// ResidenceInput.tsx
 import React from 'react';
 import { IonItem, IonLabel, IonInput } from '@ionic/react';
 
-const ResidenceInput: React.FC = () => {
+interface ResidenceInputProps {
+  value: string;
+  onChange: (value: string) => void;
+}
+
+const ResidenceInput: React.FC<ResidenceInputProps> = ({ value, onChange }) => {
   return (
     <IonItem>
       <IonLabel position="floating">Residence Name</IonLabel>
-      <IonInput type="text" placeholder="Enter residence name" />
+      <IonInput 
+        type="text" 
+        placeholder="Enter residence name"
+        value={value}
+        onIonChange={(e) => onChange(e.detail.value!)}
+      />
     </IonItem>
   );
 };
