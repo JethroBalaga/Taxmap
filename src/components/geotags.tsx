@@ -1,4 +1,3 @@
-// geotags.tsx
 import { Geolocation } from '@capacitor/geolocation';
 
 export interface GeoTag {
@@ -8,19 +7,26 @@ export interface GeoTag {
   Residence: string;
   Longitude: number;
   Latitude: number;
-  Timestamp?: Date; // Optional timestamp
+  Timestamp?: Date;
 }
 
-let lastTagKey = 0; // This will keep track of the last used key
+// Initialize with saved tags or empty array
+const savedTags = localStorage.getItem('geoTags');
+let lastTagKey = savedTags ? JSON.parse(savedTags).length : 0;
+export let geoTags: GeoTag[] = savedTags ? JSON.parse(savedTags) : [];
 
-export const geoTags: GeoTag[] = [];
+// Parse string dates back to Date objects
+if (savedTags) {
+  geoTags = geoTags.map(tag => ({
+    ...tag,
+    Timestamp: tag.Timestamp ? new Date(tag.Timestamp) : undefined
+  }));
+}
 
 export const addGeoTag = async (houseNumber: number, address: string, residence: string) => {
   try {
-    // Get current position
     const position = await Geolocation.getCurrentPosition();
     
-    // Create new tag with auto-incremented key
     const newTag: GeoTag = {
       TagKey: ++lastTagKey,
       HouseNumber: houseNumber,
@@ -28,11 +34,12 @@ export const addGeoTag = async (houseNumber: number, address: string, residence:
       Residence: residence,
       Longitude: position.coords.longitude,
       Latitude: position.coords.latitude,
-      Timestamp: new Date() // Add current timestamp
+      Timestamp: new Date()
     };
     
-    geoTags.push(newTag);
-    return newTag; // Return the newly created tag
+    geoTags = [...geoTags, newTag];
+    localStorage.setItem('geoTags', JSON.stringify(geoTags));
+    return newTag;
   } catch (error) {
     console.error('Error getting location or saving tag:', error);
     throw error;
