@@ -1,7 +1,7 @@
 // geotags.tsx
 
 export interface GeoTag {
-  TagKey: string;
+  TagKey: number;
   HouseNumber: string;
   Residence: string;
   Longitude: number;
