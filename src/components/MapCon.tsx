@@ -1,14 +1,17 @@
+// src/components/MapWithMarkers.tsx
 import React, { useEffect, useRef, useState } from 'react';
 import { MapContainer, TileLayer, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet.offline';
 import localforage from 'localforage';
+import { geoTags } from '../components/geotags';
+import { createBlueMarkerIcon } from '../utils/markerIcons';
 
 // Define bounds for Manolo Fortich area
 const manoloFortichBounds = L.latLngBounds(
-  L.latLng(8.25, 124.75),  // SW corner
-  L.latLng(8.45, 124.95)   // NE corner
+  L.latLng(8.25, 124.75),
+  L.latLng(8.45, 124.95)
 );
 
 const DEFAULT_ZOOM = 14;
@@ -17,15 +20,50 @@ const MIN_ZOOM_UNLOCKED = 12;
 const MAX_ZOOM = 18;
 const TILE_LAYER_URL = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 
+// Component to handle markers display
+const MarkersLayer = () => {
+  const map = useMap();
+  const [markers, setMarkers] = useState<L.Marker[]>([]);
+  const blueMarkerIcon = createBlueMarkerIcon();
+
+  useEffect(() => {
+    // Clear existing markers
+    markers.forEach(marker => marker.removeFrom(map));
+    
+    // Create new markers from geoTags
+    const newMarkers = geoTags.map(tag => {
+      const marker = L.marker([tag.Latitude, tag.Longitude], {
+        icon: blueMarkerIcon
+      }).addTo(map);
+      
+      marker.bindPopup(`
+        <b>Residence:</b> ${tag.Residence}<br>
+        <b>Address:</b> ${tag.Address}<br>
+        <b>House #:</b> ${tag.HouseNumber}<br>
+        <small>Tagged on: ${tag.Timestamp?.toLocaleString()}</small>
+      `);
+      
+      return marker;
+    });
+    
+    setMarkers(newMarkers);
+
+    return () => {
+      newMarkers.forEach(marker => marker.removeFrom(map));
+    };
+  }, [geoTags]);
+
+  return null;
+};
+
+// Component to handle map controls
 const MapController = () => {
   const map = useMap();
   const [allowZoomOut, setAllowZoomOut] = useState(false);
   const tileLayerRef = useRef<any>(null);
   const controlRef = useRef<any>(null);
 
-  // Initialize offline tile layer
   const initOfflineLayer = () => {
-    // Configure localforage
     localforage.config({
       driver: [
         localforage.INDEXEDDB,
@@ -36,7 +74,6 @@ const MapController = () => {
       storeName: 'map_tiles'
     });
 
-    // Create offline tile layer
     const offlineLayer = (L.tileLayer as any).offline(TILE_LAYER_URL, {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       noWrap: true,
@@ -45,9 +82,8 @@ const MapController = () => {
       maxZoom: MAX_ZOOM
     });
 
-    // Add control for saving tiles
     const control = (L.control as any).savetiles(offlineLayer, {
-      zoomlevels: [MIN_ZOOM_UNLOCKED, MAX_ZOOM], // zoom levels to cache
+      zoomlevels: [MIN_ZOOM_UNLOCKED, MAX_ZOOM],
       confirm(layer: any, successCallback: () => void) {
         if (window.confirm(`Save tiles for offline use?`)) {
           successCallback();
@@ -74,7 +110,6 @@ const MapController = () => {
     };
   };
 
-  // Enforce bounds and zoom constraints
   const enforceRestrictions = () => {
     const currentZoom = map.getZoom();
     
@@ -94,18 +129,14 @@ const MapController = () => {
   };
 
   useEffect(() => {
-    // Set initial view
     map.setView([8.35985, 124.869077], DEFAULT_ZOOM);
     map.setMaxBounds(manoloFortichBounds);
 
-    // Initialize offline functionality
     const cleanup = initOfflineLayer();
 
-    // Event listeners
     map.on('zoomend', enforceRestrictions);
     map.on('move', enforceRestrictions);
 
-    // Initial resize
     setTimeout(() => map.invalidateSize(), 100);
 
     return () => {
@@ -118,8 +149,8 @@ const MapController = () => {
   return null;
 };
 
-const MapCon: React.FC = () => {
-  const containerRef = useRef<HTMLDivElement>(null);
+// Main map component
+const MapWithMarkers: React.FC = () => {
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
@@ -128,15 +159,12 @@ const MapCon: React.FC = () => {
   }, []);
 
   return (
-    <div 
-      ref={containerRef}
-      style={{ 
-        height: '100vh', 
-        width: '100%', 
-        overflow: 'hidden',
-        position: 'relative' 
-      }}
-    >
+    <div style={{ 
+      height: '100vh', 
+      width: '100%', 
+      overflow: 'hidden',
+      position: 'relative' 
+    }}>
       {isMounted && (
         <MapContainer
           center={[8.35985, 124.869077]}
@@ -146,17 +174,17 @@ const MapCon: React.FC = () => {
           maxZoom={MAX_ZOOM}
           maxBounds={manoloFortichBounds}
           maxBoundsViscosity={1.0}
-          dragging={true}
-          touchZoom={true}
-          scrollWheelZoom={true}
-          doubleClickZoom={true}
-          zoomControl={true}
         >
+          <TileLayer
+            url={TILE_LAYER_URL}
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          />
           <MapController />
+          <MarkersLayer />
         </MapContainer>
       )}
     </div>
   );
 };
 
-export default MapCon;
+export default MapWithMarkers;

@@ -1,0 +1,22 @@
+Errors 101
+
+Uncaught ReferenceError: require is not defined
+    at createBlueMarkerIcon (markerIcons.tsx:6:14)
+    at MarkersLayer (MapCon.tsx:27:26)
+    at react-stack-bottom-frame (react-dom-client.development.js:22428:20)
+    at renderWithHooks (react-dom-client.development.js:5757:22)
+    at updateFunctionComponent (react-dom-client.development.js:8018:19)
+    at beginWork (react-dom-client.development.js:9683:18)
+    at runWithFiberInDEV (react-dom-client.development.js:543:16)
+    at performUnitOfWork (react-dom-client.development.js:15044:22)
+    at workLoopSync (react-dom-client.development.js:14870:41)
+    at renderRootSync (react-dom-client.development.js:14850:11)
+react-dom-client.development.js:7409  An error occurred in the <MarkersLayer> component.
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries.
+
+defaultOnUncaughtError @ react-dom-client.development.js:7409
+index4.js:107  [Ionic Error]: [ion-menu] - Must have a "content" element to listen for drag events on.
+
+The error occurs because we're using require() which isn't available in standard JavaScript modules.

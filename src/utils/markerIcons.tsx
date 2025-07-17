@@ -1,9 +1,10 @@
 // src/utils/markerIcons.ts
 import L from 'leaflet';
+import blueMarkerIconUrl from '../assets/Blue.png';
 
 export const createBlueMarkerIcon = () => {
   return L.icon({
-    iconUrl: require('../Assets/Blue.png'),
+    iconUrl: blueMarkerIconUrl,
     iconSize: [25, 41],
     iconAnchor: [12, 41],
     popupAnchor: [1, -34],
