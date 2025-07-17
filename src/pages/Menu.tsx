@@ -12,12 +12,14 @@ import {
     IonTitle,
     IonToolbar
 } from '@ionic/react'
-import { mapOutline } from 'ionicons/icons';
+import { locateOutline, mapOutline } from 'ionicons/icons';
 import { Redirect, Route } from 'react-router';
 import Map from './Map';
+import GeoTagging from './GeoTagging';
 const Menu: React.FC = () => {
     const path = [
         { name: 'Map', url: '/map', icon: mapOutline},
+        { name: 'Geo Tag', url: '/geotagging', icon: locateOutline},
     ]
 
     return (
@@ -51,6 +53,7 @@ const Menu: React.FC = () => {
                 <IonContent className="ion-padding">
                     <IonRouterOutlet id="main">
                         <Route exact path="/map" component={Map} />
+                        <Route exact path="/geotagging"component={GeoTagging}/>
 
                         <Route exact path="/">
                             <Redirect to="/map" />
