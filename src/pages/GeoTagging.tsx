@@ -1,5 +1,5 @@
-// GeoTagging.tsx
 import React, { useState } from 'react';
+import { useHistory } from 'react-router-dom';
 import {
   IonPage,
   IonHeader,
@@ -16,6 +16,7 @@ import SubmitButton from '../components/GeoTaggingComponents/SubmitButton';
 import { addGeoTag } from '../components/geotags';
 
 const GeoTagging: React.FC = () => {
+  const history = useHistory();
   const [houseNumber, setHouseNumber] = useState<number>(0);
   const [address, setAddress] = useState<string>('');
   const [residence, setResidence] = useState<string>('');
@@ -29,8 +30,13 @@ const GeoTagging: React.FC = () => {
     
     try {
       await addGeoTag(houseNumber, address, residence);
-      setToastMessage('Location tagged successfully!');
+      setToastMessage('Location tagged successfully! Redirecting to map...');
       setShowToast(true);
+      
+      // Redirect to map after 1.5 seconds
+      setTimeout(() => {
+        history.push('/map');
+      }, 1500);
       
       // Reset form
       setHouseNumber(0);
