@@ -2,7 +2,8 @@
 
 export interface GeoTag {
   TagKey: number;
-  HouseNumber: string;
+  HouseNumber: number;
+  Address:string;
   Residence: string;
   Longitude: number;
   Latitude: number;
