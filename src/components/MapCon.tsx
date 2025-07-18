@@ -13,11 +13,11 @@ const manoloFortichBounds = L.latLngBounds(
   L.latLng(8.45, 124.95)
 );
 
-const DEFAULT_ZOOM = 14;
+const DEFAULT_ZOOM = 16;
 const MIN_ZOOM_LOCKED = 14;
 const MIN_ZOOM_UNLOCKED = 12;
 const MAX_ZOOM = 18;
-const TILE_LAYER_URL = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+const TILE_LAYER_URL = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
 
 // Component to handle markers display
 const MarkersLayer = () => {
@@ -26,10 +26,8 @@ const MarkersLayer = () => {
   const blueMarkerIcon = createBlueMarkerIcon();
 
   useEffect(() => {
-    // Clear existing markers
     markersRef.current.forEach(marker => marker.removeFrom(map));
     
-    // Create new markers from geoTags
     markersRef.current = geoTags.map(tag => {
       const marker = L.marker([tag.Latitude, tag.Longitude], {
         icon: blueMarkerIcon
@@ -45,7 +43,6 @@ const MarkersLayer = () => {
       return marker;
     });
 
-    // Auto-fit to markers if there are any
     if (geoTags.length > 0) {
       const markerGroup = new L.FeatureGroup(markersRef.current);
       map.fitBounds(markerGroup.getBounds().pad(0.2));
@@ -54,7 +51,7 @@ const MarkersLayer = () => {
     return () => {
       markersRef.current.forEach(marker => marker.removeFrom(map));
     };
-  }, [geoTags.length]); // Only update when number of tags changes
+  }, [geoTags.length]);
 
   return null;
 };
@@ -78,9 +75,8 @@ const MapController = () => {
     });
 
     const offlineLayer = (L.tileLayer as any).offline(TILE_LAYER_URL, {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      attribution: 'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics',
       noWrap: true,
-      subdomains: 'abc',
       minZoom: MIN_ZOOM_LOCKED,
       maxZoom: MAX_ZOOM
     });
@@ -180,7 +176,7 @@ const MapCon: React.FC = () => {
         >
           <TileLayer
             url={TILE_LAYER_URL}
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            attribution='Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics'
           />
           <MapController />
           <MarkersLayer />
