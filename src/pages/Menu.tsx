@@ -15,7 +15,6 @@ import {
 import { locateOutline, mapOutline } from 'ionicons/icons';
 import { Redirect, Route } from 'react-router';
 import Map from './Map';
-import GeoTagging from './GeoTagging';
 const Menu: React.FC = () => {
     const path = [
         { name: 'Map', url: '/map', icon: mapOutline},

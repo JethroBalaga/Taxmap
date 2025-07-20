@@ -1,23 +1,35 @@
 import React, { useState } from 'react';
-import { useHistory } from 'react-router-dom';
 import {
-  IonPage,
+  IonModal,
   IonHeader,
   IonToolbar,
   IonTitle,
   IonContent,
   IonLoading,
-  IonToast
+  IonToast,
+  IonButtons,
+  IonButton,
+  IonIcon
 } from '@ionic/react';
+import { close } from 'ionicons/icons';
 import { Capacitor } from '@capacitor/core';
-import HouseNumberInput from '../components/GeoTaggingComponents/HouseNumberInput';
-import AddressInput from '../components/GeoTaggingComponents/AddressInput';
-import ResidenceInput from '../components/GeoTaggingComponents/ResidenceInput';
-import SubmitButton from '../components/GeoTaggingComponents/SubmitButton';
-import { addGeoTag } from '../components/geotags';
+import HouseNumberInput from './GeoTaggingComponents/HouseNumberInput';
+import AddressInput from './GeoTaggingComponents/AddressInput';
+import ResidenceInput from './GeoTaggingComponents/ResidenceInput';
+import SubmitButton from './GeoTaggingComponents/SubmitButton';
+import { addGeoTag } from './geotags';
 
-const GeoTagging: React.FC = () => {
-  const history = useHistory();
+interface GeoTaggingProps {
+  isOpen: boolean;
+  onDismiss: () => void;
+  onSuccess?: () => void;
+}
+
+const GeoTagging: React.FC<GeoTaggingProps> = ({ 
+  isOpen, 
+  onDismiss,
+  onSuccess 
+}) => {
   const [houseNumber, setHouseNumber] = useState<number>(0);
   const [address, setAddress] = useState<string>('');
   const [residence, setResidence] = useState<string>('');
@@ -31,21 +43,20 @@ const GeoTagging: React.FC = () => {
     
     try {
       await addGeoTag(houseNumber, address, residence);
-      setToastMessage('Location tagged successfully! Redirecting to map...');
+      setToastMessage('Location tagged successfully!');
       setShowToast(true);
       
-      // Increased delay for mobile devices
-      setTimeout(() => {
-        history.push('/map');
-        // Force a reload to ensure map initialization
-        if (Capacitor.isNativePlatform()) {
-          window.location.reload();
-        }
-      }, Capacitor.isNativePlatform() ? 800 : 500);
-      
+      // Reset form
       setHouseNumber(0);
       setAddress('');
       setResidence('');
+
+      // Call success callback if provided
+      if (onSuccess) {
+        setTimeout(() => {
+          onSuccess();
+        }, 1000);
+      }
     } catch (error) {
       setToastMessage('Failed to tag location. Please try again.');
       setShowToast(true);
@@ -55,10 +66,15 @@ const GeoTagging: React.FC = () => {
   };
 
   return (
-    <IonPage>
+    <IonModal isOpen={isOpen} onDidDismiss={onDismiss}>
       <IonHeader>
         <IonToolbar>
           <IonTitle>GeoTagging Form</IonTitle>
+          <IonButtons slot="end">
+            <IonButton onClick={onDismiss}>
+              <IonIcon icon={close} />
+            </IonButton>
+          </IonButtons>
         </IonToolbar>
       </IonHeader>
       <IonContent className="ion-padding">
@@ -71,7 +87,9 @@ const GeoTagging: React.FC = () => {
         
         <IonLoading 
           isOpen={loading} 
-          message={Capacitor.isNativePlatform() ? "Getting your location (may take longer on mobile)..." : "Getting your location..."} 
+          message={Capacitor.isNativePlatform() ? 
+            "Getting your location (may take longer on mobile)..." : 
+            "Getting your location..."} 
         />
         <IonToast
           isOpen={showToast}
@@ -80,7 +98,7 @@ const GeoTagging: React.FC = () => {
           duration={2000}
         />
       </IonContent>
-    </IonPage>
+    </IonModal>
   );
 };
 
