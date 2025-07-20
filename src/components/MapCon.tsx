@@ -13,11 +13,38 @@ const manoloFortichBounds = L.latLngBounds(
   L.latLng(8.45, 124.95)
 );
 
-const DEFAULT_ZOOM = 16;
+const DEFAULT_ZOOM = 14;
 const MIN_ZOOM_LOCKED = 14;
 const MIN_ZOOM_UNLOCKED = 12;
 const MAX_ZOOM = 18;
 const TILE_LAYER_URL = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+
+// Create-outline SVG path
+const CREATE_OUTLINE_PATH = "M384 224v184a40 40 0 0 1-40 40H104a40 40 0 0 1-40-40V168a40 40 0 0 1 40-40h167.48M336 64h112v112M224 288L440 72";
+
+// Custom control with create-outline icon in a circle
+const CreateOutlineControl = L.Control.extend({
+  options: {
+    position: 'topright'
+  },
+
+  onAdd: function(map: L.Map) {
+    const container = L.DomUtil.create('div', 'leaflet-control');
+    
+    const link = L.DomUtil.create('a', 'create-outline-btn', container);
+    link.href = '#';
+    link.title = 'Create';
+    link.innerHTML = `
+      <svg viewBox="0 0 512 512" width="20" height="20">
+        <path fill="currentColor" d="${CREATE_OUTLINE_PATH}"/>
+      </svg>
+    `;
+    
+    L.DomEvent.on(link, 'click', L.DomEvent.stop);
+    
+    return container;
+  }
+});
 
 // Component to handle markers display
 const MarkersLayer = () => {
@@ -61,6 +88,7 @@ const MapController = () => {
   const map = useMap();
   const [allowZoomOut, setAllowZoomOut] = useState(false);
   const tileLayerRef = useRef<any>(null);
+  const createControlRef = useRef<any>(null);
 
   const initOfflineLayer = () => {
     localforage.config({
@@ -73,6 +101,7 @@ const MapController = () => {
       storeName: 'map_tiles'
     });
 
+    // Initialize offline layer with ArcGIS
     const offlineLayer = (L.tileLayer as any).offline(TILE_LAYER_URL, {
       attribution: 'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics',
       noWrap: true,
@@ -80,16 +109,29 @@ const MapController = () => {
       maxZoom: MAX_ZOOM
     });
 
-    // Automatically save tiles as they are loaded
-    offlineLayer.on('tileload', (event: any) => {
-      offlineLayer.saveTile(event.tile);
+    // Handle tile saving
+    offlineLayer.on('tileloadend', (event: any) => {
+      if (offlineLayer.saveTile) {
+        offlineLayer.saveTile(event.tile);
+      }
     });
 
     offlineLayer.addTo(map);
     tileLayerRef.current = offlineLayer;
 
+    // Add create control only once
+    if (!createControlRef.current) {
+      const createControl = new CreateOutlineControl();
+      createControl.addTo(map);
+      createControlRef.current = createControl;
+    }
+
     return () => {
       offlineLayer.remove();
+      if (createControlRef.current) {
+        createControlRef.current.remove();
+        createControlRef.current = null;
+      }
     };
   };
 
@@ -148,6 +190,27 @@ const MapCon: React.FC = () => {
       overflow: 'hidden',
       position: 'relative' 
     }}>
+      <style>{`
+        .create-outline-btn {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 30px;
+          height: 30px;
+          background: white;
+          border-radius: 50%;
+          box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+          transition: all 0.2s;
+        }
+        .create-outline-btn:hover {
+          background: #f4f4f4;
+          transform: scale(1.1);
+        }
+        .create-outline-btn svg {
+          color: #333;
+        }
+      `}</style>
+      
       {isMounted && (
         <MapContainer
           center={[8.35985, 124.869077]}
