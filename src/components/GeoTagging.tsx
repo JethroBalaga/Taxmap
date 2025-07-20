@@ -9,14 +9,14 @@ import {
   IonToast,
   IonButtons,
   IonButton,
-  IonIcon,
-  IonItem,
-  IonInput,
-  IonLabel,
-  IonSelect,
-  IonSelectOption
+  IonIcon
 } from '@ionic/react';
 import { close } from 'ionicons/icons';
+import { Capacitor } from '@capacitor/core';
+import HouseNumberInput from './GeoTaggingComponents/HouseNumberInput';
+import AddressInput from './GeoTaggingComponents/AddressInput';
+import ResidenceInput from './GeoTaggingComponents/ResidenceInput';
+import SubmitButton from './GeoTaggingComponents/SubmitButton';
 import { addGeoTag } from './geotags';
 
 interface GeoTaggingProps {
@@ -25,38 +25,41 @@ interface GeoTaggingProps {
   onSuccess?: () => void;
 }
 
-const GeoTagging: React.FC<GeoTaggingProps> = ({ isOpen, onDismiss, onSuccess }) => {
-  const [formData, setFormData] = useState({
-    houseNumber: '',
-    address: '',
-    residence: ''
-  });
-  const [loading, setLoading] = useState(false);
-  const [toast, setToast] = useState({ show: false, message: '' });
+const GeoTagging: React.FC<GeoTaggingProps> = ({ 
+  isOpen, 
+  onDismiss,
+  onSuccess 
+}) => {
+  const [houseNumber, setHouseNumber] = useState<number>(0);
+  const [address, setAddress] = useState<string>('');
+  const [residence, setResidence] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(false);
+  const [showToast, setShowToast] = useState<boolean>(false);
+  const [toastMessage, setToastMessage] = useState<string>('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     
     try {
-      await addGeoTag(
-        Number(formData.houseNumber),
-        formData.address,
-        formData.residence
-      );
+      await addGeoTag(houseNumber, address, residence);
+      setToastMessage('Location tagged successfully!');
+      setShowToast(true);
       
-      setToast({ show: true, message: 'Location saved successfully!' });
-      setFormData({ houseNumber: '', address: '', residence: '' });
-      
-      setTimeout(() => {
-        onDismiss();
-        onSuccess?.();
-      }, 1500);
+      // Reset form
+      setHouseNumber(0);
+      setAddress('');
+      setResidence('');
+
+      // Call success callback if provided
+      if (onSuccess) {
+        setTimeout(() => {
+          onSuccess();
+        }, 1000);
+      }
     } catch (error) {
-      setToast({ 
-        show: true, 
-        message: error instanceof Error ? error.message : 'Failed to save location' 
-      });
+      setToastMessage('Failed to tag location. Please try again.');
+      setShowToast(true);
     } finally {
       setLoading(false);
     }
@@ -66,7 +69,7 @@ const GeoTagging: React.FC<GeoTaggingProps> = ({ isOpen, onDismiss, onSuccess })
     <IonModal isOpen={isOpen} onDidDismiss={onDismiss}>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>Add Location</IonTitle>
+          <IonTitle>GeoTagging Form</IonTitle>
           <IonButtons slot="end">
             <IonButton onClick={onDismiss}>
               <IonIcon icon={close} />
@@ -76,54 +79,22 @@ const GeoTagging: React.FC<GeoTaggingProps> = ({ isOpen, onDismiss, onSuccess })
       </IonHeader>
       <IonContent className="ion-padding">
         <form onSubmit={handleSubmit}>
-          <IonItem>
-            <IonLabel position="stacked">House Number</IonLabel>
-            <IonInput
-              type="number"
-              value={formData.houseNumber}
-              onIonChange={e => setFormData({...formData, houseNumber: e.detail.value!})}
-              required
-            />
-          </IonItem>
-          
-          <IonItem>
-            <IonLabel position="stacked">Full Address</IonLabel>
-            <IonInput
-              value={formData.address}
-              onIonChange={e => setFormData({...formData, address: e.detail.value!})}
-              required
-            />
-          </IonItem>
-          
-          <IonItem>
-            <IonLabel position="stacked">Residence Type</IonLabel>
-            <IonSelect
-              value={formData.residence}
-              onIonChange={e => setFormData({...formData, residence: e.detail.value})}
-              interface="popover"
-            >
-              <IonSelectOption value="House">House</IonSelectOption>
-              <IonSelectOption value="Apartment">Apartment</IonSelectOption>
-              <IonSelectOption value="Business">Business</IonSelectOption>
-              <IonSelectOption value="Land">Land</IonSelectOption>
-            </IonSelect>
-          </IonItem>
-          
-          <IonButton 
-            type="submit" 
-            expand="block" 
-            className="ion-margin-top"
-            disabled={loading}
-          >
-            Save Location
-          </IonButton>
+          <HouseNumberInput value={houseNumber} onChange={setHouseNumber} />
+          <AddressInput value={address} onChange={setAddress} />
+          <ResidenceInput value={residence} onChange={setResidence} />
+          <SubmitButton />
         </form>
         
-        <IonLoading isOpen={loading} message="Saving location..." />
+        <IonLoading 
+          isOpen={loading} 
+          message={Capacitor.isNativePlatform() ? 
+            "Getting your location (may take longer on mobile)..." : 
+            "Getting your location..."} 
+        />
         <IonToast
-          isOpen={toast.show}
-          onDidDismiss={() => setToast({...toast, show: false})}
-          message={toast.message}
+          isOpen={showToast}
+          onDidDismiss={() => setShowToast(false)}
+          message={toastMessage}
           duration={2000}
         />
       </IonContent>
