@@ -1,0 +1,11 @@
+.map-card {
+  margin: 0;
+  height: 100%;
+  width: 100%;
+}
+
+/* This ensures the map container fills the card */
+.map-card > div {
+  height: 100%;
+  width: 100%;
+}

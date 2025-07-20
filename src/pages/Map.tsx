@@ -1,5 +1,13 @@
-import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from '@ionic/react';
+import { 
+  IonContent, 
+  IonHeader, 
+  IonPage, 
+  IonTitle, 
+  IonToolbar, 
+  IonCard 
+} from '@ionic/react';
 import MapCon from '../components/MapCon';
+import './Map.css'; // Create this file if you don't have it
 
 const Map: React.FC = () => {
   return (
@@ -10,7 +18,9 @@ const Map: React.FC = () => {
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>
-      <MapCon/>
+        <IonCard className="map-card">
+          <MapCon/>
+        </IonCard>
       </IonContent>
     </IonPage>
   );
