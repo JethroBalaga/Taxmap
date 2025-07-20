@@ -61,7 +61,6 @@ const MapController = () => {
   const map = useMap();
   const [allowZoomOut, setAllowZoomOut] = useState(false);
   const tileLayerRef = useRef<any>(null);
-  const controlRef = useRef<any>(null);
 
   const initOfflineLayer = () => {
     localforage.config({
@@ -81,31 +80,16 @@ const MapController = () => {
       maxZoom: MAX_ZOOM
     });
 
-    const control = (L.control as any).savetiles(offlineLayer, {
-      zoomlevels: [MIN_ZOOM_UNLOCKED, MAX_ZOOM],
-      confirm(layer: any, successCallback: () => void) {
-        if (window.confirm(`Save tiles for offline use?`)) {
-          successCallback();
-        }
-      },
-      confirmRemoval(layer: any, successCallback: () => void) {
-        if (window.confirm('Remove all saved tiles?')) {
-          successCallback();
-        }
-      },
-      saveText: '<i class="fa fa-download"></i>',
-      rmText: '<i class="fa fa-trash"></i>',
+    // Automatically save tiles as they are loaded
+    offlineLayer.on('tileload', (event: any) => {
+      offlineLayer.saveTile(event.tile);
     });
 
     offlineLayer.addTo(map);
-    control.addTo(map);
-
     tileLayerRef.current = offlineLayer;
-    controlRef.current = control;
 
     return () => {
       offlineLayer.remove();
-      control.remove();
     };
   };
 
