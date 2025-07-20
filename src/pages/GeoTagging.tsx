@@ -9,6 +9,7 @@ import {
   IonLoading,
   IonToast
 } from '@ionic/react';
+import { Capacitor } from '@capacitor/core';
 import HouseNumberInput from '../components/GeoTaggingComponents/HouseNumberInput';
 import AddressInput from '../components/GeoTaggingComponents/AddressInput';
 import ResidenceInput from '../components/GeoTaggingComponents/ResidenceInput';
@@ -33,12 +34,15 @@ const GeoTagging: React.FC = () => {
       setToastMessage('Location tagged successfully! Redirecting to map...');
       setShowToast(true);
       
-      // Redirect to map after 1.5 seconds
+      // Increased delay for mobile devices
       setTimeout(() => {
         history.push('/map');
-      }, 1500);
+        // Force a reload to ensure map initialization
+        if (Capacitor.isNativePlatform()) {
+          window.location.reload();
+        }
+      }, Capacitor.isNativePlatform() ? 800 : 500);
       
-      // Reset form
       setHouseNumber(0);
       setAddress('');
       setResidence('');
@@ -65,7 +69,10 @@ const GeoTagging: React.FC = () => {
           <SubmitButton />
         </form>
         
-        <IonLoading isOpen={loading} message="Getting your location..." />
+        <IonLoading 
+          isOpen={loading} 
+          message={Capacitor.isNativePlatform() ? "Getting your location (may take longer on mobile)..." : "Getting your location..."} 
+        />
         <IonToast
           isOpen={showToast}
           onDidDismiss={() => setShowToast(false)}
