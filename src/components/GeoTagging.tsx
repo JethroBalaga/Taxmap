@@ -13,11 +13,10 @@ import {
 } from '@ionic/react';
 import { close } from 'ionicons/icons';
 import { Capacitor } from '@capacitor/core';
-import HouseNumberInput from './GeoTaggingComponents/HouseNumberInput';
-import AddressInput from './GeoTaggingComponents/AddressInput';
 import ResidenceInput from './GeoTaggingComponents/ResidenceInput';
 import SubmitButton from './GeoTaggingComponents/SubmitButton';
 import { addGeoTag } from './geotags';
+import Declarant from './GeoTaggingComponents/Declarant';
 
 interface GeoTaggingProps {
   isOpen: boolean;
@@ -30,8 +29,7 @@ const GeoTagging: React.FC<GeoTaggingProps> = ({
   onDismiss,
   onSuccess 
 }) => {
-  const [houseNumber, setHouseNumber] = useState<number>(0);
-  const [address, setAddress] = useState<string>('');
+  const [declarant, setDeclarant] = useState<string>('');
   const [residence, setResidence] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [showToast, setShowToast] = useState<boolean>(false);
@@ -42,13 +40,12 @@ const GeoTagging: React.FC<GeoTaggingProps> = ({
     setLoading(true);
     
     try {
-      await addGeoTag(houseNumber, address, residence);
+      await addGeoTag(declarant,residence);
       setToastMessage('Location tagged successfully!');
       setShowToast(true);
       
       // Reset form
-      setHouseNumber(0);
-      setAddress('');
+      setDeclarant('');
       setResidence('');
 
       // Call success callback if provided
@@ -79,8 +76,7 @@ const GeoTagging: React.FC<GeoTaggingProps> = ({
       </IonHeader>
       <IonContent className="ion-padding">
         <form onSubmit={handleSubmit}>
-          <HouseNumberInput value={houseNumber} onChange={setHouseNumber} />
-          <AddressInput value={address} onChange={setAddress} />
+          <Declarant value={declarant} onChange={setDeclarant} />
           <ResidenceInput value={residence} onChange={setResidence} />
           <SubmitButton />
         </form>

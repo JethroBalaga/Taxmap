@@ -1,15 +1,15 @@
 import React from 'react';
 import { IonItem, IonLabel, IonInput } from '@ionic/react';
 
-interface AddressInputProps {
+interface Declarant {
   value: string;
   onChange: (value: string) => void;
 }
 
-const AddressInput: React.FC<AddressInputProps> = ({ value, onChange }) => {
+const Declarant: React.FC<Declarant> = ({ value, onChange }) => {
   return (
     <IonItem>
-      <IonLabel position="floating">Address</IonLabel>
+      <IonLabel position="floating">Declarant</IonLabel>
       <IonInput 
         type="text" 
         placeholder="Enter address"
@@ -20,4 +20,4 @@ const AddressInput: React.FC<AddressInputProps> = ({ value, onChange }) => {
   );
 };
 
-export default AddressInput;
+export default Declarant;

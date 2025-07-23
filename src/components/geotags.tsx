@@ -2,8 +2,7 @@ import { Geolocation } from '@capacitor/geolocation';
 
 export interface GeoTag {
   TagKey: number;
-  HouseNumber: number;
-  Address: string;
+  Declarant: string;
   Residence: string;
   Longitude: number;
   Latitude: number;
@@ -23,8 +22,8 @@ if (savedTags) {
   }));
 }
 
-export const addGeoTag = async (houseNumber: number, address: string, residence: string) => {
-  if (!address || !residence || houseNumber <= 0) {
+export const addGeoTag = async (declarant: string, residence: string) => {
+  if (!declarant || residence) {
     throw new Error('Please fill all fields with valid data');
   }
 
@@ -37,8 +36,7 @@ export const addGeoTag = async (houseNumber: number, address: string, residence:
 
     const newTag: GeoTag = {
       TagKey: ++lastTagKey,
-      HouseNumber: houseNumber,
-      Address: address,
+      Declarant: declarant,
       Residence: residence,
       Longitude: position.coords.longitude,
       Latitude: position.coords.latitude,
