@@ -1,74 +1,74 @@
 [
   {
     "Group": "A",
-    "Locations": ["Poblacion", "Agusan Canyon", "Damilag", "Alae", "San Miguel", "Lunucan", "Diclum", "Dahilayan", "Dalirig", "Malugo"],
-    "Ratings": {
-      "Residential1": 2130,
-      "Residential2": 1760,
-      "Residential3": 1360,
-      "Residential4": 1000,
-      "Commercial1": 2250,
-      "Commercial2": 1890,
-      "Commercial3": 1590,
-      "Commercial4": 1340,
-      "Industrial1": 2170,
-      "Industrial2": 1860,
-      "Industrial3": 1510,
-      "Industrial4": 1130
+    "LOCATIONS": ["POBLACION", "AGUSAN CANYON", "DAMILAG", "ALAE", "SAN MIGUEL", "LUNUCAN", "DICLUM", "DAHILAYAN", "DALIRIG", "MALUGO"],
+    "RATINGS": {
+      "RESIDENTIAL1": 2130,
+      "RESIDENTIAL2": 1760,
+      "RESIDENTIAL3": 1360,
+      "RESIDENTIAL4": 1000,
+      "COMMERCIAL1": 2250,
+      "COMMERCIAL2": 1890,
+      "COMMERCIAL3": 1590,
+      "COMMERCIAL4": 1340,
+      "INDUSTRIAL1": 2170,
+      "INDUSTRIAL2": 1860,
+      "INDUSTRIAL3": 1510,
+      "INDUSTRIAL4": 1130
     }
   },
   {
     "Group": "B",
-    "Locations": ["Lingion", "Lindaban", "Sankanan", "Kalugmanan", "Mampayag", "Mambatangan", "Mantibugao", "Santo Ñino", "Ticala"],
-    "Ratings": {
-      "Residential1": 1760,
-      "Residential2": 1360,
-      "Residential3": 1000,
-      "Residential4": 740,
-      "Commercial1": 1890,
-      "Commercial2": 1590,
-      "Commercial3": 1340,
-      "Commercial4": 1040,
-      "Industrial1": 1860,
-      "Industrial2": 1510,
-      "Industrial3": 1130,
-      "Industrial4": 790
+    "LOCATIONS": ["LINGION", "LINDABAN", "SANKANAN", "KALUGMANAN", "MAMPAYAG", "MAMBATANGAN", "MANTIBUGAO", "SANTO ÑINO", "TICALA"],
+    "RATINGS": {
+      "RESIDENTIAL1": 1760,
+      "RESIDENTIAL2": 1360,
+      "RESIDENTIAL3": 1000,
+      "RESIDENTIAL4": 740,
+      "COMMERCIAL1": 1890,
+      "COMMERCIAL2": 1590,
+      "COMMERCIAL3": 1340,
+      "COMMERCIAL4": 1040,
+      "INDUSTRIAL1": 1860,
+      "INDUSTRIAL2": 1510,
+      "INDUSTRIAL3": 1130,
+      "INDUSTRIAL4": 790
     }
   },
   {
     "Group": "C",
-    "Locations": ["Minsuro", "Santiago"],
-    "Ratings": {
-      "Residential1": 1360,
-      "Residential2": 1000,
-      "Residential3": 740,
-      "Residential4": 500,
-      "Commercial1": 1590,
-      "Commercial2": 1340,
-      "Commercial3": 1040,
-      "Commercial4": 740,
-      "Industrial1": 1510,
-      "Industrial2": 1130,
-      "Industrial3": 790,
-      "Industrial4": 540
+    "LOCATIONS": ["MINSURO", "SANTIAGO"],
+    "RATINGS": {
+      "RESIDENTIAL1": 1360,
+      "RESIDENTIAL2": 1000,
+      "RESIDENTIAL3": 740,
+      "RESIDENTIAL4": 500,
+      "COMMERCIAL1": 1590,
+      "COMMERCIAL2": 1340,
+      "COMMERCIAL3": 1040,
+      "COMMERCIAL4": 740,
+      "INDUSTRIAL1": 1510,
+      "INDUSTRIAL2": 1130,
+      "INDUSTRIAL3": 790,
+      "INDUSTRIAL4": 540
     }
   },
   {
     "Group": "D",
-    "Locations": ["Other Barangay"],
-    "Ratings": {
-      "Residential1": 1000,
-      "Residential2": 740,
-      "Residential3": 500,
-      "Residential4": 290,
-      "Commercial1": 1340,
-      "Commercial2": 1040,
-      "Commercial3": 740,
-      "Commercial4": 520,
-      "Industrial1": 1130,
-      "Industrial2": 790,
-      "Industrial3": 540,
-      "Industrial4": 400
+    "LOCATIONS": ["OTHER BARANGAY"],
+    "RATINGS": {
+      "RESIDENTIAL1": 1000,
+      "RESIDENTIAL2": 740,
+      "RESIDENTIAL3": 500,
+      "RESIDENTIAL4": 290,
+      "COMMERCIAL1": 1340,
+      "COMMERCIAL2": 1040,
+      "COMMERCIAL3": 740,
+      "COMMERCIAL4": 520,
+      "INDUSTRIAL1": 1130,
+      "INDUSTRIAL2": 790,
+      "INDUSTRIAL3": 540,
+      "INDUSTRIAL4": 400
     }
   }
 ]
