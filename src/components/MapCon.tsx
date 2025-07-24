@@ -4,7 +4,6 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet.offline';
 import localforage from 'localforage';
-import { geoTags } from './geotags';
 import { createBlueMarkerIcon } from '../utils/markerIcons';
 import GeoTagging from './GeoTagging';
 
@@ -31,7 +30,7 @@ const CreateOutlineControl = ({ onClick }: { onClick: () => void }) => {
   useEffect(() => {
     const CustomControl = L.Control.extend({
       options: { position: 'topright' },
-      onAdd: function() {
+      onAdd: function () {
         const container = L.DomUtil.create('div', 'leaflet-control');
         const link = L.DomUtil.create('a', 'create-outline-btn', container);
         link.href = '#';
@@ -41,12 +40,12 @@ const CreateOutlineControl = ({ onClick }: { onClick: () => void }) => {
             <path fill="currentColor" d="${CREATE_OUTLINE_PATH}"/>
           </svg>
         `;
-        
+
         L.DomEvent.on(link, 'click', (e) => {
           L.DomEvent.stop(e);
           onClick();
         });
-        
+
         return container;
       }
     });
@@ -58,43 +57,6 @@ const CreateOutlineControl = ({ onClick }: { onClick: () => void }) => {
       controlRef.current?.remove();
     };
   }, [map, onClick]);
-
-  return null;
-};
-
-// Component to handle markers display
-const MarkersLayer = () => {
-  const map = useMap();
-  const markersRef = useRef<L.Marker[]>([]);
-  const blueMarkerIcon = createBlueMarkerIcon();
-
-  useEffect(() => {
-    markersRef.current.forEach(marker => marker.removeFrom(map));
-    
-    markersRef.current = geoTags.map(tag => {
-      const marker = L.marker([tag.Latitude, tag.Longitude], {
-        icon: blueMarkerIcon
-      }).addTo(map);
-      
-      marker.bindPopup(`
-        <b>Residence:</b> ${tag.Residence}<br>
-        <b>Address:</b> ${tag.Address}<br>
-        <b>House #:</b> ${tag.HouseNumber}<br>
-        <small>Tagged on: ${tag.Timestamp?.toLocaleString()}</small>
-      `);
-      
-      return marker;
-    });
-
-    if (geoTags.length > 0) {
-      const markerGroup = new L.FeatureGroup(markersRef.current);
-      map.fitBounds(markerGroup.getBounds().pad(0.2));
-    }
-
-    return () => {
-      markersRef.current.forEach(marker => marker.removeFrom(map));
-    };
-  }, [geoTags.length]);
 
   return null;
 };
@@ -139,7 +101,7 @@ const MapController = ({ onOpenGeoTagging }: { onOpenGeoTagging: () => void }) =
 
   const enforceRestrictions = () => {
     const currentZoom = map.getZoom();
-    
+
     if (currentZoom > DEFAULT_ZOOM) {
       setAllowZoomOut(true);
     }
@@ -184,26 +146,20 @@ const MapController = ({ onOpenGeoTagging }: { onOpenGeoTagging: () => void }) =
 const MapCon: React.FC = () => {
   const [isMounted, setIsMounted] = useState(false);
   const [showGeoTagging, setShowGeoTagging] = useState(false);
-  const [refreshMarkers, setRefreshMarkers] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
     return () => setIsMounted(false);
   }, []);
 
-  const handleTagSuccess = () => {
-    setShowGeoTagging(false);
-    setRefreshMarkers(prev => !prev);
-  };
-
   return (
-    <div style={{ 
-      height: '100vh', 
-      width: '100%', 
+    <div style={{
+      height: '100vh',
+      width: '100%',
       overflow: 'hidden',
       position: 'relative',
       margin: 0,
-      padding: 0 
+      padding: 0
     }}>
       <style>{`
         .create-outline-btn {
@@ -229,36 +185,34 @@ const MapCon: React.FC = () => {
           overflow: hidden;
         }
       `}</style>
-      
+
       {isMounted && (
         <>
           <MapContainer
             center={[8.35985, 124.869077]}
             zoom={DEFAULT_ZOOM}
-            style={{ 
-              height: '100%', 
+            style={{
+              height: '100%',
               width: '100%',
               margin: 0,
-              padding: 0 
+              padding: 0
             }}
             minZoom={MIN_ZOOM_LOCKED}
             maxZoom={MAX_ZOOM}
             maxBounds={manoloFortichBounds}
             maxBoundsViscosity={1.0}
-            key={refreshMarkers.toString()}
           >
             <TileLayer
               url={TILE_LAYER_URL}
               attribution='Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics'
             />
             <MapController onOpenGeoTagging={() => setShowGeoTagging(true)} />
-            <MarkersLayer />
           </MapContainer>
-          
-          <GeoTagging 
+
+          <GeoTagging
             isOpen={showGeoTagging}
             onDismiss={() => setShowGeoTagging(false)}
-            onSuccess={handleTagSuccess}
+            onSuccess={() => setShowGeoTagging(false)}
           />
         </>
       )}

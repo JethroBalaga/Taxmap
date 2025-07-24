@@ -1,3 +1,4 @@
+// src/components/Modals/Form.tsx
 import React, { useState } from 'react';
 import {
   IonModal,
@@ -6,20 +7,24 @@ import {
   IonTitle,
   IonContent,
   IonButton,
-  IonButtons
+  IonButtons,
+  IonIcon
 } from '@ionic/react';
-import Declarant from '../FormComponents/Declarant';
-import Kind from '../FormComponents/Kind';
-import Classification from '../FormComponents/Classification';
-import Area from '../FormComponents/Area';
-import Next from '../GlobalComponent/Next';
+import { closeOutline } from 'ionicons/icons';
+
+import Declarant from '../FormSteps/Declarant';
+import Kind from '../FormSteps/Kind';
+import Classification from '../FormSteps/Classification';
+import Area from '../FormSteps/Area';
+import Next from '../FormSteps/Next';
 
 interface FormProps {
   isOpen: boolean;
   onDismiss: () => void;
+  onSuccess: () => void;
 }
 
-const Form: React.FC<FormProps> = ({ isOpen, onDismiss }) => {
+const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
   const [declarant, setDeclarant] = useState('');
   const [kind, setKind] = useState('');
   const [classification, setClassification] = useState('');
@@ -29,12 +34,15 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss }) => {
     <IonModal isOpen={isOpen} onDidDismiss={onDismiss}>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>Tag New Location</IonTitle>
+          <IonTitle>GeoTag Form</IonTitle>
           <IonButtons slot="end">
-            <IonButton onClick={onDismiss}>Close</IonButton>
+            <IonButton onClick={onDismiss}>
+              <IonIcon icon={closeOutline} />
+            </IonButton>
           </IonButtons>
         </IonToolbar>
       </IonHeader>
+
       <IonContent className="ion-padding">
         <Declarant value={declarant} onChange={setDeclarant} />
         <Kind value={kind} onChange={setKind} />
