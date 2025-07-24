@@ -3,72 +3,96 @@
     "Group": "A",
     "LOCATIONS": ["POBLACION", "AGUSAN CANYON", "DAMILAG", "ALAE", "SAN MIGUEL", "LUNUCAN", "DICLUM", "DAHILAYAN", "DALIRIG", "MALUGO"],
     "RATINGS": {
-      "RESIDENTIAL1": 2130,
-      "RESIDENTIAL2": 1760,
-      "RESIDENTIAL3": 1360,
-      "RESIDENTIAL4": 1000,
-      "COMMERCIAL1": 2250,
-      "COMMERCIAL2": 1890,
-      "COMMERCIAL3": 1590,
-      "COMMERCIAL4": 1340,
-      "INDUSTRIAL1": 2170,
-      "INDUSTRIAL2": 1860,
-      "INDUSTRIAL3": 1510,
-      "INDUSTRIAL4": 1130
+      "RESIDENTIAL": {
+        "R1": 2130,
+        "R2": 1760,
+        "R3": 1360,
+        "R4": 1000
+      },
+      "COMMERCIAL": {
+        "C1": 2250,
+        "C2": 1890,
+        "C3": 1590,
+        "C4": 1340
+      },
+      "INDUSTRIAL": {
+        "I1": 2170,
+        "I2": 1860,
+        "I3": 1510,
+        "I4": 1130
+      }
     }
   },
   {
     "Group": "B",
     "LOCATIONS": ["LINGION", "LINDABAN", "SANKANAN", "KALUGMANAN", "MAMPAYAG", "MAMBATANGAN", "MANTIBUGAO", "SANTO ÑINO", "TICALA"],
     "RATINGS": {
-      "RESIDENTIAL1": 1760,
-      "RESIDENTIAL2": 1360,
-      "RESIDENTIAL3": 1000,
-      "RESIDENTIAL4": 740,
-      "COMMERCIAL1": 1890,
-      "COMMERCIAL2": 1590,
-      "COMMERCIAL3": 1340,
-      "COMMERCIAL4": 1040,
-      "INDUSTRIAL1": 1860,
-      "INDUSTRIAL2": 1510,
-      "INDUSTRIAL3": 1130,
-      "INDUSTRIAL4": 790
+      "RESIDENTIAL": {
+        "R1": 1760,
+        "R2": 1360,
+        "R3": 1000,
+        "R4": 740
+      },
+      "COMMERCIAL": {
+        "C1": 1890,
+        "C2": 1590,
+        "C3": 1340,
+        "C4": 1040
+      },
+      "INDUSTRIAL": {
+        "I1": 1860,
+        "I2": 1510,
+        "I3": 1130,
+        "I4": 790
+      }
     }
   },
   {
     "Group": "C",
     "LOCATIONS": ["MINSURO", "SANTIAGO"],
     "RATINGS": {
-      "RESIDENTIAL1": 1360,
-      "RESIDENTIAL2": 1000,
-      "RESIDENTIAL3": 740,
-      "RESIDENTIAL4": 500,
-      "COMMERCIAL1": 1590,
-      "COMMERCIAL2": 1340,
-      "COMMERCIAL3": 1040,
-      "COMMERCIAL4": 740,
-      "INDUSTRIAL1": 1510,
-      "INDUSTRIAL2": 1130,
-      "INDUSTRIAL3": 790,
-      "INDUSTRIAL4": 540
+      "RESIDENTIAL": {
+        "R1": 1360,
+        "R2": 1000,
+        "R3": 740,
+        "R4": 500
+      },
+      "COMMERCIAL": {
+        "C1": 1590,
+        "C2": 1340,
+        "C3": 1040,
+        "C4": 740
+      },
+      "INDUSTRIAL": {
+        "I1": 1510,
+        "I2": 1130,
+        "I3": 790,
+        "I4": 540
+      }
     }
   },
   {
     "Group": "D",
     "LOCATIONS": ["OTHER BARANGAY"],
     "RATINGS": {
-      "RESIDENTIAL1": 1000,
-      "RESIDENTIAL2": 740,
-      "RESIDENTIAL3": 500,
-      "RESIDENTIAL4": 290,
-      "COMMERCIAL1": 1340,
-      "COMMERCIAL2": 1040,
-      "COMMERCIAL3": 740,
-      "COMMERCIAL4": 520,
-      "INDUSTRIAL1": 1130,
-      "INDUSTRIAL2": 790,
-      "INDUSTRIAL3": 540,
-      "INDUSTRIAL4": 400
+      "RESIDENTIAL": {
+        "R1": 1000,
+        "R2": 740,
+        "R3": 500,
+        "R4": 290
+      },
+      "COMMERCIAL": {
+        "C1": 1340,
+        "C2": 1040,
+        "C3": 740,
+        "C4": 520
+      },
+      "INDUSTRIAL": {
+        "I1": 1130,
+        "I2": 790,
+        "I3": 540,
+        "I4": 400
+      }
     }
   }
 ]
