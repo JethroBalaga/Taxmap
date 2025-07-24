@@ -1,28 +1,26 @@
+// src/components/MapCon.tsx
 import React, { useEffect, useRef, useState } from 'react';
 import { MapContainer, TileLayer, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet.offline';
 import localforage from 'localforage';
-import { createBlueMarkerIcon } from '../utils/markerIcons';
-import GeoTagging from './GeoTagging';
+import Form from './Modals/Form';
 
-// Define bounds for Manolo Fortich area
+// Constants
 const manoloFortichBounds = L.latLngBounds(
   L.latLng(8.25, 124.75),
   L.latLng(8.45, 124.95)
 );
-
 const DEFAULT_ZOOM = 14;
 const MIN_ZOOM_LOCKED = 14;
 const MIN_ZOOM_UNLOCKED = 12;
 const MAX_ZOOM = 18;
 const TILE_LAYER_URL = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
 
-// Create-outline SVG path
 const CREATE_OUTLINE_PATH = "M384 224v184a40 40 0 0 1-40 40H104a40 40 0 0 1-40-40V168a40 40 0 0 1 40-40h167.48M336 64h112v112M224 288L440 72";
 
-// Custom control with create-outline icon in a circle
+// Create Button
 const CreateOutlineControl = ({ onClick }: { onClick: () => void }) => {
   const map = useMap();
   const controlRef = useRef<any>(null);
@@ -40,40 +38,31 @@ const CreateOutlineControl = ({ onClick }: { onClick: () => void }) => {
             <path fill="currentColor" d="${CREATE_OUTLINE_PATH}"/>
           </svg>
         `;
-
         L.DomEvent.on(link, 'click', (e) => {
           L.DomEvent.stop(e);
           onClick();
         });
-
         return container;
       }
     });
 
     controlRef.current = new CustomControl();
     controlRef.current.addTo(map);
-
-    return () => {
-      controlRef.current?.remove();
-    };
+    return () => controlRef.current?.remove();
   }, [map, onClick]);
 
   return null;
 };
 
-// Component to handle map controls
-const MapController = ({ onOpenGeoTagging }: { onOpenGeoTagging: () => void }) => {
+// Map Controls
+const MapController = ({ onOpenForm }: { onOpenForm: () => void }) => {
   const map = useMap();
-  const [allowZoomOut, setAllowZoomOut] = useState(false);
   const tileLayerRef = useRef<any>(null);
+  const [allowZoomOut, setAllowZoomOut] = useState(false);
 
   const initOfflineLayer = () => {
     localforage.config({
-      driver: [
-        localforage.INDEXEDDB,
-        localforage.WEBSQL,
-        localforage.LOCALSTORAGE
-      ],
+      driver: [localforage.INDEXEDDB, localforage.WEBSQL, localforage.LOCALSTORAGE],
       name: 'ManoloFortichMap',
       storeName: 'map_tiles'
     });
@@ -86,32 +75,19 @@ const MapController = ({ onOpenGeoTagging }: { onOpenGeoTagging: () => void }) =
     });
 
     offlineLayer.on('tileloadend', (event: any) => {
-      if (offlineLayer.saveTile) {
-        offlineLayer.saveTile(event.tile);
-      }
+      if (offlineLayer.saveTile) offlineLayer.saveTile(event.tile);
     });
 
     offlineLayer.addTo(map);
     tileLayerRef.current = offlineLayer;
-
-    return () => {
-      offlineLayer.remove();
-    };
+    return () => offlineLayer.remove();
   };
 
   const enforceRestrictions = () => {
     const currentZoom = map.getZoom();
-
-    if (currentZoom > DEFAULT_ZOOM) {
-      setAllowZoomOut(true);
-    }
-
-    if (!allowZoomOut && currentZoom < DEFAULT_ZOOM) {
-      map.setZoom(DEFAULT_ZOOM);
-    } else if (allowZoomOut && currentZoom < MIN_ZOOM_UNLOCKED) {
-      map.setZoom(MIN_ZOOM_UNLOCKED);
-    }
-
+    if (currentZoom > DEFAULT_ZOOM) setAllowZoomOut(true);
+    if (!allowZoomOut && currentZoom < DEFAULT_ZOOM) map.setZoom(DEFAULT_ZOOM);
+    else if (allowZoomOut && currentZoom < MIN_ZOOM_UNLOCKED) map.setZoom(MIN_ZOOM_UNLOCKED);
     if (!manoloFortichBounds.contains(map.getCenter())) {
       map.panInsideBounds(manoloFortichBounds, { animate: false });
     }
@@ -135,17 +111,13 @@ const MapController = ({ onOpenGeoTagging }: { onOpenGeoTagging: () => void }) =
     };
   }, [map, allowZoomOut]);
 
-  return (
-    <>
-      <CreateOutlineControl onClick={onOpenGeoTagging} />
-    </>
-  );
+  return <CreateOutlineControl onClick={onOpenForm} />;
 };
 
-// Main map component
+// Main Map Component
 const MapCon: React.FC = () => {
   const [isMounted, setIsMounted] = useState(false);
-  const [showGeoTagging, setShowGeoTagging] = useState(false);
+  const [showForm, setShowForm] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
@@ -153,14 +125,7 @@ const MapCon: React.FC = () => {
   }, []);
 
   return (
-    <div style={{
-      height: '100vh',
-      width: '100%',
-      overflow: 'hidden',
-      position: 'relative',
-      margin: 0,
-      padding: 0
-    }}>
+    <div style={{ height: '100vh', width: '100%', overflow: 'hidden', position: 'relative' }}>
       <style>{`
         .create-outline-btn {
           display: flex;
@@ -171,18 +136,11 @@ const MapCon: React.FC = () => {
           background: white;
           border-radius: 50%;
           box-shadow: 0 1px 5px rgba(0,0,0,0.4);
-          transition: all 0.2s;
           cursor: pointer;
         }
         .create-outline-btn:hover {
           background: #f4f4f4;
           transform: scale(1.1);
-        }
-        .create-outline-btn svg {
-          color: #333;
-        }
-        body {
-          overflow: hidden;
         }
       `}</style>
 
@@ -191,12 +149,7 @@ const MapCon: React.FC = () => {
           <MapContainer
             center={[8.35985, 124.869077]}
             zoom={DEFAULT_ZOOM}
-            style={{
-              height: '100%',
-              width: '100%',
-              margin: 0,
-              padding: 0
-            }}
+            style={{ height: '100%', width: '100%' }}
             minZoom={MIN_ZOOM_LOCKED}
             maxZoom={MAX_ZOOM}
             maxBounds={manoloFortichBounds}
@@ -206,13 +159,13 @@ const MapCon: React.FC = () => {
               url={TILE_LAYER_URL}
               attribution='Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics'
             />
-            <MapController onOpenGeoTagging={() => setShowGeoTagging(true)} />
+            <MapController onOpenForm={() => setShowForm(true)} />
           </MapContainer>
 
-          <GeoTagging
-            isOpen={showGeoTagging}
-            onDismiss={() => setShowGeoTagging(false)}
-            onSuccess={() => setShowGeoTagging(false)}
+          <Form
+            isOpen={showForm}
+            onDismiss={() => setShowForm(false)}
+            onSuccess={() => setShowForm(false)}
           />
         </>
       )}

@@ -11,12 +11,11 @@ import {
   IonIcon
 } from '@ionic/react';
 import { closeOutline } from 'ionicons/icons';
-
-import Declarant from '../FormSteps/Declarant';
-import Kind from '../FormSteps/Kind';
-import Classification from '../FormSteps/Classification';
-import Area from '../FormSteps/Area';
-import Next from '../FormSteps/Next';
+import Declarant from '../FormComponents/Declarant';
+import Kind from '../FormComponents/Kind';
+import Classification from '../FormComponents/Classification';
+import Area from '../FormComponents/Area';
+import Next from '../GlobalComponent/Next';
 
 interface FormProps {
   isOpen: boolean;
