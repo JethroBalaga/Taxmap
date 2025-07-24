@@ -13,10 +13,10 @@ import {
 } from '@ionic/react';
 import { close } from 'ionicons/icons';
 import { Capacitor } from '@capacitor/core';
-import ResidenceInput from './GeoTaggingComponents/ResidenceInput';
 import SubmitButton from './GeoTaggingComponents/SubmitButton';
 import { addGeoTag } from './geotags';
 import Declarant from './GeoTaggingComponents/Declarant';
+import Kind from './GeoTaggingComponents/Kind';
 
 interface GeoTaggingProps {
   isOpen: boolean;
@@ -77,7 +77,7 @@ const GeoTagging: React.FC<GeoTaggingProps> = ({
       <IonContent className="ion-padding">
         <form onSubmit={handleSubmit}>
           <Declarant value={declarant} onChange={setDeclarant} />
-          <ResidenceInput value={residence} onChange={setResidence} />
+          <Kind value={residence} onChange={setResidence} />
           <SubmitButton />
         </form>
         
