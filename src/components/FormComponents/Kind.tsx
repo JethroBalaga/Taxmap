@@ -15,9 +15,9 @@ const Kind: React.FC<KindSelectProps> = ({ value, onChange }) => {
         placeholder="Select kind"
         onIonChange={(e) => onChange(e.detail.value)}
       >
-        <IonSelectOption value="Land">Land</IonSelectOption>
-        <IonSelectOption value="Building">Building</IonSelectOption>
-        <IonSelectOption value="Machinery">Machinery</IonSelectOption>
+        <IonSelectOption value="Land">LAND</IonSelectOption>
+        <IonSelectOption value="Building">BUILDING</IonSelectOption>
+        <IonSelectOption value="Machinery">MACHINERY</IonSelectOption>
       </IonSelect>
     </IonItem>
   );

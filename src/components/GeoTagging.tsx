@@ -15,8 +15,8 @@ import { close } from 'ionicons/icons';
 import { Capacitor } from '@capacitor/core';
 import SubmitButton from './GeoTaggingComponents/SubmitButton';
 import { addGeoTag } from './geotags';
-import Declarant from './GeoTaggingComponents/Declarant';
-import Kind from './GeoTaggingComponents/Kind';
+import Declarant from './FormComponents/Declarant';
+import Kind from './FormComponents/Kind';
 
 interface GeoTaggingProps {
   isOpen: boolean;

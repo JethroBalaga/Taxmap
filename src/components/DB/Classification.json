@@ -1,0 +1,11 @@
+[
+  { "Class_ID": 1, "Classification": "RESIDENTIAL" },
+  { "Class_ID": 2, "Classification": "COMMERCIAL" },
+  { "Class_ID": 3, "Classification": "AGRICULTURAL" },
+  { "Class_ID": 4, "Classification": "INDUSTRIAL" },
+  { "Class_ID": 5, "Classification": "MINERAL" },
+  { "Class_ID": 6, "Classification": "TIMBERLAND" },
+  { "Class_ID": 7, "Classification": "GOVERNMENT" },
+  { "Class_ID": 8, "Classification": "SPECIAL" },
+  { "Class_ID": 9, "Classification": "ROAD" }
+]

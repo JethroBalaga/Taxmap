@@ -12,7 +12,7 @@ const Declarant: React.FC<Declarant> = ({ value, onChange }) => {
       <IonLabel position="floating">Declarant</IonLabel>
       <IonInput 
         type="text" 
-        placeholder="Enter address"
+        placeholder="Enter Declarant"
         value={value}
         onIonChange={(e) => onChange(e.detail.value!)}
       />
