@@ -36,6 +36,9 @@ const ActualUsedModal: React.FC<ActualUsedModalProps> = ({ isOpen, onClose, onSu
     onClose();
   };
 
+  // Show Location, Subclass, and Rating only when both actualUse and group are selected
+  const showSecondaryFields = !!formData.actualUse && !!formData.group;
+
   return (
     <IonModal isOpen={isOpen} onDidDismiss={onClose}>
       <IonHeader>
@@ -52,23 +55,31 @@ const ActualUsedModal: React.FC<ActualUsedModalProps> = ({ isOpen, onClose, onSu
             value={formData.actualUse} 
             onChange={handleInputChange('actualUse')} 
           />
+          
           <Group
             value={formData.group} 
             onChange={handleInputChange('group')} 
           />
-          <Location
-            value={formData.location} 
-            onChange={handleInputChange('location')} 
-          />
-          <Subclass />
-          <IonLabel>Rating:</IonLabel>
+          
+          {showSecondaryFields && (
+            <>
+              <Location
+                value={formData.location} 
+                onChange={handleInputChange('location')} 
+              />
+              
+              <Subclass/>
+              
+              <IonLabel>Rating:</IonLabel>
+            </>
+          )}
         </IonList>
 
         <div className="ion-padding">
           <IonButton 
             expand="block" 
             onClick={handleSubmit}
-            disabled={!formData.actualUse || !formData.group || !formData.location}
+            disabled={!formData.actualUse || !formData.group || !formData.location || !formData.subclass}
           >
             Submit
           </IonButton>
