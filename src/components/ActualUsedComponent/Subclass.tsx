@@ -1,61 +1,66 @@
 import React, { useEffect, useState } from 'react';
 import { IonItem, IonLabel, IonSelect, IonSelectOption } from '@ionic/react';
 import actualUsedData from '../DB/ActualUsed.json';
-
-interface RatingGroup {
-  RATINGS: {
-    [classification: string]: {
-      [subclass: string]: any; // Replace 'any' with the actual type if known
-    };
-  };
+import { RatingClassification } from './types';
+interface SubclassProps {
+  value: string;
+  onChange: (value: string) => void;
+  actualUse: string;
 }
 
-const Subclass: React.FC = () => {
+const Subclass: React.FC<SubclassProps> = ({ value, onChange, actualUse }) => {
   const [subclasses, setSubclasses] = useState<string[]>([]);
 
   useEffect(() => {
+    if (!actualUse) {
+      setSubclasses([]);
+      return;
+    }
+
+    // Type-safe filtering
+    const validClassifications: RatingClassification[] = ['RESIDENTIAL', 'COMMERCIAL', 'INDUSTRIAL'];
+    const normalizedActualUse = actualUse.toUpperCase() as RatingClassification;
+
+    if (!validClassifications.includes(normalizedActualUse)) {
+      setSubclasses([]);
+      return;
+    }
+
     const subclassSet = new Set<string>();
 
-    (actualUsedData as RatingGroup[]).forEach(group => {
-      const ratings = group.RATINGS;
-      Object.keys(ratings).forEach((classification) => {
-        const classRatings = ratings[classification];
-        if (classRatings) {
-          Object.keys(classRatings).forEach((key) => {
-            subclassSet.add(key);
-          });
-        }
-      });
+    // No type assertion needed now
+    actualUsedData.forEach(group => {
+      const ratingsForUse = group.RATINGS[normalizedActualUse];
+      if (ratingsForUse) {
+        Object.keys(ratingsForUse).forEach(subclass => {
+          subclassSet.add(subclass);
+        });
+      }
     });
 
-    // Sort result like R1–R4, C1–C4, I1–I4
+    // Sort by prefix (R/C/I) then by number
     const sorted = Array.from(subclassSet).sort((a, b) => {
-      const getPrefix = (str: string) => str[0];
-      const getNumber = (str: string) => parseInt(str.slice(1), 10);
-      
-      // Define a type for the prefix order mapping
-      type PrefixOrder = {
-        [key: string]: number;
-      };
-      
-      const prefixOrder: PrefixOrder = { R: 1, C: 2, I: 3 };
-      
-      const prefixA = getPrefix(a);
-      const prefixB = getPrefix(b);
-      
-      // Fallback to 0 if prefix is not found (shouldn't happen with your data)
-      return (prefixOrder[prefixA] || 0) - (prefixOrder[prefixB] || 0) ||
+      const prefixOrder = { R: 1, C: 2, I: 3 };
+      const getPrefix = (s: string) => s[0] as keyof typeof prefixOrder;
+      const getNumber = (s: string) => parseInt(s.slice(1), 10);
+
+      return prefixOrder[getPrefix(a)] - prefixOrder[getPrefix(b)] || 
              getNumber(a) - getNumber(b);
     });
 
     setSubclasses(sorted);
-  }, []);
+  }, [actualUse]);
 
   return (
     <IonItem>
       <IonLabel>Subclass</IonLabel>
-      <IonSelect placeholder="Select Subclass">
-        {subclasses.map((subclass) => (
+      <IonSelect
+        value={value}
+        placeholder={actualUse ? "Select Subclass" : "Select Actual Use First"}
+        onIonChange={e => onChange(e.detail.value)}
+        disabled={!actualUse}
+      >
+        {subclasses.map(subclass => (
           <IonSelectOption key={subclass} value={subclass}>
             {subclass}
           </IonSelectOption>
