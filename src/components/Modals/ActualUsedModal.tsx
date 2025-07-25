@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { IonModal, IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, IonButton, IonList } from '@ionic/react';
+import { IonModal, IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, IonButton, IonList, IonLabel } from '@ionic/react';
 import ActualUsed from '../ActualUsedComponent/ActualUsed';
 import Group from '../ActualUsedComponent/Group';
 import Location from '../ActualUsedComponent/Location';
@@ -61,6 +61,7 @@ const ActualUsedModal: React.FC<ActualUsedModalProps> = ({ isOpen, onClose, onSu
             onChange={handleInputChange('location')} 
           />
           <Subclass />
+          <IonLabel>Rating:</IonLabel>
         </IonList>
 
         <div className="ion-padding">
