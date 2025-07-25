@@ -1,9 +1,16 @@
+// src/components/GlobalComponent/Next.tsx
 import React from 'react';
 import { IonButton } from '@ionic/react';
 
-const Next: React.FC = () => {
+interface NextProps {
+  onClick?: () => void;
+  color?: string;
+  expand?: 'full' | 'block';
+}
+
+const Next: React.FC<NextProps> = ({ onClick, color = 'primary', expand = 'block' }) => {
   return (
-    <IonButton expand="block" color="primary">
+    <IonButton expand={expand} color={color} onClick={onClick}>
       Next
     </IonButton>
   );
