@@ -1,14 +1,16 @@
-// types.ts
-export interface RatingGroup {
+export type RatingClassification = 'RESIDENTIAL' | 'COMMERCIAL' | 'INDUSTRIAL';
+export type ResidentialSubclass = 'R1' | 'R2' | 'R3' | 'R4';
+export type CommercialSubclass = 'C1' | 'C2' | 'C3' | 'C4';
+export type IndustrialSubclass = 'I1' | 'I2' | 'I3' | 'I4';
+
+export type RatingSubclass = ResidentialSubclass | CommercialSubclass | IndustrialSubclass;
+
+export interface GroupData {
   Group: string;
   LOCATIONS: string[];
   RATINGS: {
-    RESIDENTIAL?: Record<string, number>;
-    COMMERCIAL?: Record<string, number>;
-    INDUSTRIAL?: Record<string, number>;
+    RESIDENTIAL: Record<ResidentialSubclass, number>;
+    COMMERCIAL: Record<CommercialSubclass, number>;
+    INDUSTRIAL: Record<IndustrialSubclass, number>;
   };
 }
-
-// Or more generally if you prefer:
-export type RatingClassification = 'RESIDENTIAL' | 'COMMERCIAL' | 'INDUSTRIAL';
-export type SubclassType = `R${number}` | `C${number}` | `I${number}`;
