@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { IonModal, IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, IonButton, IonList, IonLabel } from '@ionic/react';
+import { IonModal, IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, IonButton, IonList, IonLabel,IonItem} from '@ionic/react';
 import ActualUsed from '../ActualUsedComponent/ActualUsed';
 import Group from '../ActualUsedComponent/Group';
 import Location from '../ActualUsedComponent/Location';
@@ -27,7 +27,9 @@ const ActualUsedModal: React.FC<ActualUsedModalProps> = ({ isOpen, onClose, onSu
   const handleInputChange = (field: keyof typeof formData) => (value: string) => {
     setFormData(prev => ({
       ...prev,
-      [field]: value
+      [field]: value,
+      // Reset location when group changes
+      ...(field === 'group' && { location: '' })
     }));
   };
 
@@ -36,7 +38,6 @@ const ActualUsedModal: React.FC<ActualUsedModalProps> = ({ isOpen, onClose, onSu
     onClose();
   };
 
-  // Show Location, Subclass, and Rating only when both actualUse and group are selected
   const showSecondaryFields = !!formData.actualUse && !!formData.group;
 
   return (
@@ -64,13 +65,18 @@ const ActualUsedModal: React.FC<ActualUsedModalProps> = ({ isOpen, onClose, onSu
           {showSecondaryFields && (
             <>
               <Location
-                value={formData.location} 
-                onChange={handleInputChange('location')} 
+                value={formData.location}
+                onChange={handleInputChange('location')}
+                group={formData.group} // Pass the selected group
               />
               
-              <Subclass/>
+              <Subclass
+              />
               
-              <IonLabel>Rating:</IonLabel>
+              <IonItem>
+                <IonLabel>Rating: </IonLabel>
+                {/* Rating display logic would go here */}
+              </IonItem>
             </>
           )}
         </IonList>
