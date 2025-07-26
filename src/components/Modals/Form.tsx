@@ -86,7 +86,7 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
       <ActualUsedModal
         isOpen={showActualUsedModal}
         onClose={() => setShowActualUsedModal(false)}
-        onSubmit={handleActualUsedSubmit}
+        onNext={handleActualUsedSubmit}
       />
     </>
   );

@@ -10,11 +10,12 @@ import Location from '../ActualUsedComponent/Location';
 import Subclass from '../ActualUsedComponent/Subclass';
 import actualUsedData from '../DB/ActualUsed.json';
 import { GroupData, RatingClassification, RatingSubclass } from '../ActualUsedComponent/types';
+import Next from '../GlobalComponent/Next';
 
 interface ActualUsedModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (formData: {
+  onNext: (formData: {
     actualUse: string;
     group: string;
     location: string;
@@ -23,7 +24,7 @@ interface ActualUsedModalProps {
   }) => void;
 }
 
-const ActualUsedModal: React.FC<ActualUsedModalProps> = ({ isOpen, onClose, onSubmit }) => {
+const ActualUsedModal: React.FC<ActualUsedModalProps> = ({ isOpen, onClose, onNext }) => {
   const [formData, setFormData] = useState({
     actualUse: '',
     group: '',
@@ -70,8 +71,8 @@ const ActualUsedModal: React.FC<ActualUsedModalProps> = ({ isOpen, onClose, onSu
     calculateRating();
   }, [formData.actualUse, formData.group, formData.subclass]);
 
-  const handleSubmit = () => {
-    onSubmit(formData);
+  const handleNextClick= () => {
+    onNext(formData);
     onClose();
   };
 
@@ -131,13 +132,7 @@ const ActualUsedModal: React.FC<ActualUsedModalProps> = ({ isOpen, onClose, onSu
         </IonList>
 
         <div className="ion-padding">
-          <IonButton
-            expand="block"
-            onClick={handleSubmit}
-            disabled={!isFormValid}
-          >
-            Submit
-          </IonButton>
+          <Next onClick={handleNextClick} disabled={!isFormValid} />
         </div>
       </IonContent>
     </IonModal>
