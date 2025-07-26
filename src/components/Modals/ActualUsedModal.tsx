@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   IonModal, IonHeader, IonToolbar, IonTitle,
   IonContent, IonButtons, IonButton,
-  IonList, IonLabel, IonItem, IonText
+  IonList, IonLabel, IonItem, IonText, IonNote
 } from '@ionic/react';
 import ActualUsed from '../ActualUsedComponent/ActualUsed';
 import Group from '../ActualUsedComponent/Group';
@@ -22,9 +22,22 @@ interface ActualUsedModalProps {
     subclass: string;
     rating: number;
   }) => void;
+  // Add these new props to receive values from Form
+  declarant: string;
+  kind: string;
+  classification: string;
+  area: number;
 }
 
-const ActualUsedModal: React.FC<ActualUsedModalProps> = ({ isOpen, onClose, onNext }) => {
+const ActualUsedModal: React.FC<ActualUsedModalProps> = ({ 
+  isOpen, 
+  onClose, 
+  onNext,
+  declarant,
+  kind,
+  classification,
+  area
+}) => {
   const [formData, setFormData] = useState({
     actualUse: '',
     group: '',
@@ -71,7 +84,7 @@ const ActualUsedModal: React.FC<ActualUsedModalProps> = ({ isOpen, onClose, onNe
     calculateRating();
   }, [formData.actualUse, formData.group, formData.subclass]);
 
-  const handleNextClick= () => {
+  const handleNextClick = () => {
     onNext(formData);
     onClose();
   };
@@ -93,6 +106,24 @@ const ActualUsedModal: React.FC<ActualUsedModalProps> = ({ isOpen, onClose, onNe
       </IonHeader>
       <IonContent>
         <IonList>
+          {/* Display the values passed from Form */}
+          <IonItem>
+            <IonLabel>Declarant:</IonLabel>
+            <IonNote slot="end">{declarant}</IonNote>
+          </IonItem>
+          <IonItem>
+            <IonLabel>Kind:</IonLabel>
+            <IonNote slot="end">{kind}</IonNote>
+          </IonItem>
+          <IonItem>
+            <IonLabel>Classification:</IonLabel>
+            <IonNote slot="end">{classification}</IonNote>
+          </IonItem>
+          <IonItem>
+            <IonLabel>Area:</IonLabel>
+            <IonNote slot="end">{area} m²</IonNote>
+          </IonItem>
+
           <ActualUsed
             value={formData.actualUse}
             onChange={handleInputChange('actualUse')}
