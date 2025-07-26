@@ -106,24 +106,6 @@ const ActualUsedModal: React.FC<ActualUsedModalProps> = ({
       </IonHeader>
       <IonContent>
         <IonList>
-          {/* Display the values passed from Form */}
-          <IonItem>
-            <IonLabel>Declarant:</IonLabel>
-            <IonNote slot="end">{declarant}</IonNote>
-          </IonItem>
-          <IonItem>
-            <IonLabel>Kind:</IonLabel>
-            <IonNote slot="end">{kind}</IonNote>
-          </IonItem>
-          <IonItem>
-            <IonLabel>Classification:</IonLabel>
-            <IonNote slot="end">{classification}</IonNote>
-          </IonItem>
-          <IonItem>
-            <IonLabel>Area:</IonLabel>
-            <IonNote slot="end">{area} m²</IonNote>
-          </IonItem>
-
           <ActualUsed
             value={formData.actualUse}
             onChange={handleInputChange('actualUse')}
