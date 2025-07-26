@@ -1,5 +1,5 @@
 // src/components/Modals/Form.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   IonModal,
   IonHeader,
@@ -30,9 +30,21 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
   const [classification, setClassification] = useState('');
   const [area, setArea] = useState<number>(0);
   const [showActualUsedModal, setShowActualUsedModal] = useState(false);
+  const [isFormValid, setIsFormValid] = useState(false);
+
+  // Check form validity whenever any field changes
+  useEffect(() => {
+    setIsFormValid(
+      declarant.trim() !== '' && 
+      kind.trim() !== '' && 
+      classification.trim() !== '' && 
+      area > 0
+    );
+  }, [declarant, kind, classification, area]);
 
   const handleNextClick = () => {
-    // Validate form fields if needed
+    if (!isFormValid) return; // Prevent proceeding if form isn't valid
+    
     setShowActualUsedModal(true);
   };
 
@@ -67,7 +79,7 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
           <Kind value={kind} onChange={setKind} />
           <Classification value={classification} onChange={setClassification} />
           <Area value={area} onChange={setArea} />
-          <Next onClick={handleNextClick} />
+          <Next onClick={handleNextClick} disabled={!isFormValid} />
         </IonContent>
       </IonModal>
 
