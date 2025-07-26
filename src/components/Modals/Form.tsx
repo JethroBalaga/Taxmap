@@ -35,16 +35,16 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
   // Check form validity whenever any field changes
   useEffect(() => {
     setIsFormValid(
-      declarant.trim() !== '' && 
-      kind.trim() !== '' && 
-      classification.trim() !== '' && 
+      declarant.trim() !== '' &&
+      kind.trim() !== '' &&
+      classification.trim() !== '' &&
       area > 0
     );
   }, [declarant, kind, classification, area]);
 
   const handleNextClick = () => {
     if (!isFormValid) return; // Prevent proceeding if form isn't valid
-    
+
     setShowActualUsedModal(true);
   };
 
@@ -83,10 +83,15 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
         </IonContent>
       </IonModal>
 
+      // In your Form component, update the ActualUsedModal usage:
       <ActualUsedModal
         isOpen={showActualUsedModal}
         onClose={() => setShowActualUsedModal(false)}
         onNext={handleActualUsedSubmit}
+        declarant={declarant.toUpperCase()}
+        kind={kind}
+        classification={classification}
+        area={area}
       />
     </>
   );
