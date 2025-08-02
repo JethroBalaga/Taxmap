@@ -31,26 +31,41 @@ interface CalculationModalProps {
 const CalculationModal: React.FC<CalculationModalProps> = ({
     isOpen,
     onClose,
+    declarant,
+    kind,
+    classification,
     area,
+    actualUse,
+    group,
+    location,
+    subclass,
     rating
 }) => {
     const marketValue = area * rating;
     const [adjustmentValue, setAdjustmentValue] = useState('0%');
-    const [AssesmentValue, setAssesmentValue] = useState('0%');
+    const [assessmentValue, setAssessmentValue] = useState('0%');
     const [adjustedValue, setAdjustedValue] = useState(marketValue);
+    const [assessedValue, setAssessedValue] = useState(0);
 
     useEffect(() => {
-        // Calculate adjusted value whenever adjustment or market value changes
+        // Calculate adjusted value
         const percentage = parseFloat(adjustmentValue.replace('%', '')) / 100;
         const adjustmentAmount = marketValue * percentage;
         setAdjustedValue(marketValue + adjustmentAmount);
     }, [adjustmentValue, marketValue]);
 
+    useEffect(() => {
+        // Calculate assessed value
+        const assessmentPercentage = parseFloat(assessmentValue.replace('%', '')) / 100;
+        const baseValue = adjustmentValue === '0%' ? marketValue : adjustedValue;
+        setAssessedValue(baseValue * assessmentPercentage);
+    }, [assessmentValue, adjustedValue, adjustmentValue, marketValue]);
+
     return (
         <IonModal isOpen={isOpen} onDidDismiss={onClose}>
             <IonHeader>
                 <IonToolbar>
-                    <IonTitle>Adjustment</IonTitle>
+                    <IonTitle>Tax Calculation</IonTitle>
                     <IonButtons slot="end">
                         <IonButton onClick={onClose}>Close</IonButton>
                     </IonButtons>
@@ -67,6 +82,7 @@ const CalculationModal: React.FC<CalculationModalProps> = ({
                     <IonNote slot="end">₱{rating.toLocaleString()}</IonNote>
                 </IonItem>
 
+                {/* Calculation Section */}
                 <IonItem>
                     <IonLabel>Market Value:</IonLabel>
                     <IonNote slot="end">₱{marketValue.toLocaleString()}</IonNote>
@@ -79,31 +95,35 @@ const CalculationModal: React.FC<CalculationModalProps> = ({
                     placeholder="Enter percentage"
                 />
 
-                <IonItem>
-                    <IonLabel>Adjustment Percentage:</IonLabel>
-                    <IonNote slot="end">{adjustmentValue}</IonNote>
-                </IonItem>
-                <IonItem>
-                    <IonLabel>Adjustment Amount:</IonLabel>
-                    <IonNote slot="end">
-                        ₱{(adjustedValue - marketValue).toLocaleString()}
-                    </IonNote>
-                </IonItem>
-                <IonItem>
-                    <IonLabel>Adjusted Value:</IonLabel>
-                    <IonNote slot="end">₱{adjustedValue.toLocaleString()}</IonNote>
-                </IonItem>
+                {adjustmentValue !== '0%' && (
+                    <>
+                        <IonItem>
+                            <IonLabel>Adjustment Percentage:</IonLabel>
+                            <IonNote slot="end">{adjustmentValue}</IonNote>
+                        </IonItem>
+                        <IonItem>
+                            <IonLabel>Adjustment Amount:</IonLabel>
+                            <IonNote slot="end">
+                                ₱{(adjustedValue - marketValue).toLocaleString()}
+                            </IonNote>
+                        </IonItem>
+                        <IonItem>
+                            <IonLabel>Adjusted Value:</IonLabel>
+                            <IonNote slot="end">₱{adjustedValue.toLocaleString()}</IonNote>
+                        </IonItem>
+                    </>
+                )}
 
-                 <AssessmentLevel
-                    label="Assesment Level"
-                    value={AssesmentValue}
-                    onChange={setAssesmentValue}
+                <AssessmentLevel
+                    label="Assessment Level"
+                    value={assessmentValue}
+                    onChange={setAssessmentValue}
                     placeholder="Enter percentage"
                 />
 
                 <IonItem>
                     <IonLabel>Assessed Value:</IonLabel>
-                    <IonNote slot="end">TBD</IonNote>
+                    <IonNote slot="end">₱{assessedValue.toLocaleString()}</IonNote>
                 </IonItem>
 
                 <IonItem>
