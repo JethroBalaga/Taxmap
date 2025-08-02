@@ -9,7 +9,7 @@ import Group from '../ActualUsedComponent/Group';
 import Location from '../ActualUsedComponent/Location';
 import Subclass from '../ActualUsedComponent/Subclass';
 import actualUsedData from '../DB/ActualUsed.json';
-import { GroupData, RatingClassification, RatingSubclass } from '../ActualUsedComponent/types';
+import { GroupData, RatingClassification} from '../ActualUsedComponent/types';
 import Next from '../GlobalComponent/Next';
 import CalculationModal from './CalculationModal';
 
