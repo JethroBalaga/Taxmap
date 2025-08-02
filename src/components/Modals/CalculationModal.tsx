@@ -12,6 +12,7 @@ import {
     IonNote
 } from '@ionic/react';
 import Adjustment from '../CalculationModal/Adjustment';
+import AssessmentLevel from '../CalculationModal/AssessmentLevel';
 
 interface CalculationModalProps {
     isOpen: boolean;
@@ -35,6 +36,7 @@ const CalculationModal: React.FC<CalculationModalProps> = ({
 }) => {
     const marketValue = area * rating;
     const [adjustmentValue, setAdjustmentValue] = useState('0%');
+    const [AssesmentValue, setAssesmentValue] = useState('0%');
     const [adjustedValue, setAdjustedValue] = useState(marketValue);
 
     useEffect(() => {
@@ -91,6 +93,13 @@ const CalculationModal: React.FC<CalculationModalProps> = ({
                     <IonLabel>Adjusted Value:</IonLabel>
                     <IonNote slot="end">₱{adjustedValue.toLocaleString()}</IonNote>
                 </IonItem>
+
+                 <AssessmentLevel
+                    label="Adjustment"
+                    value={AssesmentValue}
+                    onChange={setAssesmentValue}
+                    placeholder="Enter percentage"
+                />
 
                 <IonItem>
                     <IonLabel>Assessed Value:</IonLabel>
