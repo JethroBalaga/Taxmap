@@ -3,9 +3,8 @@ import { IonItem, IonLabel, IonInput } from '@ionic/react';
 
 interface AdjustmentProps {
   label: string;
-  value: string | number;
-  onChange: (value: string) => void;
-  type?: 'text' | 'number' | 'email' | 'password';
+  value: number;
+  onChange: (value: number) => void;
   placeholder?: string;
 }
 
@@ -13,17 +12,19 @@ const Adjustment: React.FC<AdjustmentProps> = ({
   label,
   value,
   onChange,
-  type = 'text',
   placeholder = '',
 }) => {
   return (
     <IonItem>
       <IonLabel position="floating">{label}</IonLabel>
       <IonInput
-        type={type}
+        type="number"
         value={value}
         placeholder={placeholder}
-        onIonChange={(e) => onChange(e.detail.value!)}
+        onIonChange={(e) => {
+          const newValue = parseFloat(e.detail.value || '0');
+          onChange(isNaN(newValue) ? 0 : newValue);
+        }}
       />
     </IonItem>
   );
