@@ -95,7 +95,7 @@ const CalculationModal: React.FC<CalculationModalProps> = ({
                 </IonItem>
 
                  <AssessmentLevel
-                    label="Adjustment"
+                    label="Assesment Level"
                     value={AssesmentValue}
                     onChange={setAssesmentValue}
                     placeholder="Enter percentage"
