@@ -45,9 +45,10 @@ const CalculationModal: React.FC<CalculationModalProps> = ({
     const marketValue = area * rating;
     const [adjustmentValue, setAdjustmentValue] = useState('0%');
     const [assessmentValue, setAssessmentValue] = useState('0%');
-    const [TaxrateValue, setTaxrateValue] = useState('0%');
+    const [taxRateValue, setTaxRateValue] = useState('0%');
     const [adjustedValue, setAdjustedValue] = useState(marketValue);
     const [assessedValue, setAssessedValue] = useState(0);
+    const [propertyTax, setPropertyTax] = useState(0);
 
     useEffect(() => {
         // Calculate adjusted value
@@ -60,8 +61,13 @@ const CalculationModal: React.FC<CalculationModalProps> = ({
         // Calculate assessed value
         const assessmentPercentage = parseFloat(assessmentValue.replace('%', '')) / 100;
         const baseValue = adjustmentValue === '0%' ? marketValue : adjustedValue;
-        setAssessedValue(baseValue * assessmentPercentage);
-    }, [assessmentValue, adjustedValue, adjustmentValue, marketValue]);
+        const newAssessedValue = baseValue * assessmentPercentage;
+        setAssessedValue(newAssessedValue);
+        
+        // Calculate property tax whenever assessed value or tax rate changes
+        const taxRate = parseFloat(taxRateValue.replace('%', '')) / 100;
+        setPropertyTax(newAssessedValue * taxRate);
+    }, [assessmentValue, adjustedValue, adjustmentValue, marketValue, taxRateValue]);
 
     return (
         <IonModal isOpen={isOpen} onDidDismiss={onClose}>
@@ -75,9 +81,38 @@ const CalculationModal: React.FC<CalculationModalProps> = ({
             </IonHeader>
 
             <IonContent>
+                {/* Property Information Section */}
+                <IonItem>
+                    <IonLabel>Declarant:</IonLabel>
+                    <IonNote slot="end">{declarant}</IonNote>
+                </IonItem>
+                <IonItem>
+                    <IonLabel>Kind:</IonLabel>
+                    <IonNote slot="end">{kind}</IonNote>
+                </IonItem>
+                <IonItem>
+                    <IonLabel>Classification:</IonLabel>
+                    <IonNote slot="end">{classification}</IonNote>
+                </IonItem>
                 <IonItem>
                     <IonLabel>Area:</IonLabel>
                     <IonNote slot="end">{area.toLocaleString()} sqm</IonNote>
+                </IonItem>
+                <IonItem>
+                    <IonLabel>Actual Use:</IonLabel>
+                    <IonNote slot="end">{actualUse}</IonNote>
+                </IonItem>
+                <IonItem>
+                    <IonLabel>Group:</IonLabel>
+                    <IonNote slot="end">{group}</IonNote>
+                </IonItem>
+                <IonItem>
+                    <IonLabel>Location:</IonLabel>
+                    <IonNote slot="end">{location}</IonNote>
+                </IonItem>
+                <IonItem>
+                    <IonLabel>Subclass:</IonLabel>
+                    <IonNote slot="end">{subclass}</IonNote>
                 </IonItem>
                 <IonItem>
                     <IonLabel>Rating:</IonLabel>
@@ -130,14 +165,14 @@ const CalculationModal: React.FC<CalculationModalProps> = ({
 
                 <TaxRate
                     label="Tax Rate"
-                    value={TaxrateValue}
-                    onChange={setTaxrateValue}
+                    value={taxRateValue}
+                    onChange={setTaxRateValue}
                     placeholder="Enter percentage"
                 />
 
                 <IonItem>
                     <IonLabel>Real Property Tax:</IonLabel>
-                    <IonNote slot="end">TBD</IonNote>
+                    <IonNote slot="end">₱{propertyTax.toLocaleString()}</IonNote>
                 </IonItem>
             </IonContent>
         </IonModal>
