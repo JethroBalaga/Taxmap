@@ -155,6 +155,16 @@ const ActualUsedModal: React.FC<ActualUsedModalProps> = ({
       <CalculationModal
         isOpen={showCalculationdModal}
         onClose={() => setShowCalculationModal(false)}
+        // Pass all the required props
+        declarant={declarant}
+        kind={kind}
+        classification={classification}
+        area={area}
+        actualUse={formData.actualUse}
+        group={formData.group}
+        location={formData.location}
+        subclass={formData.subclass}
+        rating={formData.rating}
       />
     </>
   );
