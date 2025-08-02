@@ -1,53 +1,29 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
-  IonButton,
   IonModal,
   IonHeader,
   IonToolbar,
   IonTitle,
-  IonContent,
   IonButtons,
-  IonList,
+  IonButton,
+  IonContent,
 } from '@ionic/react';
 import Adjustment from '../CalculationModal/Adjustment';
-
-interface Field {
-  key: string;
-  label: string;
-  placeholder?: string;
-}
 
 interface CalculationModalProps {
   isOpen: boolean;
   onClose: () => void;
-  fields: Field[];
-  initialValues?: Record<string, number>;
-  onSave?: (values: Record<string, number>) => void;
 }
 
 const CalculationModal: React.FC<CalculationModalProps> = ({
   isOpen,
   onClose,
-  fields,
-  initialValues = {},
-  onSave,
 }) => {
-  const [formValues, setFormValues] = useState<Record<string, number>>(initialValues);
-
-  const handleChange = (key: string, value: number) => {
-    setFormValues((prev) => ({ ...prev, [key]: value }));
-  };
-
-  const handleSave = () => {
-    onSave?.(formValues);
-    onClose();
-  };
-
   return (
     <IonModal isOpen={isOpen} onDidDismiss={onClose}>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>Adjust Values</IonTitle>
+          <IonTitle>Adjustment</IonTitle>
           <IonButtons slot="end">
             <IonButton onClick={onClose}>Close</IonButton>
           </IonButtons>
@@ -55,21 +31,11 @@ const CalculationModal: React.FC<CalculationModalProps> = ({
       </IonHeader>
 
       <IonContent>
-        <IonList>
-          {fields.map((field) => (
-            <Adjustment
-              key={field.key}
-              label={field.label}
-              value={formValues[field.key] ?? 0}
-              onChange={(value) => handleChange(field.key, value)}
-              placeholder={field.placeholder}
-            />
-          ))}
-        </IonList>
-
-        <IonButton expand="block" onClick={handleSave} className="ion-margin">
-          Save
-        </IonButton>
+        <Adjustment
+          label="Adjustment Value"
+          value={0}
+          onChange={(val) => console.log('Adjustment:', val)}
+        />
       </IonContent>
     </IonModal>
   );

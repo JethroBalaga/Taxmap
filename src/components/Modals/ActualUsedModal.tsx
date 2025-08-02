@@ -11,6 +11,7 @@ import Subclass from '../ActualUsedComponent/Subclass';
 import actualUsedData from '../DB/ActualUsed.json';
 import { GroupData, RatingClassification, RatingSubclass } from '../ActualUsedComponent/types';
 import Next from '../GlobalComponent/Next';
+import CalculationModal from './CalculationModal';
 
 interface ActualUsedModalProps {
   isOpen: boolean;
@@ -96,60 +97,66 @@ const ActualUsedModal: React.FC<ActualUsedModalProps> = ({
     !!formData.subclass;
 
   return (
-    <IonModal isOpen={isOpen} onDidDismiss={onClose}>
-      <IonHeader>
-        <IonToolbar>
-          <IonTitle>Property Details</IonTitle>
-          <IonButtons slot="end">
-            <IonButton onClick={onClose}>Close</IonButton>
-          </IonButtons>
-        </IonToolbar>
-      </IonHeader>
-      <IonContent>
-        <IonList>
-          <ActualUsed
-            value={formData.actualUse}
-            onChange={handleInputChange('actualUse')}
-          />
-
-          <Group
-            value={formData.group}
-            onChange={handleInputChange('group')}
-          />
-
-          {formData.group && (
-            <Location
-              value={formData.location}
-              onChange={handleInputChange('location')}
-              group={formData.group}
+    <>
+      <IonModal isOpen={isOpen} onDidDismiss={onClose}>
+        <IonHeader>
+          <IonToolbar>
+            <IonTitle>Property Details</IonTitle>
+            <IonButtons slot="end">
+              <IonButton onClick={onClose}>Close</IonButton>
+            </IonButtons>
+          </IonToolbar>
+        </IonHeader>
+        <IonContent>
+          <IonList>
+            <ActualUsed
+              value={formData.actualUse}
+              onChange={handleInputChange('actualUse')}
             />
-          )}
 
-          {formData.actualUse && (
-            <Subclass
-              value={formData.subclass}
-              onChange={handleInputChange('subclass')}
-              actualUse={formData.actualUse}
+            <Group
+              value={formData.group}
+              onChange={handleInputChange('group')}
             />
-          )}
 
-          <IonItem>
-            <IonLabel>Rating:</IonLabel>
-            <IonText color="primary">
-              {formData.rating > 0 ? (
-                `₱${formData.rating.toLocaleString()}`
-              ) : (
-                <span style={{ color: '#999' }}>Select all fields</span>
-              )}
-            </IonText>
-          </IonItem>
-        </IonList>
+            {formData.group && (
+              <Location
+                value={formData.location}
+                onChange={handleInputChange('location')}
+                group={formData.group}
+              />
+            )}
 
-        <div className="ion-padding">
-          <Next onClick={handleNextClick} disabled={!isFormValid} />
-        </div>
-      </IonContent>
-    </IonModal>
+            {formData.actualUse && (
+              <Subclass
+                value={formData.subclass}
+                onChange={handleInputChange('subclass')}
+                actualUse={formData.actualUse}
+              />
+            )}
+
+            <IonItem>
+              <IonLabel>Rating:</IonLabel>
+              <IonText color="primary">
+                {formData.rating > 0 ? (
+                  `₱${formData.rating.toLocaleString()}`
+                ) : (
+                  <span style={{ color: '#999' }}>Select all fields</span>
+                )}
+              </IonText>
+            </IonItem>
+          </IonList>
+
+          <div className="ion-padding">
+            <Next onClick={handleNextClick} disabled={!isFormValid} />
+          </div>
+        </IonContent>
+      </IonModal>
+      <CalculationModal
+        isOpen={showCalculationdModal}
+        onClose={() => setShowCalculationModal(false)}
+      />
+    </>
   );
 };
 
