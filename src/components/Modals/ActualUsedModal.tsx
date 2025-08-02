@@ -29,9 +29,9 @@ interface ActualUsedModalProps {
   area: number;
 }
 
-const ActualUsedModal: React.FC<ActualUsedModalProps> = ({ 
-  isOpen, 
-  onClose, 
+const ActualUsedModal: React.FC<ActualUsedModalProps> = ({
+  isOpen,
+  onClose,
   onNext,
   declarant,
   kind,
@@ -45,7 +45,7 @@ const ActualUsedModal: React.FC<ActualUsedModalProps> = ({
     subclass: '',
     rating: 0
   });
-
+  const [showCalculationdModal, setShowCalculationModal] = useState(false);
   const handleInputChange = (field: keyof typeof formData) => (value: string) => {
     const updates: Partial<typeof formData> = {
       [field]: value,
@@ -89,10 +89,10 @@ const ActualUsedModal: React.FC<ActualUsedModalProps> = ({
     onClose();
   };
 
-  const isFormValid = !!formData.actualUse && 
-                     !!formData.group && 
-                     !!formData.location && 
-                     !!formData.subclass;
+  const isFormValid = !!formData.actualUse &&
+    !!formData.group &&
+    !!formData.location &&
+    !!formData.subclass;
 
   return (
     <IonModal isOpen={isOpen} onDidDismiss={onClose}>
