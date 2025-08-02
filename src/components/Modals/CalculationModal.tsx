@@ -80,6 +80,10 @@ const CalculationModal: React.FC<CalculationModalProps> = ({
                 />
 
                 <IonItem>
+                    <IonLabel>Adjusted Value:</IonLabel>
+                    <IonNote slot="end">{area.toLocaleString()} sqm</IonNote>
+                </IonItem>
+                <IonItem>
                     <IonLabel>Assessed Value:</IonLabel>
                     <IonNote slot="end">TBD</IonNote>
                 </IonItem>
