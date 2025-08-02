@@ -42,6 +42,9 @@ const CalculationModal: React.FC<CalculationModalProps> = ({
   subclass,
   rating
 }) => {
+  // Calculate market value (Area × Rating)
+  const marketValue = area * rating;
+
   return (
     <IonModal isOpen={isOpen} onDidDismiss={onClose}>
       <IonHeader>
@@ -56,16 +59,16 @@ const CalculationModal: React.FC<CalculationModalProps> = ({
       <IonContent>
         <IonItem>
           <IonLabel>Area:</IonLabel>
-          <IonNote slot="end">{area} sqm</IonNote>
+          <IonNote slot="end">{area.toLocaleString()} sqm</IonNote>
         </IonItem>
         <IonItem>
           <IonLabel>Rating:</IonLabel>
           <IonNote slot="end">₱{rating.toLocaleString()}</IonNote>
         </IonItem>
 
-         <IonItem>
+        <IonItem>
           <IonLabel>Market Value:</IonLabel>
-          <IonNote slot="end">TBD</IonNote>
+          <IonNote slot="end">₱{marketValue.toLocaleString()}</IonNote>
         </IonItem>
 
         <Adjustment
