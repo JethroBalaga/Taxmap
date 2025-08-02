@@ -7,6 +7,7 @@ import {
   IonButtons,
   IonButton,
   IonContent,
+  IonLabel,
 } from '@ionic/react';
 import Adjustment from '../CalculationModal/Adjustment';
 
@@ -14,7 +15,6 @@ interface CalculationModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
-
 const CalculationModal: React.FC<CalculationModalProps> = ({
   isOpen,
   onClose,
@@ -36,6 +36,9 @@ const CalculationModal: React.FC<CalculationModalProps> = ({
           value={0}
           onChange={(val) => console.log('Adjustment:', val)}
         />
+        <IonLabel>Assestment Level:</IonLabel>
+        <IonLabel>Tax Rate:</IonLabel>
+        <IonLabel>Real Porperty Tax:</IonLabel>
       </IonContent>
     </IonModal>
   );
