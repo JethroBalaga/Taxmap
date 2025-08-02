@@ -85,8 +85,9 @@ const ActualUsedModal: React.FC<ActualUsedModalProps> = ({
   }, [formData.actualUse, formData.group, formData.subclass]);
 
   const handleNextClick = () => {
-    onNext(formData);
-    onClose();
+    if (!isFormValid) return; // Prevent proceeding if form isn't valid
+
+    setShowCalculationModal(true);
   };
 
   const isFormValid = !!formData.actualUse &&
