@@ -55,48 +55,17 @@ const CalculationModal: React.FC<CalculationModalProps> = ({
 
       <IonContent>
         <IonItem>
-          <IonLabel>Declarant:</IonLabel>
-          <IonNote slot="end">{declarant}</IonNote>
-        </IonItem>
-        
-        <IonItem>
-          <IonLabel>Kind:</IonLabel>
-          <IonNote slot="end">{kind}</IonNote>
-        </IonItem>
-        
-        <IonItem>
-          <IonLabel>Classification:</IonLabel>
-          <IonNote slot="end">{classification}</IonNote>
-        </IonItem>
-        
-        <IonItem>
           <IonLabel>Area:</IonLabel>
           <IonNote slot="end">{area} sqm</IonNote>
         </IonItem>
-        
-        <IonItem>
-          <IonLabel>Actual Use:</IonLabel>
-          <IonNote slot="end">{actualUse}</IonNote>
-        </IonItem>
-        
-        <IonItem>
-          <IonLabel>Group:</IonLabel>
-          <IonNote slot="end">{group}</IonNote>
-        </IonItem>
-        
-        <IonItem>
-          <IonLabel>Location:</IonLabel>
-          <IonNote slot="end">{location}</IonNote>
-        </IonItem>
-        
-        <IonItem>
-          <IonLabel>Subclass:</IonLabel>
-          <IonNote slot="end">{subclass}</IonNote>
-        </IonItem>
-        
         <IonItem>
           <IonLabel>Rating:</IonLabel>
           <IonNote slot="end">₱{rating.toLocaleString()}</IonNote>
+        </IonItem>
+
+         <IonItem>
+          <IonLabel>Market Value:</IonLabel>
+          <IonNote slot="end">TBD</IonNote>
         </IonItem>
 
         <Adjustment
