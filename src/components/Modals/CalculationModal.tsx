@@ -13,6 +13,7 @@ import {
 } from '@ionic/react';
 import Adjustment from '../CalculationModal/Adjustment';
 import AssessmentLevel from '../CalculationModal/AssessmentLevel';
+import TaxRate from '../CalculationModal/TaxRate';
 
 interface CalculationModalProps {
     isOpen: boolean;
@@ -44,6 +45,7 @@ const CalculationModal: React.FC<CalculationModalProps> = ({
     const marketValue = area * rating;
     const [adjustmentValue, setAdjustmentValue] = useState('0%');
     const [assessmentValue, setAssessmentValue] = useState('0%');
+    const [TaxrateValue, setTaxrateValue] = useState('0%');
     const [adjustedValue, setAdjustedValue] = useState(marketValue);
     const [assessedValue, setAssessedValue] = useState(0);
 
@@ -126,10 +128,12 @@ const CalculationModal: React.FC<CalculationModalProps> = ({
                     <IonNote slot="end">₱{assessedValue.toLocaleString()}</IonNote>
                 </IonItem>
 
-                <IonItem>
-                    <IonLabel>Tax Rate:</IonLabel>
-                    <IonNote slot="end">TBD</IonNote>
-                </IonItem>
+                <TaxRate
+                    label="Tax Rate"
+                    value={TaxrateValue}
+                    onChange={setTaxrateValue}
+                    placeholder="Enter percentage"
+                />
 
                 <IonItem>
                     <IonLabel>Real Property Tax:</IonLabel>
