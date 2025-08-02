@@ -72,13 +72,13 @@ const CalculationModal: React.FC<CalculationModalProps> = ({
         </IonItem>
 
         <Adjustment
-          label="Adjustment Value"
+          label="Adjustment"
           value={0}
           onChange={(val) => console.log('Adjustment:', val)}
         />
         
         <IonItem>
-          <IonLabel>Assessment Level:</IonLabel>
+          <IonLabel>Assessed Value:</IonLabel>
           <IonNote slot="end">TBD</IonNote>
         </IonItem>
         
