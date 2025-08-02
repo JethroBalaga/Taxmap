@@ -1,4 +1,4 @@
-import React, { useState} from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     IonModal,
     IonHeader,
@@ -16,12 +16,10 @@ import Adjustment from '../CalculationModal/Adjustment';
 interface CalculationModalProps {
     isOpen: boolean;
     onClose: () => void;
-    // Values from Form
     declarant: string;
     kind: string;
     classification: string;
     area: number;
-    // Values from ActualUsedModal
     actualUse: string;
     group: string;
     location: string;
@@ -32,19 +30,19 @@ interface CalculationModalProps {
 const CalculationModal: React.FC<CalculationModalProps> = ({
     isOpen,
     onClose,
-    declarant,
-    kind,
-    classification,
     area,
-    actualUse,
-    group,
-    location,
-    subclass,
     rating
 }) => {
-    // Calculate market value (Area × Rating)
     const marketValue = area * rating;
-    const [adjustmentValue, setAdjustmentValue] = useState('');
+    const [adjustmentValue, setAdjustmentValue] = useState('0%');
+    const [adjustedValue, setAdjustedValue] = useState(marketValue);
+
+    useEffect(() => {
+        // Calculate adjusted value whenever adjustment or market value changes
+        const percentage = parseFloat(adjustmentValue.replace('%', '')) / 100;
+        const adjustmentAmount = marketValue * percentage;
+        setAdjustedValue(marketValue + adjustmentAmount);
+    }, [adjustmentValue, marketValue]);
 
     return (
         <IonModal isOpen={isOpen} onDidDismiss={onClose}>
@@ -80,9 +78,20 @@ const CalculationModal: React.FC<CalculationModalProps> = ({
                 />
 
                 <IonItem>
-                    <IonLabel>Adjusted Value:</IonLabel>
-                    <IonNote slot="end">{area.toLocaleString()} sqm</IonNote>
+                    <IonLabel>Adjustment Percentage:</IonLabel>
+                    <IonNote slot="end">{adjustmentValue}</IonNote>
                 </IonItem>
+                <IonItem>
+                    <IonLabel>Adjustment Amount:</IonLabel>
+                    <IonNote slot="end">
+                        ₱{(adjustedValue - marketValue).toLocaleString()}
+                    </IonNote>
+                </IonItem>
+                <IonItem>
+                    <IonLabel>Adjusted Value:</IonLabel>
+                    <IonNote slot="end">₱{adjustedValue.toLocaleString()}</IonNote>
+                </IonItem>
+
                 <IonItem>
                     <IonLabel>Assessed Value:</IonLabel>
                     <IonNote slot="end">TBD</IonNote>
