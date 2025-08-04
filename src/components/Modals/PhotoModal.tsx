@@ -37,7 +37,6 @@ const PhotoModal: React.FC<PhotoModalProps> = ({ isOpen, onClose, onPhotoTaken }
 
       if (image.dataUrl) {
         setPhoto(image.dataUrl);
-        // Removed the automatic onPhotoTaken call here
       } else {
         setError('No photo was taken.');
       }
@@ -79,12 +78,22 @@ const PhotoModal: React.FC<PhotoModalProps> = ({ isOpen, onClose, onPhotoTaken }
         </IonButton>
 
         {photo && (
-          <div style={{ marginTop: '20px' }}>
+          <div style={{ 
+            marginTop: '20px',
+            width: '100%',
+            height: '300px',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            overflow: 'hidden'
+          }}>
             <IonImg 
               src={photo} 
               alt="Captured photo" 
               style={{ 
-                maxHeight: '300px',
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
                 border: '1px solid #ddd',
                 borderRadius: '4px'
               }} 
@@ -93,7 +102,9 @@ const PhotoModal: React.FC<PhotoModalProps> = ({ isOpen, onClose, onPhotoTaken }
         )}
         
         {photo && (
-          <SubmitButton/>
+          <div style={{ marginTop: '20px' }}>
+            <SubmitButton />
+          </div>
         )}
       </IonContent>
     </IonModal>
