@@ -13,6 +13,7 @@ import {
   IonIcon 
 } from '@ionic/react';
 import { close } from 'ionicons/icons';
+import SubmitButton from '../GeoTaggingComponents/SubmitButton';
 
 interface PhotoModalProps {
   isOpen: boolean;
@@ -36,7 +37,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({ isOpen, onClose, onPhotoTaken }
 
       if (image.dataUrl) {
         setPhoto(image.dataUrl);
-        onPhotoTaken(image.dataUrl);
+        // Removed the automatic onPhotoTaken call here
       } else {
         setError('No photo was taken.');
       }
@@ -89,6 +90,10 @@ const PhotoModal: React.FC<PhotoModalProps> = ({ isOpen, onClose, onPhotoTaken }
               }} 
             />
           </div>
+        )}
+        
+        {photo && (
+          <SubmitButton/>
         )}
       </IonContent>
     </IonModal>
