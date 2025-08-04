@@ -78,12 +78,16 @@ const PhotoModal: React.FC<PhotoModalProps> = ({ isOpen, onClose, onPhotoTaken }
         </IonButton>
 
         {photo && (
-          <div>
-            <h2>Your Photo:</h2>
-            <IonImg src={photo} alt="Captured photo" />
-            <IonButton expand="block" onClick={handleClose}>
-              Use This Photo
-            </IonButton>
+          <div style={{ marginTop: '20px' }}>
+            <IonImg 
+              src={photo} 
+              alt="Captured photo" 
+              style={{ 
+                maxHeight: '300px',
+                border: '1px solid #ddd',
+                borderRadius: '4px'
+              }} 
+            />
           </div>
         )}
       </IonContent>
