@@ -1,8 +1,18 @@
 import React, { useState } from 'react';
 import { Camera, CameraResultType, CameraSource, CameraDirection } from '@capacitor/camera';
-import { IonButton, IonImg, IonContent, IonModal, IonAlert, IonHeader, IonToolbar, IonTitle, IonButtons, IonIcon } from '@ionic/react';
+import { 
+  IonButton, 
+  IonImg, 
+  IonContent, 
+  IonModal, 
+  IonAlert, 
+  IonHeader, 
+  IonToolbar, 
+  IonTitle, 
+  IonButtons, 
+  IonIcon 
+} from '@ionic/react';
 import { close } from 'ionicons/icons';
-import './Photo.css';
 
 interface PhotoModalProps {
   isOpen: boolean;
@@ -26,7 +36,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({ isOpen, onClose, onPhotoTaken }
 
       if (image.dataUrl) {
         setPhoto(image.dataUrl);
-        onPhotoTaken(image.dataUrl); // Pass the photo data back to parent
+        onPhotoTaken(image.dataUrl);
       } else {
         setError('No photo was taken.');
       }
@@ -54,7 +64,6 @@ const PhotoModal: React.FC<PhotoModalProps> = ({ isOpen, onClose, onPhotoTaken }
         </IonToolbar>
       </IonHeader>
       <IonContent className="ion-padding">
-        {/* Error Alert */}
         {error && (
           <IonAlert
             isOpen={!!error}
@@ -64,14 +73,12 @@ const PhotoModal: React.FC<PhotoModalProps> = ({ isOpen, onClose, onPhotoTaken }
           />
         )}
 
-        {/* Capture Button */}
         <IonButton expand="block" onClick={takePhoto}>
           Take Photo
         </IonButton>
 
-        {/* Display Photo */}
         {photo && (
-          <div className="photo-container">
+          <div>
             <h2>Your Photo:</h2>
             <IonImg src={photo} alt="Captured photo" />
             <IonButton expand="block" onClick={handleClose}>
