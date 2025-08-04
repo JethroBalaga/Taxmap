@@ -14,6 +14,7 @@ import {
 import Adjustment from '../CalculationModal/Adjustment';
 import AssessmentLevel from '../CalculationModal/AssessmentLevel';
 import TaxRate from '../CalculationModal/TaxRate';
+import Next from '../GlobalComponent/Next';
 
 interface CalculationModalProps {
     isOpen: boolean;
@@ -63,11 +64,15 @@ const CalculationModal: React.FC<CalculationModalProps> = ({
         const baseValue = adjustmentValue === '0%' ? marketValue : adjustedValue;
         const newAssessedValue = baseValue * assessmentPercentage;
         setAssessedValue(newAssessedValue);
-        
+
         // Calculate property tax whenever assessed value or tax rate changes
         const taxRate = parseFloat(taxRateValue.replace('%', '')) / 100;
         setPropertyTax(newAssessedValue * taxRate);
     }, [assessmentValue, adjustedValue, adjustmentValue, marketValue, taxRateValue]);
+
+    const handleNextClick = () => {
+
+    };
 
     return (
         <IonModal isOpen={isOpen} onDidDismiss={onClose}>
@@ -145,6 +150,8 @@ const CalculationModal: React.FC<CalculationModalProps> = ({
                     <IonLabel>Real Property Tax:</IonLabel>
                     <IonNote slot="end">₱{propertyTax.toLocaleString()}</IonNote>
                 </IonItem>
+
+                <Next onClick={handleNextClick}/>
             </IonContent>
         </IonModal>
     );
