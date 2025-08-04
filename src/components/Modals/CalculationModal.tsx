@@ -160,7 +160,7 @@ const CalculationModal: React.FC<CalculationModalProps> = ({
                         </IonItem>
                     </div>
 
-                    <Next onClick={handleNextClick} />
+                    <Next onClick={handleNextClick}  disabled={propertyTax === 0} />
                 </IonContent>
             </IonModal>
             
