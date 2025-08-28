@@ -7,7 +7,7 @@ import {
   IonCard 
 } from '@ionic/react';
 import MapCon from '../components/MapCon';
-import './Map.css'; // Create this file if you don't have it
+import '../CSS/Map.css'; // Create this file if you don't have it
 
 const Map: React.FC = () => {
   return (
