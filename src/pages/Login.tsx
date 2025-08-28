@@ -16,8 +16,8 @@ import {
 } from '@ionic/react';
 import { useState } from 'react';
 import { supabase } from '../utils/supaBaseClient';
-import Logo from '../Images/Flag_of_Manolo_Fortich,_Bukidnon.png';
-import backgroundImg from '../Images/Background.jpg';
+import Logo from '../assets/Flag_of_Manolo_Fortich,_Bukidnon.png';
+import backgroundImg from '../assets/Background.jpg';
 import '../CSS/Login.css';
 
 const AlertBox: React.FC<{ message: string; isOpen: boolean; onClose: () => void }> = ({ message, isOpen, onClose }) => {
@@ -93,7 +93,7 @@ const Login: React.FC = () => {
                   <img src={Logo} alt="Logo" />
                 </IonAvatar>
 
-                <h1 className="login-title">TaxMap Admin</h1>
+                <h1 className="login-title">TaxMap Staff</h1>
 
                 <IonInput
                   label="Email"

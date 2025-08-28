@@ -50,9 +50,9 @@ const Menu: React.FC = () => {
                 </IonHeader>
                 <IonContent className="ion-padding">
                     <IonRouterOutlet id="main">
-                        <Route exact path="/map" component={Map} />
-                        <Route exact path="/">
-                            <Redirect to="/map" />
+                        <Route exact path="/menu/map" component={Map} />
+                        <Route exact path="/menu">
+                            <Redirect to="/menu/map" />
                         </Route>
                     </IonRouterOutlet>
                 </IonContent>
