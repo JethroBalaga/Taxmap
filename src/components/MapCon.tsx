@@ -17,9 +17,44 @@ const DEFAULT_ZOOM = 14;
 const MIN_ZOOM_LOCKED = 14;
 const MIN_ZOOM_UNLOCKED = 12;
 const MAX_ZOOM = 18;
+const CREATE_OUTLINE_PATH = "M384 224v184a40 40 0 0 1-40 40H104a40 40 0 0 1-40-40V168a40 40 0 0 1 40-40h167.48M336 64h112v112M224 288L440 72";
+
+// Create Button Component
+const CreateOutlineControl = ({ onClick }: { onClick: () => void }) => {
+  const map = useMap();
+  const controlRef = useRef<any>(null);
+
+  useEffect(() => {
+    const CustomControl = L.Control.extend({
+      options: { position: 'topright' },
+      onAdd: function () {
+        const container = L.DomUtil.create('div', 'leaflet-control');
+        const link = L.DomUtil.create('a', 'create-outline-btn', container);
+        link.href = '#';
+        link.title = 'Create New Location';
+        link.innerHTML = `
+          <svg viewBox="0 0 512 512" width="20" height="20">
+            <path fill="currentColor" d="${CREATE_OUTLINE_PATH}"/>
+          </svg>
+        `;
+        L.DomEvent.on(link, 'click', (e) => {
+          L.DomEvent.stop(e);
+          onClick();
+        });
+        return container;
+      }
+    });
+
+    controlRef.current = new CustomControl();
+    controlRef.current.addTo(map);
+    return () => controlRef.current?.remove();
+  }, [map, onClick]);
+
+  return null;
+};
 
 // Component to set up the map logic
-const MapLogic = () => {
+const MapLogic = ({ onOpenForm }: { onOpenForm: () => void }) => {
   const map = useMap();
   const tileLayerRef = useRef<any>(null);
   const [allowZoomOut, setAllowZoomOut] = useState(false);
@@ -83,7 +118,7 @@ const MapLogic = () => {
     };
   }, [map, allowZoomOut]);
 
-  return null;
+  return <CreateOutlineControl onClick={onOpenForm} />;
 };
 
 // Main Map Component
@@ -98,6 +133,24 @@ const MapCon: React.FC = () => {
 
   return (
     <div style={{ height: '100vh', width: '100%', overflow: 'hidden', position: 'relative' }}>
+      <style>{`
+        .create-outline-btn {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 30px;
+          height: 30px;
+          background: white;
+          border-radius: 50%;
+          box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+          cursor: pointer;
+        }
+        .create-outline-btn:hover {
+          background: #f4f4f4;
+          transform: scale(1.1);
+        }
+      `}</style>
+
       {isMounted && (
         <>
           <MapContainer
@@ -114,7 +167,7 @@ const MapCon: React.FC = () => {
               url={TILE_LAYER_URL}
               attribution='Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics'
             />
-            <MapLogic />
+            <MapLogic onOpenForm={() => setShowForm(true)} />
           </MapContainer>
 
           <Form
