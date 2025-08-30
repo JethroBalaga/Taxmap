@@ -16,6 +16,7 @@ import {
 } from '@ionic/react';
 import { useState } from 'react';
 import { supabase } from '../utils/supaBaseClient';
+import { storeSession, SessionData } from '../utils/localStorage'; // Import the storage functions
 import Logo from '../assets/Flag_of_Manolo_Fortich,_Bukidnon.png';
 import backgroundImg from '../assets/Background.jpg';
 import '../CSS/Login.css';
@@ -59,11 +60,30 @@ const Login: React.FC = () => {
         return;
       }
 
-      // Login successful
-      setShowToast(true);
-      setTimeout(() => {
-        navigation.push('/menu', 'forward', 'replace');
-      }, 300);
+      if (data.session && data.user) {
+        // Store session in localStorage
+        const sessionData: SessionData = {
+          access_token: data.session.access_token,
+          refresh_token: data.session.refresh_token,
+          expires_at: data.session.expires_at,
+          user: {
+            id: data.user.id,
+            email: data.user.email || '',
+            // Add other user properties you might need
+          }
+        };
+        
+        storeSession(sessionData);
+        
+        // Login successful
+        setShowToast(true);
+        setTimeout(() => {
+          navigation.push('/menu', 'forward', 'replace');
+        }, 300);
+      } else {
+        setAlertMessage('Login failed. Please try again.');
+        setShowAlert(true);
+      }
 
     } catch (error) {
       setAlertMessage('An unexpected error occurred. Please try again.');
