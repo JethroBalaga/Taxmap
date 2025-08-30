@@ -13,14 +13,14 @@ import {
 import { useEffect, useState } from 'react';
 import MapCon from '../components/MapCon';
 import { getUserData } from '../utils/localStorage';
+import { 
+  getClassificationData, 
+  storeClassificationData, 
+  isClassificationDataFresh,
+  ClassificationData 
+} from '../utils/classificationLocalStorage';
 import { supabase } from '../utils/supaBaseClient';
 import '../CSS/Map.css';
-
-// Interface for classification data
-interface ClassificationData {
-  class_id: string;
-  classification: string;
-}
 
 const Map: React.FC = () => {
   const [username, setUsername] = useState<string>('');
@@ -34,10 +34,12 @@ const Map: React.FC = () => {
         setUsername(userData.email);
       }
 
-      // Check if we already have classification data in localStorage
-      const storedClassification = localStorage.getItem('classification_data');
-      if (storedClassification) {
-        console.log('Classification data already in localStorage:', JSON.parse(storedClassification));
+      // Check if we already have fresh classification data
+      const existingData = getClassificationData();
+      const isFresh = isClassificationDataFresh();
+      
+      if (existingData && isFresh) {
+        console.log('Using existing classification data:', existingData);
         return;
       }
 
@@ -55,9 +57,9 @@ const Map: React.FC = () => {
         }
 
         if (data && data.length > 0) {
-          // Store in localStorage with a different key
-          localStorage.setItem('classification_data', JSON.stringify(data));
-          console.log('Classification data stored in localStorage:', data);
+          // Store in separate classification localStorage
+          storeClassificationData(data);
+          console.log('Classification data stored successfully:', data);
         } else {
           console.log('No classification data found in classtbl');
         }
@@ -79,10 +81,8 @@ const Map: React.FC = () => {
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen className="map-content">
-        {/* Loading indicator */}
         <IonLoading isOpen={loading} message="Loading classification data..." />
-
-        {/* Username Label - Positioned below the header */}
+        
         {username && (
           <div className="username-below-header">
             <IonCard className="username-card">
@@ -94,7 +94,6 @@ const Map: React.FC = () => {
           </div>
         )}
 
-        {/* Map Card - Full screen */}
         <IonCard className="map-card">
           <MapCon/>
         </IonCard>
