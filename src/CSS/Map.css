@@ -1,7 +1,53 @@
+/* Map content container */
+.map-content {
+  position: relative;
+}
+
+/* Username positioned below the header but away from map controls */
+.username-below-header {
+  position: absolute;
+  top: 70px; /* Below header */
+  right: 70px; /* Position on the right side away from zoom controls */
+  z-index: 1000;
+  pointer-events: none;
+  max-width: 250px; /* Limit width so it doesn't get too wide */
+}
+
+/* Username card styling */
+.username-card {
+  margin: 0;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  pointer-events: auto;
+}
+
+.username-card ion-card-header {
+  padding: 10px 15px;
+}
+
+.username-card ion-card-subtitle {
+  font-size: 0.8rem;
+  color: #666;
+  margin: 0;
+}
+
+.username-card .username-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #3880ff;
+  margin: 0;
+}
+
+/* Map card styling */
 .map-card {
   margin: 0;
   height: 100%;
   width: 100%;
+  position: relative;
 }
 
 /* This ensures the map container fills the card */

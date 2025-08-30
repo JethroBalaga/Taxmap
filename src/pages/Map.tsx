@@ -6,13 +6,12 @@ import {
   IonToolbar, 
   IonCard,
   IonCardHeader,
-  IonCardTitle,
   IonCardSubtitle,
-  IonLabel
+  IonCardTitle
 } from '@ionic/react';
 import { useEffect, useState } from 'react';
 import MapCon from '../components/MapCon';
-import { getUserData } from '../utils/localStorage'; // Import the localStorage utility
+import { getUserData } from '../utils/localStorage';
 import '../CSS/Map.css';
 
 const Map: React.FC = () => {
@@ -33,15 +32,21 @@ const Map: React.FC = () => {
           <IonTitle>Map</IonTitle>
         </IonToolbar>
       </IonHeader>
-      <IonContent fullscreen>
+      <IonContent fullscreen className="map-content">
+        {/* Username Label - Positioned below the header */}
+        {username && (
+          <div className="username-below-header">
+            <IonCard className="username-card">
+              <IonCardHeader>
+                <IonCardSubtitle>Welcome back,</IonCardSubtitle>
+                <IonCardTitle className="username-title">{username}</IonCardTitle>
+              </IonCardHeader>
+            </IonCard>
+          </div>
+        )}
+
+        {/* Map Card - Full screen */}
         <IonCard className="map-card">
-          {/* Display username if available */}
-          {username && (
-            <IonCardHeader>
-              <IonCardSubtitle>Welcome back,</IonCardSubtitle>
-              <IonCardTitle className="username-title">{username}</IonCardTitle>
-            </IonCardHeader>
-          )}
           <MapCon/>
         </IonCard>
       </IonContent>
