@@ -10,15 +10,37 @@ import {
     IonPage,
     IonRouterOutlet,
     IonTitle,
-    IonToolbar
+    IonToolbar,
+    IonList,
+    IonLabel
 } from '@ionic/react'
-import { locateOutline, mapOutline } from 'ionicons/icons';
+import { locateOutline, mapOutline, logOutOutline } from 'ionicons/icons';
 import { Redirect, Route } from 'react-router';
+import { useIonRouter } from '@ionic/react';
 import Map from './Map';
+import { clearSession } from '../utils/localStorage'; // Import the clearSession function
+import { supabase } from '../utils/supaBaseClient'; // Import supabase client
+
 const Menu: React.FC = () => {
+    const router = useIonRouter();
     const path = [
-        { name: 'Map', url: '/map', icon: mapOutline},
+        { name: 'Map', url: '/app/map', icon: mapOutline},
     ]
+
+    const handleLogout = async () => {
+        try {
+            // Sign out from Supabase
+            await supabase.auth.signOut();
+            
+            // Clear session from localStorage
+            clearSession();
+            
+            // Redirect to login page
+            router.push('/', 'root', 'replace');
+        } catch (error) {
+            console.error('Logout error:', error);
+        }
+    };
 
     return (
         <>
@@ -29,14 +51,24 @@ const Menu: React.FC = () => {
                     </IonToolbar>
                 </IonHeader>
                 <IonContent className="ion-padding">
-                    {path.map((item, index) => (
-                        <IonMenuToggle key={index}>
-                            <IonItem routerLink={item.url} routerDirection="forward">
-                                <IonIcon icon={item.icon} slot="start"></IonIcon>
-                                {item.name}
+                    <IonList>
+                        {path.map((item, index) => (
+                            <IonMenuToggle key={index} autoHide={false}>
+                                <IonItem routerLink={item.url} routerDirection="forward">
+                                    <IonIcon icon={item.icon} slot="start"></IonIcon>
+                                    {item.name}
+                                </IonItem>
+                            </IonMenuToggle>
+                        ))}
+                        
+                        {/* Logout Button */}
+                        <IonMenuToggle autoHide={false}>
+                            <IonItem button onClick={handleLogout} lines="none">
+                                <IonIcon icon={logOutOutline} slot="start" color="danger"></IonIcon>
+                                <IonLabel color="danger">Logout</IonLabel>
                             </IonItem>
                         </IonMenuToggle>
-                    ))}
+                    </IonList>
                 </IonContent>
             </IonMenu>
             <IonPage id="main-content">
