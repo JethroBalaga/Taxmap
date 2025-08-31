@@ -19,15 +19,22 @@ import {
   isClassificationDataFresh,
   ClassificationData 
 } from '../utils/classificationLocalStorage';
+import { 
+  getSubclassData, 
+  storeSubclassData, 
+  isSubclassDataFresh,
+  SubclassData 
+} from '../utils/subclassLocalStorage';
 import { supabase } from '../utils/supaBaseClient';
 import '../CSS/Map.css';
 
 const Map: React.FC = () => {
   const [username, setUsername] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
+  const [loadingMessage, setLoadingMessage] = useState<string>('Loading data...');
 
   useEffect(() => {
-    const fetchUserAndClassificationData = async () => {
+    const fetchUserAndData = async () => {
       // Get user data from localStorage
       const userData = getUserData();
       if (userData && userData.email) {
@@ -35,42 +42,71 @@ const Map: React.FC = () => {
       }
 
       // Check if we already have fresh classification data
-      const existingData = getClassificationData();
-      const isFresh = isClassificationDataFresh();
+      const existingClassData = getClassificationData();
+      const isClassFresh = isClassificationDataFresh();
       
-      if (existingData && isFresh) {
-        console.log('Using existing classification data:', existingData);
+      // Check if we already have fresh subclass data
+      const existingSubclassData = getSubclassData();
+      const isSubclassFresh = isSubclassDataFresh();
+      
+      // If both datasets are fresh, no need to fetch
+      if (existingClassData && isClassFresh && existingSubclassData && isSubclassFresh) {
+        console.log('Using existing classification and subclass data');
         return;
       }
 
-      // Fetch classification data from classtbl
       setLoading(true);
-      try {
-        const { data, error } = await supabase
-          .from('classtbl')
-          .select('class_id, classification')
-          .order('class_id', { ascending: true });
+      
+      // Fetch classification data if not fresh
+      if (!existingClassData || !isClassFresh) {
+        setLoadingMessage('Loading classification data...');
+        try {
+          const { data, error } = await supabase
+            .from('classtbl')
+            .select('class_id, classification')
+            .order('class_id', { ascending: true });
 
-        if (error) {
-          console.error('Error fetching classification data:', error);
-          return;
+          if (error) {
+            console.error('Error fetching classification data:', error);
+          } else if (data && data.length > 0) {
+            // Store in classification localStorage
+            storeClassificationData(data);
+            console.log('Classification data stored successfully:', data);
+          } else {
+            console.log('No classification data found in classtbl');
+          }
+        } catch (error) {
+          console.error('Unexpected error fetching classification data:', error);
         }
-
-        if (data && data.length > 0) {
-          // Store in separate classification localStorage
-          storeClassificationData(data);
-          console.log('Classification data stored successfully:', data);
-        } else {
-          console.log('No classification data found in classtbl');
-        }
-      } catch (error) {
-        console.error('Unexpected error fetching classification data:', error);
-      } finally {
-        setLoading(false);
       }
+
+      // Fetch subclass data if not fresh
+      if (!existingSubclassData || !isSubclassFresh) {
+        setLoadingMessage('Loading subclass data...');
+        try {
+          const { data, error } = await supabase
+            .from('subclasstbl')
+            .select('subclass_id, barangay_id, subclass, class_id')
+            .order('subclass_id', { ascending: true });
+
+          if (error) {
+            console.error('Error fetching subclass data:', error);
+          } else if (data && data.length > 0) {
+            // Store in subclass localStorage
+            storeSubclassData(data);
+            console.log('Subclass data stored successfully:', data);
+          } else {
+            console.log('No subclass data found in subclasstbl');
+          }
+        } catch (error) {
+          console.error('Unexpected error fetching subclass data:', error);
+        }
+      }
+      
+      setLoading(false);
     };
 
-    fetchUserAndClassificationData();
+    fetchUserAndData();
   }, []);
 
   return (
@@ -81,7 +117,7 @@ const Map: React.FC = () => {
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen className="map-content">
-        <IonLoading isOpen={loading} message="Loading classification data..." />
+        <IonLoading isOpen={loading} message={loadingMessage} />
         
         {username && (
           <div className="username-below-header">
