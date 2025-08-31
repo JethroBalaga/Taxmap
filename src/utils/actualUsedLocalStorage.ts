@@ -5,13 +5,19 @@ export interface ActualUsedData {
   actual_used_id: string;
   description: string;
   class_id: string;
+  // Add any new columns here when you add them to the database
+  // example: new_column?: string;
 }
 
 // Keys for actual used localStorage items
 export const ACTUAL_USED_KEYS = {
   DATA: 'actual_used_data',
-  TIMESTAMP: 'actual_used_timestamp'
+  TIMESTAMP: 'actual_used_timestamp',
+  VERSION: 'actual_used_version' // Add version key
 };
+
+// CURRENT VERSION - INCREMENT THIS WHEN YOU ADD NEW COLUMNS
+const CURRENT_VERSION = '1.1'; // Change this when your schema changes
 
 // Check if localStorage is available
 const isLocalStorageAvailable = (): boolean => {
@@ -32,7 +38,8 @@ export const storeActualUsedData = (data: ActualUsedData[]): void => {
   try {
     localStorage.setItem(ACTUAL_USED_KEYS.DATA, JSON.stringify(data));
     localStorage.setItem(ACTUAL_USED_KEYS.TIMESTAMP, Date.now().toString());
-    console.log('Actual used data stored successfully');
+    localStorage.setItem(ACTUAL_USED_KEYS.VERSION, CURRENT_VERSION); // Store version
+    console.log('Actual used data stored successfully (version:', CURRENT_VERSION, ')');
   } catch (error) {
     console.error('Error storing actual used data in localStorage:', error);
   }
@@ -53,6 +60,36 @@ export const getActualUsedData = (): ActualUsedData[] | null => {
   }
 };
 
+// Check if actual used data is fresh (less than 24 hours old) AND matches current version
+export const isActualUsedDataFresh = (): boolean => {
+  if (!isLocalStorageAvailable()) return false;
+  
+  try {
+    const timestampStr = localStorage.getItem(ACTUAL_USED_KEYS.TIMESTAMP);
+    const storedVersion = localStorage.getItem(ACTUAL_USED_KEYS.VERSION);
+    
+    if (!timestampStr || !storedVersion) return false;
+    
+    const timestamp = parseInt(timestampStr);
+    const twentyFourHours = 24 * 60 * 60 * 1000;
+    
+    // Check if data is outdated OR version mismatch
+    const isRecent = (Date.now() - timestamp) < twentyFourHours;
+    const isCurrentVersion = storedVersion === CURRENT_VERSION;
+    
+    if (isRecent && !isCurrentVersion) {
+      console.log('Actual used data is recent but outdated version. Clearing cache.');
+      clearActualUsedData();
+      return false;
+    }
+    
+    return isRecent && isCurrentVersion;
+  } catch (error) {
+    console.error('Error checking actual used data freshness:', error);
+    return false;
+  }
+};
+
 // Clear actual used data from localStorage
 export const clearActualUsedData = (): void => {
   if (!isLocalStorageAvailable()) return;
@@ -60,27 +97,27 @@ export const clearActualUsedData = (): void => {
   try {
     localStorage.removeItem(ACTUAL_USED_KEYS.DATA);
     localStorage.removeItem(ACTUAL_USED_KEYS.TIMESTAMP);
+    localStorage.removeItem(ACTUAL_USED_KEYS.VERSION);
     console.log('Actual used data cleared successfully');
   } catch (error) {
     console.error('Error clearing actual used data from localStorage:', error);
   }
 };
 
-// Check if actual used data is fresh (less than 24 hours old)
-export const isActualUsedDataFresh = (): boolean => {
-  if (!isLocalStorageAvailable()) return false;
+// Get the current version
+export const getCurrentActualUsedVersion = (): string => {
+  return CURRENT_VERSION;
+};
+
+// Get the stored version
+export const getStoredActualUsedVersion = (): string | null => {
+  if (!isLocalStorageAvailable()) return null;
   
   try {
-    const timestampStr = localStorage.getItem(ACTUAL_USED_KEYS.TIMESTAMP);
-    if (!timestampStr) return false;
-    
-    const timestamp = parseInt(timestampStr);
-    const twentyFourHours = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
-    
-    return (Date.now() - timestamp) < twentyFourHours;
+    return localStorage.getItem(ACTUAL_USED_KEYS.VERSION);
   } catch (error) {
-    console.error('Error checking actual used data freshness:', error);
-    return false;
+    console.error('Error retrieving actual used version:', error);
+    return null;
   }
 };
 
