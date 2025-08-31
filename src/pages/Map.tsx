@@ -50,6 +50,12 @@ import {
   isBarangayDataFresh,
   BarangayData
 } from '../utils/barangayLocalStorage';
+import { 
+  getTaxRateData, 
+  storeTaxRateData, 
+  isTaxRateDataFresh,
+  TaxRateData
+} from '../utils/taxRateLocalStorage';
 import { supabase } from '../utils/supaBaseClient';
 import '../CSS/Map.css';
 
@@ -92,14 +98,19 @@ const Map: React.FC = () => {
       const existingBarangayData = await getBarangayData();
       const isBarangayFresh = await isBarangayDataFresh();
       
+      // Check if we already have fresh tax rate data
+      const existingTaxRateData = await getTaxRateData();
+      const isTaxRateFresh = await isTaxRateDataFresh();
+      
       // If all datasets are fresh, no need to fetch
       if (existingClassData && isClassFresh && 
           existingSubclassData && isSubclassFresh && 
           existingRateData && isRateFresh &&
           existingActualUsedData && isActualUsedFresh &&
           existingDistrictData && isDistrictFresh &&
-          existingBarangayData && isBarangayFresh) {
-        console.log('Using existing classification, subclass, rate, actual used, district, and barangay data');
+          existingBarangayData && isBarangayFresh &&
+          existingTaxRateData && isTaxRateFresh) {
+        console.log('Using existing classification, subclass, rate, actual used, district, barangay, and tax rate data');
         return;
       }
 
@@ -259,6 +270,34 @@ const Map: React.FC = () => {
         } catch (error) {
           console.error('Unexpected error fetching barangay data:', error);
           setErrorMessage('Unexpected error fetching barangay data');
+          setShowError(true);
+        }
+      }
+
+      // Fetch tax rate data if not fresh
+      if (!existingTaxRateData || !isTaxRateFresh) {
+        setLoadingMessage('Loading tax rate data...');
+        try {
+          const currentYear = new Date().getFullYear().toString();
+          const { data, error } = await supabase
+            .from('taxratetbl')
+            .select('tax_rate_id, eff_year, rate_percent, district_id')
+            .eq('eff_year', currentYear)
+            .order('district_id', { ascending: true });
+          
+          if (error) {
+            console.error('Error fetching tax rate data:', error);
+            setErrorMessage(`Tax rate data error: ${error.message}`);
+            setShowError(true);
+          } else if (data && data.length > 0) {
+            await storeTaxRateData(data, currentYear);
+            console.log('Tax rate data stored successfully for year:', currentYear);
+          } else {
+            console.log(`No tax rate data found for year ${currentYear}`);
+          }
+        } catch (error) {
+          console.error('Unexpected error fetching tax rate data:', error);
+          setErrorMessage('Unexpected error fetching tax rate data');
           setShowError(true);
         }
       }
