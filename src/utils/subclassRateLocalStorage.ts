@@ -27,11 +27,18 @@ const isLocalStorageAvailable = (): boolean => {
   }
 };
 
-// Store subclass rate data in localStorage
+// Store subclass rate data in localStorage - only keeps the most recent year's data
 export const storeSubclassRateData = (data: SubclassRateData[], year: number): void => {
   if (!isLocalStorageAvailable()) return;
   
   try {
+    // Always clear any existing data from different years first
+    const existingYear = getStoredRateYear();
+    if (existingYear !== null && existingYear !== year) {
+      console.log(`Replacing ${existingYear} data with ${year} data`);
+      clearSubclassRateData(); // Clear completely since it's a different year
+    }
+    
     localStorage.setItem(SUBCLASS_RATE_KEYS.DATA, JSON.stringify(data));
     localStorage.setItem(SUBCLASS_RATE_KEYS.TIMESTAMP, Date.now().toString());
     localStorage.setItem(SUBCLASS_RATE_KEYS.YEAR, year.toString());
@@ -85,8 +92,14 @@ export const isSubclassRateDataFresh = (): boolean => {
     const currentYear = new Date().getFullYear();
     const twentyFourHours = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
     
-    // Data is fresh if it's less than 24 hours old AND for the current year
-    return (Date.now() - timestamp) < twentyFourHours && storedYear === currentYear;
+    // Data is NOT fresh if it's from a previous year, regardless of timestamp
+    if (storedYear !== currentYear) {
+      console.log(`Data from ${storedYear} is not fresh (current year is ${currentYear})`);
+      return false;
+    }
+    
+    // If it's current year data, check if it's less than 24 hours old
+    return (Date.now() - timestamp) < twentyFourHours;
   } catch (error) {
     console.error('Error checking subclass rate data freshness:', error);
     return false;
@@ -95,6 +108,9 @@ export const isSubclassRateDataFresh = (): boolean => {
 
 // Get subclass rate data only if it's fresh
 export const getFreshSubclassRateData = (): SubclassRateData[] | null => {
+  // First check if we have old year data and clean it up
+  cleanupOldYearData();
+  
   const data = getSubclassRateData();
   const isFresh = isSubclassRateDataFresh();
   
@@ -146,4 +162,72 @@ export const getCurrentRateForSubclass = (subclassId: string): number | null => 
   );
   
   return rateData ? rateData.rate : null;
+};
+
+// Get rates for a specific subclass and year
+export const getRateForSubclassAndYear = (subclassId: string, year: number): number | null => {
+  const data = getSubclassRateData();
+  if (!data) return null;
+  
+  const rateData = data.find(item => 
+    item.subclass_id === subclassId && item.eff_year === year
+  );
+  
+  return rateData ? rateData.rate : null;
+};
+
+// Remove data for specific years (keep only the most recent year)
+export const removeOlderYearData = (keepYear: number): void => {
+  if (!isLocalStorageAvailable()) return;
+  
+  try {
+    const data = getSubclassRateData();
+    if (!data) return;
+    
+    // Filter out data from years other than the specified keepYear
+    const filteredData = data.filter(item => item.eff_year === keepYear);
+    
+    if (filteredData.length !== data.length) {
+      // Only update if we actually removed something
+      localStorage.setItem(SUBCLASS_RATE_KEYS.DATA, JSON.stringify(filteredData));
+      localStorage.setItem(SUBCLASS_RATE_KEYS.YEAR, keepYear.toString());
+      console.log(`Removed older year data, keeping only ${keepYear} data`);
+    }
+  } catch (error) {
+    console.error('Error removing older year data:', error);
+  }
+};
+
+// Get all available years in the stored data
+export const getAvailableYears = (): number[] => {
+  const data = getSubclassRateData();
+  if (!data) return [];
+  
+  const years = new Set<number>();
+  data.forEach(item => years.add(item.eff_year));
+  
+  return Array.from(years).sort((a, b) => b - a); // Return in descending order
+};
+
+// Get the most recent year available in the data
+export const getMostRecentYear = (): number | null => {
+  const years = getAvailableYears();
+  return years.length > 0 ? years[0] : null;
+};
+
+// New function to automatically clean up old year data
+export const cleanupOldYearData = (): void => {
+  if (!isLocalStorageAvailable()) return;
+  
+  try {
+    const storedYear = getStoredRateYear();
+    const currentYear = new Date().getFullYear();
+    
+    if (storedYear !== null && storedYear !== currentYear) {
+      console.log(`Cleaning up old data from ${storedYear} (current year: ${currentYear})`);
+      clearSubclassRateData();
+    }
+  } catch (error) {
+    console.error('Error cleaning up old year data:', error);
+  }
 };

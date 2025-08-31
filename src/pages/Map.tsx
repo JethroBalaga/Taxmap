@@ -30,7 +30,7 @@ import {
   getSubclassRateData, 
   storeSubclassRateData, 
   isSubclassRateDataFresh,
-  SubclassRateData 
+  SubclassRateData
 } from '../utils/subclassRateLocalStorage';
 import { supabase } from '../utils/supaBaseClient';
 import '../CSS/Map.css';
@@ -133,58 +133,22 @@ const Map: React.FC = () => {
           const currentYear = new Date().getFullYear();
           console.log('Fetching rate data for year:', currentYear);
           
-          // Let's try a simpler query first to debug
-          let query = supabase
+          const { data, error } = await supabase
             .from('subclassratetbl')
-            .select('*');
+            .select('subclasrate_id, subclass_id, eff_year, rate')
+            .eq('eff_year', currentYear)
+            .order('subclass_id', { ascending: true });
           
-          // Add filter for current year if the table has this column
-          query = query.eq('eff_year', currentYear);
-          
-          // Add ordering
-          query = query.order('subclass_id', { ascending: true });
-          
-          const { data, error } = await query;
-          
-          // Log the full error details for debugging
           if (error) {
-            console.error('Full error details:', error);
-            console.error('Error fetching subclass rate data:', error.message);
-            console.error('Error details:', error.details);
-            console.error('Error hint:', error.hint);
-            
-            setErrorMessage(`Rate data error: ${error.message}. Please check if the table and columns exist.`);
+            console.error('Error fetching subclass rate data:', error);
+            setErrorMessage(`Rate data error: ${error.message}`);
             setShowError(true);
-            
-            // Try a fallback query without filters to see what data exists
-            try {
-              const { data: allData } = await supabase
-                .from('subclassratetbl')
-                .select('*')
-                .limit(5);
-              
-              console.log('Sample data from subclassratetbl:', allData);
-            } catch (fallbackError) {
-              console.error('Fallback query also failed:', fallbackError);
-            }
           } else if (data && data.length > 0) {
             // Store in subclass rate localStorage
             storeSubclassRateData(data, currentYear);
             console.log('Subclass rate data stored successfully for year:', currentYear);
-            console.log('Number of rate records:', data.length);
           } else {
             console.log(`No subclass rate data found for year ${currentYear}`);
-            // Check if there's any data in the table at all
-            const { data: anyData } = await supabase
-              .from('subclassratetbl')
-              .select('*')
-              .limit(1);
-              
-            if (anyData && anyData.length > 0) {
-              console.log('But there is data in the table for other years:', anyData);
-            } else {
-              console.log('The subclassratetbl appears to be empty');
-            }
           }
         } catch (error) {
           console.error('Unexpected error fetching subclass rate data:', error);
