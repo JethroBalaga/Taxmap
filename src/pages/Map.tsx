@@ -32,6 +32,12 @@ import {
   isSubclassRateDataFresh,
   SubclassRateData
 } from '../utils/subclassRateLocalStorage';
+import { 
+  getActualUsedData, 
+  storeActualUsedData, 
+  isActualUsedDataFresh,
+  ActualUsedData
+} from '../utils/actualUsedLocalStorage';
 import { supabase } from '../utils/supaBaseClient';
 import '../CSS/Map.css';
 
@@ -58,15 +64,20 @@ const Map: React.FC = () => {
       const existingSubclassData = getSubclassData();
       const isSubclassFresh = isSubclassDataFresh();
       
-      // Check if we already have fresh subclass rate data for current year
+      // Check if we already have fresh subclass rate data
       const existingRateData = getSubclassRateData();
       const isRateFresh = isSubclassRateDataFresh();
+      
+      // Check if we already have fresh actual used data
+      const existingActualUsedData = getActualUsedData();
+      const isActualUsedFresh = isActualUsedDataFresh();
       
       // If all datasets are fresh, no need to fetch
       if (existingClassData && isClassFresh && 
           existingSubclassData && isSubclassFresh && 
-          existingRateData && isRateFresh) {
-        console.log('Using existing classification, subclass, and rate data');
+          existingRateData && isRateFresh &&
+          existingActualUsedData && isActualUsedFresh) {
+        console.log('Using existing classification, subclass, rate, and actual used data');
         return;
       }
 
@@ -86,7 +97,6 @@ const Map: React.FC = () => {
             setErrorMessage(`Classification data error: ${error.message}`);
             setShowError(true);
           } else if (data && data.length > 0) {
-            // Store in classification localStorage
             storeClassificationData(data);
             console.log('Classification data stored successfully');
           } else {
@@ -113,7 +123,6 @@ const Map: React.FC = () => {
             setErrorMessage(`Subclass data error: ${error.message}`);
             setShowError(true);
           } else if (data && data.length > 0) {
-            // Store in subclass localStorage
             storeSubclassData(data);
             console.log('Subclass data stored successfully');
           } else {
@@ -126,13 +135,11 @@ const Map: React.FC = () => {
         }
       }
 
-      // Fetch subclass rate data for current year if not fresh
+      // Fetch subclass rate data if not fresh
       if (!existingRateData || !isRateFresh) {
         setLoadingMessage('Loading rate data...');
         try {
           const currentYear = new Date().getFullYear();
-          console.log('Fetching rate data for year:', currentYear);
-          
           const { data, error } = await supabase
             .from('subclassratetbl')
             .select('subclasrate_id, subclass_id, eff_year, rate')
@@ -144,7 +151,6 @@ const Map: React.FC = () => {
             setErrorMessage(`Rate data error: ${error.message}`);
             setShowError(true);
           } else if (data && data.length > 0) {
-            // Store in subclass rate localStorage
             storeSubclassRateData(data, currentYear);
             console.log('Subclass rate data stored successfully for year:', currentYear);
           } else {
@@ -153,6 +159,32 @@ const Map: React.FC = () => {
         } catch (error) {
           console.error('Unexpected error fetching subclass rate data:', error);
           setErrorMessage('Unexpected error fetching rate data');
+          setShowError(true);
+        }
+      }
+
+      // Fetch actual used data if not fresh
+      if (!existingActualUsedData || !isActualUsedFresh) {
+        setLoadingMessage('Loading actual usage data...');
+        try {
+          const { data, error } = await supabase
+            .from('actual_usedtbl')
+            .select('actual_used_id, description, class_id')
+            .order('actual_used_id', { ascending: true });
+
+          if (error) {
+            console.error('Error fetching actual used data:', error);
+            setErrorMessage(`Actual used data error: ${error.message}`);
+            setShowError(true);
+          } else if (data && data.length > 0) {
+            storeActualUsedData(data);
+            console.log('Actual used data stored successfully');
+          } else {
+            console.log('No actual used data found in actual_usedtbl');
+          }
+        } catch (error) {
+          console.error('Unexpected error fetching actual used data:', error);
+          setErrorMessage('Unexpected error fetching actual usage data');
           setShowError(true);
         }
       }
