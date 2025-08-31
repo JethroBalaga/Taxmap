@@ -38,6 +38,12 @@ import {
   isActualUsedDataFresh,
   ActualUsedData
 } from '../utils/actualUsedLocalStorage';
+import { 
+  getDistrictData, 
+  storeDistrictData, 
+  isDistrictDataFresh,
+  DistrictData
+} from '../utils/districtLocalStorage';
 import { supabase } from '../utils/supaBaseClient';
 import '../CSS/Map.css';
 
@@ -72,12 +78,17 @@ const Map: React.FC = () => {
       const existingActualUsedData = getActualUsedData();
       const isActualUsedFresh = isActualUsedDataFresh();
       
+      // Check if we already have fresh district data
+      const existingDistrictData = getDistrictData();
+      const isDistrictFresh = isDistrictDataFresh();
+      
       // If all datasets are fresh, no need to fetch
       if (existingClassData && isClassFresh && 
           existingSubclassData && isSubclassFresh && 
           existingRateData && isRateFresh &&
-          existingActualUsedData && isActualUsedFresh) {
-        console.log('Using existing classification, subclass, rate, and actual used data');
+          existingActualUsedData && isActualUsedFresh &&
+          existingDistrictData && isDistrictFresh) {
+        console.log('Using existing classification, subclass, rate, actual used, and district data');
         return;
       }
 
@@ -185,6 +196,32 @@ const Map: React.FC = () => {
         } catch (error) {
           console.error('Unexpected error fetching actual used data:', error);
           setErrorMessage('Unexpected error fetching actual usage data');
+          setShowError(true);
+        }
+      }
+
+      // Fetch district data if not fresh
+      if (!existingDistrictData || !isDistrictFresh) {
+        setLoadingMessage('Loading district data...');
+        try {
+          const { data, error } = await supabase
+            .from('districttbl')
+            .select('district_id, district_name, founded')
+            .order('district_id', { ascending: true });
+
+          if (error) {
+            console.error('Error fetching district data:', error);
+            setErrorMessage(`District data error: ${error.message}`);
+            setShowError(true);
+          } else if (data && data.length > 0) {
+            storeDistrictData(data);
+            console.log('District data stored successfully');
+          } else {
+            console.log('No district data found in districttbl');
+          }
+        } catch (error) {
+          console.error('Unexpected error fetching district data:', error);
+          setErrorMessage('Unexpected error fetching district data');
           setShowError(true);
         }
       }
