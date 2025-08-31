@@ -1,4 +1,5 @@
 // utils/classificationLocalStorage.ts
+import localForage from 'localforage';
 
 // Interface for classification data
 export interface ClassificationData {
@@ -8,68 +9,87 @@ export interface ClassificationData {
   // example: new_column?: string;
 }
 
-// Keys for classification localStorage items
-export const CLASSIFICATION_KEYS = {
-  DATA: 'classification_data',
-  TIMESTAMP: 'classification_timestamp',
-  VERSION: 'classification_version' // Add version key
-};
+// Configure localForage instance for classification data
+const classificationStore = localForage.createInstance({
+  name: 'TaxAppStorage',
+  storeName: 'classification_data'
+});
 
 // CURRENT VERSION - INCREMENT THIS WHEN YOU ADD NEW COLUMNS
-const CURRENT_VERSION = '1.1'; // Change this when your schema changes
+const CURRENT_VERSION = 2; // Use numbers for easier migration comparisons
 
-// Check if localStorage is available
-const isLocalStorageAvailable = (): boolean => {
-  try {
-    const test = 'test';
-    localStorage.setItem(test, test);
-    localStorage.removeItem(test);
-    return true;
-  } catch (e) {
-    return false;
+// Migration functions
+const migrations: { [version: number]: (data: any[]) => ClassificationData[] } = {
+  // Migration from version 1 to 2
+  2: (data: any[]) => {
+    console.log('Migrating classification data to version 2');
+    return data.map(item => {
+      // Remove any deprecated columns or add new ones with defaults
+      const { deprecated_column, ...cleanItem } = item;
+      return {
+        ...cleanItem,
+        // new_column: item.new_column || 'default_value' // Example for new columns
+      };
+    });
   }
 };
 
-// Store classification data in localStorage
-export const storeClassificationData = (data: ClassificationData[]): void => {
-  if (!isLocalStorageAvailable()) return;
-  
+// Store classification data with localForage
+export const storeClassificationData = async (data: ClassificationData[]): Promise<void> => {
   try {
-    localStorage.setItem(CLASSIFICATION_KEYS.DATA, JSON.stringify(data));
-    localStorage.setItem(CLASSIFICATION_KEYS.TIMESTAMP, Date.now().toString());
-    localStorage.setItem(CLASSIFICATION_KEYS.VERSION, CURRENT_VERSION); // Store version
+    await classificationStore.setItem('data', data);
+    await classificationStore.setItem('timestamp', Date.now());
+    await classificationStore.setItem('version', CURRENT_VERSION);
     console.log('Classification data stored successfully (version:', CURRENT_VERSION, ')');
   } catch (error) {
-    console.error('Error storing classification data in localStorage:', error);
+    console.error('Error storing classification data:', error);
   }
 };
 
-// Retrieve classification data from localStorage
-export const getClassificationData = (): ClassificationData[] | null => {
-  if (!isLocalStorageAvailable()) return null;
-  
+// Retrieve classification data from localForage with migration support
+export const getClassificationData = async (): Promise<ClassificationData[] | null> => {
   try {
-    const dataStr = localStorage.getItem(CLASSIFICATION_KEYS.DATA);
-    if (!dataStr) return null;
-    
-    return JSON.parse(dataStr);
+    const [data, storedVersion, timestamp] = await Promise.all([
+      classificationStore.getItem<ClassificationData[]>('data'),
+      classificationStore.getItem<number>('version'),
+      classificationStore.getItem<number>('timestamp')
+    ]);
+
+    if (!data) return null;
+
+    // Apply migrations if needed
+    if (storedVersion && storedVersion < CURRENT_VERSION) {
+      console.log(`Migrating classification data from v${storedVersion} to v${CURRENT_VERSION}`);
+      let migratedData = data;
+      
+      for (let version = storedVersion + 1; version <= CURRENT_VERSION; version++) {
+        if (migrations[version]) {
+          migratedData = migrations[version](migratedData);
+        }
+      }
+      
+      // Store the migrated data
+      await storeClassificationData(migratedData);
+      return migratedData;
+    }
+
+    return data;
   } catch (error) {
-    console.error('Error retrieving classification data from localStorage:', error);
+    console.error('Error retrieving classification data:', error);
     return null;
   }
 };
 
 // Check if classification data is fresh (less than 24 hours old) AND matches current version
-export const isClassificationDataFresh = (): boolean => {
-  if (!isLocalStorageAvailable()) return false;
-  
+export const isClassificationDataFresh = async (): Promise<boolean> => {
   try {
-    const timestampStr = localStorage.getItem(CLASSIFICATION_KEYS.TIMESTAMP);
-    const storedVersion = localStorage.getItem(CLASSIFICATION_KEYS.VERSION);
+    const [timestamp, storedVersion] = await Promise.all([
+      classificationStore.getItem<number>('timestamp'),
+      classificationStore.getItem<number>('version')
+    ]);
+
+    if (!timestamp || !storedVersion) return false;
     
-    if (!timestampStr || !storedVersion) return false;
-    
-    const timestamp = parseInt(timestampStr);
     const twentyFourHours = 24 * 60 * 60 * 1000;
     
     // Check if data is outdated OR version mismatch
@@ -77,8 +97,7 @@ export const isClassificationDataFresh = (): boolean => {
     const isCurrentVersion = storedVersion === CURRENT_VERSION;
     
     if (isRecent && !isCurrentVersion) {
-      console.log('Data is recent but outdated version. Clearing cache.');
-      clearClassificationData();
+      console.log('Data is recent but outdated version. Migration will handle this.');
       return false;
     }
     
@@ -89,54 +108,43 @@ export const isClassificationDataFresh = (): boolean => {
   }
 };
 
-// Clear classification data from localStorage
-export const clearClassificationData = (): void => {
-  if (!isLocalStorageAvailable()) return;
-  
+// Clear classification data from localForage
+export const clearClassificationData = async (): Promise<void> => {
   try {
-    localStorage.removeItem(CLASSIFICATION_KEYS.DATA);
-    localStorage.removeItem(CLASSIFICATION_KEYS.TIMESTAMP);
-    localStorage.removeItem(CLASSIFICATION_KEYS.VERSION);
+    await classificationStore.clear();
     console.log('Classification data cleared successfully');
   } catch (error) {
-    console.error('Error clearing classification data from localStorage:', error);
+    console.error('Error clearing classification data:', error);
   }
 };
 
 // Get the current version
-export const getCurrentClassificationVersion = (): string => {
+export const getCurrentClassificationVersion = (): number => {
   return CURRENT_VERSION;
 };
 
 // Get the stored version
-export const getStoredClassificationVersion = (): string | null => {
-  if (!isLocalStorageAvailable()) return null;
-  
+export const getStoredClassificationVersion = async (): Promise<number | null> => {
   try {
-    return localStorage.getItem(CLASSIFICATION_KEYS.VERSION);
+    return await classificationStore.getItem<number>('version');
   } catch (error) {
     console.error('Error retrieving classification version:', error);
     return null;
   }
 };
 
-// ... rest of your functions remain the same ...
-
 // Get classification data only if it's fresh
-export const getFreshClassificationData = (): ClassificationData[] | null => {
-  const data = getClassificationData();
-  const isFresh = isClassificationDataFresh();
+export const getFreshClassificationData = async (): Promise<ClassificationData[] | null> => {
+  const data = await getClassificationData();
+  const isFresh = await isClassificationDataFresh();
   
   return isFresh ? data : null;
 };
 
 // Get the timestamp of when classification data was last stored
-export const getClassificationTimestamp = (): number | null => {
-  if (!isLocalStorageAvailable()) return null;
-  
+export const getClassificationTimestamp = async (): Promise<number | null> => {
   try {
-    const timestampStr = localStorage.getItem(CLASSIFICATION_KEYS.TIMESTAMP);
-    return timestampStr ? parseInt(timestampStr) : null;
+    return await classificationStore.getItem<number>('timestamp');
   } catch (error) {
     console.error('Error retrieving classification timestamp:', error);
     return null;
@@ -144,14 +152,23 @@ export const getClassificationTimestamp = (): number | null => {
 };
 
 // Check if classification data exists (regardless of freshness)
-export const hasClassificationData = (): boolean => {
-  if (!isLocalStorageAvailable()) return false;
-  
+export const hasClassificationData = async (): Promise<boolean> => {
   try {
-    const dataStr = localStorage.getItem(CLASSIFICATION_KEYS.DATA);
-    return dataStr !== null;
+    const data = await classificationStore.getItem('data');
+    return data !== null;
   } catch (error) {
     console.error('Error checking for classification data:', error);
     return false;
+  }
+};
+
+// Get data size (useful for debugging)
+export const getClassificationDataSize = async (): Promise<number> => {
+  try {
+    const data = await classificationStore.getItem('data');
+    return data ? JSON.stringify(data).length : 0;
+  } catch (error) {
+    console.error('Error getting data size:', error);
+    return 0;
   }
 };
