@@ -69,28 +69,28 @@ const Map: React.FC = () => {
       }
 
       // Check if we already have fresh classification data
-      const existingClassData = getClassificationData();
-      const isClassFresh = isClassificationDataFresh();
+      const existingClassData = await getClassificationData();
+      const isClassFresh = await isClassificationDataFresh();
       
       // Check if we already have fresh subclass data
-      const existingSubclassData = getSubclassData();
-      const isSubclassFresh = isSubclassDataFresh();
+      const existingSubclassData = await getSubclassData();
+      const isSubclassFresh = await isSubclassDataFresh();
       
       // Check if we already have fresh subclass rate data
-      const existingRateData = getSubclassRateData();
-      const isRateFresh = isSubclassRateDataFresh();
+      const existingRateData = await getSubclassRateData();
+      const isRateFresh = await isSubclassRateDataFresh();
       
       // Check if we already have fresh actual used data
-      const existingActualUsedData = getActualUsedData();
-      const isActualUsedFresh = isActualUsedDataFresh();
+      const existingActualUsedData = await getActualUsedData();
+      const isActualUsedFresh = await isActualUsedDataFresh();
       
       // Check if we already have fresh district data
-      const existingDistrictData = getDistrictData();
-      const isDistrictFresh = isDistrictDataFresh();
+      const existingDistrictData = await getDistrictData();
+      const isDistrictFresh = await isDistrictDataFresh();
       
       // Check if we already have fresh barangay data
-      const existingBarangayData = getBarangayData();
-      const isBarangayFresh = isBarangayDataFresh();
+      const existingBarangayData = await getBarangayData();
+      const isBarangayFresh = await isBarangayDataFresh();
       
       // If all datasets are fresh, no need to fetch
       if (existingClassData && isClassFresh && 
@@ -119,7 +119,7 @@ const Map: React.FC = () => {
             setErrorMessage(`Classification data error: ${error.message}`);
             setShowError(true);
           } else if (data && data.length > 0) {
-            storeClassificationData(data);
+            await storeClassificationData(data);
             console.log('Classification data stored successfully');
           } else {
             console.log('No classification data found in classtbl');
@@ -145,7 +145,7 @@ const Map: React.FC = () => {
             setErrorMessage(`Subclass data error: ${error.message}`);
             setShowError(true);
           } else if (data && data.length > 0) {
-            storeSubclassData(data);
+            await storeSubclassData(data);
             console.log('Subclass data stored successfully');
           } else {
             console.log('No subclass data found in subclasstbl');
@@ -173,7 +173,7 @@ const Map: React.FC = () => {
             setErrorMessage(`Rate data error: ${error.message}`);
             setShowError(true);
           } else if (data && data.length > 0) {
-            storeSubclassRateData(data, currentYear);
+            await storeSubclassRateData(data, currentYear);
             console.log('Subclass rate data stored successfully for year:', currentYear);
           } else {
             console.log(`No subclass rate data found for year ${currentYear}`);
@@ -199,7 +199,7 @@ const Map: React.FC = () => {
             setErrorMessage(`Actual used data error: ${error.message}`);
             setShowError(true);
           } else if (data && data.length > 0) {
-            storeActualUsedData(data);
+            await storeActualUsedData(data);
             console.log('Actual used data stored successfully');
           } else {
             console.log('No actual used data found in actual_usedtbl');
@@ -225,7 +225,7 @@ const Map: React.FC = () => {
             setErrorMessage(`District data error: ${error.message}`);
             setShowError(true);
           } else if (data && data.length > 0) {
-            storeDistrictData(data);
+            await storeDistrictData(data);
             console.log('District data stored successfully');
           } else {
             console.log('No district data found in districttbl');
@@ -251,7 +251,7 @@ const Map: React.FC = () => {
             setErrorMessage(`Barangay data error: ${error.message}`);
             setShowError(true);
           } else if (data && data.length > 0) {
-            storeBarangayData(data);
+            await storeBarangayData(data);
             console.log('Barangay data stored successfully');
           } else {
             console.log('No barangay data found in barangaytbl');
