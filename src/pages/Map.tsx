@@ -44,6 +44,12 @@ import {
   isDistrictDataFresh,
   DistrictData
 } from '../utils/districtLocalStorage';
+import { 
+  getBarangayData, 
+  storeBarangayData, 
+  isBarangayDataFresh,
+  BarangayData
+} from '../utils/barangayLocalStorage';
 import { supabase } from '../utils/supaBaseClient';
 import '../CSS/Map.css';
 
@@ -82,13 +88,18 @@ const Map: React.FC = () => {
       const existingDistrictData = getDistrictData();
       const isDistrictFresh = isDistrictDataFresh();
       
+      // Check if we already have fresh barangay data
+      const existingBarangayData = getBarangayData();
+      const isBarangayFresh = isBarangayDataFresh();
+      
       // If all datasets are fresh, no need to fetch
       if (existingClassData && isClassFresh && 
           existingSubclassData && isSubclassFresh && 
           existingRateData && isRateFresh &&
           existingActualUsedData && isActualUsedFresh &&
-          existingDistrictData && isDistrictFresh) {
-        console.log('Using existing classification, subclass, rate, actual used, and district data');
+          existingDistrictData && isDistrictFresh &&
+          existingBarangayData && isBarangayFresh) {
+        console.log('Using existing classification, subclass, rate, actual used, district, and barangay data');
         return;
       }
 
@@ -222,6 +233,32 @@ const Map: React.FC = () => {
         } catch (error) {
           console.error('Unexpected error fetching district data:', error);
           setErrorMessage('Unexpected error fetching district data');
+          setShowError(true);
+        }
+      }
+
+      // Fetch barangay data if not fresh
+      if (!existingBarangayData || !isBarangayFresh) {
+        setLoadingMessage('Loading barangay data...');
+        try {
+          const { data, error } = await supabase
+            .from('barangaytbl')
+            .select('barangay_id, district_id, barangay')
+            .order('barangay', { ascending: true });
+
+          if (error) {
+            console.error('Error fetching barangay data:', error);
+            setErrorMessage(`Barangay data error: ${error.message}`);
+            setShowError(true);
+          } else if (data && data.length > 0) {
+            storeBarangayData(data);
+            console.log('Barangay data stored successfully');
+          } else {
+            console.log('No barangay data found in barangaytbl');
+          }
+        } catch (error) {
+          console.error('Unexpected error fetching barangay data:', error);
+          setErrorMessage('Unexpected error fetching barangay data');
           setShowError(true);
         }
       }
