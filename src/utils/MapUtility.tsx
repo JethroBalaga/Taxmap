@@ -147,13 +147,13 @@ export class MapDataManager {
     }
   }
 
-  // Fetch subclass rate data
+  // Fetch subclass rate data - USING eff_year for subclassratetbl
   static async fetchSubclassRateData(): Promise<FetchDataResult> {
     try {
       const currentYear = new Date().getFullYear();
       const { data, error } = await supabase
         .from('subclassratetbl')
-        .select('subclasrate_id, subclass_id, eff_year, rate')
+        .select('subclassrate_id, subclass_id, eff_year, rate')
         .eq('eff_year', currentYear)
         .order('subclass_id', { ascending: true });
 
@@ -297,14 +297,14 @@ export class MapDataManager {
     }
   }
 
-  // Fetch tax rate data
+  // Fetch tax rate data - USING effective_year for taxratetbl
   static async fetchTaxRateData(): Promise<FetchDataResult> {
     try {
       const currentYear = new Date().getFullYear().toString();
       const { data, error } = await supabase
         .from('taxratetbl')
-        .select('tax_rate_id, eff_year, rate_percent, district_id')
-        .eq('eff_year', currentYear)
+        .select('tax_rate_id, effective_year, rate_percent, district_id')
+        .eq('effective_year', currentYear)
         .order('district_id', { ascending: true });
 
       if (error) {

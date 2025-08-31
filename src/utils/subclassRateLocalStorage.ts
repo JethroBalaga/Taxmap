@@ -3,7 +3,7 @@ import localForage from 'localforage';
 
 // Interface for subclass rate data
 export interface SubclassRateData {
-  subclasrate_id: string;
+  subclassrate_id: string;
   subclass_id: string;
   eff_year: number;
   rate: number;

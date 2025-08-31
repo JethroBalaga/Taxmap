@@ -4,7 +4,7 @@ import localForage from 'localforage';
 // Interface for tax rate data
 export interface TaxRateData {
   tax_rate_id: string;
-  eff_year: string;
+  effective_year: string;
   rate_percent: string;
   district_id: string;
   // Add any new columns here when you add them to the database
@@ -194,7 +194,7 @@ export const getCurrentTaxRateForDistrict = async (districtId: string): Promise<
   
   const currentYear = new Date().getFullYear().toString();
   const rateData = data.find(item => 
-    item.district_id === districtId && item.eff_year === currentYear
+    item.district_id === districtId && item.effective_year === currentYear
   );
   
   return rateData ? rateData.rate_percent : null;
@@ -206,7 +206,7 @@ export const getTaxRateForDistrictAndYear = async (districtId: string, year: str
   if (!data) return null;
   
   const rateData = data.find(item => 
-    item.district_id === districtId && item.eff_year === year
+    item.district_id === districtId && item.effective_year === year
   );
   
   return rateData ? rateData.rate_percent : null;
@@ -218,7 +218,7 @@ export const getAvailableTaxRateYears = async (): Promise<string[]> => {
   if (!data) return [];
   
   const years = new Set<string>();
-  data.forEach(item => years.add(item.eff_year));
+  data.forEach(item => years.add(item.effective_year));
   
   return Array.from(years).sort((a, b) => b.localeCompare(a)); // Return in descending order
 };
@@ -284,7 +284,7 @@ export const getTaxRateStatisticsForYear = async (year: string): Promise<{
   const data = await getTaxRateData();
   if (!data || data.length === 0) return null;
   
-  const yearData = data.filter(item => item.eff_year === year);
+  const yearData = data.filter(item => item.effective_year === year);
   if (yearData.length === 0) return null;
   
   const rates = yearData.map(item => parseFloat(item.rate_percent) || 0);
@@ -331,7 +331,7 @@ export const searchTaxRates = async (options: {
   }
   
   if (options.year) {
-    results = results.filter(item => item.eff_year === options.year);
+    results = results.filter(item => item.effective_year === options.year);
   }
   
   if (options.minRate !== undefined) {
