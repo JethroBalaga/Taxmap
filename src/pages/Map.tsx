@@ -8,7 +8,8 @@ import {
   IonCardHeader,
   IonCardSubtitle,
   IonCardTitle,
-  IonLoading
+  IonLoading,
+  IonToast
 } from '@ionic/react';
 import { useEffect, useState } from 'react';
 import MapCon from '../components/MapCon';
@@ -25,6 +26,12 @@ import {
   isSubclassDataFresh,
   SubclassData 
 } from '../utils/subclassLocalStorage';
+import { 
+  getSubclassRateData, 
+  storeSubclassRateData, 
+  isSubclassRateDataFresh,
+  SubclassRateData 
+} from '../utils/subclassRateLocalStorage';
 import { supabase } from '../utils/supaBaseClient';
 import '../CSS/Map.css';
 
@@ -32,6 +39,8 @@ const Map: React.FC = () => {
   const [username, setUsername] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [loadingMessage, setLoadingMessage] = useState<string>('Loading data...');
+  const [showError, setShowError] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string>('');
 
   useEffect(() => {
     const fetchUserAndData = async () => {
@@ -49,9 +58,15 @@ const Map: React.FC = () => {
       const existingSubclassData = getSubclassData();
       const isSubclassFresh = isSubclassDataFresh();
       
-      // If both datasets are fresh, no need to fetch
-      if (existingClassData && isClassFresh && existingSubclassData && isSubclassFresh) {
-        console.log('Using existing classification and subclass data');
+      // Check if we already have fresh subclass rate data for current year
+      const existingRateData = getSubclassRateData();
+      const isRateFresh = isSubclassRateDataFresh();
+      
+      // If all datasets are fresh, no need to fetch
+      if (existingClassData && isClassFresh && 
+          existingSubclassData && isSubclassFresh && 
+          existingRateData && isRateFresh) {
+        console.log('Using existing classification, subclass, and rate data');
         return;
       }
 
@@ -68,15 +83,19 @@ const Map: React.FC = () => {
 
           if (error) {
             console.error('Error fetching classification data:', error);
+            setErrorMessage(`Classification data error: ${error.message}`);
+            setShowError(true);
           } else if (data && data.length > 0) {
             // Store in classification localStorage
             storeClassificationData(data);
-            console.log('Classification data stored successfully:', data);
+            console.log('Classification data stored successfully');
           } else {
             console.log('No classification data found in classtbl');
           }
         } catch (error) {
           console.error('Unexpected error fetching classification data:', error);
+          setErrorMessage('Unexpected error fetching classification data');
+          setShowError(true);
         }
       }
 
@@ -91,15 +110,86 @@ const Map: React.FC = () => {
 
           if (error) {
             console.error('Error fetching subclass data:', error);
+            setErrorMessage(`Subclass data error: ${error.message}`);
+            setShowError(true);
           } else if (data && data.length > 0) {
             // Store in subclass localStorage
             storeSubclassData(data);
-            console.log('Subclass data stored successfully:', data);
+            console.log('Subclass data stored successfully');
           } else {
             console.log('No subclass data found in subclasstbl');
           }
         } catch (error) {
           console.error('Unexpected error fetching subclass data:', error);
+          setErrorMessage('Unexpected error fetching subclass data');
+          setShowError(true);
+        }
+      }
+
+      // Fetch subclass rate data for current year if not fresh
+      if (!existingRateData || !isRateFresh) {
+        setLoadingMessage('Loading rate data...');
+        try {
+          const currentYear = new Date().getFullYear();
+          console.log('Fetching rate data for year:', currentYear);
+          
+          // Let's try a simpler query first to debug
+          let query = supabase
+            .from('subclassratetbl')
+            .select('*');
+          
+          // Add filter for current year if the table has this column
+          query = query.eq('eff_year', currentYear);
+          
+          // Add ordering
+          query = query.order('subclass_id', { ascending: true });
+          
+          const { data, error } = await query;
+          
+          // Log the full error details for debugging
+          if (error) {
+            console.error('Full error details:', error);
+            console.error('Error fetching subclass rate data:', error.message);
+            console.error('Error details:', error.details);
+            console.error('Error hint:', error.hint);
+            
+            setErrorMessage(`Rate data error: ${error.message}. Please check if the table and columns exist.`);
+            setShowError(true);
+            
+            // Try a fallback query without filters to see what data exists
+            try {
+              const { data: allData } = await supabase
+                .from('subclassratetbl')
+                .select('*')
+                .limit(5);
+              
+              console.log('Sample data from subclassratetbl:', allData);
+            } catch (fallbackError) {
+              console.error('Fallback query also failed:', fallbackError);
+            }
+          } else if (data && data.length > 0) {
+            // Store in subclass rate localStorage
+            storeSubclassRateData(data, currentYear);
+            console.log('Subclass rate data stored successfully for year:', currentYear);
+            console.log('Number of rate records:', data.length);
+          } else {
+            console.log(`No subclass rate data found for year ${currentYear}`);
+            // Check if there's any data in the table at all
+            const { data: anyData } = await supabase
+              .from('subclassratetbl')
+              .select('*')
+              .limit(1);
+              
+            if (anyData && anyData.length > 0) {
+              console.log('But there is data in the table for other years:', anyData);
+            } else {
+              console.log('The subclassratetbl appears to be empty');
+            }
+          }
+        } catch (error) {
+          console.error('Unexpected error fetching subclass rate data:', error);
+          setErrorMessage('Unexpected error fetching rate data');
+          setShowError(true);
         }
       }
       
@@ -118,6 +208,15 @@ const Map: React.FC = () => {
       </IonHeader>
       <IonContent fullscreen className="map-content">
         <IonLoading isOpen={loading} message={loadingMessage} />
+        
+        <IonToast
+          isOpen={showError}
+          onDidDismiss={() => setShowError(false)}
+          message={errorMessage}
+          duration={5000}
+          color="danger"
+          position="top"
+        />
         
         {username && (
           <div className="username-below-header">
