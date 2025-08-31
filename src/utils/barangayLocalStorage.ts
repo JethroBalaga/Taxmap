@@ -1,104 +1,152 @@
 // utils/barangayLocalStorage.ts
+import localForage from 'localforage';
 
 // Interface for barangay data
 export interface BarangayData {
   barangay_id: string;
   district_id: string;
   barangay: string;
+  // Add any new columns here when you add them to the database
+  // example: new_column?: string;
 }
 
-// Keys for barangay localStorage items
-export const BARANGAY_KEYS = {
-  DATA: 'barangay_data',
-  TIMESTAMP: 'barangay_timestamp'
-};
+// Configure localForage instance for barangay data
+const barangayStore = localForage.createInstance({
+  name: 'TaxAppStorage',
+  storeName: 'barangay_data'
+});
 
-// Check if localStorage is available
-const isLocalStorageAvailable = (): boolean => {
-  try {
-    const test = 'test';
-    localStorage.setItem(test, test);
-    localStorage.removeItem(test);
-    return true;
-  } catch (e) {
-    return false;
+// CURRENT VERSION - INCREMENT THIS WHEN YOU ADD NEW COLUMNS
+const CURRENT_VERSION = 2; // Use numbers for easier migration comparisons
+
+// Migration functions
+const migrations: { [version: number]: (data: any[]) => BarangayData[] } = {
+  // Migration from version 1 to 2
+  2: (data: any[]) => {
+    console.log('Migrating barangay data to version 2');
+    return data.map(item => {
+      // Remove any deprecated columns or add new ones with defaults
+      const { deprecated_column, ...cleanItem } = item;
+      return {
+        ...cleanItem,
+        // new_column: item.new_column || 'default_value' // Example for new columns
+      };
+    });
   }
 };
 
-// Store barangay data in localStorage
-export const storeBarangayData = (data: BarangayData[]): void => {
-  if (!isLocalStorageAvailable()) return;
-  
+// Store barangay data with localForage
+export const storeBarangayData = async (data: BarangayData[]): Promise<void> => {
   try {
-    localStorage.setItem(BARANGAY_KEYS.DATA, JSON.stringify(data));
-    localStorage.setItem(BARANGAY_KEYS.TIMESTAMP, Date.now().toString());
-    console.log('Barangay data stored successfully');
+    await barangayStore.setItem('data', data);
+    await barangayStore.setItem('timestamp', Date.now());
+    await barangayStore.setItem('version', CURRENT_VERSION);
+    console.log('Barangay data stored successfully (version:', CURRENT_VERSION, ')');
   } catch (error) {
-    console.error('Error storing barangay data in localStorage:', error);
+    console.error('Error storing barangay data:', error);
   }
 };
 
-// Retrieve barangay data from localStorage
-export const getBarangayData = (): BarangayData[] | null => {
-  if (!isLocalStorageAvailable()) return null;
-  
+// Retrieve barangay data from localForage with migration support
+export const getBarangayData = async (): Promise<BarangayData[] | null> => {
   try {
-    const dataStr = localStorage.getItem(BARANGAY_KEYS.DATA);
-    if (!dataStr) return null;
-    
-    return JSON.parse(dataStr);
+    const [data, storedVersion, timestamp] = await Promise.all([
+      barangayStore.getItem<BarangayData[]>('data'),
+      barangayStore.getItem<number>('version'),
+      barangayStore.getItem<number>('timestamp')
+    ]);
+
+    if (!data) return null;
+
+    // Apply migrations if needed
+    if (storedVersion && storedVersion < CURRENT_VERSION) {
+      console.log(`Migrating barangay data from v${storedVersion} to v${CURRENT_VERSION}`);
+      let migratedData = data;
+      
+      for (let version = storedVersion + 1; version <= CURRENT_VERSION; version++) {
+        if (migrations[version]) {
+          migratedData = migrations[version](migratedData);
+        }
+      }
+      
+      // Store the migrated data
+      await storeBarangayData(migratedData);
+      return migratedData;
+    }
+
+    return data;
   } catch (error) {
-    console.error('Error retrieving barangay data from localStorage:', error);
+    console.error('Error retrieving barangay data:', error);
     return null;
   }
 };
 
-// Clear barangay data from localStorage
-export const clearBarangayData = (): void => {
-  if (!isLocalStorageAvailable()) return;
-  
+// Check if barangay data is fresh (less than 24 hours old) AND matches current version
+export const isBarangayDataFresh = async (): Promise<boolean> => {
   try {
-    localStorage.removeItem(BARANGAY_KEYS.DATA);
-    localStorage.removeItem(BARANGAY_KEYS.TIMESTAMP);
-    console.log('Barangay data cleared successfully');
-  } catch (error) {
-    console.error('Error clearing barangay data from localStorage:', error);
-  }
-};
+    const [timestamp, storedVersion] = await Promise.all([
+      barangayStore.getItem<number>('timestamp'),
+      barangayStore.getItem<number>('version')
+    ]);
 
-// Check if barangay data is fresh (less than 24 hours old)
-export const isBarangayDataFresh = (): boolean => {
-  if (!isLocalStorageAvailable()) return false;
-  
-  try {
-    const timestampStr = localStorage.getItem(BARANGAY_KEYS.TIMESTAMP);
-    if (!timestampStr) return false;
+    if (!timestamp || !storedVersion) return false;
     
-    const timestamp = parseInt(timestampStr);
-    const twentyFourHours = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+    const twentyFourHours = 24 * 60 * 60 * 1000;
     
-    return (Date.now() - timestamp) < twentyFourHours;
+    // Check if data is outdated OR version mismatch
+    const isRecent = (Date.now() - timestamp) < twentyFourHours;
+    const isCurrentVersion = storedVersion === CURRENT_VERSION;
+    
+    if (isRecent && !isCurrentVersion) {
+      console.log('Barangay data is recent but outdated version. Migration will handle this.');
+      return false;
+    }
+    
+    return isRecent && isCurrentVersion;
   } catch (error) {
     console.error('Error checking barangay data freshness:', error);
     return false;
   }
 };
 
+// Clear barangay data from localForage
+export const clearBarangayData = async (): Promise<void> => {
+  try {
+    await barangayStore.clear();
+    console.log('Barangay data cleared successfully');
+  } catch (error) {
+    console.error('Error clearing barangay data:', error);
+  }
+};
+
+// Get the current version
+export const getCurrentBarangayVersion = (): number => {
+  return CURRENT_VERSION;
+};
+
+// Get the stored version
+export const getStoredBarangayVersion = async (): Promise<number | null> => {
+  try {
+    return await barangayStore.getItem<number>('version');
+  } catch (error) {
+    console.error('Error retrieving barangay version:', error);
+    return null;
+  }
+};
+
 // Get barangay data only if it's fresh
-export const getFreshBarangayData = (): BarangayData[] | null => {
-  const data = getBarangayData();
-  const isFresh = isBarangayDataFresh();
+export const getFreshBarangayData = async (): Promise<BarangayData[] | null> => {
+  const data = await getBarangayData();
+  const isFresh = await isBarangayDataFresh();
   
   return isFresh ? data : null;
 };
 
 // Check if barangay data exists (regardless of freshness)
-export const hasBarangayData = (): boolean => {
-  if (!isLocalStorageAvailable()) return false;
-  
+export const hasBarangayData = async (): Promise<boolean> => {
   try {
-    const dataStr = localStorage.getItem(BARANGAY_KEYS.DATA);
-    return dataStr !== null;
+    const data = await barangayStore.getItem('data');
+    return data !== null;
   } catch (error) {
     console.error('Error checking for barangay data:', error);
     return false;
@@ -106,24 +154,24 @@ export const hasBarangayData = (): boolean => {
 };
 
 // Find a specific barangay by ID
-export const getBarangayById = (barangayId: string): BarangayData | null => {
-  const data = getBarangayData();
+export const getBarangayById = async (barangayId: string): Promise<BarangayData | null> => {
+  const data = await getBarangayData();
   if (!data) return null;
   
   return data.find(item => item.barangay_id === barangayId) || null;
 };
 
 // Find barangays by district ID
-export const getBarangaysByDistrictId = (districtId: string): BarangayData[] => {
-  const data = getBarangayData();
+export const getBarangaysByDistrictId = async (districtId: string): Promise<BarangayData[]> => {
+  const data = await getBarangayData();
   if (!data) return [];
   
   return data.filter(item => item.district_id === districtId);
 };
 
 // Find barangays by name (case insensitive)
-export const getBarangaysByName = (name: string): BarangayData[] => {
-  const data = getBarangayData();
+export const getBarangaysByName = async (name: string): Promise<BarangayData[]> => {
+  const data = await getBarangayData();
   if (!data) return [];
   
   const lowerName = name.toLowerCase();
@@ -133,16 +181,16 @@ export const getBarangaysByName = (name: string): BarangayData[] => {
 };
 
 // Get all barangay names
-export const getAllBarangayNames = (): string[] => {
-  const data = getBarangayData();
+export const getAllBarangayNames = async (): Promise<string[]> => {
+  const data = await getBarangayData();
   if (!data) return [];
   
   return data.map(item => item.barangay);
 };
 
 // Get all unique district IDs from barangay data
-export const getUniqueDistrictIds = (): string[] => {
-  const data = getBarangayData();
+export const getUniqueDistrictIds = async (): Promise<string[]> => {
+  const data = await getBarangayData();
   if (!data) return [];
   
   const districtIds = new Set<string>();
@@ -152,8 +200,8 @@ export const getUniqueDistrictIds = (): string[] => {
 };
 
 // Sort barangays by name
-export const getBarangaysSortedByName = (ascending: boolean = true): BarangayData[] => {
-  const data = getBarangayData();
+export const getBarangaysSortedByName = async (ascending: boolean = true): Promise<BarangayData[]> => {
+  const data = await getBarangayData();
   if (!data) return [];
   
   return data.sort((a, b) => {
@@ -163,8 +211,8 @@ export const getBarangaysSortedByName = (ascending: boolean = true): BarangayDat
 };
 
 // Get barangay count by district
-export const getBarangayCountByDistrict = (): Record<string, number> => {
-  const data = getBarangayData();
+export const getBarangayCountByDistrict = async (): Promise<Record<string, number>> => {
+  const data = await getBarangayData();
   if (!data) return {};
   
   const countMap: Record<string, number> = {};
@@ -173,4 +221,69 @@ export const getBarangayCountByDistrict = (): Record<string, number> => {
   });
   
   return countMap;
+};
+
+// Get the timestamp of when barangay data was last stored
+export const getBarangayTimestamp = async (): Promise<number | null> => {
+  try {
+    return await barangayStore.getItem<number>('timestamp');
+  } catch (error) {
+    console.error('Error retrieving barangay timestamp:', error);
+    return null;
+  }
+};
+
+// Get data size (useful for debugging)
+export const getBarangayDataSize = async (): Promise<number> => {
+  try {
+    const data = await barangayStore.getItem('data');
+    return data ? JSON.stringify(data).length : 0;
+  } catch (error) {
+    console.error('Error getting barangay data size:', error);
+    return 0;
+  }
+};
+
+// Get barangays by multiple district IDs
+export const getBarangaysByDistrictIds = async (districtIds: string[]): Promise<BarangayData[]> => {
+  const data = await getBarangayData();
+  if (!data) return [];
+  
+  const districtIdSet = new Set(districtIds);
+  return data.filter(item => districtIdSet.has(item.district_id));
+};
+
+// Search barangays by multiple criteria
+export const searchBarangays = async (options: {
+  districtId?: string;
+  name?: string;
+  limit?: number;
+}): Promise<BarangayData[]> => {
+  const data = await getBarangayData();
+  if (!data) return [];
+  
+  let results = data;
+  
+  if (options.districtId) {
+    results = results.filter(item => item.district_id === options.districtId);
+  }
+  
+  if (options.name) {
+    const lowerName = options.name.toLowerCase();
+    results = results.filter(item => 
+      item.barangay.toLowerCase().includes(lowerName)
+    );
+  }
+  
+  if (options.limit) {
+    results = results.slice(0, options.limit);
+  }
+  
+  return results;
+};
+
+// Get barangay count
+export const getBarangayCount = async (): Promise<number> => {
+  const data = await getBarangayData();
+  return data ? data.length : 0;
 };
