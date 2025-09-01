@@ -17,12 +17,12 @@ import {
   IonList
 } from '@ionic/react';
 import { closeOutline, searchOutline } from 'ionicons/icons';
-import Kind from '../FormComponents/Kind';
 import Classification from '../FormComponents/Classification';
 import Area from '../FormComponents/Area';
 import Next from '../GlobalComponent/Next';
 import { DistrictData, getDistrictData } from '../../utils/districtLocalStorage';
 import { DeclarantData, getDeclarantData } from '../../utils/DeclarantLocalStorage';
+import { KindData, getKindData } from '../../utils/kindLocalStorage'; // Import KindData and getKindData
 
 interface FormProps {
   isOpen: boolean;
@@ -38,23 +38,27 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
   const [area, setArea] = useState<number>(0);
   const [districts, setDistricts] = useState<DistrictData[]>([]);
   const [declarants, setDeclarants] = useState<DeclarantData[]>([]);
+  const [kinds, setKinds] = useState<KindData[]>([]); // Add state for kinds
   const [filteredDeclarants, setFilteredDeclarants] = useState<DeclarantData[]>([]);
   const [searchText, setSearchText] = useState('');
   const [showDeclarantSearch, setShowDeclarantSearch] = useState(false);
   const [isFormValid, setIsFormValid] = useState(false);
   const [isLoadingDistricts, setIsLoadingDistricts] = useState(true);
   const [isLoadingDeclarants, setIsLoadingDeclarants] = useState(true);
+  const [isLoadingKinds, setIsLoadingKinds] = useState(true); // Add loading state for kinds
 
-  // Load districts and declarants from local storage
+  // Load districts, declarants, and kinds from local storage
   useEffect(() => {
     const loadData = async () => {
       try {
         setIsLoadingDistricts(true);
         setIsLoadingDeclarants(true);
+        setIsLoadingKinds(true);
         
-        const [districtData, declarantData] = await Promise.all([
+        const [districtData, declarantData, kindData] = await Promise.all([
           getDistrictData(),
-          getDeclarantData()
+          getDeclarantData(),
+          getKindData() // Fetch kind data
         ]);
         
         if (districtData) {
@@ -65,11 +69,16 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
           setDeclarants(declarantData);
           setFilteredDeclarants(declarantData);
         }
+
+        if (kindData) {
+          setKinds(kindData);
+        }
       } catch (error) {
         console.error('Error loading data:', error);
       } finally {
         setIsLoadingDistricts(false);
         setIsLoadingDeclarants(false);
+        setIsLoadingKinds(false);
       }
     };
 
@@ -183,7 +192,32 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
             <IonIcon icon={searchOutline} slot="end" />
           </IonItem>
 
-          <Kind value={kind} onChange={setKind} />
+          {/* Kind Dropdown */}
+          <IonItem>
+            <IonLabel position="stacked">Kind</IonLabel>
+            <IonSelect
+              value={kind}
+              placeholder="Select Kind"
+              onIonChange={(e) => setKind(e.detail.value)}
+              interface="popover"
+            >
+              {isLoadingKinds ? (
+                <IonSelectOption value="" disabled>
+                  Loading kinds...
+                </IonSelectOption>
+              ) : (
+                kinds.map((kindItem) => (
+                  <IonSelectOption 
+                    key={kindItem.kind_id} 
+                    value={kindItem.kind_id.toString()}
+                  >
+                    {kindItem.description}
+                  </IonSelectOption>
+                ))
+              )}
+            </IonSelect>
+          </IonItem>
+
           <Classification value={classification} onChange={setClassification} />
           <Area value={area} onChange={setArea} />
           <Next onClick={handleNextClick} disabled={!isFormValid} />
