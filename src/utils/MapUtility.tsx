@@ -47,6 +47,16 @@ import {
   getAssessmentLevelDataSize,
   getCurrentAssessmentLevelVersion
 } from './assessmentLevelLocalStorage';
+import { 
+  getStructureTypeData, 
+  isStructureTypeDataFresh,
+  clearStructureTypeData,
+  getStoredStructureTypeVersion,
+  getStructureTypeTimestamp,
+  hasStructureTypeData,
+  getStructureTypeDataSize,
+  getCurrentStructureTypeVersion
+} from './structureTypeLocalStorage';
 
 import { ClassificationFetcher } from './dataFetchers/ClassificationFetcher';
 import { SubclassFetcher } from './dataFetchers/SubclassFetcher';
@@ -57,6 +67,7 @@ import { BarangayFetcher } from './dataFetchers/BarangayFetcher';
 import { TaxRateFetcher } from './dataFetchers/TaxRateFetcher';
 import { KindFetcher } from './dataFetchers/KindFetcher';
 import { AssessmentLevelFetcher } from './dataFetchers/AssessmentLevelFetcher';
+import { StructureTypeFetcher } from './dataFetchers/StructureTypeFetcher';
 
 export interface FetchDataResult {
   success: boolean;
@@ -65,7 +76,7 @@ export interface FetchDataResult {
 }
 
 export class MapDataManager {
-  // Check if all data is fresh (including assessment level data)
+  // Check if all data is fresh (including structure type data)
   static async checkAllDataFreshness(): Promise<boolean> {
     try {
       const [
@@ -77,7 +88,8 @@ export class MapDataManager {
         isBarangayFresh,
         isTaxRateFresh,
         isKindFresh,
-        isAssessmentLevelFresh
+        isAssessmentLevelFresh,
+        isStructureTypeFresh
       ] = await Promise.all([
         isClassificationDataFresh(),
         isSubclassDataFresh(),
@@ -87,19 +99,21 @@ export class MapDataManager {
         isBarangayDataFresh(),
         isTaxRateDataFresh(),
         isKindDataFresh(),
-        isAssessmentLevelDataFresh()
+        isAssessmentLevelDataFresh(),
+        isStructureTypeDataFresh()
       ]);
 
       return isClassFresh && isSubclassFresh && isRateFresh &&
              isActualUsedFresh && isDistrictFresh && isBarangayFresh &&
-             isTaxRateFresh && isKindFresh && isAssessmentLevelFresh;
+             isTaxRateFresh && isKindFresh && isAssessmentLevelFresh &&
+             isStructureTypeFresh;
     } catch (error) {
       console.error('Error checking data freshness:', error);
       return false;
     }
   }
 
-  // Fetch all data that needs updating (including assessment level data)
+  // Fetch all data that needs updating (including structure type data)
   static async fetchAllRequiredData(): Promise<{
     results: FetchDataResult[];
     hasErrors: boolean;
@@ -117,7 +131,8 @@ export class MapDataManager {
       existingBarangayData, isBarangayFresh,
       existingTaxRateData, isTaxRateFresh,
       existingKindData, isKindFresh,
-      existingAssessmentLevelData, isAssessmentLevelFresh
+      existingAssessmentLevelData, isAssessmentLevelFresh,
+      existingStructureTypeData, isStructureTypeFresh
     ] = await Promise.all([
       getClassificationData(), isClassificationDataFresh(),
       getSubclassData(), isSubclassDataFresh(),
@@ -127,7 +142,8 @@ export class MapDataManager {
       getBarangayData(), isBarangayDataFresh(),
       getTaxRateData(), isTaxRateDataFresh(),
       getKindData(), isKindDataFresh(),
-      getAssessmentLevelData(), isAssessmentLevelDataFresh()
+      getAssessmentLevelData(), isAssessmentLevelDataFresh(),
+      getStructureTypeData(), isStructureTypeDataFresh()
     ]);
 
     // Fetch data that is not fresh or doesn't exist
@@ -185,10 +201,16 @@ export class MapDataManager {
       if (!result.success) hasErrors = true;
     }
 
+    if (!existingStructureTypeData || !isStructureTypeFresh) {
+      const result = await StructureTypeFetcher.fetchData();
+      results.push(result);
+      if (!result.success) hasErrors = true;
+    }
+
     return { results, hasErrors };
   }
 
-  // Clear all data (including assessment level data)
+  // Clear all data (including structure type data)
   static async clearAllData(): Promise<FetchDataResult[]> {
     const results: FetchDataResult[] = [];
     
@@ -196,7 +218,8 @@ export class MapDataManager {
       // Clear all data stores
       await Promise.all([
         clearKindData(),
-        clearAssessmentLevelData()
+        clearAssessmentLevelData(),
+        clearStructureTypeData()
         // Add clear functions for other data stores here
       ]);
       
@@ -281,21 +304,57 @@ export class MapDataManager {
     };
   }
 
+  // Get structure type data statistics
+  static async getStructureTypeDataStats(): Promise<{
+    exists: boolean;
+    isFresh: boolean;
+    timestamp: number | null;
+    version: number | null;
+    size: number;
+    currentVersion: number;
+  }> {
+    const [
+      exists,
+      isFresh,
+      timestamp,
+      storedVersion,
+      size
+    ] = await Promise.all([
+      hasStructureTypeData(),
+      isStructureTypeDataFresh(),
+      getStructureTypeTimestamp(),
+      getStoredStructureTypeVersion(),
+      getStructureTypeDataSize()
+    ]);
+
+    return {
+      exists,
+      isFresh,
+      timestamp,
+      version: storedVersion,
+      size,
+      currentVersion: getCurrentStructureTypeVersion()
+    };
+  }
+
   // Get all data statistics
   static async getAllDataStats(): Promise<{
     kind: Awaited<ReturnType<typeof MapDataManager.getKindDataStats>>;
     assessmentLevel: Awaited<ReturnType<typeof MapDataManager.getAssessmentLevelDataStats>>;
+    structureType: Awaited<ReturnType<typeof MapDataManager.getStructureTypeDataStats>>;
     // Add other data types here
   }> {
-    const [kindStats, assessmentLevelStats] = await Promise.all([
+    const [kindStats, assessmentLevelStats, structureTypeStats] = await Promise.all([
       this.getKindDataStats(),
-      this.getAssessmentLevelDataStats()
+      this.getAssessmentLevelDataStats(),
+      this.getStructureTypeDataStats()
       // Add other data type stats here
     ]);
 
     return {
       kind: kindStats,
-      assessmentLevel: assessmentLevelStats
+      assessmentLevel: assessmentLevelStats,
+      structureType: structureTypeStats
     };
   }
 }
