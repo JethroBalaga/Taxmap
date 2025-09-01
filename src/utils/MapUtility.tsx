@@ -67,6 +67,17 @@ import {
   getBuildingCodeDataSize,
   getCurrentBuildingCodeVersion
 } from './buildingCodeLocalStorage';
+// ADD DECLARANT IMPORTS
+import { 
+  getDeclarantData, 
+  isDeclarantDataFresh,
+  clearDeclarantData,
+  getStoredDeclarantVersion,
+  getDeclarantTimestamp,
+  hasDeclarantData,
+  getDeclarantDataSize,
+  getCurrentDeclarantVersion
+} from './DeclarantLocalStorage';
 
 import { ClassificationFetcher } from './dataFetchers/ClassificationFetcher';
 import { SubclassFetcher } from './dataFetchers/SubclassFetcher';
@@ -79,6 +90,8 @@ import { KindFetcher } from './dataFetchers/KindFetcher';
 import { AssessmentLevelFetcher } from './dataFetchers/AssessmentLevelFetcher';
 import { StructureTypeFetcher } from './dataFetchers/StructureTypeFetcher';
 import { BuildingCodeFetcher } from './dataFetchers/BuildingCodeFetcher';
+// ADD DECLARANT FETCHER IMPORT
+import { DeclarantFetcher } from './dataFetchers/DeclarantFetcher';
 
 export interface FetchDataResult {
   success: boolean;
@@ -87,7 +100,7 @@ export interface FetchDataResult {
 }
 
 export class MapDataManager {
-  // Check if all data is fresh (including building code data)
+  // Check if all data is fresh (including declarant data)
   static async checkAllDataFreshness(): Promise<boolean> {
     try {
       const [
@@ -101,7 +114,8 @@ export class MapDataManager {
         isKindFresh,
         isAssessmentLevelFresh,
         isStructureTypeFresh,
-        isBuildingCodeFresh
+        isBuildingCodeFresh,
+        isDeclarantFresh // ADD DECLARANT FRESHNESS CHECK
       ] = await Promise.all([
         isClassificationDataFresh(),
         isSubclassDataFresh(),
@@ -113,20 +127,21 @@ export class MapDataManager {
         isKindDataFresh(),
         isAssessmentLevelDataFresh(),
         isStructureTypeDataFresh(),
-        isBuildingCodeDataFresh()
+        isBuildingCodeDataFresh(),
+        isDeclarantDataFresh() // ADD DECLARANT FRESHNESS CHECK
       ]);
 
       return isClassFresh && isSubclassFresh && isRateFresh &&
              isActualUsedFresh && isDistrictFresh && isBarangayFresh &&
              isTaxRateFresh && isKindFresh && isAssessmentLevelFresh &&
-             isStructureTypeFresh && isBuildingCodeFresh;
+             isStructureTypeFresh && isBuildingCodeFresh && isDeclarantFresh; // ADD DECLARANT TO RETURN
     } catch (error) {
       console.error('Error checking data freshness:', error);
       return false;
     }
   }
 
-  // Fetch all data that needs updating (including building code data)
+  // Fetch all data that needs updating (including declarant data)
   static async fetchAllRequiredData(): Promise<{
     results: FetchDataResult[];
     hasErrors: boolean;
@@ -146,7 +161,8 @@ export class MapDataManager {
       existingKindData, isKindFresh,
       existingAssessmentLevelData, isAssessmentLevelFresh,
       existingStructureTypeData, isStructureTypeFresh,
-      existingBuildingCodeData, isBuildingCodeFresh
+      existingBuildingCodeData, isBuildingCodeFresh,
+      existingDeclarantData, isDeclarantFresh // ADD DECLARANT DATA CHECKS
     ] = await Promise.all([
       getClassificationData(), isClassificationDataFresh(),
       getSubclassData(), isSubclassDataFresh(),
@@ -158,7 +174,8 @@ export class MapDataManager {
       getKindData(), isKindDataFresh(),
       getAssessmentLevelData(), isAssessmentLevelDataFresh(),
       getStructureTypeData(), isStructureTypeDataFresh(),
-      getBuildingCodeData(), isBuildingCodeDataFresh()
+      getBuildingCodeData(), isBuildingCodeDataFresh(),
+      getDeclarantData(), isDeclarantDataFresh() // ADD DECLARANT DATA CHECKS
     ]);
 
     // Fetch data that is not fresh or doesn't exist
@@ -228,10 +245,17 @@ export class MapDataManager {
       if (!result.success) hasErrors = true;
     }
 
+    // ADD DECLARANT FETCHING
+    if (!existingDeclarantData || !isDeclarantFresh) {
+      const result = await DeclarantFetcher.fetchData();
+      results.push(result);
+      if (!result.success) hasErrors = true;
+    }
+
     return { results, hasErrors };
   }
 
-  // Clear all data (including building code data)
+  // Clear all data (including declarant data)
   static async clearAllData(): Promise<FetchDataResult[]> {
     const results: FetchDataResult[] = [];
     
@@ -241,7 +265,8 @@ export class MapDataManager {
         clearKindData(),
         clearAssessmentLevelData(),
         clearStructureTypeData(),
-        clearBuildingCodeData()
+        clearBuildingCodeData(),
+        clearDeclarantData() // ADD DECLARANT CLEAR
         // Add clear functions for other data stores here
       ]);
       
@@ -258,6 +283,39 @@ export class MapDataManager {
     }
     
     return results;
+  }
+
+  // Get declarant data statistics
+  static async getDeclarantDataStats(): Promise<{
+    exists: boolean;
+    isFresh: boolean;
+    timestamp: number | null;
+    version: number | null;
+    size: number;
+    currentVersion: number;
+  }> {
+    const [
+      exists,
+      isFresh,
+      timestamp,
+      storedVersion,
+      size
+    ] = await Promise.all([
+      hasDeclarantData(),
+      isDeclarantDataFresh(),
+      getDeclarantTimestamp(),
+      getStoredDeclarantVersion(),
+      getDeclarantDataSize()
+    ]);
+
+    return {
+      exists,
+      isFresh,
+      timestamp,
+      version: storedVersion,
+      size,
+      currentVersion: getCurrentDeclarantVersion()
+    };
   }
 
   // Get kind data statistics
@@ -394,13 +452,21 @@ export class MapDataManager {
 
   // Get all data statistics
   static async getAllDataStats(): Promise<{
+    declarant: Awaited<ReturnType<typeof MapDataManager.getDeclarantDataStats>>;
     kind: Awaited<ReturnType<typeof MapDataManager.getKindDataStats>>;
     assessmentLevel: Awaited<ReturnType<typeof MapDataManager.getAssessmentLevelDataStats>>;
     structureType: Awaited<ReturnType<typeof MapDataManager.getStructureTypeDataStats>>;
     buildingCode: Awaited<ReturnType<typeof MapDataManager.getBuildingCodeDataStats>>;
     // Add other data types here
   }> {
-    const [kindStats, assessmentLevelStats, structureTypeStats, buildingCodeStats] = await Promise.all([
+    const [
+      declarantStats,
+      kindStats,
+      assessmentLevelStats,
+      structureTypeStats,
+      buildingCodeStats
+    ] = await Promise.all([
+      this.getDeclarantDataStats(), // ADD DECLARANT STATS
       this.getKindDataStats(),
       this.getAssessmentLevelDataStats(),
       this.getStructureTypeDataStats(),
@@ -409,6 +475,7 @@ export class MapDataManager {
     ]);
 
     return {
+      declarant: declarantStats, // ADD DECLARANT TO RETURN
       kind: kindStats,
       assessmentLevel: assessmentLevelStats,
       structureType: structureTypeStats,
