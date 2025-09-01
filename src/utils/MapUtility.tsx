@@ -37,6 +37,16 @@ import {
   getKindDataSize,
   getCurrentKindVersion
 } from './kindLocalStorage';
+import { 
+  getAssessmentLevelData, 
+  isAssessmentLevelDataFresh,
+  clearAssessmentLevelData,
+  getStoredAssessmentLevelVersion,
+  getAssessmentLevelTimestamp,
+  hasAssessmentLevelData,
+  getAssessmentLevelDataSize,
+  getCurrentAssessmentLevelVersion
+} from './assessmentLevelLocalStorage';
 
 import { ClassificationFetcher } from './dataFetchers/ClassificationFetcher';
 import { SubclassFetcher } from './dataFetchers/SubclassFetcher';
@@ -46,6 +56,7 @@ import { DistrictFetcher } from './dataFetchers/DistrictFetcher';
 import { BarangayFetcher } from './dataFetchers/BarangayFetcher';
 import { TaxRateFetcher } from './dataFetchers/TaxRateFetcher';
 import { KindFetcher } from './dataFetchers/KindFetcher';
+import { AssessmentLevelFetcher } from './dataFetchers/AssessmentLevelFetcher';
 
 export interface FetchDataResult {
   success: boolean;
@@ -54,7 +65,7 @@ export interface FetchDataResult {
 }
 
 export class MapDataManager {
-  // Check if all data is fresh (including kind data)
+  // Check if all data is fresh (including assessment level data)
   static async checkAllDataFreshness(): Promise<boolean> {
     try {
       const [
@@ -65,7 +76,8 @@ export class MapDataManager {
         isDistrictFresh,
         isBarangayFresh,
         isTaxRateFresh,
-        isKindFresh
+        isKindFresh,
+        isAssessmentLevelFresh
       ] = await Promise.all([
         isClassificationDataFresh(),
         isSubclassDataFresh(),
@@ -74,19 +86,20 @@ export class MapDataManager {
         isDistrictDataFresh(),
         isBarangayDataFresh(),
         isTaxRateDataFresh(),
-        isKindDataFresh()
+        isKindDataFresh(),
+        isAssessmentLevelDataFresh()
       ]);
 
       return isClassFresh && isSubclassFresh && isRateFresh &&
              isActualUsedFresh && isDistrictFresh && isBarangayFresh &&
-             isTaxRateFresh && isKindFresh;
+             isTaxRateFresh && isKindFresh && isAssessmentLevelFresh;
     } catch (error) {
       console.error('Error checking data freshness:', error);
       return false;
     }
   }
 
-  // Fetch all data that needs updating (including kind data)
+  // Fetch all data that needs updating (including assessment level data)
   static async fetchAllRequiredData(): Promise<{
     results: FetchDataResult[];
     hasErrors: boolean;
@@ -103,7 +116,8 @@ export class MapDataManager {
       existingDistrictData, isDistrictFresh,
       existingBarangayData, isBarangayFresh,
       existingTaxRateData, isTaxRateFresh,
-      existingKindData, isKindFresh
+      existingKindData, isKindFresh,
+      existingAssessmentLevelData, isAssessmentLevelFresh
     ] = await Promise.all([
       getClassificationData(), isClassificationDataFresh(),
       getSubclassData(), isSubclassDataFresh(),
@@ -112,7 +126,8 @@ export class MapDataManager {
       getDistrictData(), isDistrictDataFresh(),
       getBarangayData(), isBarangayDataFresh(),
       getTaxRateData(), isTaxRateDataFresh(),
-      getKindData(), isKindDataFresh()
+      getKindData(), isKindDataFresh(),
+      getAssessmentLevelData(), isAssessmentLevelDataFresh()
     ]);
 
     // Fetch data that is not fresh or doesn't exist
@@ -164,17 +179,24 @@ export class MapDataManager {
       if (!result.success) hasErrors = true;
     }
 
+    if (!existingAssessmentLevelData || !isAssessmentLevelFresh) {
+      const result = await AssessmentLevelFetcher.fetchData();
+      results.push(result);
+      if (!result.success) hasErrors = true;
+    }
+
     return { results, hasErrors };
   }
 
-  // Clear all data (including kind data)
+  // Clear all data (including assessment level data)
   static async clearAllData(): Promise<FetchDataResult[]> {
     const results: FetchDataResult[] = [];
     
     try {
       // Clear all data stores
       await Promise.all([
-        clearKindData()
+        clearKindData(),
+        clearAssessmentLevelData()
         // Add clear functions for other data stores here
       ]);
       
@@ -223,6 +245,57 @@ export class MapDataManager {
       version: storedVersion,
       size,
       currentVersion: getCurrentKindVersion()
+    };
+  }
+
+  // Get assessment level data statistics
+  static async getAssessmentLevelDataStats(): Promise<{
+    exists: boolean;
+    isFresh: boolean;
+    timestamp: number | null;
+    version: number | null;
+    size: number;
+    currentVersion: number;
+  }> {
+    const [
+      exists,
+      isFresh,
+      timestamp,
+      storedVersion,
+      size
+    ] = await Promise.all([
+      hasAssessmentLevelData(),
+      isAssessmentLevelDataFresh(),
+      getAssessmentLevelTimestamp(),
+      getStoredAssessmentLevelVersion(),
+      getAssessmentLevelDataSize()
+    ]);
+
+    return {
+      exists,
+      isFresh,
+      timestamp,
+      version: storedVersion,
+      size,
+      currentVersion: getCurrentAssessmentLevelVersion()
+    };
+  }
+
+  // Get all data statistics
+  static async getAllDataStats(): Promise<{
+    kind: Awaited<ReturnType<typeof MapDataManager.getKindDataStats>>;
+    assessmentLevel: Awaited<ReturnType<typeof MapDataManager.getAssessmentLevelDataStats>>;
+    // Add other data types here
+  }> {
+    const [kindStats, assessmentLevelStats] = await Promise.all([
+      this.getKindDataStats(),
+      this.getAssessmentLevelDataStats()
+      // Add other data type stats here
+    ]);
+
+    return {
+      kind: kindStats,
+      assessmentLevel: assessmentLevelStats
     };
   }
 }
