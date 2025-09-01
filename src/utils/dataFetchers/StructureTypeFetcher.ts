@@ -8,7 +8,7 @@ export class StructureTypeFetcher extends BaseFetcher {
   static async fetchData(): Promise<FetchDataResult> {
     try {
       const { data, error } = await supabase
-        .from('structuretypetbl')
+        .from('structure_typetbl') // Fixed table name with underscore
         .select('structure_code, kind_id, description, eff_date')
         .order('kind_id', { ascending: true })
         .order('structure_code', { ascending: true });
