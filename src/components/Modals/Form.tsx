@@ -17,12 +17,12 @@ import {
   IonList
 } from '@ionic/react';
 import { closeOutline, searchOutline } from 'ionicons/icons';
-import Classification from '../FormComponents/Classification';
 import Area from '../FormComponents/Area';
 import Next from '../GlobalComponent/Next';
 import { DistrictData, getDistrictData } from '../../utils/districtLocalStorage';
 import { DeclarantData, getDeclarantData } from '../../utils/DeclarantLocalStorage';
-import { KindData, getKindData } from '../../utils/kindLocalStorage'; // Import KindData and getKindData
+import { KindData, getKindData } from '../../utils/kindLocalStorage';
+import { ClassificationData, getClassificationData } from '../../utils/classificationLocalStorage'; // Import ClassificationData and getClassificationData
 
 interface FormProps {
   isOpen: boolean;
@@ -38,27 +38,31 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
   const [area, setArea] = useState<number>(0);
   const [districts, setDistricts] = useState<DistrictData[]>([]);
   const [declarants, setDeclarants] = useState<DeclarantData[]>([]);
-  const [kinds, setKinds] = useState<KindData[]>([]); // Add state for kinds
+  const [kinds, setKinds] = useState<KindData[]>([]);
+  const [classifications, setClassifications] = useState<ClassificationData[]>([]); // Add state for classifications
   const [filteredDeclarants, setFilteredDeclarants] = useState<DeclarantData[]>([]);
   const [searchText, setSearchText] = useState('');
   const [showDeclarantSearch, setShowDeclarantSearch] = useState(false);
   const [isFormValid, setIsFormValid] = useState(false);
   const [isLoadingDistricts, setIsLoadingDistricts] = useState(true);
   const [isLoadingDeclarants, setIsLoadingDeclarants] = useState(true);
-  const [isLoadingKinds, setIsLoadingKinds] = useState(true); // Add loading state for kinds
+  const [isLoadingKinds, setIsLoadingKinds] = useState(true);
+  const [isLoadingClassifications, setIsLoadingClassifications] = useState(true); // Add loading state for classifications
 
-  // Load districts, declarants, and kinds from local storage
+  // Load districts, declarants, kinds, and classifications from local storage
   useEffect(() => {
     const loadData = async () => {
       try {
         setIsLoadingDistricts(true);
         setIsLoadingDeclarants(true);
         setIsLoadingKinds(true);
+        setIsLoadingClassifications(true);
         
-        const [districtData, declarantData, kindData] = await Promise.all([
+        const [districtData, declarantData, kindData, classificationData] = await Promise.all([
           getDistrictData(),
           getDeclarantData(),
-          getKindData() // Fetch kind data
+          getKindData(),
+          getClassificationData() // Fetch classification data
         ]);
         
         if (districtData) {
@@ -73,12 +77,17 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
         if (kindData) {
           setKinds(kindData);
         }
+
+        if (classificationData) {
+          setClassifications(classificationData);
+        }
       } catch (error) {
         console.error('Error loading data:', error);
       } finally {
         setIsLoadingDistricts(false);
         setIsLoadingDeclarants(false);
         setIsLoadingKinds(false);
+        setIsLoadingClassifications(false);
       }
     };
 
@@ -218,7 +227,32 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
             </IonSelect>
           </IonItem>
 
-          <Classification value={classification} onChange={setClassification} />
+          {/* Classification Dropdown */}
+          <IonItem>
+            <IonLabel position="stacked">Classification</IonLabel>
+            <IonSelect
+              value={classification}
+              placeholder="Select Classification"
+              onIonChange={(e) => setClassification(e.detail.value)}
+              interface="popover"
+            >
+              {isLoadingClassifications ? (
+                <IonSelectOption value="" disabled>
+                  Loading classifications...
+                </IonSelectOption>
+              ) : (
+                classifications.map((classificationItem) => (
+                  <IonSelectOption 
+                    key={classificationItem.class_id} 
+                    value={classificationItem.class_id}
+                  >
+                    {classificationItem.classification}
+                  </IonSelectOption>
+                ))
+              )}
+            </IonSelect>
+          </IonItem>
+
           <Area value={area} onChange={setArea} />
           <Next onClick={handleNextClick} disabled={!isFormValid} />
         </IonContent>
