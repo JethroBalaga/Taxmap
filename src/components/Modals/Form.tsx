@@ -21,7 +21,6 @@ import Kind from '../FormComponents/Kind';
 import Classification from '../FormComponents/Classification';
 import Area from '../FormComponents/Area';
 import Next from '../GlobalComponent/Next';
-import ActualUsedModal from './ActualUsedModal';
 import { DistrictData, getDistrictData } from '../../utils/districtLocalStorage';
 import { DeclarantData, getDeclarantData } from '../../utils/DeclarantLocalStorage';
 
@@ -42,7 +41,6 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
   const [filteredDeclarants, setFilteredDeclarants] = useState<DeclarantData[]>([]);
   const [searchText, setSearchText] = useState('');
   const [showDeclarantSearch, setShowDeclarantSearch] = useState(false);
-  const [showActualUsedModal, setShowActualUsedModal] = useState(false);
   const [isFormValid, setIsFormValid] = useState(false);
   const [isLoadingDistricts, setIsLoadingDistricts] = useState(true);
   const [isLoadingDeclarants, setIsLoadingDeclarants] = useState(true);
@@ -106,18 +104,8 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
 
   const handleNextClick = () => {
     if (!isFormValid) return;
-    setShowActualUsedModal(true);
-  };
-
-  const handleActualUsedSubmit = (formData: {
-    actualUse: string;
-    group: string;
-    location: string;
-    subclass: string;
-  }) => {
+    // Directly call onSuccess since we removed the ActualUsedModal
     console.log('Form data:', { district, declarant, kind, classification, area });
-    console.log('Actual Used data:', formData);
-    setShowActualUsedModal(false);
     onSuccess();
   };
 
@@ -250,16 +238,6 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
           )}
         </IonContent>
       </IonModal>
-
-      <ActualUsedModal
-        isOpen={showActualUsedModal}
-        onClose={() => setShowActualUsedModal(false)}
-        onNext={handleActualUsedSubmit}
-        declarant={declarant}
-        kind={kind}
-        classification={classification}
-        area={area}
-      />
     </>
   );
 };
