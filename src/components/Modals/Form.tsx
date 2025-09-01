@@ -12,16 +12,18 @@ import {
   IonItem,
   IonLabel,
   IonSelect,
-  IonSelectOption
+  IonSelectOption,
+  IonSearchbar,
+  IonList
 } from '@ionic/react';
-import { closeOutline } from 'ionicons/icons';
-import Declarant from '../FormComponents/Declarant';
+import { closeOutline, searchOutline } from 'ionicons/icons';
 import Kind from '../FormComponents/Kind';
 import Classification from '../FormComponents/Classification';
 import Area from '../FormComponents/Area';
 import Next from '../GlobalComponent/Next';
 import ActualUsedModal from './ActualUsedModal';
 import { DistrictData, getDistrictData } from '../../utils/districtLocalStorage';
+import { DeclarantData, getDeclarantData } from '../../utils/DeclarantLocalStorage';
 
 interface FormProps {
   isOpen: boolean;
@@ -36,30 +38,60 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
   const [classification, setClassification] = useState('');
   const [area, setArea] = useState<number>(0);
   const [districts, setDistricts] = useState<DistrictData[]>([]);
+  const [declarants, setDeclarants] = useState<DeclarantData[]>([]);
+  const [filteredDeclarants, setFilteredDeclarants] = useState<DeclarantData[]>([]);
+  const [searchText, setSearchText] = useState('');
+  const [showDeclarantSearch, setShowDeclarantSearch] = useState(false);
   const [showActualUsedModal, setShowActualUsedModal] = useState(false);
   const [isFormValid, setIsFormValid] = useState(false);
   const [isLoadingDistricts, setIsLoadingDistricts] = useState(true);
+  const [isLoadingDeclarants, setIsLoadingDeclarants] = useState(true);
 
-  // Load districts from local storage
+  // Load districts and declarants from local storage
   useEffect(() => {
-    const loadDistricts = async () => {
+    const loadData = async () => {
       try {
         setIsLoadingDistricts(true);
-        const districtData = await getDistrictData();
+        setIsLoadingDeclarants(true);
+        
+        const [districtData, declarantData] = await Promise.all([
+          getDistrictData(),
+          getDeclarantData()
+        ]);
+        
         if (districtData) {
           setDistricts(districtData);
         }
+        
+        if (declarantData) {
+          setDeclarants(declarantData);
+          setFilteredDeclarants(declarantData);
+        }
       } catch (error) {
-        console.error('Error loading districts:', error);
+        console.error('Error loading data:', error);
       } finally {
         setIsLoadingDistricts(false);
+        setIsLoadingDeclarants(false);
       }
     };
 
     if (isOpen) {
-      loadDistricts();
+      loadData();
     }
   }, [isOpen]);
+
+  // Filter declarants based on search text
+  useEffect(() => {
+    if (!searchText) {
+      setFilteredDeclarants(declarants);
+    } else {
+      const filtered = declarants.filter(declarant => {
+        const fullName = `${declarant.firstname} ${declarant.lastname}`.toLowerCase();
+        return fullName.includes(searchText.toLowerCase());
+      });
+      setFilteredDeclarants(filtered);
+    }
+  }, [searchText, declarants]);
 
   // Check form validity whenever any field changes
   useEffect(() => {
@@ -73,7 +105,7 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
   }, [district, declarant, kind, classification, area]);
 
   const handleNextClick = () => {
-    if (!isFormValid) return; // Prevent proceeding if form isn't valid
+    if (!isFormValid) return;
     setShowActualUsedModal(true);
   };
 
@@ -86,7 +118,19 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
     console.log('Form data:', { district, declarant, kind, classification, area });
     console.log('Actual Used data:', formData);
     setShowActualUsedModal(false);
-    onSuccess(); // Call the success callback
+    onSuccess();
+  };
+
+  const handleSelectDeclarant = (declarantId: number) => {
+    setDeclarant(declarantId.toString());
+    setShowDeclarantSearch(false);
+    setSearchText('');
+  };
+
+  const getSelectedDeclarantName = () => {
+    if (!declarant) return 'Select Declarant';
+    const selected = declarants.find(d => d.declarant_id.toString() === declarant);
+    return selected ? `${selected.firstname} ${selected.lastname}` : 'Select Declarant';
   };
 
   const resetForm = () => {
@@ -95,6 +139,7 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
     setKind('');
     setClassification('');
     setArea(0);
+    setSearchText('');
   };
 
   const handleDismiss = () => {
@@ -143,7 +188,13 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
             </IonSelect>
           </IonItem>
 
-          <Declarant value={declarant} onChange={setDeclarant} />
+          {/* Declarant Dropdown with Search */}
+          <IonItem button onClick={() => setShowDeclarantSearch(true)}>
+            <IonLabel position="stacked">Declarant</IonLabel>
+            <IonLabel>{getSelectedDeclarantName()}</IonLabel>
+            <IonIcon icon={searchOutline} slot="end" />
+          </IonItem>
+
           <Kind value={kind} onChange={setKind} />
           <Classification value={classification} onChange={setClassification} />
           <Area value={area} onChange={setArea} />
@@ -151,11 +202,60 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
         </IonContent>
       </IonModal>
 
+      {/* Declarant Search Modal */}
+      <IonModal isOpen={showDeclarantSearch} onDidDismiss={() => setShowDeclarantSearch(false)}>
+        <IonHeader>
+          <IonToolbar>
+            <IonTitle>Select Declarant</IonTitle>
+            <IonButtons slot="end">
+              <IonButton onClick={() => setShowDeclarantSearch(false)}>
+                <IonIcon icon={closeOutline} />
+              </IonButton>
+            </IonButtons>
+          </IonToolbar>
+        </IonHeader>
+        <IonContent>
+          <IonSearchbar
+            value={searchText}
+            onIonInput={(e) => setSearchText(e.detail.value!)}
+            placeholder="Search declarants..."
+            animated
+          />
+          
+          {isLoadingDeclarants ? (
+            <IonItem>
+              <IonLabel>Loading declarants...</IonLabel>
+            </IonItem>
+          ) : filteredDeclarants.length === 0 ? (
+            <IonItem>
+              <IonLabel>
+                {searchText ? 'No matching declarants found' : 'No declarants available'}
+              </IonLabel>
+            </IonItem>
+          ) : (
+            <IonList>
+              {filteredDeclarants.map((declarant) => (
+                <IonItem 
+                  key={declarant.declarant_id} 
+                  button 
+                  onClick={() => handleSelectDeclarant(declarant.declarant_id)}
+                >
+                  <IonLabel>
+                    <h2>{declarant.firstname} {declarant.lastname}</h2>
+                    <p>ID: {declarant.declarant_id}</p>
+                  </IonLabel>
+                </IonItem>
+              ))}
+            </IonList>
+          )}
+        </IonContent>
+      </IonModal>
+
       <ActualUsedModal
         isOpen={showActualUsedModal}
         onClose={() => setShowActualUsedModal(false)}
         onNext={handleActualUsedSubmit}
-        declarant={declarant.toUpperCase()}
+        declarant={declarant}
         kind={kind}
         classification={classification}
         area={area}
