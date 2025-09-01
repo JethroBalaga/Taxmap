@@ -57,6 +57,16 @@ import {
   getStructureTypeDataSize,
   getCurrentStructureTypeVersion
 } from './structureTypeLocalStorage';
+import { 
+  getBuildingCodeData, 
+  isBuildingCodeDataFresh,
+  clearBuildingCodeData,
+  getStoredBuildingCodeVersion,
+  getBuildingCodeTimestamp,
+  hasBuildingCodeData,
+  getBuildingCodeDataSize,
+  getCurrentBuildingCodeVersion
+} from './buildingCodeLocalStorage';
 
 import { ClassificationFetcher } from './dataFetchers/ClassificationFetcher';
 import { SubclassFetcher } from './dataFetchers/SubclassFetcher';
@@ -68,6 +78,7 @@ import { TaxRateFetcher } from './dataFetchers/TaxRateFetcher';
 import { KindFetcher } from './dataFetchers/KindFetcher';
 import { AssessmentLevelFetcher } from './dataFetchers/AssessmentLevelFetcher';
 import { StructureTypeFetcher } from './dataFetchers/StructureTypeFetcher';
+import { BuildingCodeFetcher } from './dataFetchers/BuildingCodeFetcher';
 
 export interface FetchDataResult {
   success: boolean;
@@ -76,7 +87,7 @@ export interface FetchDataResult {
 }
 
 export class MapDataManager {
-  // Check if all data is fresh (including structure type data)
+  // Check if all data is fresh (including building code data)
   static async checkAllDataFreshness(): Promise<boolean> {
     try {
       const [
@@ -89,7 +100,8 @@ export class MapDataManager {
         isTaxRateFresh,
         isKindFresh,
         isAssessmentLevelFresh,
-        isStructureTypeFresh
+        isStructureTypeFresh,
+        isBuildingCodeFresh
       ] = await Promise.all([
         isClassificationDataFresh(),
         isSubclassDataFresh(),
@@ -100,20 +112,21 @@ export class MapDataManager {
         isTaxRateDataFresh(),
         isKindDataFresh(),
         isAssessmentLevelDataFresh(),
-        isStructureTypeDataFresh()
+        isStructureTypeDataFresh(),
+        isBuildingCodeDataFresh()
       ]);
 
       return isClassFresh && isSubclassFresh && isRateFresh &&
              isActualUsedFresh && isDistrictFresh && isBarangayFresh &&
              isTaxRateFresh && isKindFresh && isAssessmentLevelFresh &&
-             isStructureTypeFresh;
+             isStructureTypeFresh && isBuildingCodeFresh;
     } catch (error) {
       console.error('Error checking data freshness:', error);
       return false;
     }
   }
 
-  // Fetch all data that needs updating (including structure type data)
+  // Fetch all data that needs updating (including building code data)
   static async fetchAllRequiredData(): Promise<{
     results: FetchDataResult[];
     hasErrors: boolean;
@@ -132,7 +145,8 @@ export class MapDataManager {
       existingTaxRateData, isTaxRateFresh,
       existingKindData, isKindFresh,
       existingAssessmentLevelData, isAssessmentLevelFresh,
-      existingStructureTypeData, isStructureTypeFresh
+      existingStructureTypeData, isStructureTypeFresh,
+      existingBuildingCodeData, isBuildingCodeFresh
     ] = await Promise.all([
       getClassificationData(), isClassificationDataFresh(),
       getSubclassData(), isSubclassDataFresh(),
@@ -143,7 +157,8 @@ export class MapDataManager {
       getTaxRateData(), isTaxRateDataFresh(),
       getKindData(), isKindDataFresh(),
       getAssessmentLevelData(), isAssessmentLevelDataFresh(),
-      getStructureTypeData(), isStructureTypeDataFresh()
+      getStructureTypeData(), isStructureTypeDataFresh(),
+      getBuildingCodeData(), isBuildingCodeDataFresh()
     ]);
 
     // Fetch data that is not fresh or doesn't exist
@@ -207,10 +222,16 @@ export class MapDataManager {
       if (!result.success) hasErrors = true;
     }
 
+    if (!existingBuildingCodeData || !isBuildingCodeFresh) {
+      const result = await BuildingCodeFetcher.fetchData();
+      results.push(result);
+      if (!result.success) hasErrors = true;
+    }
+
     return { results, hasErrors };
   }
 
-  // Clear all data (including structure type data)
+  // Clear all data (including building code data)
   static async clearAllData(): Promise<FetchDataResult[]> {
     const results: FetchDataResult[] = [];
     
@@ -219,7 +240,8 @@ export class MapDataManager {
       await Promise.all([
         clearKindData(),
         clearAssessmentLevelData(),
-        clearStructureTypeData()
+        clearStructureTypeData(),
+        clearBuildingCodeData()
         // Add clear functions for other data stores here
       ]);
       
@@ -337,24 +359,60 @@ export class MapDataManager {
     };
   }
 
+  // Get building code data statistics
+  static async getBuildingCodeDataStats(): Promise<{
+    exists: boolean;
+    isFresh: boolean;
+    timestamp: number | null;
+    version: number | null;
+    size: number;
+    currentVersion: number;
+  }> {
+    const [
+      exists,
+      isFresh,
+      timestamp,
+      storedVersion,
+      size
+    ] = await Promise.all([
+      hasBuildingCodeData(),
+      isBuildingCodeDataFresh(),
+      getBuildingCodeTimestamp(),
+      getStoredBuildingCodeVersion(),
+      getBuildingCodeDataSize()
+    ]);
+
+    return {
+      exists,
+      isFresh,
+      timestamp,
+      version: storedVersion,
+      size,
+      currentVersion: getCurrentBuildingCodeVersion()
+    };
+  }
+
   // Get all data statistics
   static async getAllDataStats(): Promise<{
     kind: Awaited<ReturnType<typeof MapDataManager.getKindDataStats>>;
     assessmentLevel: Awaited<ReturnType<typeof MapDataManager.getAssessmentLevelDataStats>>;
     structureType: Awaited<ReturnType<typeof MapDataManager.getStructureTypeDataStats>>;
+    buildingCode: Awaited<ReturnType<typeof MapDataManager.getBuildingCodeDataStats>>;
     // Add other data types here
   }> {
-    const [kindStats, assessmentLevelStats, structureTypeStats] = await Promise.all([
+    const [kindStats, assessmentLevelStats, structureTypeStats, buildingCodeStats] = await Promise.all([
       this.getKindDataStats(),
       this.getAssessmentLevelDataStats(),
-      this.getStructureTypeDataStats()
+      this.getStructureTypeDataStats(),
+      this.getBuildingCodeDataStats()
       // Add other data type stats here
     ]);
 
     return {
       kind: kindStats,
       assessmentLevel: assessmentLevelStats,
-      structureType: structureTypeStats
+      structureType: structureTypeStats,
+      buildingCode: buildingCodeStats
     };
   }
 }
