@@ -307,3 +307,49 @@ ion-select:focus-within, ion-input:focus-within, ion-datetime:focus-within {
   box-shadow: 0 0 0 3px rgba(106, 17, 203, 0.15);
   border-color: #6a11cb;
 }
+/* Add these styles to your modal.css */
+
+.declarant-item-content {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.declarant-value-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-top: 8px;
+  min-height: 24px;
+  margin-left: 20px;
+}
+
+.declarant-value {
+  color: #2d3748;
+  font-size: 16px;
+  flex: 1;
+}
+
+.declarant-search-icon {
+  color: #6a11cb;
+  font-size: 20px;
+  margin-left: 5px;
+}
+
+/* Ensure the custom-input has proper spacing */
+.custom-input {
+  --padding-start: 16px;
+  --padding-end: 16px;
+  --padding-top: 14px;
+  --padding-bottom: 14px;
+}
+
+/* Make sure stacked labels work properly */
+.input-label {
+  color: #2d3748;
+  font-weight: 600;
+  margin-bottom: 8px;
+  font-size: 14px;
+  transform: none !important;
+}

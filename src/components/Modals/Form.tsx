@@ -14,16 +14,20 @@ import {
   IonSelect,
   IonSelectOption,
   IonSearchbar,
-  IonList
+  IonList,
+  IonText
 } from '@ionic/react';
 import { closeOutline, searchOutline } from 'ionicons/icons';
 import Area from '../FormComponents/Area';
 import Next from '../GlobalComponent/Next';
-import BuildingModal from './BuildingModal'; // Import your BuildingModal component
+import BuildingModal from './BuildingModal';
 import { DistrictData, getDistrictData } from '../../utils/districtLocalStorage';
 import { DeclarantData, getDeclarantData } from '../../utils/DeclarantLocalStorage';
 import { KindData, getKindData } from '../../utils/kindLocalStorage';
 import { ClassificationData, getClassificationData } from '../../utils/classificationLocalStorage';
+
+// Import your CSS file
+import '../../CSS/modal.css';
 
 interface FormProps {
   isOpen: boolean;
@@ -52,7 +56,6 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
 
   // State for building modal
   const [showBuildingModal, setShowBuildingModal] = useState(false);
-  const [buildingData, setBuildingData] = useState<any>(null);
 
   // Load districts, declarants, kinds, and classifications from local storage
   useEffect(() => {
@@ -147,7 +150,6 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
 
   const handleBuildingModalSuccess = (data: any) => {
     // Save building data and proceed
-    setBuildingData(data);
     console.log('Form data:', { district, declarant, kind, classification, area });
     console.log('Building data:', data);
     setShowBuildingModal(false);
@@ -177,7 +179,6 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
     setClassification('');
     setArea(0);
     setSearchText('');
-    setBuildingData(null);
   };
 
   const handleDismiss = () => {
@@ -187,172 +188,205 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
 
   return (
     <>
-      <IonModal isOpen={isOpen} onDidDismiss={handleDismiss}>
+      <IonModal isOpen={isOpen} onDidDismiss={handleDismiss} className="custom-modal">
         <IonHeader>
-          <IonToolbar>
-            <IonTitle>GeoTag Form</IonTitle>
+          <IonToolbar className="fancy-header">
+            <IonTitle className="fancy-title">
+              <i className="icon-form" style={{ marginRight: '10px' }}></i>
+              GeoTag Form
+            </IonTitle>
             <IonButtons slot="end">
-              <IonButton onClick={handleDismiss}>
+              <IonButton onClick={handleDismiss} className="fancy-close-btn">
                 <IonIcon icon={closeOutline} />
               </IonButton>
             </IonButtons>
           </IonToolbar>
         </IonHeader>
 
-        <IonContent className="ion-padding">
-          {/* District Dropdown */}
-          <IonItem>
-            <IonLabel position="stacked">District</IonLabel>
-            <IonSelect
-              value={district}
-              placeholder="Select District"
-              onIonChange={(e) => setDistrict(e.detail.value)}
-              interface="popover"
-            >
-              {isLoadingDistricts ? (
-                <IonSelectOption value={null} disabled>
-                  Loading districts...
-                </IonSelectOption>
-              ) : (
-                districts.map((district) => (
-                  <IonSelectOption
-                    key={district.district_id}
-                    value={district.district_id}
-                  >
-                    {district.district_name}
-                  </IonSelectOption>
-                ))
-              )}
-            </IonSelect>
-          </IonItem>
-
-          {/* Declarant Dropdown with Search */}
-          <IonItem button onClick={() => setShowDeclarantSearch(true)}>
-            <IonLabel position="stacked">Declarant</IonLabel>
-            <IonLabel>{getSelectedDeclarantName()}</IonLabel>
-            <IonIcon icon={searchOutline} slot="end" />
-          </IonItem>
-
-          {/* Kind Dropdown */}
-          <IonItem>
-            <IonLabel position="stacked">Kind</IonLabel>
-            <IonSelect
-              value={kind}
-              placeholder="Select Kind"
-              onIonChange={(e) => setKind(e.detail.value)}
-              interface="popover"
-            >
-              {isLoadingKinds ? (
-                <IonSelectOption value="" disabled>
-                  Loading kinds...
-                </IonSelectOption>
-              ) : (
-                kinds.map((kindItem) => (
-                  <IonSelectOption
-                    key={kindItem.kind_id}
-                    value={kindItem.kind_id.toString()}
-                  >
-                    {kindItem.description}
-                  </IonSelectOption>
-                ))
-              )}
-            </IonSelect>
-          </IonItem>
-
-          {/* Classification Dropdown */}
-          <IonItem>
-            <IonLabel position="stacked">Classification</IonLabel>
-            <IonSelect
-              value={classification}
-              placeholder="Select Classification"
-              onIonChange={(e) => setClassification(e.detail.value)}
-              interface="popover"
-            >
-              {isLoadingClassifications ? (
-                <IonSelectOption value="" disabled>
-                  Loading classifications...
-                </IonSelectOption>
-              ) : (
-                classifications.map((classificationItem) => (
-                  <IonSelectOption
-                    key={classificationItem.class_id}
-                    value={classificationItem.class_id}
-                  >
-                    {classificationItem.classification}
-                  </IonSelectOption>
-                ))
-              )}
-            </IonSelect>
-          </IonItem>
-
-          <Area value={area} onChange={setArea} />
-          <Next onClick={handleNextClick} disabled={!isFormValid} />
-        </IonContent>
-      </IonModal>
-
-      {/* Declarant Search Modal */}
-      <IonModal isOpen={showDeclarantSearch} onDidDismiss={() => setShowDeclarantSearch(false)}>
-        <IonHeader>
-          <IonToolbar>
-            <IonTitle>Select Declarant</IonTitle>
-            <IonButtons slot="end">
-              <IonButton onClick={() => setShowDeclarantSearch(false)}>
-                <IonIcon icon={closeOutline} />
-              </IonButton>
-            </IonButtons>
-          </IonToolbar>
-        </IonHeader>
-        <IonContent>
-          <IonSearchbar
-            value={searchText}
-            onIonInput={(e) => setSearchText(e.detail.value!)}
-            placeholder="Search declarants..."
-            animated
-          />
-
-          {isLoadingDeclarants ? (
-            <IonItem>
-              <IonLabel>Loading declarants...</IonLabel>
-            </IonItem>
-          ) : filteredDeclarants.length === 0 ? (
-            <IonItem>
-              <IonLabel>
-                {searchText ? 'No matching declarants found' : 'No declarants available'}
+        <IonContent className="modal-content">
+          <div className="form-container">
+            {/* District Dropdown */}
+            <IonItem className="custom-input" lines="none">
+              <IonLabel position="stacked" className="input-label">
+                District <span style={{ color: 'red' }}>*</span>
               </IonLabel>
+              <IonSelect
+                value={district}
+                placeholder="Select District"
+                onIonChange={(e) => setDistrict(e.detail.value)}
+                interface="popover"
+                className="modal-input"
+              >
+                {isLoadingDistricts ? (
+                  <IonSelectOption value={null} disabled>
+                    Loading districts...
+                  </IonSelectOption>
+                ) : (
+                  districts.map((district) => (
+                    <IonSelectOption
+                      key={district.district_id}
+                      value={district.district_id}
+                    >
+                      {district.district_name}
+                    </IonSelectOption>
+                  ))
+                )}
+              </IonSelect>
             </IonItem>
-          ) : (
-            <IonList>
-              {filteredDeclarants.map((declarant) => (
-                <IonItem
-                  key={declarant.declarant_id}
-                  button
-                  onClick={() => handleSelectDeclarant(declarant.declarant_id)}
-                >
-                  <IonLabel>
-                    <h2>{declarant.firstname} {declarant.lastname}</h2>
-                    <p>ID: {declarant.declarant_id}</p>
-                  </IonLabel>
-                </IonItem>
-              ))}
-            </IonList>
-          )}
+
+            {/* Declarant Dropdown with Search - Updated */}
+            <IonItem 
+              className="custom-input" 
+              lines="none" 
+              button 
+              onClick={() => setShowDeclarantSearch(true)}
+            >
+              <IonLabel position="stacked" className="input-label">
+                Declarant <span style={{ color: 'red' }}>*</span>
+              </IonLabel>
+              <div className="declarant-item-content">
+                <div className="declarant-value-container">
+                  <span className="declarant-value">{getSelectedDeclarantName()}</span>
+                  <IonIcon icon={searchOutline} className="declarant-search-icon" />
+                </div>
+              </div>
+            </IonItem>
+
+            {/* Kind Dropdown */}
+            <IonItem className="custom-input" lines="none">
+              <IonLabel position="stacked" className="input-label">
+                Kind <span style={{ color: 'red' }}>*</span>
+              </IonLabel>
+              <IonSelect
+                value={kind}
+                placeholder="Select Kind"
+                onIonChange={(e) => setKind(e.detail.value)}
+                interface="popover"
+                className="modal-input"
+              >
+                {isLoadingKinds ? (
+                  <IonSelectOption value="" disabled>
+                    Loading kinds...
+                  </IonSelectOption>
+                ) : (
+                  kinds.map((kindItem) => (
+                    <IonSelectOption
+                      key={kindItem.kind_id}
+                      value={kindItem.kind_id.toString()}
+                    >
+                      {kindItem.description}
+                    </IonSelectOption>
+                  ))
+                )}
+              </IonSelect>
+            </IonItem>
+
+            {/* Classification Dropdown */}
+            <IonItem className="custom-input" lines="none">
+              <IonLabel position="stacked" className="input-label">
+                Classification <span style={{ color: 'red' }}>*</span>
+              </IonLabel>
+              <IonSelect
+                value={classification}
+                placeholder="Select Classification"
+                onIonChange={(e) => setClassification(e.detail.value)}
+                interface="popover"
+                className="modal-input"
+              >
+                {isLoadingClassifications ? (
+                  <IonSelectOption value="" disabled>
+                    Loading classifications...
+                  </IonSelectOption>
+                ) : (
+                  classifications.map((classificationItem) => (
+                    <IonSelectOption
+                      key={classificationItem.class_id}
+                      value={classificationItem.class_id}
+                    >
+                      {classificationItem.classification}
+                    </IonSelectOption>
+                  ))
+                )}
+              </IonSelect>
+            </IonItem>
+
+            <Area value={area} onChange={setArea} />
+            
+            <div className="next-btn-container">
+              <Next onClick={handleNextClick} disabled={!isFormValid} />
+            </div>
+          </div>
         </IonContent>
       </IonModal>
 
-      {/* Conditionally render BuildingModal */}
-      {showBuildingModal && (
-        // In your Form component
-        <BuildingModal
-          isOpen={showBuildingModal}
-          onDismiss={() => setShowBuildingModal(false)}
-          onSuccess={(buildingData) => {
-            console.log('Building data:', buildingData);
-            // Handle the building data
-            setShowBuildingModal(false);
-            onSuccess(); // Proceed with the main form submission
-          }}
-        />
-      )}
+      {/* Declarant Search Modal - Updated */}
+      <IonModal 
+        isOpen={showDeclarantSearch} 
+        onDidDismiss={() => setShowDeclarantSearch(false)}
+        className="custom-modal"
+      >
+        <IonHeader>
+          <IonToolbar className="fancy-header">
+            <IonTitle className="fancy-title">Select Declarant</IonTitle>
+            <IonButtons slot="end">
+              <IonButton onClick={() => setShowDeclarantSearch(false)} className="fancy-close-btn">
+                <IonIcon icon={closeOutline} />
+              </IonButton>
+            </IonButtons>
+          </IonToolbar>
+        </IonHeader>
+        <IonContent className="modal-content">
+          <div className="form-container">
+            <IonSearchbar
+              value={searchText}
+              onIonInput={(e) => setSearchText(e.detail.value || '')}
+              placeholder="Search declarants..."
+              animated
+              className="modal-input"
+            />
+
+            {isLoadingDeclarants ? (
+              <IonItem className="custom-input" lines="none">
+                <IonLabel>Loading declarants...</IonLabel>
+              </IonItem>
+            ) : filteredDeclarants.length === 0 ? (
+              <IonItem className="custom-input" lines="none">
+                <IonLabel>
+                  {searchText ? 'No matching declarants found' : 'No declarants available'}
+                </IonLabel>
+              </IonItem>
+            ) : (
+              <div className="search-results">
+                {filteredDeclarants.map((declarant) => (
+                  <IonItem
+                    key={declarant.declarant_id}
+                    className="custom-input search-result-item"
+                    lines="none"
+                    button
+                    onClick={() => handleSelectDeclarant(declarant.declarant_id)}
+                  >
+                    <div className="declarant-item-content">
+                      <h2 style={{ margin: '0 0 4px 0', color: '#2d3748', fontSize: '16px' }}>
+                        {declarant.firstname} {declarant.lastname}
+                      </h2>
+                      <p style={{ margin: '0', color: '#718096', fontSize: '14px' }}>
+                        ID: {declarant.declarant_id}
+                      </p>
+                    </div>
+                  </IonItem>
+                ))}
+              </div>
+            )}
+          </div>
+        </IonContent>
+      </IonModal>
+
+      {/* Building Modal */}
+      <BuildingModal
+        isOpen={showBuildingModal}
+        onDismiss={handleBuildingModalDismiss}
+        onSuccess={handleBuildingModalSuccess}
+      />
     </>
   );
 };
