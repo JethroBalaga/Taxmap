@@ -9,15 +9,6 @@ interface StructureTypeDropProps {
 }
 
 const StructureTypeDrop: React.FC<StructureTypeDropProps> = ({ value, onChange, error }) => {
-  const structureTypes = [
-    { id: 'residential', name: 'Residential' },
-    { id: 'commercial', name: 'Commercial' },
-    { id: 'industrial', name: 'Industrial' },
-    { id: 'institutional', name: 'Institutional' },
-    { id: 'agricultural', name: 'Agricultural' },
-    { id: 'mixed_use', name: 'Mixed Use' }
-  ];
-
   return (
     <IonItem>
       <IonLabel position="stacked">Structure Type *</IonLabel>
@@ -28,11 +19,7 @@ const StructureTypeDrop: React.FC<StructureTypeDropProps> = ({ value, onChange, 
         interface="popover"
         className={error ? 'ion-invalid' : ''}
       >
-        {structureTypes.map(type => (
-          <IonSelectOption key={type.id} value={type.id}>
-            {type.name}
-          </IonSelectOption>
-        ))}
+        {/* Empty for now as requested - no options */}
       </IonSelect>
       {error && <IonText color="danger" className="ion-padding-start">{error}</IonText>}
     </IonItem>
