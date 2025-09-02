@@ -35,6 +35,15 @@ interface FormProps {
   onSuccess: () => void;
 }
 
+// Interface for the form data that will be passed to BuildingModal
+export interface FormData {
+  district: number | null;
+  declarant: string;
+  kind: string;
+  classification: string;
+  area: number;
+}
+
 const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
   const [district, setDistrict] = useState<number | null>(null);
   const [declarant, setDeclarant] = useState('');
@@ -148,10 +157,10 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
     }
   };
 
-  const handleBuildingModalSuccess = (data: any) => {
+  const handleBuildingModalSuccess = (buildingData: any) => {
     // Save building data and proceed
     console.log('Form data:', { district, declarant, kind, classification, area });
-    console.log('Building data:', data);
+    console.log('Building data:', buildingData);
     setShowBuildingModal(false);
     onSuccess();
   };
@@ -184,6 +193,15 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
   const handleDismiss = () => {
     resetForm();
     onDismiss();
+  };
+
+  // Prepare form data to pass to BuildingModal
+  const formData: FormData = {
+    district,
+    declarant,
+    kind,
+    classification,
+    area
   };
 
   return (
@@ -386,6 +404,7 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
         isOpen={showBuildingModal}
         onDismiss={handleBuildingModalDismiss}
         onSuccess={handleBuildingModalSuccess}
+        formData={formData} // Pass form data to BuildingModal
       />
     </>
   );
