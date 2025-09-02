@@ -1,0 +1,309 @@
+/* buildingmodal.css */
+
+/* Custom EXTRA wide modal with matching color pattern */
+.custom-wide-modal {
+  --width: 95%;
+  --max-width: 1200px;
+  --height: 90%;
+  --border-radius: 16px;
+  --box-shadow: 0 10px 30px rgba(106, 17, 203, 0.2);
+  backdrop-filter: blur(5px);
+}
+
+/* Modal content styling */
+.modal-content {
+  --padding-top: 24px;
+  --padding-bottom: 24px;
+  --padding-start: 24px;
+  --padding-end: 24px;
+  --background: #f8f9fa;
+}
+
+/* Grid styling - optimized for wider layout */
+.custom-grid {
+  padding: 0;
+  margin: 0;
+  width: 100%;
+}
+
+/* Column styling with subtle animations */
+.custom-col {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  padding: 0 12px;
+  margin: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  display: block !important;
+}
+
+.custom-col:hover {
+  transform: translateY(-2px);
+}
+
+/* Input field styling - matching classification modal */
+.custom-input {
+  --padding-end: 16px;
+  --padding-top: 14px;
+  --padding-bottom: 14px;
+  --border-radius: 10px;
+  --background: white;
+  --border-color: #e0e3e7;
+  --highlight-color-focused: #6a11cb;
+  --color: #2d3748;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  margin-bottom: 16px;
+  border: 1px solid #e0e3e7;
+}
+
+.custom-input.item-has-focus {
+  box-shadow: 0 0 0 3px rgba(106, 17, 203, 0.15);
+  transform: translateY(-1px);
+}
+
+/* Header styling - matching gradient */
+.fancy-header {
+  --background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%) !important;
+  --color: white;
+  --min-height: 80px;
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+  padding: 0 24px;
+  box-shadow: 0 4px 12px rgba(106, 17, 203, 0.3);
+}
+
+.fancy-title {
+  color: white;
+  font-size: 1.4rem;
+  font-weight: 600;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  letter-spacing: 0.5px;
+  text-align: center;
+}
+
+/* Close button styling */
+.fancy-close-btn {
+  --background: rgba(255, 255, 255, 0.2);
+  --border-radius: 50%;
+  --padding-start: 8px;
+  --padding-end: 8px;
+  transition: all 0.3s ease;
+  color: white;
+}
+
+.fancy-close-btn:hover {
+  --background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.1);
+}
+
+/* Next button container - matching style */
+.next-btn-container {
+  margin-top: 30px;
+  padding: 20px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Error message styling */
+.error-message {
+  color: #e53e3e;
+  font-size: 0.85em;
+  margin-top: 5px;
+  padding: 5px 10px;
+  background: rgba(229, 62, 62, 0.1);
+  border-radius: 6px;
+  animation: shake 0.3s ease;
+  border-left: 3px solid #e53e3e;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+/* Form section styling */
+.form-section {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e0e3e7;
+}
+
+.date-section {
+  background: white;
+  border: 1px solid #e0e3e7;
+}
+
+.section-title {
+  color: #2d3748;
+  margin-top: 0;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #6a11cb;
+  font-weight: 600;
+  font-size: 1.2em;
+}
+
+.date-section .section-title {
+  border-bottom-color: #2575fc;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .custom-wide-modal {
+    --width: 94%;
+    --height: 92%;
+    --border-radius: 12px;
+  }
+  
+  .modal-content {
+    --padding-start: 16px;
+    --padding-end: 16px;
+  }
+  
+  .custom-col {
+    padding: 0 8px;
+  }
+  
+  .fancy-header {
+    padding: 0 16px;
+    --min-height: 70px;
+  }
+  
+  .next-btn-container {
+    padding: 16px;
+    margin-top: 20px;
+  }
+  
+  .form-section {
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+}
+
+/* Glass morphism effect for modal backdrop */
+ion-modal::part(backdrop) {
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+}
+
+/* Smooth scroll for content */
+ion-content {
+  --background: transparent;
+}
+
+/* Custom scrollbar */
+ion-content::part(scroll) {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e0 transparent;
+}
+
+ion-content::part(scroll)::-webkit-scrollbar {
+  width: 6px;
+}
+
+ion-content::part(scroll)::-webkit-scrollbar-thumb {
+  background: #cbd5e0;
+  border-radius: 3px;
+}
+
+/* Animation for modal appearance */
+@keyframes modalEnter {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.custom-wide-modal {
+  animation: modalEnter 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Additional styling for form elements */
+ion-item {
+  --background: transparent;
+  --inner-border-width: 0;
+  --inner-padding-end: 0;
+}
+
+ion-label {
+  font-weight: 500;
+  color: #2d3748;
+  margin-bottom: 8px;
+}
+
+ion-select, ion-input, ion-datetime {
+  --background: white;
+  --padding-start: 16px;
+  --padding-end: 16px;
+  --border-radius: 10px;
+  --box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  margin-top: 8px;
+  border: 1px solid #e0e3e7;
+}
+
+ion-select::part(icon) {
+  color: #6a11cb;
+}
+
+/* Focus states for form elements */
+ion-select:focus-within, ion-input:focus-within, ion-datetime:focus-within {
+  box-shadow: 0 0 0 3px rgba(106, 17, 203, 0.15);
+  border-color: #6a11cb;
+}
+
+/* Next button styling to match create button */
+.next-button {
+  --border-radius: 10px;
+  --padding-top: 14px;
+  --padding-bottom: 14px;
+  --background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(106, 17, 203, 0.3);
+}
+
+.next-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(106, 17, 203, 0.4);
+}
+
+.next-button[disabled] {
+  --background: #e9ecef;
+  --color: #adb5bd;
+  box-shadow: none;
+  transform: none;
+}
+
+/* Year picker styling to match */
+.year-picker {
+  border: 1px solid #e0e3e7;
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-top: 8px;
+  width: 100%;
+  background: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.year-picker::part(text) {
+  font-size: 16px;
+  color: #2d3748;
+}
+
+.year-picker:focus {
+  box-shadow: 0 0 0 3px rgba(106, 17, 203, 0.15);
+  border-color: #6a11cb;
+}
