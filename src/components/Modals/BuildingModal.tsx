@@ -31,12 +31,12 @@ interface BuildingData {
   buildingCode: string;
   storey: number | null;
   floorOrder: number | null;
-  buildingAge: string;
-  buildingPermit: string;
+  buildingAge: string | null;
+  buildingPermit: string | null;
   constructionPercent: number | null;
-  dateConstructed: string;
-  dateOccupied: string;
-  dateCompleted: string;
+  dateConstructed: string | null;
+  dateOccupied: string | null;
+  dateCompleted: string | null;
   depreciationRate: number | null;
 }
 
@@ -177,16 +177,16 @@ const NumericInputField: React.FC<{
 // Text Input Field Component with proper styling
 const TextInputField: React.FC<{
   label: string;
-  value: string;
-  onChange: (value: string) => void;
+  value: string | null;
+  onChange: (value: string | null) => void;
   placeholder: string;
 }> = ({ label, value, onChange, placeholder }) => (
   <IonItem className="custom-input" lines="none">
     <IonLabel position="stacked" className="input-label">{label}</IonLabel>
     <IonInput
-      value={value}
+      value={value || ''}
       placeholder={placeholder}
-      onIonInput={(e) => onChange(e.detail.value || '')}
+      onIonInput={(e) => onChange(e.detail.value || null)}
       className="modal-input"
     />
   </IonItem>
@@ -195,15 +195,15 @@ const TextInputField: React.FC<{
 // Date Input Field Component with proper styling
 const DateInputField: React.FC<{
   label: string;
-  value: string;
-  onChange: (value: string) => void;
+  value: string | null;
+  onChange: (value: string | null) => void;
 }> = ({ label, value, onChange }) => (
   <IonItem className="custom-input" lines="none">
     <IonLabel position="stacked" className="input-label">{label}</IonLabel>
     <IonDatetime
       presentation="date"
-      value={value}
-      onIonChange={(e) => onChange(e.detail.value as string)}
+      value={value || undefined}
+      onIonChange={(e) => onChange(e.detail.value as string || null)}
       className="modal-input"
     />
   </IonItem>
@@ -220,12 +220,12 @@ const BuildingModal: React.FC<BuildingModalProps> = ({
     buildingCode: '',
     storey: null,
     floorOrder: null,
-    buildingAge: '',
-    buildingPermit: '',
+    buildingAge: null,
+    buildingPermit: null,
     constructionPercent: null,
-    dateConstructed: '',
-    dateOccupied: '',
-    dateCompleted: '',
+    dateConstructed: null,
+    dateOccupied: null,
+    dateCompleted: null,
     depreciationRate: null
   });
   const [errors, setErrors] = useState<Partial<Record<keyof BuildingData, string>>>({});
@@ -243,12 +243,12 @@ const BuildingModal: React.FC<BuildingModalProps> = ({
           buildingCode: '',
           storey: null,
           floorOrder: null,
-          buildingAge: '',
-          buildingPermit: '',
+          buildingAge: null,
+          buildingPermit: null,
           constructionPercent: null,
-          dateConstructed: '',
-          dateOccupied: '',
-          dateCompleted: '',
+          dateConstructed: null,
+          dateOccupied: null,
+          dateCompleted: null,
           depreciationRate: null
         });
       }
