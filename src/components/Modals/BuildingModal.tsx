@@ -19,7 +19,8 @@ import {
   IonInput,
   IonDatetime,
   IonText,
-  IonSpinner
+  IonSpinner,
+  IonNote
 } from '@ionic/react';
 import { closeOutline } from 'ionicons/icons';
 import '../../CSS/modal.css';
@@ -32,6 +33,12 @@ import {
   StructureTypeData, 
   getStructureTypesByKindId 
 } from '../../utils/structureTypeLocalStorage';
+
+// Import building code utilities
+import { 
+  BuildingCodeData,
+  getBuildingCodesByStructureCode 
+} from '../../utils/buildingCodeLocalStorage';
 
 interface BuildingData {
   structureType: string;
@@ -106,9 +113,9 @@ const StructureTypeDrop: React.FC<{
         )}
       </IonSelect>
       {error && (
-        <IonText color="danger" className="error-message">
+        <IonNote color="danger" className="error-message">
           <small>{error}</small>
-        </IonText>
+        </IonNote>
       )}
     </IonItem>
   );
@@ -119,35 +126,60 @@ const BuildingCodeDrop: React.FC<{
   value: string;
   onChange: (value: string) => void;
   error?: string;
-  buildingCodes: string[];
-}> = ({ value, onChange, error, buildingCodes }) => (
-  <IonItem className="custom-input" lines="none">
-    <IonLabel position="stacked" className="input-label">
-      Building Code <span style={{ color: 'red' }}>*</span>
-    </IonLabel>
-    <IonSelect
-      value={value}
-      placeholder="Select building code"
-      onIonChange={(e) => onChange(e.detail.value as string)}
-      interface="popover"
-      className="modal-input"
-    >
-      {buildingCodes.length > 0 ? (
-        buildingCodes.map((code) => (
-          <IonSelectOption key={code} value={code}>
-            {code}
+  buildingCodes: BuildingCodeData[];
+  isLoading: boolean;
+  selectedBuildingCode: BuildingCodeData | null;
+}> = ({ value, onChange, error, buildingCodes, isLoading, selectedBuildingCode }) => (
+  <>
+    <IonItem className="custom-input" lines="none">
+      <IonLabel position="stacked" className="input-label">
+        Building Code <span style={{ color: 'red' }}>*</span>
+      </IonLabel>
+      <IonSelect
+        value={value}
+        placeholder="Select building code"
+        onIonChange={(e) => onChange(e.detail.value as string)}
+        interface="popover"
+        className="modal-input"
+        disabled={isLoading}
+      >
+        {isLoading ? (
+          <IonSelectOption value="" disabled>
+            <IonSpinner name="dots" /> Loading building codes...
           </IonSelectOption>
-        ))
-      ) : (
-        <IonSelectOption value="N/A">No codes available</IonSelectOption>
+        ) : buildingCodes.length === 0 ? (
+          <IonSelectOption value="" disabled>
+            No building codes available
+          </IonSelectOption>
+        ) : (
+          buildingCodes.map((code) => (
+            <IonSelectOption key={code.building_code} value={code.building_code}>
+              {code.description} ({code.building_code})
+            </IonSelectOption>
+          ))
+        )}
+      </IonSelect>
+      {error && (
+        <IonNote color="danger" className="error-message">
+          <small>{error}</small>
+        </IonNote>
       )}
-    </IonSelect>
-    {error && (
-      <IonText color="danger" className="error-message">
-        <small>{error}</small>
-      </IonText>
+    </IonItem>
+    
+    {/* Display rate for selected building code */}
+    {selectedBuildingCode && (
+      <IonItem className="custom-input" lines="none">
+        <IonLabel position="stacked" className="input-label">Rate</IonLabel>
+        <IonInput
+          value={selectedBuildingCode.rate.toString()}
+          readonly
+          className="modal-input"
+          style={{ opacity: 0.7 }}
+        />
+        <IonNote slot="helper">Rate for selected building code</IonNote>
+      </IonItem>
     )}
-  </IonItem>
+  </>
 );
 
 // Numeric Input Field Component with proper styling
@@ -178,9 +210,9 @@ const NumericInputField: React.FC<{
       className="modal-input"
     />
     {error && (
-      <IonText color="danger" className="error-message">
+      <IonNote color="danger" className="error-message">
         <small>{error}</small>
-      </IonText>
+      </IonNote>
     )}
   </IonItem>
 );
@@ -241,10 +273,12 @@ const BuildingModal: React.FC<BuildingModalProps> = ({
     depreciationRate: null
   });
   const [errors, setErrors] = useState<Partial<Record<keyof BuildingData, string>>>({});
-  const [buildingCodes] = useState<string[]>(['Code-1', 'Code-2', 'Code-3']);
   const [isFormValid, setIsFormValid] = useState(false);
   const [structureTypes, setStructureTypes] = useState<StructureTypeData[]>([]);
+  const [buildingCodes, setBuildingCodes] = useState<BuildingCodeData[]>([]);
   const [isLoadingStructureTypes, setIsLoadingStructureTypes] = useState(false);
+  const [isLoadingBuildingCodes, setIsLoadingBuildingCodes] = useState(false);
+  const [selectedBuildingCode, setSelectedBuildingCode] = useState<BuildingCodeData | null>(null);
 
   // Fetch structure types based on kind_id from formData
   useEffect(() => {
@@ -269,6 +303,57 @@ const BuildingModal: React.FC<BuildingModalProps> = ({
 
     fetchStructureTypes();
   }, [isOpen, formData.kind]);
+
+  // Fetch building codes when structure type changes
+  useEffect(() => {
+    const fetchBuildingCodes = async () => {
+      if (!buildingData.structureType) {
+        setBuildingCodes([]);
+        setSelectedBuildingCode(null);
+        return;
+      }
+      
+      setIsLoadingBuildingCodes(true);
+      try {
+        const buildingCodesData = await getBuildingCodesByStructureCode(buildingData.structureType);
+        setBuildingCodes(buildingCodesData);
+        console.log('Fetched building codes for structure:', buildingData.structureType, buildingCodesData);
+        
+        // If there's a previously selected building code that matches the new structure type, keep it
+        if (buildingData.buildingCode) {
+          const matchingCode = buildingCodesData.find(
+            code => code.building_code === buildingData.buildingCode
+          );
+          if (matchingCode) {
+            setSelectedBuildingCode(matchingCode);
+          } else {
+            setBuildingData(prev => ({ ...prev, buildingCode: '' }));
+            setSelectedBuildingCode(null);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching building codes:', error);
+        setBuildingCodes([]);
+        setSelectedBuildingCode(null);
+      } finally {
+        setIsLoadingBuildingCodes(false);
+      }
+    };
+
+    fetchBuildingCodes();
+  }, [buildingData.structureType]);
+
+  // Update selected building code when building code changes
+  useEffect(() => {
+    if (buildingData.buildingCode && buildingCodes.length > 0) {
+      const code = buildingCodes.find(
+        bc => bc.building_code === buildingData.buildingCode
+      );
+      setSelectedBuildingCode(code || null);
+    } else {
+      setSelectedBuildingCode(null);
+    }
+  }, [buildingData.buildingCode, buildingCodes]);
 
   // Log received form data for debugging
   useEffect(() => {
@@ -298,6 +383,7 @@ const BuildingModal: React.FC<BuildingModalProps> = ({
         });
       }
       setErrors({});
+      setSelectedBuildingCode(null);
     }
   }, [isOpen, initialData]);
 
@@ -414,6 +500,8 @@ const BuildingModal: React.FC<BuildingModalProps> = ({
                   onChange={(value) => handleInputChange('buildingCode', value)}
                   error={errors.buildingCode}
                   buildingCodes={buildingCodes}
+                  isLoading={isLoadingBuildingCodes}
+                  selectedBuildingCode={selectedBuildingCode}
                 />
                 
                 {/* Storey Input */}
