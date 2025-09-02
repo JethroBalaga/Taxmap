@@ -18,13 +18,20 @@ import {
   IonSelectOption,
   IonInput,
   IonDatetime,
-  IonText
+  IonText,
+  IonSpinner
 } from '@ionic/react';
 import { closeOutline } from 'ionicons/icons';
 import '../../CSS/modal.css';
 
 // Import the FormData interface from Form.tsx
 import { FormData } from './Form';
+
+// Import structure type utilities
+import { 
+  StructureTypeData, 
+  getStructureTypesByKindId 
+} from '../../utils/structureTypeLocalStorage';
 
 interface BuildingData {
   structureType: string;
@@ -66,16 +73,9 @@ const StructureTypeDrop: React.FC<{
   value: string;
   onChange: (value: string) => void;
   error?: string;
-}> = ({ value, onChange, error }) => {
-  const structureTypes = [
-    'Residential',
-    'Commercial',
-    'Industrial',
-    'Institutional',
-    'Mixed-use',
-    'Other'
-  ];
-
+  structureTypes: StructureTypeData[];
+  isLoading: boolean;
+}> = ({ value, onChange, error, structureTypes, isLoading }) => {
   return (
     <IonItem className="custom-input" lines="none">
       <IonLabel position="stacked" className="input-label">
@@ -87,12 +87,23 @@ const StructureTypeDrop: React.FC<{
         onIonChange={(e) => onChange(e.detail.value as string)}
         interface="popover"
         className="modal-input"
+        disabled={isLoading}
       >
-        {structureTypes.map((type) => (
-          <IonSelectOption key={type} value={type}>
-            {type}
+        {isLoading ? (
+          <IonSelectOption value="" disabled>
+            <IonSpinner name="dots" /> Loading structure types...
           </IonSelectOption>
-        ))}
+        ) : structureTypes.length === 0 ? (
+          <IonSelectOption value="" disabled>
+            No structure types available
+          </IonSelectOption>
+        ) : (
+          structureTypes.map((type) => (
+            <IonSelectOption key={type.structure_code} value={type.structure_code}>
+              {type.description}
+            </IonSelectOption>
+          ))
+        )}
       </IonSelect>
       {error && (
         <IonText color="danger" className="error-message">
@@ -232,12 +243,37 @@ const BuildingModal: React.FC<BuildingModalProps> = ({
   const [errors, setErrors] = useState<Partial<Record<keyof BuildingData, string>>>({});
   const [buildingCodes] = useState<string[]>(['Code-1', 'Code-2', 'Code-3']);
   const [isFormValid, setIsFormValid] = useState(false);
+  const [structureTypes, setStructureTypes] = useState<StructureTypeData[]>([]);
+  const [isLoadingStructureTypes, setIsLoadingStructureTypes] = useState(false);
+
+  // Fetch structure types based on kind_id from formData
+  useEffect(() => {
+    const fetchStructureTypes = async () => {
+      if (!isOpen || !formData.kind) return;
+      
+      setIsLoadingStructureTypes(true);
+      try {
+        const kindId = parseInt(formData.kind);
+        if (!isNaN(kindId)) {
+          const structureTypesData = await getStructureTypesByKindId(kindId);
+          setStructureTypes(structureTypesData);
+          console.log('Fetched structure types for kind_id:', kindId, structureTypesData);
+        }
+      } catch (error) {
+        console.error('Error fetching structure types:', error);
+        setStructureTypes([]);
+      } finally {
+        setIsLoadingStructureTypes(false);
+      }
+    };
+
+    fetchStructureTypes();
+  }, [isOpen, formData.kind]);
 
   // Log received form data for debugging
   useEffect(() => {
     if (isOpen && formData) {
       console.log('Received form data in BuildingModal:', formData);
-      // You can use the formData here to pre-fill fields or make decisions
     }
   }, [isOpen, formData]);
 
@@ -352,7 +388,7 @@ const BuildingModal: React.FC<BuildingModalProps> = ({
         {/* Display received form data for reference */}
         <div style={{ padding: '10px', background: '#f5f5f5', marginBottom: '15px', borderRadius: '8px' }}>
           <IonText color="medium">
-            <small>Form Reference: District {formData.district}, Area: {formData.area}m²</small>
+            <small>Form Reference: District {formData.district}, Kind ID: {formData.kind}, Area: {formData.area}m²</small>
           </IonText>
         </div>
 
@@ -368,6 +404,8 @@ const BuildingModal: React.FC<BuildingModalProps> = ({
                   value={buildingData.structureType}
                   onChange={(value) => handleInputChange('structureType', value)}
                   error={errors.structureType}
+                  structureTypes={structureTypes}
+                  isLoading={isLoadingStructureTypes}
                 />
                 
                 {/* Building Code Dropdown */}
