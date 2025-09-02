@@ -1,3 +1,4 @@
+// src/components/Modals/BuildingModal.tsx
 import React, { useState, useEffect } from 'react';
 import {
   IonModal,
@@ -7,13 +8,6 @@ import {
   IonContent,
   IonButtons,
   IonIcon,
-  IonItem,
-  IonLabel,
-  IonInput,
-  IonSelect,
-  IonSelectOption,
-  IonDatetime,
-  IonText,
   IonGrid,
   IonRow,
   IonCol,
@@ -21,6 +15,11 @@ import {
 } from '@ionic/react';
 import { closeOutline } from 'ionicons/icons';
 import Next from '../GlobalComponent/Next'; // Import your global Next component
+import StructureTypeDrop from '../BuildingModalComponents/StructureTypeDrop';
+import BuildingCodeDrop from '../BuildingModalComponents/BuildingCodeDrop';
+import NumericInputField from '../BuildingModalComponents/NumericInputField';
+import TextInputField from '../BuildingModalComponents/TextInputField';
+import DateInputField from '../BuildingModalComponents/DateInputField';
 
 // Interface for our building data
 interface BuildingData {
@@ -66,16 +65,7 @@ const BuildingModal: React.FC<BuildingModalProps> = ({
   });
   const [errors, setErrors] = useState<Partial<Record<keyof BuildingData, string>>>({});
   const [buildingCodes] = useState<string[]>([]); // Empty for now as requested
-  
-  // Structure types for the dropdown
-  const structureTypes = [
-    { id: 'residential', name: 'Residential' },
-    { id: 'commercial', name: 'Commercial' },
-    { id: 'industrial', name: 'Industrial' },
-    { id: 'institutional', name: 'Institutional' },
-    { id: 'agricultural', name: 'Agricultural' },
-    { id: 'mixed_use', name: 'Mixed Use' }
-  ];
+  const [isFormValid, setIsFormValid] = useState(false);
 
   // Reset form when modal opens/closes or initialData changes
   useEffect(() => {
@@ -100,6 +90,21 @@ const BuildingModal: React.FC<BuildingModalProps> = ({
       setErrors({});
     }
   }, [isOpen, initialData]);
+
+  // Check form validity whenever form data changes
+  useEffect(() => {
+    const isValid = 
+      formData.structureType.trim() !== '' &&
+      formData.buildingCode.trim() !== '' &&
+      formData.storey !== null && formData.storey >= 1 &&
+      formData.floorOrder !== null && formData.floorOrder >= 0 &&
+      formData.constructionPercent !== null && 
+        formData.constructionPercent >= 0 && formData.constructionPercent <= 100 &&
+      formData.depreciationRate !== null && 
+        formData.depreciationRate >= 0 && formData.depreciationRate <= 100;
+    
+    setIsFormValid(isValid);
+  }, [formData]);
 
   // Handle input changes
   const handleInputChange = (field: keyof BuildingData, value: any) => {
@@ -165,162 +170,133 @@ const BuildingModal: React.FC<BuildingModalProps> = ({
       <IonContent className="ion-padding">
         <IonGrid>
           <IonRow>
-            {/* Structure Type Dropdown - Added before Building Code */}
+            {/* Structure Type Dropdown */}
             <IonCol size="12" size-md="6">
-              <IonItem>
-                <IonLabel position="stacked">Structure Type *</IonLabel>
-                <IonSelect 
-                  value={formData.structureType} 
-                  placeholder="Select Structure Type"
-                  onIonChange={e => handleInputChange('structureType', e.detail.value)}
-                  interface="popover"
-                  className={errors.structureType ? 'ion-invalid' : ''}
-                >
-                  {structureTypes.map(type => (
-                    <IonSelectOption key={type.id} value={type.id}>
-                      {type.name}
-                    </IonSelectOption>
-                  ))}
-                </IonSelect>
-                {errors.structureType && <IonText color="danger" className="ion-padding-start">{errors.structureType}</IonText>}
-              </IonItem>
+              <StructureTypeDrop
+                value={formData.structureType}
+                onChange={(value) => handleInputChange('structureType', value)}
+                error={errors.structureType}
+              />
             </IonCol>
             
+            {/* Building Code Dropdown */}
             <IonCol size="12" size-md="6">
-              <IonItem>
-                <IonLabel position="stacked">Building Code *</IonLabel>
-                <IonSelect 
-                  value={formData.buildingCode} 
-                  placeholder="Select Building Code"
-                  onIonChange={e => handleInputChange('buildingCode', e.detail.value)}
-                  interface="popover"
-                  className={errors.buildingCode ? 'ion-invalid' : ''}
-                >
-                  {buildingCodes.map(code => (
-                    <IonSelectOption key={code} value={code}>{code}</IonSelectOption>
-                  ))}
-                </IonSelect>
-                {errors.buildingCode && <IonText color="danger" className="ion-padding-start">{errors.buildingCode}</IonText>}
-              </IonItem>
+              <BuildingCodeDrop
+                value={formData.buildingCode}
+                onChange={(value) => handleInputChange('buildingCode', value)}
+                error={errors.buildingCode}
+                buildingCodes={buildingCodes}
+              />
             </IonCol>
             
+            {/* Storey Input */}
             <IonCol size="12" size-md="6">
-              <IonItem>
-                <IonLabel position="stacked">Storey *</IonLabel>
-                <IonInput
-                  type="number"
-                  value={formData.storey}
-                  placeholder="Enter number of storeys"
-                  onIonInput={e => handleInputChange('storey', parseInt(e.detail.value!, 10) || null)}
-                  className={errors.storey ? 'ion-invalid' : ''}
-                />
-                {errors.storey && <IonText color="danger" className="ion-padding-start">{errors.storey}</IonText>}
-              </IonItem>
+              <NumericInputField
+                label="Storey"
+                value={formData.storey}
+                onChange={(value) => handleInputChange('storey', value)}
+                placeholder="Enter number of storeys"
+                error={errors.storey}
+                required={true}
+                min={1}
+              />
             </IonCol>
             
+            {/* Floor Order Input */}
             <IonCol size="12" size-md="6">
-              <IonItem>
-                <IonLabel position="stacked">Floor Order *</IonLabel>
-                <IonInput
-                  type="number"
-                  value={formData.floorOrder}
-                  placeholder="Enter floor order"
-                  onIonInput={e => handleInputChange('floorOrder', parseInt(e.detail.value!, 10) || null)}
-                  className={errors.floorOrder ? 'ion-invalid' : ''}
-                />
-                {errors.floorOrder && <IonText color="danger" className="ion-padding-start">{errors.floorOrder}</IonText>}
-              </IonItem>
+              <NumericInputField
+                label="Floor Order"
+                value={formData.floorOrder}
+                onChange={(value) => handleInputChange('floorOrder', value)}
+                placeholder="Enter floor order"
+                error={errors.floorOrder}
+                required={true}
+                min={0}
+              />
             </IonCol>
             
+            {/* Building Age Input */}
             <IonCol size="12" size-md="6">
-              <IonItem>
-                <IonLabel position="stacked">Building Age</IonLabel>
-                <IonInput
-                  type="text"
-                  value={formData.buildingAge}
-                  placeholder="Enter building age"
-                  onIonInput={e => handleInputChange('buildingAge', e.detail.value!)}
-                />
-              </IonItem>
+              <TextInputField
+                label="Building Age"
+                value={formData.buildingAge}
+                onChange={(value) => handleInputChange('buildingAge', value)}
+                placeholder="Enter building age"
+              />
             </IonCol>
             
+            {/* Building Permit Input */}
             <IonCol size="12" size-md="6">
-              <IonItem>
-                <IonLabel position="stacked">Building Permit</IonLabel>
-                <IonInput
-                  type="text"
-                  value={formData.buildingPermit}
-                  placeholder="Enter building permit"
-                  onIonInput={e => handleInputChange('buildingPermit', e.detail.value!)}
-                />
-              </IonItem>
+              <TextInputField
+                label="Building Permit"
+                value={formData.buildingPermit}
+                onChange={(value) => handleInputChange('buildingPermit', value)}
+                placeholder="Enter building permit"
+              />
             </IonCol>
             
+            {/* Construction Percent Input */}
             <IonCol size="12" size-md="6">
-              <IonItem>
-                <IonLabel position="stacked">Construction % *</IonLabel>
-                <IonInput
-                  type="number"
-                  value={formData.constructionPercent}
-                  placeholder="Enter percentage (0-100)"
-                  onIonInput={e => handleInputChange('constructionPercent', parseInt(e.detail.value!, 10) || null)}
-                  className={errors.constructionPercent ? 'ion-invalid' : ''}
-                />
-                {errors.constructionPercent && <IonText color="danger" className="ion-padding-start">{errors.constructionPercent}</IonText>}
-              </IonItem>
+              <NumericInputField
+                label="Construction %"
+                value={formData.constructionPercent}
+                onChange={(value) => handleInputChange('constructionPercent', value)}
+                placeholder="Enter percentage (0-100)"
+                error={errors.constructionPercent}
+                required={true}
+                min={0}
+                max={100}
+              />
             </IonCol>
             
+            {/* Date Constructed Input */}
             <IonCol size="12" size-md="6">
-              <IonItem>
-                <IonLabel position="stacked">Date Constructed</IonLabel>
-                <IonDatetime
-                  value={formData.dateConstructed}
-                  onIonChange={e => handleInputChange('dateConstructed', e.detail.value!)}
-                  presentation="date"
-                />
-              </IonItem>
+              <DateInputField
+                label="Date Constructed"
+                value={formData.dateConstructed}
+                onChange={(value) => handleInputChange('dateConstructed', value)}
+              />
             </IonCol>
             
+            {/* Date Occupied Input */}
             <IonCol size="12" size-md="6">
-              <IonItem>
-                <IonLabel position="stacked">Date Occupied</IonLabel>
-                <IonDatetime
-                  value={formData.dateOccupied}
-                  onIonChange={e => handleInputChange('dateOccupied', e.detail.value!)}
-                  presentation="date"
-                />
-              </IonItem>
+              <DateInputField
+                label="Date Occupied"
+                value={formData.dateOccupied}
+                onChange={(value) => handleInputChange('dateOccupied', value)}
+              />
             </IonCol>
             
+            {/* Date Completed Input */}
             <IonCol size="12" size-md="6">
-              <IonItem>
-                <IonLabel position="stacked">Date Completed</IonLabel>
-                <IonDatetime
-                  value={formData.dateCompleted}
-                  onIonChange={e => handleInputChange('dateCompleted', e.detail.value!)}
-                  presentation="date"
-                />
-              </IonItem>
+              <DateInputField
+                label="Date Completed"
+                value={formData.dateCompleted}
+                onChange={(value) => handleInputChange('dateCompleted', value)}
+              />
             </IonCol>
             
+            {/* Depreciation Rate Input */}
             <IonCol size="12" size-md="6">
-              <IonItem>
-                <IonLabel position="stacked">Depreciation Rate % *</IonLabel>
-                <IonInput
-                  type="number"
-                  value={formData.depreciationRate}
-                  placeholder="Enter rate (0-100)"
-                  onIonInput={e => handleInputChange('depreciationRate', parseInt(e.detail.value!, 10) || null)}
-                  className={errors.depreciationRate ? 'ion-invalid' : ''}
-                />
-                {errors.depreciationRate && <IonText color="danger" className="ion-padding-start">{errors.depreciationRate}</IonText>}
-              </IonItem>
+              <NumericInputField
+                label="Depreciation Rate %"
+                value={formData.depreciationRate}
+                onChange={(value) => handleInputChange('depreciationRate', value)}
+                placeholder="Enter rate (0-100)"
+                error={errors.depreciationRate}
+                required={true}
+                min={0}
+                max={100}
+              />
             </IonCol>
           </IonRow>
         </IonGrid>
         
         <div className="ion-padding ion-text-center">
-          <Next onClick={handleNextClick} />
+          <Next 
+            onClick={handleNextClick} 
+            disabled={!isFormValid}
+          />
         </div>
       </IonContent>
     </IonModal>
