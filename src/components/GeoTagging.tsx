@@ -16,7 +16,6 @@ import { Capacitor } from '@capacitor/core';
 import SubmitButton from './GeoTaggingComponents/SubmitButton';
 import { addGeoTag } from './geotags';
 import Declarant from './FormComponents/Declarant';
-import Kind from './FormComponents/Kind';
 
 interface GeoTaggingProps {
   isOpen: boolean;
@@ -77,7 +76,6 @@ const GeoTagging: React.FC<GeoTaggingProps> = ({
       <IonContent className="ion-padding">
         <form onSubmit={handleSubmit}>
           <Declarant value={declarant} onChange={setDeclarant} />
-          <Kind value={residence} onChange={setResidence} />
           <SubmitButton />
         </form>
         
