@@ -21,11 +21,11 @@ import {
   IonText
 } from '@ionic/react';
 import { closeOutline } from 'ionicons/icons';
-
-// Import your CSS file
 import '../../CSS/modal.css';
 
-// Interface for our building data
+// Import the FormData interface from Form.tsx
+import { FormData } from './Form';
+
 interface BuildingData {
   structureType: string;
   buildingCode: string;
@@ -40,11 +40,11 @@ interface BuildingData {
   depreciationRate: number | null;
 }
 
-// Props for the BuildingModal component
 interface BuildingModalProps {
   isOpen: boolean;
   onDismiss: () => void;
   onSuccess: (data: BuildingData) => void;
+  formData: FormData;
   initialData?: BuildingData;
 }
 
@@ -213,9 +213,10 @@ const BuildingModal: React.FC<BuildingModalProps> = ({
   isOpen, 
   onDismiss, 
   onSuccess,
+  formData,
   initialData 
 }) => {
-  const [formData, setFormData] = useState<BuildingData>({
+  const [buildingData, setBuildingData] = useState<BuildingData>({
     structureType: '',
     buildingCode: '',
     storey: null,
@@ -229,16 +230,24 @@ const BuildingModal: React.FC<BuildingModalProps> = ({
     depreciationRate: null
   });
   const [errors, setErrors] = useState<Partial<Record<keyof BuildingData, string>>>({});
-  const [buildingCodes] = useState<string[]>(['Code-1', 'Code-2', 'Code-3']); // Added sample codes for testing
+  const [buildingCodes] = useState<string[]>(['Code-1', 'Code-2', 'Code-3']);
   const [isFormValid, setIsFormValid] = useState(false);
+
+  // Log received form data for debugging
+  useEffect(() => {
+    if (isOpen && formData) {
+      console.log('Received form data in BuildingModal:', formData);
+      // You can use the formData here to pre-fill fields or make decisions
+    }
+  }, [isOpen, formData]);
 
   // Reset form when modal opens/closes or initialData changes
   useEffect(() => {
     if (isOpen) {
       if (initialData) {
-        setFormData(initialData);
+        setBuildingData(initialData);
       } else {
-        setFormData({
+        setBuildingData({
           structureType: '',
           buildingCode: '',
           storey: null,
@@ -256,24 +265,24 @@ const BuildingModal: React.FC<BuildingModalProps> = ({
     }
   }, [isOpen, initialData]);
 
-  // Check form validity whenever form data changes
+  // Check form validity whenever building data changes
   useEffect(() => {
     const isValid = 
-      formData.structureType.trim() !== '' &&
-      formData.buildingCode.trim() !== '' &&
-      formData.storey !== null && formData.storey >= 1 &&
-      formData.floorOrder !== null && formData.floorOrder >= 0 &&
-      formData.constructionPercent !== null && 
-        formData.constructionPercent >= 0 && formData.constructionPercent <= 100 &&
-      formData.depreciationRate !== null && 
-        formData.depreciationRate >= 0 && formData.depreciationRate <= 100;
+      buildingData.structureType.trim() !== '' &&
+      buildingData.buildingCode.trim() !== '' &&
+      buildingData.storey !== null && buildingData.storey >= 1 &&
+      buildingData.floorOrder !== null && buildingData.floorOrder >= 0 &&
+      buildingData.constructionPercent !== null && 
+        buildingData.constructionPercent >= 0 && buildingData.constructionPercent <= 100 &&
+      buildingData.depreciationRate !== null && 
+        buildingData.depreciationRate >= 0 && buildingData.depreciationRate <= 100;
     
     setIsFormValid(isValid);
-  }, [formData]);
+  }, [buildingData]);
 
   // Handle input changes
   const handleInputChange = (field: keyof BuildingData, value: any) => {
-    setFormData(prev => ({
+    setBuildingData(prev => ({
       ...prev,
       [field]: value
     }));
@@ -291,14 +300,14 @@ const BuildingModal: React.FC<BuildingModalProps> = ({
   const validateForm = (): boolean => {
     const newErrors: Partial<Record<keyof BuildingData, string>> = {};
     
-    if (!formData.structureType) newErrors.structureType = 'Structure type is required';
-    if (!formData.buildingCode) newErrors.buildingCode = 'Building code is required';
-    if (formData.storey === null || formData.storey < 1) newErrors.storey = 'Valid storey count is required';
-    if (formData.floorOrder === null || formData.floorOrder < 0) newErrors.floorOrder = 'Valid floor order is required';
-    if (formData.constructionPercent === null || formData.constructionPercent < 0 || formData.constructionPercent > 100) {
+    if (!buildingData.structureType) newErrors.structureType = 'Structure type is required';
+    if (!buildingData.buildingCode) newErrors.buildingCode = 'Building code is required';
+    if (buildingData.storey === null || buildingData.storey < 1) newErrors.storey = 'Valid storey count is required';
+    if (buildingData.floorOrder === null || buildingData.floorOrder < 0) newErrors.floorOrder = 'Valid floor order is required';
+    if (buildingData.constructionPercent === null || buildingData.constructionPercent < 0 || buildingData.constructionPercent > 100) {
       newErrors.constructionPercent = 'Construction percentage must be between 0-100';
     }
-    if (formData.depreciationRate === null || formData.depreciationRate < 0 || formData.depreciationRate > 100) {
+    if (buildingData.depreciationRate === null || buildingData.depreciationRate < 0 || buildingData.depreciationRate > 100) {
       newErrors.depreciationRate = 'Depreciation rate must be between 0-100';
     }
     
@@ -309,7 +318,7 @@ const BuildingModal: React.FC<BuildingModalProps> = ({
   // Handle form submission
   const handleNextClick = () => {
     if (validateForm()) {
-      onSuccess(formData);
+      onSuccess(buildingData);
     }
   };
 
@@ -340,6 +349,13 @@ const BuildingModal: React.FC<BuildingModalProps> = ({
       </IonHeader>
       
       <IonContent className="modal-content">
+        {/* Display received form data for reference */}
+        <div style={{ padding: '10px', background: '#f5f5f5', marginBottom: '15px', borderRadius: '8px' }}>
+          <IonText color="medium">
+            <small>Form Reference: District {formData.district}, Area: {formData.area}m²</small>
+          </IonText>
+        </div>
+
         <IonGrid className="custom-grid">
           <IonRow>
             {/* Left Column - All non-date inputs */}
@@ -349,14 +365,14 @@ const BuildingModal: React.FC<BuildingModalProps> = ({
                 
                 {/* Structure Type Dropdown */}
                 <StructureTypeDrop
-                  value={formData.structureType}
+                  value={buildingData.structureType}
                   onChange={(value) => handleInputChange('structureType', value)}
                   error={errors.structureType}
                 />
                 
                 {/* Building Code Dropdown */}
                 <BuildingCodeDrop
-                  value={formData.buildingCode}
+                  value={buildingData.buildingCode}
                   onChange={(value) => handleInputChange('buildingCode', value)}
                   error={errors.buildingCode}
                   buildingCodes={buildingCodes}
@@ -365,7 +381,7 @@ const BuildingModal: React.FC<BuildingModalProps> = ({
                 {/* Storey Input */}
                 <NumericInputField
                   label="Storey"
-                  value={formData.storey}
+                  value={buildingData.storey}
                   onChange={(value) => handleInputChange('storey', value)}
                   placeholder="Enter number of storeys"
                   error={errors.storey}
@@ -376,7 +392,7 @@ const BuildingModal: React.FC<BuildingModalProps> = ({
                 {/* Floor Order Input */}
                 <NumericInputField
                   label="Floor Order"
-                  value={formData.floorOrder}
+                  value={buildingData.floorOrder}
                   onChange={(value) => handleInputChange('floorOrder', value)}
                   placeholder="Enter floor order"
                   error={errors.floorOrder}
@@ -387,7 +403,7 @@ const BuildingModal: React.FC<BuildingModalProps> = ({
                 {/* Building Age Input */}
                 <TextInputField
                   label="Building Age"
-                  value={formData.buildingAge}
+                  value={buildingData.buildingAge}
                   onChange={(value) => handleInputChange('buildingAge', value)}
                   placeholder="Enter building age"
                 />
@@ -395,7 +411,7 @@ const BuildingModal: React.FC<BuildingModalProps> = ({
                 {/* Building Permit Input */}
                 <TextInputField
                   label="Building Permit"
-                  value={formData.buildingPermit}
+                  value={buildingData.buildingPermit}
                   onChange={(value) => handleInputChange('buildingPermit', value)}
                   placeholder="Enter building permit"
                 />
@@ -403,7 +419,7 @@ const BuildingModal: React.FC<BuildingModalProps> = ({
                 {/* Construction Percent Input */}
                 <NumericInputField
                   label="Construction %"
-                  value={formData.constructionPercent}
+                  value={buildingData.constructionPercent}
                   onChange={(value) => handleInputChange('constructionPercent', value)}
                   placeholder="Enter percentage (0-100)"
                   error={errors.constructionPercent}
@@ -415,7 +431,7 @@ const BuildingModal: React.FC<BuildingModalProps> = ({
                 {/* Depreciation Rate Input */}
                 <NumericInputField
                   label="Depreciation Rate %"
-                  value={formData.depreciationRate}
+                  value={buildingData.depreciationRate}
                   onChange={(value) => handleInputChange('depreciationRate', value)}
                   placeholder="Enter rate (0-100)"
                   error={errors.depreciationRate}
@@ -434,21 +450,21 @@ const BuildingModal: React.FC<BuildingModalProps> = ({
                 {/* Date Constructed Input */}
                 <DateInputField
                   label="Date Constructed"
-                  value={formData.dateConstructed}
+                  value={buildingData.dateConstructed}
                   onChange={(value) => handleInputChange('dateConstructed', value)}
                 />
                 
                 {/* Date Occupied Input */}
                 <DateInputField
                   label="Date Occupied"
-                  value={formData.dateOccupied}
+                  value={buildingData.dateOccupied}
                   onChange={(value) => handleInputChange('dateOccupied', value)}
                 />
                 
                 {/* Date Completed Input */}
                 <DateInputField
                   label="Date Completed"
-                  value={formData.dateCompleted}
+                  value={buildingData.dateCompleted}
                   onChange={(value) => handleInputChange('dateCompleted', value)}
                 />
               </div>
