@@ -1,0 +1,155 @@
+/* buildingmodal.css */
+
+/* Custom wider modal */
+.custom-wide-modal {
+  --width: 90%;
+  --max-width: 800px;
+  --height: 85%;
+  --border-radius: 16px;
+  --box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+/* Modal content styling */
+.modal-content {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  padding: 20px;
+}
+
+/* Grid styling */
+.custom-grid {
+  padding: 15px 0;
+}
+
+/* Column styling with subtle animations */
+.custom-col {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.custom-col:hover {
+  transform: translateY(-2px);
+}
+
+/* Input field styling */
+.custom-input {
+  background: white;
+  border-radius: 12px;
+  margin-bottom: 15px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+}
+
+.custom-input:focus-within {
+  border-color: var(--ion-color-primary);
+  box-shadow: 0 4px 20px rgba(var(--ion-color-primary-rgb), 0.2);
+  transform: translateY(-1px);
+}
+
+/* Header styling */
+.fancy-header {
+  background: linear-gradient(135deg, var(--ion-color-primary) 0%, var(--ion-color-secondary) 100%) !important;
+  border-bottom: 3px solid rgba(255, 255, 255, 0.2);
+}
+
+.fancy-title {
+  color: white;
+  font-weight: 600;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  font-size: 1.4em;
+}
+
+/* Close button styling */
+.fancy-close-btn {
+  --background: rgba(255, 255, 255, 0.2);
+  --border-radius: 50%;
+  --padding-start: 8px;
+  --padding-end: 8px;
+  transition: all 0.3s ease;
+}
+
+.fancy-close-btn:hover {
+  --background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.1);
+}
+
+/* Next button container */
+.next-btn-container {
+  margin-top: 30px;
+  padding: 20px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 249, 250, 0.9) 100%);
+  border-radius: 16px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+/* Error message styling */
+.error-message {
+  color: var(--ion-color-danger);
+  font-size: 0.85em;
+  margin-top: 5px;
+  padding: 5px 10px;
+  background: rgba(var(--ion-color-danger-rgb), 0.1);
+  border-radius: 6px;
+  animation: shake 0.3s ease;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .custom-wide-modal {
+    --width: 95%;
+    --height: 90%;
+    --border-radius: 12px;
+  }
+  
+  .modal-content {
+    padding: 15px;
+  }
+}
+
+/* Glass morphism effect for modal backdrop */
+ion-modal::part(backdrop) {
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+}
+
+/* Smooth scroll for content */
+ion-content {
+  --background: transparent;
+}
+
+/* Custom scrollbar */
+ion-content::part(scroll) {
+  scrollbar-width: thin;
+  scrollbar-color: var(--ion-color-medium) transparent;
+}
+
+ion-content::part(scroll)::-webkit-scrollbar {
+  width: 6px;
+}
+
+ion-content::part(scroll)::-webkit-scrollbar-thumb {
+  background: var(--ion-color-medium);
+  border-radius: 3px;
+}
+
+/* Animation for modal appearance */
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.custom-wide-modal {
+  animation: modalSlideIn 0.3s ease-out;
+}
