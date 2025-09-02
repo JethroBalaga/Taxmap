@@ -19,10 +19,11 @@ import {
 import { closeOutline, searchOutline } from 'ionicons/icons';
 import Area from '../FormComponents/Area';
 import Next from '../GlobalComponent/Next';
+import BuildingModal from './BuildingModal'; // Import your BuildingModal component
 import { DistrictData, getDistrictData } from '../../utils/districtLocalStorage';
 import { DeclarantData, getDeclarantData } from '../../utils/DeclarantLocalStorage';
 import { KindData, getKindData } from '../../utils/kindLocalStorage';
-import { ClassificationData, getClassificationData } from '../../utils/classificationLocalStorage'; // Import ClassificationData and getClassificationData
+import { ClassificationData, getClassificationData } from '../../utils/classificationLocalStorage';
 
 interface FormProps {
   isOpen: boolean;
@@ -39,7 +40,7 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
   const [districts, setDistricts] = useState<DistrictData[]>([]);
   const [declarants, setDeclarants] = useState<DeclarantData[]>([]);
   const [kinds, setKinds] = useState<KindData[]>([]);
-  const [classifications, setClassifications] = useState<ClassificationData[]>([]); // Add state for classifications
+  const [classifications, setClassifications] = useState<ClassificationData[]>([]);
   const [filteredDeclarants, setFilteredDeclarants] = useState<DeclarantData[]>([]);
   const [searchText, setSearchText] = useState('');
   const [showDeclarantSearch, setShowDeclarantSearch] = useState(false);
@@ -47,7 +48,11 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
   const [isLoadingDistricts, setIsLoadingDistricts] = useState(true);
   const [isLoadingDeclarants, setIsLoadingDeclarants] = useState(true);
   const [isLoadingKinds, setIsLoadingKinds] = useState(true);
-  const [isLoadingClassifications, setIsLoadingClassifications] = useState(true); // Add loading state for classifications
+  const [isLoadingClassifications, setIsLoadingClassifications] = useState(true);
+
+  // State for building modal
+  const [showBuildingModal, setShowBuildingModal] = useState(false);
+  const [buildingData, setBuildingData] = useState<any>(null);
 
   // Load districts, declarants, kinds, and classifications from local storage
   useEffect(() => {
@@ -57,18 +62,18 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
         setIsLoadingDeclarants(true);
         setIsLoadingKinds(true);
         setIsLoadingClassifications(true);
-        
+
         const [districtData, declarantData, kindData, classificationData] = await Promise.all([
           getDistrictData(),
           getDeclarantData(),
           getKindData(),
-          getClassificationData() // Fetch classification data
+          getClassificationData()
         ]);
-        
+
         if (districtData) {
           setDistricts(districtData);
         }
-        
+
         if (declarantData) {
           setDeclarants(declarantData);
           setFilteredDeclarants(declarantData);
@@ -120,11 +125,37 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
     );
   }, [district, declarant, kind, classification, area]);
 
+  // Check if selected kind is "Building"
+  const isBuildingKind = () => {
+    if (!kind) return false;
+    const selectedKind = kinds.find(k => k.kind_id.toString() === kind);
+    return selectedKind?.description.toLowerCase().includes('building');
+  };
+
   const handleNextClick = () => {
     if (!isFormValid) return;
-    // Directly call onSuccess since we removed the ActualUsedModal
+
+    // If kind is building, show building modal
+    if (isBuildingKind()) {
+      setShowBuildingModal(true);
+    } else {
+      // For non-building kinds, proceed directly
+      console.log('Form data:', { district, declarant, kind, classification, area });
+      onSuccess();
+    }
+  };
+
+  const handleBuildingModalSuccess = (data: any) => {
+    // Save building data and proceed
+    setBuildingData(data);
     console.log('Form data:', { district, declarant, kind, classification, area });
+    console.log('Building data:', data);
+    setShowBuildingModal(false);
     onSuccess();
+  };
+
+  const handleBuildingModalDismiss = () => {
+    setShowBuildingModal(false);
   };
 
   const handleSelectDeclarant = (declarantId: number) => {
@@ -146,6 +177,7 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
     setClassification('');
     setArea(0);
     setSearchText('');
+    setBuildingData(null);
   };
 
   const handleDismiss = () => {
@@ -183,8 +215,8 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
                 </IonSelectOption>
               ) : (
                 districts.map((district) => (
-                  <IonSelectOption 
-                    key={district.district_id} 
+                  <IonSelectOption
+                    key={district.district_id}
                     value={district.district_id}
                   >
                     {district.district_name}
@@ -216,8 +248,8 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
                 </IonSelectOption>
               ) : (
                 kinds.map((kindItem) => (
-                  <IonSelectOption 
-                    key={kindItem.kind_id} 
+                  <IonSelectOption
+                    key={kindItem.kind_id}
                     value={kindItem.kind_id.toString()}
                   >
                     {kindItem.description}
@@ -242,8 +274,8 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
                 </IonSelectOption>
               ) : (
                 classifications.map((classificationItem) => (
-                  <IonSelectOption 
-                    key={classificationItem.class_id} 
+                  <IonSelectOption
+                    key={classificationItem.class_id}
                     value={classificationItem.class_id}
                   >
                     {classificationItem.classification}
@@ -277,7 +309,7 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
             placeholder="Search declarants..."
             animated
           />
-          
+
           {isLoadingDeclarants ? (
             <IonItem>
               <IonLabel>Loading declarants...</IonLabel>
@@ -291,9 +323,9 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
           ) : (
             <IonList>
               {filteredDeclarants.map((declarant) => (
-                <IonItem 
-                  key={declarant.declarant_id} 
-                  button 
+                <IonItem
+                  key={declarant.declarant_id}
+                  button
                   onClick={() => handleSelectDeclarant(declarant.declarant_id)}
                 >
                   <IonLabel>
@@ -306,6 +338,21 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
           )}
         </IonContent>
       </IonModal>
+
+      {/* Conditionally render BuildingModal */}
+      {showBuildingModal && (
+        // In your Form component
+        <BuildingModal
+          isOpen={showBuildingModal}
+          onDismiss={() => setShowBuildingModal(false)}
+          onSuccess={(buildingData) => {
+            console.log('Building data:', buildingData);
+            // Handle the building data
+            setShowBuildingModal(false);
+            onSuccess(); // Proceed with the main form submission
+          }}
+        />
+      )}
     </>
   );
 };
