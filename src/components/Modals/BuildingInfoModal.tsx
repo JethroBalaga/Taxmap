@@ -1,5 +1,5 @@
 // src/components/Modals/BuildingInfoModal.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   IonModal,
   IonHeader,
@@ -40,6 +40,15 @@ const BuildingInfoModal: React.FC<BuildingInfoModalProps> = ({
   const [assessmentLevel, setAssessmentLevel] = useState<string>('');
   const [errors, setErrors] = useState<{adjustment?: string; assessmentLevel?: string}>({});
 
+  // Reset form when modal opens/closes
+  useEffect(() => {
+    if (isOpen) {
+      setAdjustment('');
+      setAssessmentLevel('');
+      setErrors({});
+    }
+  }, [isOpen]);
+
   const handleSave = () => {
     const newErrors: {adjustment?: string; assessmentLevel?: string} = {};
     
@@ -56,9 +65,6 @@ const BuildingInfoModal: React.FC<BuildingInfoModalProps> = ({
   };
 
   const handleClose = () => {
-    setAdjustment('');
-    setAssessmentLevel('');
-    setErrors({});
     onClose();
   };
 
@@ -81,8 +87,8 @@ const BuildingInfoModal: React.FC<BuildingInfoModalProps> = ({
       onDidDismiss={handleClose}
       className="custom-wide-modal"
     >
-      <IonHeader className="fancy-header">
-        <IonToolbar>
+      <IonHeader>
+        <IonToolbar className="fancy-header">
           <IonTitle className="fancy-title">Building Information</IonTitle>
           <IonButtons slot="end">
             <IonButton onClick={handleClose} className="fancy-close-btn" fill="clear">
@@ -102,12 +108,20 @@ const BuildingInfoModal: React.FC<BuildingInfoModalProps> = ({
                 {/* Display some building data for reference */}
                 <IonItem className="custom-input" lines="none">
                   <IonLabel position="stacked" className="input-label">Building Code</IonLabel>
-                  <IonInput value={buildingData.buildingCode || ''} readonly className="modal-input" />
+                  <IonInput 
+                    value={buildingData.buildingCode || ''} 
+                    readonly 
+                    className="modal-input" 
+                  />
                 </IonItem>
                 
                 <IonItem className="custom-input" lines="none">
                   <IonLabel position="stacked" className="input-label">Structure Type</IonLabel>
-                  <IonInput value={buildingData.structureType || ''} readonly className="modal-input" />
+                  <IonInput 
+                    value={buildingData.structureType || ''} 
+                    readonly 
+                    className="modal-input" 
+                  />
                 </IonItem>
                 
                 {/* Adjustment Dropdown */}

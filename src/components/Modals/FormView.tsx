@@ -30,7 +30,7 @@ interface FormViewProps {
   district: number | null;
   setDistrict: (value: number | null) => void;
   declarantName: string;
-  declarantId: number | null; // Add declarantId to props
+  declarantId: number | null;
   showDeclarantSearch: () => void;
   kind: string;
   setKind: (value: string) => void;
@@ -61,7 +61,7 @@ const FormView: React.FC<FormViewProps> = ({
   district,
   setDistrict,
   declarantName,
-  declarantId, // Receive declarantId
+  declarantId,
   showDeclarantSearch,
   kind,
   setKind,
@@ -87,7 +87,7 @@ const FormView: React.FC<FormViewProps> = ({
 }) => {
   return (
     <>
-      <IonModal isOpen={isOpen} onDidDismiss={onDismiss} className="custom-modal">
+      <IonModal isOpen={isOpen} onDidDismiss={onDismiss} className="custom-wide-modal">
         <IonHeader>
           <IonToolbar className="fancy-header">
             <IonTitle className="fancy-title">
@@ -231,7 +231,7 @@ const FormView: React.FC<FormViewProps> = ({
       <IonModal 
         isOpen={showDeclarantSearchModal} 
         onDidDismiss={() => setShowDeclarantSearchModal(false)}
-        className="custom-modal"
+        className="custom-wide-modal"
       >
         <IonHeader>
           <IonToolbar className="fancy-header">
