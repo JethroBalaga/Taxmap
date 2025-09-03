@@ -5,6 +5,7 @@ import { FormData } from './Form';
 import { StructureTypeData, getStructureTypesByKindId } from '../../utils/structureTypeLocalStorage';
 import { BuildingCodeData, getBuildingCodesByStructureCode } from '../../utils/buildingCodeLocalStorage';
 import BuildingViewUI from './BuildingViewUI';
+import BuildingInfoModal from './BuildingInfoModal'; // Import the new modal
 
 interface BuildingViewProps {
   onSuccess: (data: BuildingData) => void;
@@ -39,6 +40,7 @@ const BuildingView: React.FC<BuildingViewProps> = ({
   const [isLoadingStructureTypes, setIsLoadingStructureTypes] = useState(false);
   const [isLoadingBuildingCodes, setIsLoadingBuildingCodes] = useState(false);
   const [selectedBuildingCode, setSelectedBuildingCode] = useState<BuildingCodeData | null>(null);
+  const [isInfoModalOpen, setIsInfoModalOpen] = useState(false); // State for the info modal
 
   // Fetch structure types based on kind_id from formData
   useEffect(() => {
@@ -195,27 +197,49 @@ const BuildingView: React.FC<BuildingViewProps> = ({
     return Object.keys(newErrors).length === 0;
   };
 
-  // Handle form submission
+  // Handle form submission - open the info modal instead of calling onSuccess directly
   const handleNextClick = () => {
     if (validateForm()) {
-      onSuccess(buildingData);
+      setIsInfoModalOpen(true);
     }
   };
 
+  // Handle saving from the info modal
+  const handleSaveBuildingInfo = (adjustment: string, assessmentLevel: string) => {
+    // Add the adjustment and assessment level to the building data
+    const completeBuildingData = {
+      ...buildingData,
+      adjustment,
+      assessmentLevel
+    };
+    
+    console.log('Complete building data:', completeBuildingData);
+    onSuccess(completeBuildingData);
+  };
+
   return (
-    <BuildingViewUI
-      formData={formData}
-      buildingData={buildingData}
-      errors={errors}
-      isFormValid={isFormValid}
-      structureTypes={structureTypes}
-      buildingCodes={buildingCodes}
-      isLoadingStructureTypes={isLoadingStructureTypes}
-      isLoadingBuildingCodes={isLoadingBuildingCodes}
-      selectedBuildingCode={selectedBuildingCode}
-      onInputChange={handleInputChange}
-      onNextClick={handleNextClick}
-    />
+    <>
+      <BuildingViewUI
+        formData={formData}
+        buildingData={buildingData}
+        errors={errors}
+        isFormValid={isFormValid}
+        structureTypes={structureTypes}
+        buildingCodes={buildingCodes}
+        isLoadingStructureTypes={isLoadingStructureTypes}
+        isLoadingBuildingCodes={isLoadingBuildingCodes}
+        selectedBuildingCode={selectedBuildingCode}
+        onInputChange={handleInputChange}
+        onNextClick={handleNextClick}
+      />
+      
+      <BuildingInfoModal
+        isOpen={isInfoModalOpen}
+        onClose={() => setIsInfoModalOpen(false)}
+        buildingData={buildingData}
+        onSave={handleSaveBuildingInfo}
+      />
+    </>
   );
 };
 
