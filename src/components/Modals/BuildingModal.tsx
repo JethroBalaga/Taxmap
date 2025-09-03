@@ -27,6 +27,8 @@ export interface BuildingData {
   dateOccupied: string | null;
   dateCompleted: string | null;
   depreciationRate: number | null;
+  adjustment?: string; // Add adjustment field
+  assessmentLevel?: string; // Add assessment level field
 }
 
 interface BuildingModalProps {
