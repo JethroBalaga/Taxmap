@@ -30,6 +30,7 @@ interface FormViewProps {
   district: number | null;
   setDistrict: (value: number | null) => void;
   declarantName: string;
+  declarantId: number | null; // Add declarantId to props
   showDeclarantSearch: () => void;
   kind: string;
   setKind: (value: string) => void;
@@ -60,6 +61,7 @@ const FormView: React.FC<FormViewProps> = ({
   district,
   setDistrict,
   declarantName,
+  declarantId, // Receive declarantId
   showDeclarantSearch,
   kind,
   setKind,
@@ -143,8 +145,17 @@ const FormView: React.FC<FormViewProps> = ({
               </IonLabel>
               <div className="declarant-item-content">
                 <div className="declarant-value-container">
-                  <span className="declarant-value">{declarantName}</span>
-                  <IonIcon icon={searchOutline} className="declarant-search-icon" />
+                  {declarantId ? (
+                    <>
+                      <span className="declarant-value">{declarantId} - {declarantName}</span>
+                      <IonIcon icon={searchOutline} className="declarant-search-icon" />
+                    </>
+                  ) : (
+                    <>
+                      <span className="declarant-value">Select Declarant</span>
+                      <IonIcon icon={searchOutline} className="declarant-search-icon" />
+                    </>
+                  )}
                 </div>
               </div>
             </IonItem>
