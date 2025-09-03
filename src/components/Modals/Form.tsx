@@ -9,7 +9,7 @@ import BuildingModal from './BuildingModal';
 
 export interface FormData {
   district: number | null;
-  declarant: string;
+  declarantId: number | null;
   kind: string;
   classification: string;
   area: number;
@@ -24,7 +24,7 @@ interface FormProps {
 const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
   // State declarations
   const [district, setDistrict] = useState<number | null>(null);
-  const [declarant, setDeclarant] = useState('');
+  const [declarantId, setDeclarantId] = useState<number | null>(null);
   const [kind, setKind] = useState('');
   const [classification, setClassification] = useState('');
   const [area, setArea] = useState<number>(0);
@@ -85,7 +85,11 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
     } else {
       const filtered = declarants.filter(declarant => {
         const fullName = `${declarant.firstname} ${declarant.lastname}`.toLowerCase();
-        return fullName.includes(searchText.toLowerCase());
+        const idString = declarant.declarant_id.toString();
+        return (
+          fullName.includes(searchText.toLowerCase()) ||
+          idString.includes(searchText)
+        );
       });
       setFilteredDeclarants(filtered);
     }
@@ -95,12 +99,12 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
   useEffect(() => {
     setIsFormValid(
       district !== null &&
-      declarant.trim() !== '' &&
+      declarantId !== null &&
       kind.trim() !== '' &&
       classification.trim() !== '' &&
       area > 0
     );
-  }, [district, declarant, kind, classification, area]);
+  }, [district, declarantId, kind, classification, area]);
 
   // Helper functions
   const isBuildingKind = () => {
@@ -109,15 +113,15 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
     return selectedKind?.description.toLowerCase().includes('building');
   };
 
-  const getSelectedDeclarantName = () => {
-    if (!declarant) return 'Select Declarant';
-    const selected = declarants.find(d => d.declarant_id.toString() === declarant);
-    return selected ? `${selected.firstname} ${selected.lastname}` : 'Select Declarant';
+  const getSelectedDeclarantDisplay = () => {
+    if (!declarantId) return 'Select Declarant';
+    const selected = declarants.find(d => d.declarant_id === declarantId);
+    return selected ? `${selected.declarant_id} - ${selected.firstname} ${selected.lastname}` : 'Select Declarant';
   };
 
   const resetForm = () => {
     setDistrict(null);
-    setDeclarant('');
+    setDeclarantId(null);
     setKind('');
     setClassification('');
     setArea(0);
@@ -131,13 +135,13 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
     if (isBuildingKind()) {
       setShowBuildingModal(true);
     } else {
-      console.log('Form data:', { district, declarant, kind, classification, area });
+      console.log('Form data:', { district, declarantId, kind, classification, area });
       onSuccess();
     }
   };
 
   const handleBuildingModalSuccess = (buildingData: any) => {
-    console.log('Form data:', { district, declarant, kind, classification, area });
+    console.log('Form data:', { district, declarantId, kind, classification, area });
     console.log('Building data:', buildingData);
     setShowBuildingModal(false);
     onSuccess();
@@ -147,8 +151,8 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
     setShowBuildingModal(false);
   };
 
-  const handleSelectDeclarant = (declarantId: number) => {
-    setDeclarant(declarantId.toString());
+  const handleSelectDeclarant = (id: number) => {
+    setDeclarantId(id);
     setShowDeclarantSearch(false);
     setSearchText('');
   };
@@ -161,7 +165,7 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
   // Prepare form data
   const formData: FormData = {
     district,
-    declarant,
+    declarantId,
     kind,
     classification,
     area
@@ -174,7 +178,8 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
         onDismiss={handleDismiss}
         district={district}
         setDistrict={setDistrict}
-        declarantName={getSelectedDeclarantName()}
+        declarantName={getSelectedDeclarantDisplay()}
+        declarantId={declarantId}
         showDeclarantSearch={() => setShowDeclarantSearch(true)}
         kind={kind}
         setKind={setKind}

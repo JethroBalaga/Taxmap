@@ -124,7 +124,7 @@ const FormView: React.FC<FormViewProps> = ({
                       key={district.district_id}
                       value={district.district_id}
                     >
-                      {district.district_name}
+                      {district.district_id} - {district.district_name}
                     </IonSelectOption>
                   ))
                 )}
@@ -171,7 +171,7 @@ const FormView: React.FC<FormViewProps> = ({
                       key={kindItem.kind_id}
                       value={kindItem.kind_id.toString()}
                     >
-                      {kindItem.description}
+                      {kindItem.kind_id} - {kindItem.description}
                     </IonSelectOption>
                   ))
                 )}
@@ -200,7 +200,7 @@ const FormView: React.FC<FormViewProps> = ({
                       key={classificationItem.class_id}
                       value={classificationItem.class_id}
                     >
-                      {classificationItem.classification}
+                      {classificationItem.class_id} - {classificationItem.classification}
                     </IonSelectOption>
                   ))
                 )}
@@ -264,7 +264,7 @@ const FormView: React.FC<FormViewProps> = ({
                   >
                     <div className="declarant-item-content">
                       <h2 style={{ margin: '0 0 4px 0', color: '#2d3748', fontSize: '16px' }}>
-                        {declarant.firstname} {declarant.lastname}
+                        {declarant.declarant_id} - {declarant.firstname} {declarant.lastname}
                       </h2>
                       <p style={{ margin: '0', color: '#718096', fontSize: '14px' }}>
                         ID: {declarant.declarant_id}
