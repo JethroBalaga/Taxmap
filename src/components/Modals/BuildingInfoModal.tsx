@@ -22,13 +22,14 @@ import {
 import { closeOutline } from 'ionicons/icons';
 import { BuildingData } from './BuildingModal';
 import { FormData } from './Form';
+import Next from '../GlobalComponent/Next'; // Import the Next component
 import '../../CSS/modal.css';
 
 interface BuildingInfoModalProps {
     isOpen: boolean;
     onClose: () => void;
     buildingData: BuildingData;
-    formData: FormData; // Add formData prop
+    formData: FormData;
     onSave: (adjustment: string, actualUse: string, assessmentLevel: string) => void;
 }
 
@@ -36,7 +37,7 @@ const BuildingInfoModal: React.FC<BuildingInfoModalProps> = ({
     isOpen,
     onClose,
     buildingData,
-    formData, // Destructure formData
+    formData,
     onSave
 }) => {
     const [adjustment, setAdjustment] = useState<string>('');
@@ -214,15 +215,12 @@ const BuildingInfoModal: React.FC<BuildingInfoModalProps> = ({
                     </IonRow>
                 </IonGrid>
 
-                {/* Save Button Container */}
+                {/* Save Button Container - Using Next component */}
                 <div className="next-btn-container">
-                    <IonButton
-                        expand="block"
-                        className="next-button"
+                    <Next 
                         onClick={handleSave}
-                    >
-                        Save Building Information
-                    </IonButton>
+                        disabled={!adjustment || !actualUse || !assessmentLevel}
+                    />
                 </div>
             </IonContent>
         </IonModal>
