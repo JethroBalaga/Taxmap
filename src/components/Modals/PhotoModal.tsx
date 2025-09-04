@@ -12,11 +12,14 @@ import {
   IonTitle, 
   IonButtons, 
   IonIcon,
-  IonSpinner
+  IonSpinner,
+  IonItem,
+  IonLabel
 } from '@ionic/react';
 import { close, camera } from 'ionicons/icons';
 import { FormData } from './Form';
 import { BuildingData } from './BuildingModal';
+import '../../CSS/modal.css';
 
 // Define interface for building info data
 interface BuildingInfoData {
@@ -111,97 +114,92 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
   };
 
   return (
-    <IonModal isOpen={isOpen} onDidDismiss={handleClose}>
+    <IonModal isOpen={isOpen} onDidDismiss={handleClose} className="custom-wide-modal">
       <IonHeader>
-        <IonToolbar>
-          <IonTitle>Take Building Photo</IonTitle>
+        <IonToolbar className="fancy-header">
+          <IonTitle className="fancy-title">Take Building Photo</IonTitle>
           <IonButtons slot="end">
-            <IonButton onClick={handleClose} disabled={isSubmitting}>
+            <IonButton onClick={handleClose} disabled={isSubmitting} className="fancy-close-btn">
               <IonIcon icon={close} />
             </IonButton>
           </IonButtons>
         </IonToolbar>
       </IonHeader>
-      <IonContent className="ion-padding">
-        {error && (
-          <IonAlert
-            isOpen={!!error}
-            message={error}
-            buttons={['OK']}
-            onDidDismiss={() => setError(null)}
-          />
-        )}
+      <IonContent className="modal-content">
+        <div className="form-container">
+          {error && (
+            <IonAlert
+              isOpen={!!error}
+              message={error}
+              buttons={['OK']}
+              onDidDismiss={() => setError(null)}
+            />
+          )}
 
-        {!photo ? (
-          <div style={{ textAlign: 'center', padding: '40px 0' }}>
-            <IonButton 
-              onClick={takePhoto}
-              disabled={isSubmitting}
-              size="large"
-              style={{ '--border-radius': '50%', width: '80px', height: '80px' }}
-              fill="solid"
-              color="primary"
-            >
-              <IonIcon icon={camera} size="large" />
-            </IonButton>
-            <p style={{ marginTop: '20px', color: 'var(--ion-color-medium)' }}>
-              Tap to take a photo of the building
-            </p>
-          </div>
-        ) : (
-          <>
-            <div style={{ 
-              marginTop: '20px',
-              width: '100%',
-              height: '300px',
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              overflow: 'hidden',
-              position: 'relative'
-            }}>
-              <IonImg 
-                src={photo} 
-                alt="Captured photo" 
-                style={{ 
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'cover',
-                  border: '2px solid var(--ion-color-primary)',
-                  borderRadius: '8px'
-                }} 
-              />
-            </div>
-
-            <div style={{ marginTop: '20px', display: 'flex', gap: '10px' }}>
-              <IonButton 
-                expand="block" 
-                onClick={retakePhoto}
-                disabled={isSubmitting}
-                color="medium"
-                fill="outline"
-              >
-                Retake Photo
-              </IonButton>
+          {!photo ? (
+            <div className="photo-placeholder" style={{ textAlign: 'center', padding: '40px 0' }}>
+              <IonItem className="custom-input" lines="none">
+                <IonLabel className="input-label">
+                  Building Photo <span style={{ color: 'red' }}>*</span>
+                </IonLabel>
+              </IonItem>
               
               <IonButton 
-                expand="block" 
-                onClick={handleSubmit}
+                onClick={takePhoto}
                 disabled={isSubmitting}
+                size="large"
+                className="camera-button"
+                fill="solid"
                 color="primary"
               >
-                {isSubmitting ? (
-                  <>
-                    <IonSpinner name="crescent" slot="start" />
-                    Submitting...
-                  </>
-                ) : (
-                  'Use This Photo'
-                )}
+                <IonIcon icon={camera} size="large" />
               </IonButton>
+              <p style={{ marginTop: '20px', color: 'var(--ion-color-medium)' }}>
+                Tap to take a photo of the building
+              </p>
             </div>
-          </>
-        )}
+          ) : (
+            <>
+              <div className="photo-preview-container">
+                <IonImg 
+                  src={photo} 
+                  alt="Captured photo" 
+                  className="captured-photo"
+                />
+              </div>
+
+              <div className="photo-actions">
+                <IonButton 
+                  expand="block" 
+                  onClick={retakePhoto}
+                  disabled={isSubmitting}
+                  color="medium"
+                  fill="outline"
+                  className="action-button"
+                >
+                  Retake Photo
+                </IonButton>
+                
+                <IonButton 
+                  expand="block" 
+                  onClick={handleSubmit}
+                  disabled={isSubmitting}
+                  color="primary"
+                  className="action-button next-button"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <IonSpinner name="crescent" slot="start" />
+                      Submitting...
+                    </>
+                  ) : (
+                    'Use This Photo'
+                  )}
+                </IonButton>
+              </div>
+            </>
+          )}
+        </div>
       </IonContent>
     </IonModal>
   );

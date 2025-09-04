@@ -353,3 +353,77 @@ ion-select:focus-within, ion-input:focus-within, ion-datetime:focus-within {
   font-size: 14px;
   transform: none !important;
 }
+/* Add these styles to your existing modal.css */
+
+/* Photo modal specific styles */
+.photo-placeholder {
+  background: white;
+  border-radius: 12px;
+  padding: 30px;
+  margin: 20px 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.camera-button {
+  --border-radius: 50%;
+  width: 80px;
+  height: 80px;
+  margin: 20px auto;
+}
+
+.photo-preview-container {
+  margin-top: 20px;
+  width: 100%;
+  height: 300px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  position: relative;
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.captured-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border: 2px solid var(--ion-color-primary);
+  border-radius: 8px;
+}
+
+.photo-actions {
+  margin-top: 20px;
+  display: flex;
+  gap: 10px;
+}
+
+.action-button {
+  flex: 1;
+}
+
+/* Form container for consistent spacing */
+.form-container {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 10px;
+}
+
+/* Responsive adjustments for photo modal */
+@media (max-width: 768px) {
+  .photo-preview-container {
+    height: 250px;
+  }
+  
+  .photo-actions {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .camera-button {
+    width: 70px;
+    height: 70px;
+  }
+}
