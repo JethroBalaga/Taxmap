@@ -16,7 +16,7 @@ import {
   IonItem,
   IonLabel
 } from '@ionic/react';
-import { close, camera } from 'ionicons/icons';
+import { close, camera, informationCircle } from 'ionicons/icons';
 import { FormData } from './Form';
 import { BuildingData } from './BuildingModal';
 import '../../CSS/modal.css';
@@ -168,34 +168,54 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                 />
               </div>
 
-              <div className="photo-actions">
-                <IonButton 
-                  expand="block" 
-                  onClick={retakePhoto}
-                  disabled={isSubmitting}
-                  color="medium"
-                  fill="outline"
-                  className="action-button"
-                >
-                  Retake Photo
-                </IonButton>
+              <div className="photo-info-section">
+                <div className="info-header">
+                  <IonIcon icon={informationCircle} className="info-icon" />
+                  <span>Photo Information</span>
+                </div>
                 
+                <div className="info-grid">
+                  <div className="info-item">
+                    <span className="info-label">Status:</span>
+                    <span className="info-value">Captured</span>
+                  </div>
+                  <div className="info-item">
+                    <span className="info-label">Size:</span>
+                    <span className="info-value">Approx. 2.5 MB</span>
+                  </div>
+                  <div className="info-item">
+                    <span className="info-label">Resolution:</span>
+                    <span className="info-value">1920×1080</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="photo-actions-single">
                 <IonButton 
                   expand="block" 
                   onClick={handleSubmit}
                   disabled={isSubmitting}
                   color="primary"
-                  className="action-button next-button"
+                  className="save-info-button"
                 >
                   {isSubmitting ? (
                     <>
                       <IonSpinner name="crescent" slot="start" />
-                      Submitting...
+                      Saving...
                     </>
                   ) : (
-                    'Use This Photo'
+                    <>
+                      <IonIcon icon={informationCircle} slot="start" />
+                      Save Info
+                    </>
                   )}
                 </IonButton>
+                
+                <div className="retake-link">
+                  <button onClick={retakePhoto} disabled={isSubmitting}>
+                    Retake Photo
+                  </button>
+                </div>
               </div>
             </>
           )}

@@ -394,14 +394,85 @@ ion-select:focus-within, ion-input:focus-within, ion-datetime:focus-within {
   border-radius: 8px;
 }
 
-.photo-actions {
-  margin-top: 20px;
-  display: flex;
-  gap: 10px;
+.photo-info-section {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  margin: 20px 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
-.action-button {
-  flex: 1;
+.info-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+  color: #2d3748;
+  font-weight: 600;
+  font-size: 1.1em;
+}
+
+.info-icon {
+  color: #6a11cb;
+  margin-right: 8px;
+  font-size: 1.2em;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.info-label {
+  font-size: 0.85em;
+  color: #718096;
+  margin-bottom: 4px;
+}
+
+.info-value {
+  font-weight: 500;
+  color: #2d3748;
+}
+
+.photo-actions-single {
+  margin-top: 20px;
+}
+
+.save-info-button {
+  --border-radius: 10px;
+  --padding-top: 16px;
+  --padding-bottom: 16px;
+  --background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.retake-link {
+  text-align: center;
+}
+
+.retake-link button {
+  background: none;
+  border: none;
+  color: #6a11cb;
+  font-size: 0.9em;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 8px;
+}
+
+.retake-link button:disabled {
+  color: #a0aec0;
+  cursor: not-allowed;
+}
+
+.retake-link button:hover:not(:disabled) {
+  color: #2575fc;
 }
 
 /* Form container for consistent spacing */
@@ -417,9 +488,8 @@ ion-select:focus-within, ion-input:focus-within, ion-datetime:focus-within {
     height: 250px;
   }
   
-  .photo-actions {
-    flex-direction: column;
-    gap: 12px;
+  .info-grid {
+    grid-template-columns: 1fr;
   }
   
   .camera-button {
