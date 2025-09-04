@@ -14,11 +14,11 @@ interface BuildingViewProps {
   initialData?: BuildingData;
 }
 
-const BuildingView: React.FC<BuildingViewProps> = ({ 
+const BuildingView: React.FC<BuildingViewProps> = ({
   onSuccess,
   onDismiss,
   formData,
-  initialData 
+  initialData
 }) => {
   const [buildingData, setBuildingData] = useState<BuildingData>({
     structureType: '',
@@ -46,7 +46,7 @@ const BuildingView: React.FC<BuildingViewProps> = ({
   useEffect(() => {
     const fetchStructureTypes = async () => {
       if (!formData.kind) return;
-      
+
       setIsLoadingStructureTypes(true);
       try {
         const kindId = parseInt(formData.kind);
@@ -74,13 +74,13 @@ const BuildingView: React.FC<BuildingViewProps> = ({
         setSelectedBuildingCode(null);
         return;
       }
-      
+
       setIsLoadingBuildingCodes(true);
       try {
         const buildingCodesData = await getBuildingCodesByStructureCode(buildingData.structureType);
         setBuildingCodes(buildingCodesData);
         console.log('Fetched building codes for structure:', buildingData.structureType, buildingCodesData);
-        
+
         // If there's a previously selected building code that matches the new structure type, keep it
         if (buildingData.buildingCode) {
           const matchingCode = buildingCodesData.find(
@@ -149,16 +149,16 @@ const BuildingView: React.FC<BuildingViewProps> = ({
 
   // Check form validity whenever building data changes
   useEffect(() => {
-    const isValid = 
+    const isValid =
       buildingData.structureType.trim() !== '' &&
       buildingData.buildingCode.trim() !== '' &&
       buildingData.storey !== null && buildingData.storey >= 1 &&
       buildingData.floorOrder !== null && buildingData.floorOrder >= 0 &&
-      buildingData.constructionPercent !== null && 
-        buildingData.constructionPercent >= 0 && buildingData.constructionPercent <= 100 &&
-      buildingData.depreciationRate !== null && 
-        buildingData.depreciationRate >= 0 && buildingData.depreciationRate <= 100;
-    
+      buildingData.constructionPercent !== null &&
+      buildingData.constructionPercent >= 0 && buildingData.constructionPercent <= 100 &&
+      buildingData.depreciationRate !== null &&
+      buildingData.depreciationRate >= 0 && buildingData.depreciationRate <= 100;
+
     setIsFormValid(isValid);
   }, [buildingData]);
 
@@ -168,7 +168,7 @@ const BuildingView: React.FC<BuildingViewProps> = ({
       ...prev,
       [field]: value
     }));
-    
+
     // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({
@@ -181,7 +181,7 @@ const BuildingView: React.FC<BuildingViewProps> = ({
   // Validate form
   const validateForm = (): boolean => {
     const newErrors: Partial<Record<keyof BuildingData, string>> = {};
-    
+
     if (!buildingData.structureType) newErrors.structureType = 'Structure type is required';
     if (!buildingData.buildingCode) newErrors.buildingCode = 'Building code is required';
     if (buildingData.storey === null || buildingData.storey < 1) newErrors.storey = 'Valid storey count is required';
@@ -192,7 +192,7 @@ const BuildingView: React.FC<BuildingViewProps> = ({
     if (buildingData.depreciationRate === null || buildingData.depreciationRate < 0 || buildingData.depreciationRate > 100) {
       newErrors.depreciationRate = 'Depreciation rate must be between 0-100';
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -212,7 +212,7 @@ const BuildingView: React.FC<BuildingViewProps> = ({
       adjustment,
       assessmentLevel
     };
-    
+
     console.log('Complete building data:', completeBuildingData);
     onSuccess(completeBuildingData);
   };
@@ -232,11 +232,13 @@ const BuildingView: React.FC<BuildingViewProps> = ({
         onInputChange={handleInputChange}
         onNextClick={handleNextClick}
       />
-      
+
+    // In BuildingView.tsx, update the BuildingInfoModal usage:
       <BuildingInfoModal
         isOpen={isInfoModalOpen}
         onClose={() => setIsInfoModalOpen(false)}
         buildingData={buildingData}
+        formData={formData} // Add this line to pass formData
         onSave={handleSaveBuildingInfo}
       />
     </>
