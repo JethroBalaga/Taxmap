@@ -277,9 +277,6 @@ const FormView: React.FC<FormViewProps> = ({
                       <h2 style={{ margin: '0 0 4px 0', color: '#2d3748', fontSize: '16px' }}>
                         {declarant.declarant_id} - {declarant.firstname} {declarant.lastname}
                       </h2>
-                      <p style={{ margin: '0', color: '#718096', fontSize: '14px' }}>
-                        ID: {declarant.declarant_id}
-                      </p>
                     </div>
                   </IonItem>
                 ))}

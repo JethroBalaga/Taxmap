@@ -56,7 +56,7 @@ const BuildingInfoModal: React.FC<BuildingInfoModalProps> = ({
     const [assessmentLevelOptions, setAssessmentLevelOptions] = useState<{ value: string, label: string, display: string }[]>([]);
     const [assessmentLevelDisplay, setAssessmentLevelDisplay] = useState<string>('');
     const [errors, setErrors] = useState<{ actualUse?: string; assessmentLevel?: string }>({});
-    
+
     // New state for photo modal
     const [isPhotoModalOpen, setIsPhotoModalOpen] = useState(false);
     const [savedBuildingInfo, setSavedBuildingInfo] = useState<BuildingInfoData | null>(null);
@@ -176,8 +176,8 @@ const BuildingInfoModal: React.FC<BuildingInfoModalProps> = ({
         // When photo is taken, call the original onSave with the saved building info
         if (savedBuildingInfo) {
             onSave(
-                savedBuildingInfo.adjustment, 
-                savedBuildingInfo.actualUse, 
+                savedBuildingInfo.adjustment,
+                savedBuildingInfo.actualUse,
                 savedBuildingInfo.assessmentLevel
             );
             // You can also handle the photo here if needed
@@ -350,13 +350,18 @@ const BuildingInfoModal: React.FC<BuildingInfoModalProps> = ({
             </IonModal>
 
             {/* Photo Modal with passed data */}
+          // Photo Modal with passed data
             <PhotoModal
                 isOpen={isPhotoModalOpen}
-                onClose={handlePhotoModalClose}
+                onClose={handlePhotoModalClose} // Changed from handleClose to handlePhotoModalClose
                 onPhotoTaken={handlePhotoTaken}
                 formData={formData}
                 buildingData={buildingData}
-                buildingInfoData={savedBuildingInfo}
+                buildingInfoData={{
+                    adjustment: savedBuildingInfo?.adjustment || '',
+                    actualUse: savedBuildingInfo?.actualUse || '',
+                    assessmentLevel: savedBuildingInfo?.assessmentLevel || ''
+                }}
             />
         </>
     );
