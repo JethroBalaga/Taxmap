@@ -232,8 +232,6 @@ const BuildingView: React.FC<BuildingViewProps> = ({
         onInputChange={handleInputChange}
         onNextClick={handleNextClick}
       />
-
-    // In BuildingView.tsx, update the BuildingInfoModal usage:
       <BuildingInfoModal
         isOpen={isInfoModalOpen}
         onClose={() => setIsInfoModalOpen(false)}

@@ -147,7 +147,7 @@ const FormView: React.FC<FormViewProps> = ({
                 <div className="declarant-value-container">
                   {declarantId ? (
                     <>
-                      <span className="declarant-value">{declarantId} - {declarantName}</span>
+                      <span className="declarant-value">{declarantName}</span>
                       <IonIcon icon={searchOutline} className="declarant-search-icon" />
                     </>
                   ) : (
