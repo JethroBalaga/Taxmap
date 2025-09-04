@@ -16,16 +16,19 @@ import {
     IonButton,
     IonIcon,
     IonButtons,
-    IonNote
+    IonNote,
+    IonText
 } from '@ionic/react';
 import { closeOutline } from 'ionicons/icons';
 import { BuildingData } from './BuildingModal';
+import { FormData } from './Form';
 import '../../CSS/modal.css';
 
 interface BuildingInfoModalProps {
     isOpen: boolean;
     onClose: () => void;
     buildingData: BuildingData;
+    formData: FormData; // Add formData prop
     onSave: (adjustment: string, actualUse: string, assessmentLevel: string) => void;
 }
 
@@ -33,6 +36,7 @@ const BuildingInfoModal: React.FC<BuildingInfoModalProps> = ({
     isOpen,
     onClose,
     buildingData,
+    formData, // Destructure formData
     onSave
 }) => {
     const [adjustment, setAdjustment] = useState<string>('');
@@ -109,11 +113,32 @@ const BuildingInfoModal: React.FC<BuildingInfoModalProps> = ({
             </IonHeader>
 
             <IonContent className="modal-content">
+                {/* Display form data for reference */}
+                <div style={{ padding: '10px', background: '#f5f5f5', marginBottom: '15px', borderRadius: '8px' }}>
+                    <IonText color="medium">
+                        <small>Form Reference: District {formData.district}, Kind ID: {formData.kind}, Area: {formData.area}m²</small>
+                    </IonText>
+                </div>
+
                 <IonGrid className="custom-grid">
                     <IonRow>
                         <IonCol className="custom-col">
                             <div className="form-section">
                                 <h3 className="section-title">Building Details</h3>
+                                
+                                {/* Display key building data for reference */}
+                                <div style={{ marginBottom: '20px', padding: '10px', background: '#f0f8ff', borderRadius: '5px' }}>
+                                    <IonText>
+                                        <small>
+                                            <strong>Building Summary:</strong><br />
+                                            Structure: {buildingData.structureType}<br />
+                                            Building Code: {buildingData.buildingCode}<br />
+                                            Storeys: {buildingData.storey}<br />
+                                            Construction: {buildingData.constructionPercent}%
+                                        </small>
+                                    </IonText>
+                                </div>
+                                
                                 {/* Actual Use Dropdown */}
                                 <IonItem className="custom-input" lines="none">
                                     <IonLabel position="stacked" className="input-label">
@@ -141,6 +166,7 @@ const BuildingInfoModal: React.FC<BuildingInfoModalProps> = ({
                                         </IonNote>
                                     )}
                                 </IonItem>
+                                
                                 {/* Adjustment Dropdown */}
                                 <IonItem className="custom-input" lines="none">
                                     <IonLabel position="stacked" className="input-label">
@@ -168,6 +194,7 @@ const BuildingInfoModal: React.FC<BuildingInfoModalProps> = ({
                                         </IonNote>
                                     )}
                                 </IonItem>
+                                
                                 {/* Assessment Level Dropdown */}
                                 <IonItem className="custom-input" lines="none">
                                     <IonLabel position="stacked" className="input-label">
