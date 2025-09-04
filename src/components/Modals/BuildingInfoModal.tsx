@@ -126,19 +126,6 @@ const BuildingInfoModal: React.FC<BuildingInfoModalProps> = ({
                             <div className="form-section">
                                 <h3 className="section-title">Building Details</h3>
                                 
-                                {/* Display key building data for reference */}
-                                <div style={{ marginBottom: '20px', padding: '10px', background: '#f0f8ff', borderRadius: '5px' }}>
-                                    <IonText>
-                                        <small>
-                                            <strong>Building Summary:</strong><br />
-                                            Structure: {buildingData.structureType}<br />
-                                            Building Code: {buildingData.buildingCode}<br />
-                                            Storeys: {buildingData.storey}<br />
-                                            Construction: {buildingData.constructionPercent}%
-                                        </small>
-                                    </IonText>
-                                </div>
-                                
                                 {/* Actual Use Dropdown */}
                                 <IonItem className="custom-input" lines="none">
                                     <IonLabel position="stacked" className="input-label">
