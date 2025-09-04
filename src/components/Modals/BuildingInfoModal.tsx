@@ -45,10 +45,10 @@ const BuildingInfoModal: React.FC<BuildingInfoModalProps> = ({
     const [adjustment, setAdjustment] = useState<string>('');
     const [actualUse, setActualUse] = useState<string>('');
     const [assessmentLevel, setAssessmentLevel] = useState<string>('');
-    const [actualUseOptions, setActualUseOptions] = useState<{value: string, label: string}[]>([]);
-    const [assessmentLevelOptions, setAssessmentLevelOptions] = useState<{value: string, label: string, display: string}[]>([]);
+    const [actualUseOptions, setActualUseOptions] = useState<{ value: string, label: string }[]>([]);
+    const [assessmentLevelOptions, setAssessmentLevelOptions] = useState<{ value: string, label: string, display: string }[]>([]);
     const [assessmentLevelDisplay, setAssessmentLevelDisplay] = useState<string>('');
-    const [errors, setErrors] = useState<{ adjustment?: string; actualUse?: string; assessmentLevel?: string }>({});
+    const [errors, setErrors] = useState<{ actualUse?: string; assessmentLevel?: string }>({});
 
     // Extract class_id from classification (e.g., "A-Agricultural" -> "A")
     const extractClassId = (classification: string): string => {
@@ -83,24 +83,24 @@ const BuildingInfoModal: React.FC<BuildingInfoModalProps> = ({
         const fetchActualUseOptions = async () => {
             if (classId && isOpen) {
                 console.log('Fetching actual use options for class_id:', classId);
-                
+
                 const actualUsedData = await getActualUsedByClassId(classId);
                 console.log('Fetched actual used data:', actualUsedData);
-                
+
                 // Map to option format with concatenated ID and description
                 const options = actualUsedData.map(item => ({
                     value: item.actual_used_id,
                     label: `${item.actual_used_id} - ${item.description}`
                 }));
-                
+
                 setActualUseOptions(options);
-                
+
                 if (options.length === 0) {
                     console.warn('No actual use options found for class_id:', classId);
                 }
             }
         };
-        
+
         fetchActualUseOptions();
     }, [isOpen, classId]);
 
@@ -109,25 +109,25 @@ const BuildingInfoModal: React.FC<BuildingInfoModalProps> = ({
         const fetchAssessmentLevelOptions = async () => {
             if (kindId > 0 && isOpen) {
                 console.log('Fetching assessment levels for kind_id:', kindId);
-                
+
                 const assessmentLevels = await getAssessmentLevelsByKindId(kindId);
                 console.log('Fetched assessment levels:', assessmentLevels);
-                
+
                 // Map to option format - use the rate_percent as is (it already contains %)
                 const options = assessmentLevels.map(item => ({
                     value: item.assessment_level_id,
                     label: item.rate_percent, // Use as is (already contains %)
                     display: item.rate_percent // Use as is for display
                 }));
-                
+
                 setAssessmentLevelOptions(options);
-                
+
                 if (options.length === 0) {
                     console.warn('No assessment levels found for kind_id:', kindId);
                 }
             }
         };
-        
+
         fetchAssessmentLevelOptions();
     }, [isOpen, kindId]);
 
@@ -144,9 +144,8 @@ const BuildingInfoModal: React.FC<BuildingInfoModalProps> = ({
     }, [assessmentLevel, assessmentLevelOptions]);
 
     const handleSave = () => {
-        const newErrors: { adjustment?: string; actualUse?: string; assessmentLevel?: string } = {};
+        const newErrors: { actualUse?: string; assessmentLevel?: string } = {};
 
-        if (!adjustment) newErrors.adjustment = 'Adjustment is required';
         if (!actualUse) newErrors.actualUse = 'Actual use is required';
         if (!assessmentLevel) newErrors.assessmentLevel = 'Assessment level is required';
 
@@ -165,6 +164,7 @@ const BuildingInfoModal: React.FC<BuildingInfoModalProps> = ({
 
     // Sample data for adjustment dropdown - replace with your actual data sources
     const adjustmentOptions = [
+        { value: '', label: 'None (Optional)' },
         { value: 'adj1', label: 'Adjustment 1' },
         { value: 'adj2', label: 'Adjustment 2' },
         { value: 'adj3', label: 'Adjustment 3' },
@@ -192,8 +192,8 @@ const BuildingInfoModal: React.FC<BuildingInfoModalProps> = ({
                 <div style={{ padding: '10px', background: '#f5f5f5', marginBottom: '15px', borderRadius: '8px' }}>
                     <IonText color="medium">
                         <small>
-                            Form Reference: District {formData.district}, Kind: {formData.kind} (ID: {kindId}), 
-                            Classification: {formData.classification} (Class ID: {classId}), 
+                            Form Reference: District {formData.district}, Kind: {formData.kind} (ID: {kindId}),
+                            Classification: {formData.classification} (Class ID: {classId}),
                             Area: {formData.area}m²
                         </small>
                     </IonText>
@@ -204,7 +204,7 @@ const BuildingInfoModal: React.FC<BuildingInfoModalProps> = ({
                         <IonCol className="custom-col">
                             <div className="form-section">
                                 <h3 className="section-title">Building Details</h3>
-                                
+
                                 {/* Actual Use Dropdown */}
                                 <IonItem className="custom-input" lines="none">
                                     <IonLabel position="stacked" className="input-label">
@@ -238,19 +238,15 @@ const BuildingInfoModal: React.FC<BuildingInfoModalProps> = ({
                                         </IonNote>
                                     )}
                                 </IonItem>
-                                
-                                {/* Adjustment Dropdown */}
+                                {/* Adjustment Dropdown - Optional */}
                                 <IonItem className="custom-input" lines="none">
                                     <IonLabel position="stacked" className="input-label">
-                                        Adjustment <span style={{ color: 'red' }}>*</span>
+                                        Adjustment (Optional)
                                     </IonLabel>
                                     <IonSelect
                                         value={adjustment}
-                                        placeholder="Select Adjustment"
-                                        onIonChange={e => {
-                                            setAdjustment(e.detail.value!);
-                                            if (errors.adjustment) setErrors({ ...errors, adjustment: undefined });
-                                        }}
+                                        placeholder="Select Adjustment (Optional)"
+                                        onIonChange={e => setAdjustment(e.detail.value!)}
                                         interface="popover"
                                         className="modal-input"
                                     >
@@ -260,13 +256,8 @@ const BuildingInfoModal: React.FC<BuildingInfoModalProps> = ({
                                             </IonSelectOption>
                                         ))}
                                     </IonSelect>
-                                    {errors.adjustment && (
-                                        <IonNote color="danger" className="error-message">
-                                            <small>{errors.adjustment}</small>
-                                        </IonNote>
-                                    )}
                                 </IonItem>
-                                
+
                                 {/* Assessment Level Dropdown */}
                                 <IonItem className="custom-input" lines="none">
                                     <IonLabel position="stacked" className="input-label">
@@ -315,9 +306,9 @@ const BuildingInfoModal: React.FC<BuildingInfoModalProps> = ({
 
                 {/* Save Button Container - Using Next component */}
                 <div className="next-btn-container">
-                    <Next 
+                    <Next
                         onClick={handleSave}
-                        disabled={!adjustment || !actualUse || !assessmentLevel}
+                        disabled={!actualUse || !assessmentLevel}
                     />
                 </div>
             </IonContent>
