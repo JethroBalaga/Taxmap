@@ -23,6 +23,7 @@ import { closeOutline } from 'ionicons/icons';
 import { BuildingData } from './BuildingModal';
 import { FormData } from './Form';
 import { getActualUsedByClassId } from '../../utils/actualUsedLocalStorage';
+import { getAssessmentLevelsByKindId } from '../../utils/assessmentLevelLocalStorage';
 import Next from '../GlobalComponent/Next';
 import '../../CSS/modal.css';
 
@@ -45,17 +46,26 @@ const BuildingInfoModal: React.FC<BuildingInfoModalProps> = ({
     const [actualUse, setActualUse] = useState<string>('');
     const [assessmentLevel, setAssessmentLevel] = useState<string>('');
     const [actualUseOptions, setActualUseOptions] = useState<{value: string, label: string}[]>([]);
+    const [assessmentLevelOptions, setAssessmentLevelOptions] = useState<{value: string, label: string, display: string}[]>([]);
+    const [assessmentLevelDisplay, setAssessmentLevelDisplay] = useState<string>('');
     const [errors, setErrors] = useState<{ adjustment?: string; actualUse?: string; assessmentLevel?: string }>({});
 
     // Extract class_id from classification (e.g., "A-Agricultural" -> "A")
     const extractClassId = (classification: string): string => {
         if (!classification) return '';
-        // Split by hyphen and take the first part
         const parts = classification.split('-');
         return parts[0].trim();
     };
 
+    // Extract kind_id from kind (e.g., "2-building" -> 2)
+    const extractKindId = (kind: string): number => {
+        if (!kind) return 0;
+        const parts = kind.split('-');
+        return parseInt(parts[0].trim()) || 0;
+    };
+
     const classId = extractClassId(formData.classification);
+    const kindId = extractKindId(formData.kind);
 
     // Reset form when modal opens/closes
     useEffect(() => {
@@ -63,6 +73,7 @@ const BuildingInfoModal: React.FC<BuildingInfoModalProps> = ({
             setAdjustment('');
             setActualUse('');
             setAssessmentLevel('');
+            setAssessmentLevelDisplay('');
             setErrors({});
         }
     }, [isOpen]);
@@ -79,12 +90,11 @@ const BuildingInfoModal: React.FC<BuildingInfoModalProps> = ({
                 // Map to option format with concatenated ID and description
                 const options = actualUsedData.map(item => ({
                     value: item.actual_used_id,
-                    label: `${item.actual_used_id} - ${item.description}` // Concatenate ID and description
+                    label: `${item.actual_used_id} - ${item.description}`
                 }));
                 
                 setActualUseOptions(options);
                 
-                // If no options found, show a warning
                 if (options.length === 0) {
                     console.warn('No actual use options found for class_id:', classId);
                 }
@@ -93,6 +103,45 @@ const BuildingInfoModal: React.FC<BuildingInfoModalProps> = ({
         
         fetchActualUseOptions();
     }, [isOpen, classId]);
+
+    // Fetch assessment level options based on extracted kind_id
+    useEffect(() => {
+        const fetchAssessmentLevelOptions = async () => {
+            if (kindId > 0 && isOpen) {
+                console.log('Fetching assessment levels for kind_id:', kindId);
+                
+                const assessmentLevels = await getAssessmentLevelsByKindId(kindId);
+                console.log('Fetched assessment levels:', assessmentLevels);
+                
+                // Map to option format - use the rate_percent as is (it already contains %)
+                const options = assessmentLevels.map(item => ({
+                    value: item.assessment_level_id,
+                    label: item.rate_percent, // Use as is (already contains %)
+                    display: item.rate_percent // Use as is for display
+                }));
+                
+                setAssessmentLevelOptions(options);
+                
+                if (options.length === 0) {
+                    console.warn('No assessment levels found for kind_id:', kindId);
+                }
+            }
+        };
+        
+        fetchAssessmentLevelOptions();
+    }, [isOpen, kindId]);
+
+    // Update display value when assessment level changes
+    useEffect(() => {
+        if (assessmentLevel) {
+            const selectedOption = assessmentLevelOptions.find(opt => opt.value === assessmentLevel);
+            if (selectedOption) {
+                setAssessmentLevelDisplay(selectedOption.display);
+            }
+        } else {
+            setAssessmentLevelDisplay('');
+        }
+    }, [assessmentLevel, assessmentLevelOptions]);
 
     const handleSave = () => {
         const newErrors: { adjustment?: string; actualUse?: string; assessmentLevel?: string } = {};
@@ -114,17 +163,11 @@ const BuildingInfoModal: React.FC<BuildingInfoModalProps> = ({
         onClose();
     };
 
-    // Sample data for other dropdowns - replace with your actual data sources
+    // Sample data for adjustment dropdown - replace with your actual data sources
     const adjustmentOptions = [
         { value: 'adj1', label: 'Adjustment 1' },
         { value: 'adj2', label: 'Adjustment 2' },
         { value: 'adj3', label: 'Adjustment 3' },
-    ];
-
-    const assessmentLevelOptions = [
-        { value: 'level1', label: 'Assessment Level 1' },
-        { value: 'level2', label: 'Assessment Level 2' },
-        { value: 'level3', label: 'Assessment Level 3' },
     ];
 
     return (
@@ -149,7 +192,7 @@ const BuildingInfoModal: React.FC<BuildingInfoModalProps> = ({
                 <div style={{ padding: '10px', background: '#f5f5f5', marginBottom: '15px', borderRadius: '8px' }}>
                     <IonText color="medium">
                         <small>
-                            Form Reference: District {formData.district}, Kind ID: {formData.kind}, 
+                            Form Reference: District {formData.district}, Kind: {formData.kind} (ID: {kindId}), 
                             Classification: {formData.classification} (Class ID: {classId}), 
                             Area: {formData.area}m²
                         </small>
@@ -162,7 +205,7 @@ const BuildingInfoModal: React.FC<BuildingInfoModalProps> = ({
                             <div className="form-section">
                                 <h3 className="section-title">Building Details</h3>
                                 
-                                {/* Actual Use Dropdown - Now dynamically populated */}
+                                {/* Actual Use Dropdown */}
                                 <IonItem className="custom-input" lines="none">
                                     <IonLabel position="stacked" className="input-label">
                                         Actual Use <span style={{ color: 'red' }}>*</span>
@@ -184,7 +227,7 @@ const BuildingInfoModal: React.FC<BuildingInfoModalProps> = ({
                                         ) : (
                                             actualUseOptions.map(option => (
                                                 <IonSelectOption key={option.value} value={option.value}>
-                                                    {option.label} {/* This will show "actual_used_id - description" */}
+                                                    {option.label}
                                                 </IonSelectOption>
                                             ))
                                         )}
@@ -239,12 +282,26 @@ const BuildingInfoModal: React.FC<BuildingInfoModalProps> = ({
                                         interface="popover"
                                         className="modal-input"
                                     >
-                                        {assessmentLevelOptions.map(option => (
-                                            <IonSelectOption key={option.value} value={option.value}>
-                                                {option.label}
+                                        {assessmentLevelOptions.length === 0 ? (
+                                            <IonSelectOption value="" disabled>
+                                                {kindId ? 'No assessment levels found for this kind' : 'Kind not selected'}
                                             </IonSelectOption>
-                                        ))}
+                                        ) : (
+                                            assessmentLevelOptions.map(option => (
+                                                <IonSelectOption key={option.value} value={option.value}>
+                                                    {option.label}
+                                                </IonSelectOption>
+                                            ))
+                                        )}
                                     </IonSelect>
+                                    {/* Display the selected assessment level */}
+                                    {assessmentLevelDisplay && (
+                                        <div style={{ marginTop: '8px' }}>
+                                            <IonText color="primary">
+                                                <small>Selected: {assessmentLevelDisplay} (ID: {assessmentLevel})</small>
+                                            </IonText>
+                                        </div>
+                                    )}
                                     {errors.assessmentLevel && (
                                         <IonNote color="danger" className="error-message">
                                             <small>{errors.assessmentLevel}</small>
