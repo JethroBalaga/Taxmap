@@ -25,6 +25,7 @@ import { FormData } from './Form';
 import { getActualUsedByClassId } from '../../utils/actualUsedLocalStorage';
 import { getAssessmentLevelsByKindId } from '../../utils/assessmentLevelLocalStorage';
 import Next from '../GlobalComponent/Next';
+import PhotoModal from './PhotoModal'; // Import the PhotoModal
 import '../../CSS/modal.css';
 
 interface BuildingInfoModalProps {
@@ -49,6 +50,14 @@ const BuildingInfoModal: React.FC<BuildingInfoModalProps> = ({
     const [assessmentLevelOptions, setAssessmentLevelOptions] = useState<{ value: string, label: string, display: string }[]>([]);
     const [assessmentLevelDisplay, setAssessmentLevelDisplay] = useState<string>('');
     const [errors, setErrors] = useState<{ actualUse?: string; assessmentLevel?: string }>({});
+    
+    // New state for photo modal
+    const [isPhotoModalOpen, setIsPhotoModalOpen] = useState(false);
+    const [savedBuildingInfo, setSavedBuildingInfo] = useState<{
+        adjustment: string;
+        actualUse: string;
+        assessmentLevel: string;
+    } | null>(null);
 
     // Extract class_id from classification (e.g., "A-Agricultural" -> "A")
     const extractClassId = (classification: string): string => {
@@ -75,6 +84,8 @@ const BuildingInfoModal: React.FC<BuildingInfoModalProps> = ({
             setAssessmentLevel('');
             setAssessmentLevelDisplay('');
             setErrors({});
+            setIsPhotoModalOpen(false);
+            setSavedBuildingInfo(null);
         }
     }, [isOpen]);
 
@@ -143,7 +154,7 @@ const BuildingInfoModal: React.FC<BuildingInfoModalProps> = ({
         }
     }, [assessmentLevel, assessmentLevelOptions]);
 
-    const handleSave = () => {
+    const handleNext = () => {
         const newErrors: { actualUse?: string; assessmentLevel?: string } = {};
 
         if (!actualUse) newErrors.actualUse = 'Actual use is required';
@@ -154,12 +165,33 @@ const BuildingInfoModal: React.FC<BuildingInfoModalProps> = ({
             return;
         }
 
-        onSave(adjustment, actualUse, assessmentLevel);
-        onClose();
+        // Save the building info temporarily and open photo modal
+        setSavedBuildingInfo({ adjustment, actualUse, assessmentLevel });
+        setIsPhotoModalOpen(true);
+    };
+
+    const handlePhotoTaken = (photo: string) => {
+        // When photo is taken, call the original onSave with the saved building info
+        if (savedBuildingInfo) {
+            onSave(
+                savedBuildingInfo.adjustment, 
+                savedBuildingInfo.actualUse, 
+                savedBuildingInfo.assessmentLevel
+            );
+            // You can also handle the photo here if needed
+            console.log('Photo taken:', photo);
+        }
+        setIsPhotoModalOpen(false);
+        onClose(); // Close both modals
     };
 
     const handleClose = () => {
         onClose();
+    };
+
+    const handlePhotoModalClose = () => {
+        setIsPhotoModalOpen(false);
+        setSavedBuildingInfo(null);
     };
 
     // Sample data for adjustment dropdown - replace with your actual data sources
@@ -171,148 +203,157 @@ const BuildingInfoModal: React.FC<BuildingInfoModalProps> = ({
     ];
 
     return (
-        <IonModal
-            isOpen={isOpen}
-            onDidDismiss={handleClose}
-            className="custom-wide-modal"
-        >
-            <IonHeader>
-                <IonToolbar className="fancy-header">
-                    <IonTitle className="fancy-title">Building Information</IonTitle>
-                    <IonButtons slot="end">
-                        <IonButton onClick={handleClose} className="fancy-close-btn" fill="clear">
-                            <IonIcon icon={closeOutline} />
-                        </IonButton>
-                    </IonButtons>
-                </IonToolbar>
-            </IonHeader>
+        <>
+            <IonModal
+                isOpen={isOpen}
+                onDidDismiss={handleClose}
+                className="custom-wide-modal"
+            >
+                <IonHeader>
+                    <IonToolbar className="fancy-header">
+                        <IonTitle className="fancy-title">Building Information</IonTitle>
+                        <IonButtons slot="end">
+                            <IonButton onClick={handleClose} className="fancy-close-btn" fill="clear">
+                                <IonIcon icon={closeOutline} />
+                            </IonButton>
+                        </IonButtons>
+                    </IonToolbar>
+                </IonHeader>
 
-            <IonContent className="modal-content">
-                {/* Display form data for reference */}
-                <div style={{ padding: '10px', background: '#f5f5f5', marginBottom: '15px', borderRadius: '8px' }}>
-                    <IonText color="medium">
-                        <small>
-                            Form Reference: District {formData.district}, Kind: {formData.kind} (ID: {kindId}),
-                            Classification: {formData.classification} (Class ID: {classId}),
-                            Area: {formData.area}m²
-                        </small>
-                    </IonText>
-                </div>
+                <IonContent className="modal-content">
+                    {/* Display form data for reference */}
+                    <div style={{ padding: '10px', background: '#f5f5f5', marginBottom: '15px', borderRadius: '8px' }}>
+                        <IonText color="medium">
+                            <small>
+                                Form Reference: District {formData.district}, Kind: {formData.kind} (ID: {kindId}),
+                                Classification: {formData.classification} (Class ID: {classId}),
+                                Area: {formData.area}m²
+                            </small>
+                        </IonText>
+                    </div>
 
-                <IonGrid className="custom-grid">
-                    <IonRow>
-                        <IonCol className="custom-col">
-                            <div className="form-section">
-                                <h3 className="section-title">Building Details</h3>
+                    <IonGrid className="custom-grid">
+                        <IonRow>
+                            <IonCol className="custom-col">
+                                <div className="form-section">
+                                    <h3 className="section-title">Building Details</h3>
 
-                                {/* Actual Use Dropdown */}
-                                <IonItem className="custom-input" lines="none">
-                                    <IonLabel position="stacked" className="input-label">
-                                        Actual Use <span style={{ color: 'red' }}>*</span>
-                                    </IonLabel>
-                                    <IonSelect
-                                        value={actualUse}
-                                        placeholder="Select Actual Use"
-                                        onIonChange={e => {
-                                            setActualUse(e.detail.value!);
-                                            if (errors.actualUse) setErrors({ ...errors, actualUse: undefined });
-                                        }}
-                                        interface="popover"
-                                        className="modal-input"
-                                    >
-                                        {actualUseOptions.length === 0 ? (
-                                            <IonSelectOption value="" disabled>
-                                                {classId ? 'No options available for this class' : 'Select a classification first'}
-                                            </IonSelectOption>
-                                        ) : (
-                                            actualUseOptions.map(option => (
+                                    {/* Actual Use Dropdown */}
+                                    <IonItem className="custom-input" lines="none">
+                                        <IonLabel position="stacked" className="input-label">
+                                            Actual Use <span style={{ color: 'red' }}>*</span>
+                                        </IonLabel>
+                                        <IonSelect
+                                            value={actualUse}
+                                            placeholder="Select Actual Use"
+                                            onIonChange={e => {
+                                                setActualUse(e.detail.value!);
+                                                if (errors.actualUse) setErrors({ ...errors, actualUse: undefined });
+                                            }}
+                                            interface="popover"
+                                            className="modal-input"
+                                        >
+                                            {actualUseOptions.length === 0 ? (
+                                                <IonSelectOption value="" disabled>
+                                                    {classId ? 'No options available for this class' : 'Select a classification first'}
+                                                </IonSelectOption>
+                                            ) : (
+                                                actualUseOptions.map(option => (
+                                                    <IonSelectOption key={option.value} value={option.value}>
+                                                        {option.label}
+                                                    </IonSelectOption>
+                                                ))
+                                            )}
+                                        </IonSelect>
+                                        {errors.actualUse && (
+                                            <IonNote color="danger" className="error-message">
+                                                <small>{errors.actualUse}</small>
+                                            </IonNote>
+                                        )}
+                                    </IonItem>
+                                    {/* Adjustment Dropdown - Optional */}
+                                    <IonItem className="custom-input" lines="none">
+                                        <IonLabel position="stacked" className="input-label">
+                                            Adjustment (Optional)
+                                        </IonLabel>
+                                        <IonSelect
+                                            value={adjustment}
+                                            placeholder="Select Adjustment (Optional)"
+                                            onIonChange={e => setAdjustment(e.detail.value!)}
+                                            interface="popover"
+                                            className="modal-input"
+                                        >
+                                            {adjustmentOptions.map(option => (
                                                 <IonSelectOption key={option.value} value={option.value}>
                                                     {option.label}
                                                 </IonSelectOption>
-                                            ))
-                                        )}
-                                    </IonSelect>
-                                    {errors.actualUse && (
-                                        <IonNote color="danger" className="error-message">
-                                            <small>{errors.actualUse}</small>
-                                        </IonNote>
-                                    )}
-                                </IonItem>
-                                {/* Adjustment Dropdown - Optional */}
-                                <IonItem className="custom-input" lines="none">
-                                    <IonLabel position="stacked" className="input-label">
-                                        Adjustment (Optional)
-                                    </IonLabel>
-                                    <IonSelect
-                                        value={adjustment}
-                                        placeholder="Select Adjustment (Optional)"
-                                        onIonChange={e => setAdjustment(e.detail.value!)}
-                                        interface="popover"
-                                        className="modal-input"
-                                    >
-                                        {adjustmentOptions.map(option => (
-                                            <IonSelectOption key={option.value} value={option.value}>
-                                                {option.label}
-                                            </IonSelectOption>
-                                        ))}
-                                    </IonSelect>
-                                </IonItem>
+                                            ))}
+                                        </IonSelect>
+                                    </IonItem>
 
-                                {/* Assessment Level Dropdown */}
-                                <IonItem className="custom-input" lines="none">
-                                    <IonLabel position="stacked" className="input-label">
-                                        Assessment Level <span style={{ color: 'red' }}>*</span>
-                                    </IonLabel>
-                                    <IonSelect
-                                        value={assessmentLevel}
-                                        placeholder="Select Assessment Level"
-                                        onIonChange={e => {
-                                            setAssessmentLevel(e.detail.value!);
-                                            if (errors.assessmentLevel) setErrors({ ...errors, assessmentLevel: undefined });
-                                        }}
-                                        interface="popover"
-                                        className="modal-input"
-                                    >
-                                        {assessmentLevelOptions.length === 0 ? (
-                                            <IonSelectOption value="" disabled>
-                                                {kindId ? 'No assessment levels found for this kind' : 'Kind not selected'}
-                                            </IonSelectOption>
-                                        ) : (
-                                            assessmentLevelOptions.map(option => (
-                                                <IonSelectOption key={option.value} value={option.value}>
-                                                    {option.label}
+                                    {/* Assessment Level Dropdown */}
+                                    <IonItem className="custom-input" lines="none">
+                                        <IonLabel position="stacked" className="input-label">
+                                            Assessment Level <span style={{ color: 'red' }}>*</span>
+                                        </IonLabel>
+                                        <IonSelect
+                                            value={assessmentLevel}
+                                            placeholder="Select Assessment Level"
+                                            onIonChange={e => {
+                                                setAssessmentLevel(e.detail.value!);
+                                                if (errors.assessmentLevel) setErrors({ ...errors, assessmentLevel: undefined });
+                                            }}
+                                            interface="popover"
+                                            className="modal-input"
+                                        >
+                                            {assessmentLevelOptions.length === 0 ? (
+                                                <IonSelectOption value="" disabled>
+                                                    {kindId ? 'No assessment levels found for this kind' : 'Kind not selected'}
                                                 </IonSelectOption>
-                                            ))
+                                            ) : (
+                                                assessmentLevelOptions.map(option => (
+                                                    <IonSelectOption key={option.value} value={option.value}>
+                                                        {option.label}
+                                                    </IonSelectOption>
+                                                ))
+                                            )}
+                                        </IonSelect>
+                                        {/* Display the selected assessment level */}
+                                        {assessmentLevelDisplay && (
+                                            <div style={{ marginTop: '8px' }}>
+                                                <IonText color="primary">
+                                                    <small>Selected: {assessmentLevelDisplay} (ID: {assessmentLevel})</small>
+                                                </IonText>
+                                            </div>
                                         )}
-                                    </IonSelect>
-                                    {/* Display the selected assessment level */}
-                                    {assessmentLevelDisplay && (
-                                        <div style={{ marginTop: '8px' }}>
-                                            <IonText color="primary">
-                                                <small>Selected: {assessmentLevelDisplay} (ID: {assessmentLevel})</small>
-                                            </IonText>
-                                        </div>
-                                    )}
-                                    {errors.assessmentLevel && (
-                                        <IonNote color="danger" className="error-message">
-                                            <small>{errors.assessmentLevel}</small>
-                                        </IonNote>
-                                    )}
-                                </IonItem>
-                            </div>
-                        </IonCol>
-                    </IonRow>
-                </IonGrid>
+                                        {errors.assessmentLevel && (
+                                            <IonNote color="danger" className="error-message">
+                                                <small>{errors.assessmentLevel}</small>
+                                            </IonNote>
+                                        )}
+                                    </IonItem>
+                                </div>
+                            </IonCol>
+                        </IonRow>
+                    </IonGrid>
 
-                {/* Save Button Container - Using Next component */}
-                <div className="next-btn-container">
-                    <Next
-                        onClick={handleSave}
-                        disabled={!actualUse || !assessmentLevel}
-                    />
-                </div>
-            </IonContent>
-        </IonModal>
+                    {/* Save Button Container - Using Next component */}
+                    <div className="next-btn-container">
+                        <Next
+                            onClick={handleNext}
+                            disabled={!actualUse || !assessmentLevel}
+                        />
+                    </div>
+                </IonContent>
+            </IonModal>
+
+            {/* Photo Modal */}
+            <PhotoModal
+                isOpen={isPhotoModalOpen}
+                onClose={handlePhotoModalClose}
+                onPhotoTaken={handlePhotoTaken}
+            />
+        </>
     );
 };
 
