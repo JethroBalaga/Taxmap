@@ -25,7 +25,7 @@ import { FormData } from './Form';
 import { getActualUsedByClassId } from '../../utils/actualUsedLocalStorage';
 import { getAssessmentLevelsByKindId } from '../../utils/assessmentLevelLocalStorage';
 import Next from '../GlobalComponent/Next';
-import PhotoModal from './PhotoModal'; // Import the PhotoModal
+import PhotoModal from './PhotoModal';
 import '../../CSS/modal.css';
 
 interface BuildingInfoModalProps {
@@ -34,6 +34,12 @@ interface BuildingInfoModalProps {
     buildingData: BuildingData;
     formData: FormData;
     onSave: (adjustment: string, actualUse: string, assessmentLevel: string) => void;
+}
+
+interface BuildingInfoData {
+    adjustment: string;
+    actualUse: string;
+    assessmentLevel: string;
 }
 
 const BuildingInfoModal: React.FC<BuildingInfoModalProps> = ({
@@ -53,11 +59,7 @@ const BuildingInfoModal: React.FC<BuildingInfoModalProps> = ({
     
     // New state for photo modal
     const [isPhotoModalOpen, setIsPhotoModalOpen] = useState(false);
-    const [savedBuildingInfo, setSavedBuildingInfo] = useState<{
-        adjustment: string;
-        actualUse: string;
-        assessmentLevel: string;
-    } | null>(null);
+    const [savedBuildingInfo, setSavedBuildingInfo] = useState<BuildingInfoData | null>(null);
 
     // Extract class_id from classification (e.g., "A-Agricultural" -> "A")
     const extractClassId = (classification: string): string => {
@@ -347,11 +349,14 @@ const BuildingInfoModal: React.FC<BuildingInfoModalProps> = ({
                 </IonContent>
             </IonModal>
 
-            {/* Photo Modal */}
+            {/* Photo Modal with passed data */}
             <PhotoModal
                 isOpen={isPhotoModalOpen}
                 onClose={handlePhotoModalClose}
                 onPhotoTaken={handlePhotoTaken}
+                formData={formData}
+                buildingData={buildingData}
+                buildingInfoData={savedBuildingInfo}
             />
         </>
     );
