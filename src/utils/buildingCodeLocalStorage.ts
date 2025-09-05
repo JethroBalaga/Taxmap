@@ -17,32 +17,90 @@ const buildingCodeStore = localForage.createInstance({
   storeName: 'building_code_data'
 });
 
-// CURRENT VERSION - INCREMENT THIS WHEN YOU ADD NEW COLUMNS
-const CURRENT_VERSION = 2; // Use numbers for easier migration comparisons
+// Use timestamp for versioning
+const CURRENT_VERSION = Date.now();
 
-// Migration functions
-const migrations: { [version: number]: (data: any[]) => BuildingCodeData[] } = {
-  // Migration from version 1 to 2
-  2: (data: any[]) => {
-    console.log('Migrating building code data to version 2');
-    return data.map(item => {
-      // Remove any deprecated columns or add new ones with defaults
-      const { deprecated_column, ...cleanItem } = item;
-      return {
-        ...cleanItem,
-        // new_column: item.new_column || 'default_value' // Example for new columns
-      };
+interface StoredDataMetadata {
+  version: number;
+  timestamp: number;
+  schemaHash: string;
+}
+
+const generateSchemaHash = (): string => {
+  const schema = {
+    building_code: 'string',
+    structure_code: 'string',
+    description: 'string',
+    rate: 'number'
+  };
+  return JSON.stringify(schema);
+};
+
+const CURRENT_SCHEMA_HASH = generateSchemaHash();
+
+const migrateToCurrentVersion = (data: any[], fromVersion: number): BuildingCodeData[] => {
+  return data.map(item => {
+    const migratedItem: Partial<BuildingCodeData> = {};
+    
+    if (typeof item.building_code === 'string') {
+      migratedItem.building_code = item.building_code;
+    }
+    
+    if (typeof item.structure_code === 'string') {
+      migratedItem.structure_code = item.structure_code;
+    }
+
+    if (typeof item.description === 'string') {
+      migratedItem.description = item.description;
+    }
+
+    if (typeof item.rate === 'number') {
+      migratedItem.rate = item.rate;
+    }
+
+    // Remove any unknown properties
+    const validProperties = new Set(['building_code', 'structure_code', 'description', 'rate']);
+    Object.keys(migratedItem).forEach(key => {
+      if (!validProperties.has(key)) {
+        delete migratedItem[key as keyof BuildingCodeData];
+      }
     });
-  }
+    
+    return migratedItem as BuildingCodeData;
+  });
+};
+
+const validateData = (data: any[]): data is BuildingCodeData[] => {
+  if (!Array.isArray(data)) return false;
+  
+  return data.every(item => {
+    return (
+      typeof item === 'object' &&
+      item !== null &&
+      typeof item.building_code === 'string' &&
+      typeof item.structure_code === 'string' &&
+      typeof item.description === 'string' &&
+      typeof item.rate === 'number'
+    );
+  });
 };
 
 // Store building code data with localForage
 export const storeBuildingCodeData = async (data: BuildingCodeData[]): Promise<void> => {
   try {
+    if (!validateData(data)) {
+      console.error('Invalid data format attempted to be stored');
+      return;
+    }
+    
     await buildingCodeStore.setItem('data', data);
-    await buildingCodeStore.setItem('timestamp', Date.now());
-    await buildingCodeStore.setItem('version', CURRENT_VERSION);
-    console.log('Building code data stored successfully (version:', CURRENT_VERSION, ')');
+    await buildingCodeStore.setItem('metadata', {
+      version: CURRENT_VERSION,
+      timestamp: Date.now(),
+      schemaHash: CURRENT_SCHEMA_HASH
+    } as StoredDataMetadata);
+    
+    console.log('Building code data stored successfully');
   } catch (error) {
     console.error('Error storing building code data:', error);
   }
@@ -51,31 +109,27 @@ export const storeBuildingCodeData = async (data: BuildingCodeData[]): Promise<v
 // Retrieve building code data from localForage with migration support
 export const getBuildingCodeData = async (): Promise<BuildingCodeData[] | null> => {
   try {
-    const [data, storedVersion, timestamp] = await Promise.all([
-      buildingCodeStore.getItem<BuildingCodeData[]>('data'),
-      buildingCodeStore.getItem<number>('version'),
-      buildingCodeStore.getItem<number>('timestamp')
+    const [data, metadata] = await Promise.all([
+      buildingCodeStore.getItem<any[]>('data'),
+      buildingCodeStore.getItem<StoredDataMetadata>('metadata')
     ]);
 
-    if (!data) return null;
+    if (!data || !metadata) return null;
 
-    // Apply migrations if needed
-    if (storedVersion && storedVersion < CURRENT_VERSION) {
-      console.log(`Migrating building code data from v${storedVersion} to v${CURRENT_VERSION}`);
-      let migratedData = data;
-      
-      for (let version = storedVersion + 1; version <= CURRENT_VERSION; version++) {
-        if (migrations[version]) {
-          migratedData = migrations[version](migratedData);
-        }
-      }
-      
-      // Store the migrated data
-      await storeBuildingCodeData(migratedData);
-      return migratedData;
+    if (metadata.version === CURRENT_VERSION && validateData(data)) {
+      return data;
     }
 
-    return data;
+    let migratedData = migrateToCurrentVersion(data, metadata.version);
+    
+    if (!validateData(migratedData)) {
+      console.error('Migrated data failed validation');
+      return null;
+    }
+    
+    await storeBuildingCodeData(migratedData);
+    return migratedData;
+    
   } catch (error) {
     console.error('Error retrieving building code data:', error);
     return null;
@@ -85,25 +139,18 @@ export const getBuildingCodeData = async (): Promise<BuildingCodeData[] | null> 
 // Check if building code data is fresh (less than 24 hours old) AND matches current version
 export const isBuildingCodeDataFresh = async (): Promise<boolean> => {
   try {
-    const [timestamp, storedVersion] = await Promise.all([
-      buildingCodeStore.getItem<number>('timestamp'),
-      buildingCodeStore.getItem<number>('version')
-    ]);
+    const metadata = await buildingCodeStore.getItem<StoredDataMetadata>('metadata');
 
-    if (!timestamp || !storedVersion) return false;
+    if (!metadata) return false;
     
     const twentyFourHours = 24 * 60 * 60 * 1000;
     
     // Check if data is outdated OR version mismatch
-    const isRecent = (Date.now() - timestamp) < twentyFourHours;
-    const isCurrentVersion = storedVersion === CURRENT_VERSION;
+    const isRecent = (Date.now() - metadata.timestamp) < twentyFourHours;
+    const isCurrentVersion = metadata.version === CURRENT_VERSION;
+    const isCurrentSchema = metadata.schemaHash === CURRENT_SCHEMA_HASH;
     
-    if (isRecent && !isCurrentVersion) {
-      console.log('Building code data is recent but outdated version. Migration will handle this.');
-      return false;
-    }
-    
-    return isRecent && isCurrentVersion;
+    return isRecent && isCurrentVersion && isCurrentSchema;
   } catch (error) {
     console.error('Error checking building code data freshness:', error);
     return false;
@@ -128,7 +175,8 @@ export const getCurrentBuildingCodeVersion = (): number => {
 // Get the stored version
 export const getStoredBuildingCodeVersion = async (): Promise<number | null> => {
   try {
-    return await buildingCodeStore.getItem<number>('version');
+    const metadata = await buildingCodeStore.getItem<StoredDataMetadata>('metadata');
+    return metadata?.version || null;
   } catch (error) {
     console.error('Error retrieving building code version:', error);
     return null;
@@ -137,16 +185,15 @@ export const getStoredBuildingCodeVersion = async (): Promise<number | null> => 
 
 // Get building code data only if it's fresh
 export const getFreshBuildingCodeData = async (): Promise<BuildingCodeData[] | null> => {
-  const data = await getBuildingCodeData();
   const isFresh = await isBuildingCodeDataFresh();
-  
-  return isFresh ? data : null;
+  return isFresh ? await getBuildingCodeData() : null;
 };
 
 // Get the timestamp of when building code data was last stored
 export const getBuildingCodeTimestamp = async (): Promise<number | null> => {
   try {
-    return await buildingCodeStore.getItem<number>('timestamp');
+    const metadata = await buildingCodeStore.getItem<StoredDataMetadata>('metadata');
+    return metadata?.timestamp || null;
   } catch (error) {
     console.error('Error retrieving building code timestamp:', error);
     return null;
@@ -261,4 +308,87 @@ export const getBuildingCodesBelowRate = async (maxRate: number): Promise<Buildi
   if (!data) return [];
   
   return data.filter(item => item.rate <= maxRate);
+};
+
+// Force migration of building code data
+export const forceBuildingCodeMigration = async (): Promise<BuildingCodeData[] | null> => {
+  try {
+    const data = await buildingCodeStore.getItem<any[]>('data');
+    const metadata = await buildingCodeStore.getItem<StoredDataMetadata>('metadata');
+    
+    if (!data) return null;
+    
+    const fromVersion = metadata?.version || 1;
+    const migratedData = migrateToCurrentVersion(data, fromVersion);
+    
+    await storeBuildingCodeData(migratedData);
+    return migratedData;
+    
+  } catch (error) {
+    console.error('Error forcing migration:', error);
+    return null;
+  }
+};
+
+// Get current schema hash
+export const getCurrentBuildingCodeSchemaHash = (): string => {
+  return CURRENT_SCHEMA_HASH;
+};
+
+// Get stored schema hash
+export const getStoredBuildingCodeSchemaHash = async (): Promise<string | null> => {
+  try {
+    const metadata = await buildingCodeStore.getItem<StoredDataMetadata>('metadata');
+    return metadata?.schemaHash || null;
+  } catch (error) {
+    console.error('Error retrieving schema hash:', error);
+    return null;
+  }
+};
+
+// Get building codes by multiple structure codes
+export const getBuildingCodesByStructureCodes = async (structureCodes: string[]): Promise<BuildingCodeData[]> => {
+  const data = await getBuildingCodeData();
+  if (!data) return [];
+  
+  const structureCodeSet = new Set(structureCodes);
+  return data.filter(item => structureCodeSet.has(item.structure_code));
+};
+
+// Get building codes with description containing search term
+export const searchBuildingCodesByDescription = async (searchTerm: string): Promise<BuildingCodeData[]> => {
+  const data = await getBuildingCodeData();
+  if (!data) return [];
+  
+  const lowerSearchTerm = searchTerm.toLowerCase();
+  return data.filter(item => 
+    item.description.toLowerCase().includes(lowerSearchTerm)
+  );
+};
+
+// Get building codes sorted by rate
+export const getBuildingCodesSortedByRate = async (ascending: boolean = true): Promise<BuildingCodeData[]> => {
+  const data = await getBuildingCodeData();
+  if (!data) return [];
+  
+  return data.sort((a, b) => {
+    return ascending ? a.rate - b.rate : b.rate - a.rate;
+  });
+};
+
+// Get average rate of all building codes
+export const getAverageBuildingCodeRate = async (): Promise<number | null> => {
+  const data = await getBuildingCodeData();
+  if (!data || data.length === 0) return null;
+  
+  const total = data.reduce((sum, item) => sum + item.rate, 0);
+  return total / data.length;
+};
+
+// Get building codes within rate range
+export const getBuildingCodesInRateRange = async (minRate: number, maxRate: number): Promise<BuildingCodeData[]> => {
+  const data = await getBuildingCodeData();
+  if (!data) return [];
+  
+  return data.filter(item => item.rate >= minRate && item.rate <= maxRate);
 };
