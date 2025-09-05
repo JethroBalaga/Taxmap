@@ -16,32 +16,84 @@ const barangayStore = localForage.createInstance({
   storeName: 'barangay_data'
 });
 
-// CURRENT VERSION - INCREMENT THIS WHEN YOU ADD NEW COLUMNS
-const CURRENT_VERSION = 2; // Use numbers for easier migration comparisons
+// Use timestamp for versioning
+const CURRENT_VERSION = Date.now();
 
-// Migration functions
-const migrations: { [version: number]: (data: any[]) => BarangayData[] } = {
-  // Migration from version 1 to 2
-  2: (data: any[]) => {
-    console.log('Migrating barangay data to version 2');
-    return data.map(item => {
-      // Remove any deprecated columns or add new ones with defaults
-      const { deprecated_column, ...cleanItem } = item;
-      return {
-        ...cleanItem,
-        // new_column: item.new_column || 'default_value' // Example for new columns
-      };
+interface StoredDataMetadata {
+  version: number;
+  timestamp: number;
+  schemaHash: string;
+}
+
+const generateSchemaHash = (): string => {
+  const schema = {
+    barangay_id: 'string',
+    district_id: 'string',
+    barangay: 'string'
+  };
+  return JSON.stringify(schema);
+};
+
+const CURRENT_SCHEMA_HASH = generateSchemaHash();
+
+const migrateToCurrentVersion = (data: any[], fromVersion: number): BarangayData[] => {
+  return data.map(item => {
+    const migratedItem: Partial<BarangayData> = {};
+    
+    if (typeof item.barangay_id === 'string') {
+      migratedItem.barangay_id = item.barangay_id;
+    }
+    
+    if (typeof item.district_id === 'string') {
+      migratedItem.district_id = item.district_id;
+    }
+
+    if (typeof item.barangay === 'string') {
+      migratedItem.barangay = item.barangay;
+    }
+
+    // Remove any unknown properties
+    const validProperties = new Set(['barangay_id', 'district_id', 'barangay']);
+    Object.keys(migratedItem).forEach(key => {
+      if (!validProperties.has(key)) {
+        delete migratedItem[key as keyof BarangayData];
+      }
     });
-  }
+    
+    return migratedItem as BarangayData;
+  });
+};
+
+const validateData = (data: any[]): data is BarangayData[] => {
+  if (!Array.isArray(data)) return false;
+  
+  return data.every(item => {
+    return (
+      typeof item === 'object' &&
+      item !== null &&
+      typeof item.barangay_id === 'string' &&
+      typeof item.district_id === 'string' &&
+      typeof item.barangay === 'string'
+    );
+  });
 };
 
 // Store barangay data with localForage
 export const storeBarangayData = async (data: BarangayData[]): Promise<void> => {
   try {
+    if (!validateData(data)) {
+      console.error('Invalid data format attempted to be stored');
+      return;
+    }
+    
     await barangayStore.setItem('data', data);
-    await barangayStore.setItem('timestamp', Date.now());
-    await barangayStore.setItem('version', CURRENT_VERSION);
-    console.log('Barangay data stored successfully (version:', CURRENT_VERSION, ')');
+    await barangayStore.setItem('metadata', {
+      version: CURRENT_VERSION,
+      timestamp: Date.now(),
+      schemaHash: CURRENT_SCHEMA_HASH
+    } as StoredDataMetadata);
+    
+    console.log('Barangay data stored successfully');
   } catch (error) {
     console.error('Error storing barangay data:', error);
   }
@@ -50,31 +102,27 @@ export const storeBarangayData = async (data: BarangayData[]): Promise<void> => 
 // Retrieve barangay data from localForage with migration support
 export const getBarangayData = async (): Promise<BarangayData[] | null> => {
   try {
-    const [data, storedVersion, timestamp] = await Promise.all([
-      barangayStore.getItem<BarangayData[]>('data'),
-      barangayStore.getItem<number>('version'),
-      barangayStore.getItem<number>('timestamp')
+    const [data, metadata] = await Promise.all([
+      barangayStore.getItem<any[]>('data'),
+      barangayStore.getItem<StoredDataMetadata>('metadata')
     ]);
 
-    if (!data) return null;
+    if (!data || !metadata) return null;
 
-    // Apply migrations if needed
-    if (storedVersion && storedVersion < CURRENT_VERSION) {
-      console.log(`Migrating barangay data from v${storedVersion} to v${CURRENT_VERSION}`);
-      let migratedData = data;
-      
-      for (let version = storedVersion + 1; version <= CURRENT_VERSION; version++) {
-        if (migrations[version]) {
-          migratedData = migrations[version](migratedData);
-        }
-      }
-      
-      // Store the migrated data
-      await storeBarangayData(migratedData);
-      return migratedData;
+    if (metadata.version === CURRENT_VERSION && validateData(data)) {
+      return data;
     }
 
-    return data;
+    let migratedData = migrateToCurrentVersion(data, metadata.version);
+    
+    if (!validateData(migratedData)) {
+      console.error('Migrated data failed validation');
+      return null;
+    }
+    
+    await storeBarangayData(migratedData);
+    return migratedData;
+    
   } catch (error) {
     console.error('Error retrieving barangay data:', error);
     return null;
@@ -84,25 +132,18 @@ export const getBarangayData = async (): Promise<BarangayData[] | null> => {
 // Check if barangay data is fresh (less than 24 hours old) AND matches current version
 export const isBarangayDataFresh = async (): Promise<boolean> => {
   try {
-    const [timestamp, storedVersion] = await Promise.all([
-      barangayStore.getItem<number>('timestamp'),
-      barangayStore.getItem<number>('version')
-    ]);
+    const metadata = await barangayStore.getItem<StoredDataMetadata>('metadata');
 
-    if (!timestamp || !storedVersion) return false;
+    if (!metadata) return false;
     
     const twentyFourHours = 24 * 60 * 60 * 1000;
     
     // Check if data is outdated OR version mismatch
-    const isRecent = (Date.now() - timestamp) < twentyFourHours;
-    const isCurrentVersion = storedVersion === CURRENT_VERSION;
+    const isRecent = (Date.now() - metadata.timestamp) < twentyFourHours;
+    const isCurrentVersion = metadata.version === CURRENT_VERSION;
+    const isCurrentSchema = metadata.schemaHash === CURRENT_SCHEMA_HASH;
     
-    if (isRecent && !isCurrentVersion) {
-      console.log('Barangay data is recent but outdated version. Migration will handle this.');
-      return false;
-    }
-    
-    return isRecent && isCurrentVersion;
+    return isRecent && isCurrentVersion && isCurrentSchema;
   } catch (error) {
     console.error('Error checking barangay data freshness:', error);
     return false;
@@ -127,7 +168,8 @@ export const getCurrentBarangayVersion = (): number => {
 // Get the stored version
 export const getStoredBarangayVersion = async (): Promise<number | null> => {
   try {
-    return await barangayStore.getItem<number>('version');
+    const metadata = await barangayStore.getItem<StoredDataMetadata>('metadata');
+    return metadata?.version || null;
   } catch (error) {
     console.error('Error retrieving barangay version:', error);
     return null;
@@ -136,10 +178,8 @@ export const getStoredBarangayVersion = async (): Promise<number | null> => {
 
 // Get barangay data only if it's fresh
 export const getFreshBarangayData = async (): Promise<BarangayData[] | null> => {
-  const data = await getBarangayData();
   const isFresh = await isBarangayDataFresh();
-  
-  return isFresh ? data : null;
+  return isFresh ? await getBarangayData() : null;
 };
 
 // Check if barangay data exists (regardless of freshness)
@@ -226,7 +266,8 @@ export const getBarangayCountByDistrict = async (): Promise<Record<string, numbe
 // Get the timestamp of when barangay data was last stored
 export const getBarangayTimestamp = async (): Promise<number | null> => {
   try {
-    return await barangayStore.getItem<number>('timestamp');
+    const metadata = await barangayStore.getItem<StoredDataMetadata>('metadata');
+    return metadata?.timestamp || null;
   } catch (error) {
     console.error('Error retrieving barangay timestamp:', error);
     return null;
@@ -286,4 +327,60 @@ export const searchBarangays = async (options: {
 export const getBarangayCount = async (): Promise<number> => {
   const data = await getBarangayData();
   return data ? data.length : 0;
+};
+
+// Force migration of barangay data
+export const forceBarangayMigration = async (): Promise<BarangayData[] | null> => {
+  try {
+    const data = await barangayStore.getItem<any[]>('data');
+    const metadata = await barangayStore.getItem<StoredDataMetadata>('metadata');
+    
+    if (!data) return null;
+    
+    const fromVersion = metadata?.version || 1;
+    const migratedData = migrateToCurrentVersion(data, fromVersion);
+    
+    await storeBarangayData(migratedData);
+    return migratedData;
+    
+  } catch (error) {
+    console.error('Error forcing migration:', error);
+    return null;
+  }
+};
+
+// Get current schema hash
+export const getCurrentBarangaySchemaHash = (): string => {
+  return CURRENT_SCHEMA_HASH;
+};
+
+// Get stored schema hash
+export const getStoredBarangaySchemaHash = async (): Promise<string | null> => {
+  try {
+    const metadata = await barangayStore.getItem<StoredDataMetadata>('metadata');
+    return metadata?.schemaHash || null;
+  } catch (error) {
+    console.error('Error retrieving schema hash:', error);
+    return null;
+  }
+};
+
+// Get barangays by name prefix
+export const getBarangaysByNamePrefix = async (prefix: string): Promise<BarangayData[]> => {
+  const data = await getBarangayData();
+  if (!data) return [];
+  
+  const lowerPrefix = prefix.toLowerCase();
+  return data.filter(item => 
+    item.barangay.toLowerCase().startsWith(lowerPrefix)
+  );
+};
+
+// Get random barangay
+export const getRandomBarangay = async (): Promise<BarangayData | null> => {
+  const data = await getBarangayData();
+  if (!data || data.length === 0) return null;
+  
+  const randomIndex = Math.floor(Math.random() * data.length);
+  return data[randomIndex];
 };
