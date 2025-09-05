@@ -21,7 +21,7 @@ const assessmentLevelStore = localForage.createInstance({
 });
 
 // CURRENT VERSION - INCREMENT THIS WHEN YOU ADD NEW COLUMNS
-const CURRENT_VERSION = 2; // Use numbers for easier migration comparisons
+const CURRENT_VERSION = 3; // Use numbers for easier migration comparisons
 
 // Migration functions
 const migrations: { [version: number]: (data: any[]) => AssessmentLevelData[] } = {
