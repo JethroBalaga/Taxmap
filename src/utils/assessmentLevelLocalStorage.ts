@@ -10,8 +10,6 @@ export interface AssessmentLevelData {
   range1: number;
   range2: number;
   rate_percent: string;
-  // Add any new columns here when you add them to the database
-  // example: new_column?: string;
 }
 
 // Configure localForage instance for assessment level data
@@ -45,36 +43,118 @@ const generateSchemaHash = (): string => {
 
 const CURRENT_SCHEMA_HASH = generateSchemaHash();
 
+// Enhanced validation with detailed error reporting
+const validateData = (data: any[]): { isValid: boolean; errors: string[] } => {
+  const errors: string[] = [];
+  
+  if (!Array.isArray(data)) {
+    errors.push('Data is not an array');
+    return { isValid: false, errors };
+  }
+  
+  if (data.length === 0) {
+    errors.push('Data array is empty');
+    return { isValid: false, errors };
+  }
+  
+  data.forEach((item, index) => {
+    if (typeof item !== 'object' || item === null) {
+      errors.push(`Item at index ${index} is not an object`);
+      return;
+    }
+    
+    if (typeof item.assessment_level_id !== 'string') {
+      errors.push(`Item at index ${index} has invalid assessment_level_id: ${typeof item.assessment_level_id} (${item.assessment_level_id})`);
+    }
+    
+    if (typeof item.kind_id !== 'number') {
+      errors.push(`Item at index ${index} has invalid kind_id: ${typeof item.kind_id} (${item.kind_id})`);
+    }
+
+    if (typeof item.effective_year !== 'number') {
+      errors.push(`Item at index ${index} has invalid effective_year: ${typeof item.effective_year} (${item.effective_year})`);
+    }
+
+    if (typeof item.class_id !== 'string') {
+      errors.push(`Item at index ${index} has invalid class_id: ${typeof item.class_id} (${item.class_id})`);
+    }
+
+    if (typeof item.range1 !== 'number') {
+      errors.push(`Item at index ${index} has invalid range1: ${typeof item.range1} (${item.range1})`);
+    }
+
+    if (typeof item.range2 !== 'number') {
+      errors.push(`Item at index ${index} has invalid range2: ${typeof item.range2} (${item.range2})`);
+    }
+
+    if (typeof item.rate_percent !== 'string') {
+      errors.push(`Item at index ${index} has invalid rate_percent: ${typeof item.rate_percent} (${item.rate_percent})`);
+    }
+  });
+  
+  return {
+    isValid: errors.length === 0,
+    errors
+  };
+};
+
 const migrateToCurrentVersion = (data: any[], fromVersion: number): AssessmentLevelData[] => {
   return data.map(item => {
     const migratedItem: Partial<AssessmentLevelData> = {};
     
-    if (typeof item.assessment_level_id === 'string') {
-      migratedItem.assessment_level_id = item.assessment_level_id;
+    // Handle different data formats that might come from different versions
+    if (typeof item.assessment_level_id === 'string' || typeof item.assessment_level_id === 'number') {
+      migratedItem.assessment_level_id = String(item.assessment_level_id);
+    } else {
+      migratedItem.assessment_level_id = '';
     }
     
     if (typeof item.kind_id === 'number') {
       migratedItem.kind_id = item.kind_id;
+    } else if (typeof item.kind_id === 'string') {
+      migratedItem.kind_id = parseInt(item.kind_id) || 0;
+    } else {
+      migratedItem.kind_id = 0;
     }
 
     if (typeof item.effective_year === 'number') {
       migratedItem.effective_year = item.effective_year;
+    } else if (typeof item.effective_year === 'string') {
+      migratedItem.effective_year = parseInt(item.effective_year) || new Date().getFullYear();
+    } else {
+      migratedItem.effective_year = new Date().getFullYear();
     }
 
     if (typeof item.class_id === 'string') {
       migratedItem.class_id = item.class_id;
+    } else if (typeof item.class_id === 'number') {
+      migratedItem.class_id = String(item.class_id);
+    } else {
+      migratedItem.class_id = '';
     }
 
     if (typeof item.range1 === 'number') {
       migratedItem.range1 = item.range1;
+    } else if (typeof item.range1 === 'string') {
+      migratedItem.range1 = parseFloat(item.range1) || 0;
+    } else {
+      migratedItem.range1 = 0;
     }
 
     if (typeof item.range2 === 'number') {
       migratedItem.range2 = item.range2;
+    } else if (typeof item.range2 === 'string') {
+      migratedItem.range2 = parseFloat(item.range2) || 0;
+    } else {
+      migratedItem.range2 = 0;
     }
 
     if (typeof item.rate_percent === 'string') {
       migratedItem.rate_percent = item.rate_percent;
+    } else if (typeof item.rate_percent === 'number') {
+      migratedItem.rate_percent = String(item.rate_percent);
+    } else {
+      migratedItem.rate_percent = '0';
     }
 
     // Remove any unknown properties
@@ -83,7 +163,7 @@ const migrateToCurrentVersion = (data: any[], fromVersion: number): AssessmentLe
       'range1', 'range2', 'rate_percent'
     ]);
     
-    Object.keys(migratedItem).forEach(key => {
+    Object.keys(item).forEach(key => {
       if (!validProperties.has(key)) {
         delete migratedItem[key as keyof AssessmentLevelData];
       }
@@ -93,30 +173,19 @@ const migrateToCurrentVersion = (data: any[], fromVersion: number): AssessmentLe
   });
 };
 
-const validateData = (data: any[]): data is AssessmentLevelData[] => {
-  if (!Array.isArray(data)) return false;
-  
-  return data.every(item => {
-    return (
-      typeof item === 'object' &&
-      item !== null &&
-      typeof item.assessment_level_id === 'string' &&
-      typeof item.kind_id === 'number' &&
-      typeof item.effective_year === 'number' &&
-      typeof item.class_id === 'string' &&
-      typeof item.range1 === 'number' &&
-      typeof item.range2 === 'number' &&
-      typeof item.rate_percent === 'string'
-    );
-  });
-};
-
-// Store assessment level data with localForage - only keeps the most recent year's data
-export const storeAssessmentLevelData = async (data: AssessmentLevelData[], year: number): Promise<void> => {
+// Store assessment level data with localForage - enhanced with better error reporting
+export const storeAssessmentLevelData = async (data: any[], year: number): Promise<void> => {
   try {
-    if (!validateData(data)) {
-      console.error('Invalid data format attempted to be stored');
-      return;
+    // First try to migrate the data in case it's from an older format
+    const migratedData = migrateToCurrentVersion(data, 1);
+    
+    const validation = validateData(migratedData);
+    
+    if (!validation.isValid) {
+      console.error('Invalid data format attempted to be stored:', validation.errors);
+      console.error('Raw data received:', data);
+      console.error('Migrated data:', migratedData);
+      throw new Error(`Data validation failed: ${validation.errors.join(', ')}`);
     }
     
     // Always clear any existing data from different years first
@@ -126,7 +195,7 @@ export const storeAssessmentLevelData = async (data: AssessmentLevelData[], year
       await clearAssessmentLevelData();
     }
     
-    await assessmentLevelStore.setItem('data', data);
+    await assessmentLevelStore.setItem('data', migratedData);
     await assessmentLevelStore.setItem('metadata', {
       version: CURRENT_VERSION,
       timestamp: Date.now(),
@@ -137,7 +206,18 @@ export const storeAssessmentLevelData = async (data: AssessmentLevelData[], year
     console.log('Assessment level data stored successfully for year:', year);
   } catch (error) {
     console.error('Error storing assessment level data:', error);
+    throw error;
   }
+};
+
+// Debug function to log what data is being received
+export const debugAssessmentLevelData = (data: any[]): void => {
+  console.log('Received assessment level data for storage:', {
+    type: Array.isArray(data) ? 'array' : typeof data,
+    length: Array.isArray(data) ? data.length : 'N/A',
+    firstItem: Array.isArray(data) && data.length > 0 ? data[0] : 'N/A',
+    sampleKeys: Array.isArray(data) && data.length > 0 ? Object.keys(data[0]) : 'N/A'
+  });
 };
 
 // Retrieve assessment level data from localForage with migration support
@@ -148,16 +228,27 @@ export const getAssessmentLevelData = async (): Promise<AssessmentLevelData[] | 
       assessmentLevelStore.getItem<StoredDataMetadata>('metadata')
     ]);
 
-    if (!data || !metadata) return null;
+    if (!data) return null;
 
-    if (metadata.version === CURRENT_VERSION && validateData(data)) {
-      return data;
+    // If no metadata, assume it's old data and migrate it
+    if (!metadata) {
+      const migratedData = migrateToCurrentVersion(data, 1);
+      await storeAssessmentLevelData(migratedData, new Date().getFullYear());
+      return migratedData;
+    }
+
+    if (metadata.version === CURRENT_VERSION) {
+      const validation = validateData(data);
+      if (validation.isValid) {
+        return data;
+      }
     }
 
     let migratedData = migrateToCurrentVersion(data, metadata.version);
     
-    if (!validateData(migratedData)) {
-      console.error('Migrated data failed validation');
+    const validation = validateData(migratedData);
+    if (!validation.isValid) {
+      console.error('Migrated data failed validation:', validation.errors);
       return null;
     }
     
@@ -493,4 +584,28 @@ export const getAssessmentLevelsByYear = async (year: number): Promise<Assessmen
   if (!data) return [];
   
   return data.filter(item => item.effective_year === year);
+};
+
+// Get assessment levels within a specific value range
+export const getAssessmentLevelsInRange = async (value: number, kindId?: number, year?: number): Promise<AssessmentLevelData[]> => {
+  const data = await getAssessmentLevelData();
+  if (!data) return [];
+  
+  let results = data;
+  
+  if (kindId !== undefined) {
+    results = results.filter(item => item.kind_id === kindId);
+  }
+  
+  if (year !== undefined) {
+    results = results.filter(item => item.effective_year === year);
+  }
+  
+  return results.filter(item => value >= item.range1 && value <= item.range2);
+};
+
+// Get the appropriate assessment level for a specific value
+export const getAssessmentLevelForValue = async (value: number, kindId?: number, year?: number): Promise<AssessmentLevelData | null> => {
+  const levels = await getAssessmentLevelsInRange(value, kindId, year);
+  return levels.length > 0 ? levels[0] : null;
 };

@@ -7,8 +7,6 @@ export interface TaxRateData {
   effective_year: string;
   rate_percent: string;
   district_id: string;
-  // Add any new columns here when you add them to the database
-  // example: new_column?: string;
 }
 
 // Configure localForage instance for tax rate data
@@ -39,29 +37,81 @@ const generateSchemaHash = (): string => {
 
 const CURRENT_SCHEMA_HASH = generateSchemaHash();
 
+// Enhanced validation with detailed error reporting
+const validateData = (data: any[]): { isValid: boolean; errors: string[] } => {
+  const errors: string[] = [];
+  
+  if (!Array.isArray(data)) {
+    errors.push('Data is not an array');
+    return { isValid: false, errors };
+  }
+  
+  if (data.length === 0) {
+    errors.push('Data array is empty');
+    return { isValid: false, errors };
+  }
+  
+  data.forEach((item, index) => {
+    if (typeof item !== 'object' || item === null) {
+      errors.push(`Item at index ${index} is not an object`);
+      return;
+    }
+    
+    if (typeof item.tax_rate_id !== 'string') {
+      errors.push(`Item at index ${index} has invalid tax_rate_id: ${typeof item.tax_rate_id} (${item.tax_rate_id})`);
+    }
+    
+    if (typeof item.effective_year !== 'string') {
+      errors.push(`Item at index ${index} has invalid effective_year: ${typeof item.effective_year} (${item.effective_year})`);
+    }
+
+    if (typeof item.rate_percent !== 'string') {
+      errors.push(`Item at index ${index} has invalid rate_percent: ${typeof item.rate_percent} (${item.rate_percent})`);
+    }
+
+    if (typeof item.district_id !== 'string') {
+      errors.push(`Item at index ${index} has invalid district_id: ${typeof item.district_id} (${item.district_id})`);
+    }
+  });
+  
+  return {
+    isValid: errors.length === 0,
+    errors
+  };
+};
+
 const migrateToCurrentVersion = (data: any[], fromVersion: number): TaxRateData[] => {
   return data.map(item => {
     const migratedItem: Partial<TaxRateData> = {};
     
-    if (typeof item.tax_rate_id === 'string') {
-      migratedItem.tax_rate_id = item.tax_rate_id;
+    // Handle different data formats that might come from different versions
+    if (typeof item.tax_rate_id === 'string' || typeof item.tax_rate_id === 'number') {
+      migratedItem.tax_rate_id = String(item.tax_rate_id);
+    } else {
+      migratedItem.tax_rate_id = '';
     }
     
-    if (typeof item.effective_year === 'string') {
-      migratedItem.effective_year = item.effective_year;
+    if (typeof item.effective_year === 'string' || typeof item.effective_year === 'number') {
+      migratedItem.effective_year = String(item.effective_year);
+    } else {
+      migratedItem.effective_year = '';
     }
 
-    if (typeof item.rate_percent === 'string') {
-      migratedItem.rate_percent = item.rate_percent;
+    if (typeof item.rate_percent === 'string' || typeof item.rate_percent === 'number') {
+      migratedItem.rate_percent = String(item.rate_percent);
+    } else {
+      migratedItem.rate_percent = '';
     }
 
-    if (typeof item.district_id === 'string') {
-      migratedItem.district_id = item.district_id;
+    if (typeof item.district_id === 'string' || typeof item.district_id === 'number') {
+      migratedItem.district_id = String(item.district_id);
+    } else {
+      migratedItem.district_id = '';
     }
 
     // Remove any unknown properties
     const validProperties = new Set(['tax_rate_id', 'effective_year', 'rate_percent', 'district_id']);
-    Object.keys(migratedItem).forEach(key => {
+    Object.keys(item).forEach(key => {
       if (!validProperties.has(key)) {
         delete migratedItem[key as keyof TaxRateData];
       }
@@ -71,27 +121,19 @@ const migrateToCurrentVersion = (data: any[], fromVersion: number): TaxRateData[
   });
 };
 
-const validateData = (data: any[]): data is TaxRateData[] => {
-  if (!Array.isArray(data)) return false;
-  
-  return data.every(item => {
-    return (
-      typeof item === 'object' &&
-      item !== null &&
-      typeof item.tax_rate_id === 'string' &&
-      typeof item.effective_year === 'string' &&
-      typeof item.rate_percent === 'string' &&
-      typeof item.district_id === 'string'
-    );
-  });
-};
-
-// Store tax rate data with localForage - only keeps the most recent year's data
-export const storeTaxRateData = async (data: TaxRateData[], year: string): Promise<void> => {
+// Store tax rate data with localForage - enhanced with better error reporting
+export const storeTaxRateData = async (data: any[], year: string): Promise<void> => {
   try {
-    if (!validateData(data)) {
-      console.error('Invalid data format attempted to be stored');
-      return;
+    // First try to migrate the data in case it's from an older format
+    const migratedData = migrateToCurrentVersion(data, 1);
+    
+    const validation = validateData(migratedData);
+    
+    if (!validation.isValid) {
+      console.error('Invalid data format attempted to be stored:', validation.errors);
+      console.error('Raw data received:', data);
+      console.error('Migrated data:', migratedData);
+      throw new Error(`Data validation failed: ${validation.errors.join(', ')}`);
     }
     
     // Always clear any existing data from different years first
@@ -101,7 +143,7 @@ export const storeTaxRateData = async (data: TaxRateData[], year: string): Promi
       await clearTaxRateData();
     }
     
-    await taxRateStore.setItem('data', data);
+    await taxRateStore.setItem('data', migratedData);
     await taxRateStore.setItem('metadata', {
       version: CURRENT_VERSION,
       timestamp: Date.now(),
@@ -112,7 +154,18 @@ export const storeTaxRateData = async (data: TaxRateData[], year: string): Promi
     console.log('Tax rate data stored successfully for year:', year);
   } catch (error) {
     console.error('Error storing tax rate data:', error);
+    throw error;
   }
+};
+
+// Debug function to log what data is being received
+export const debugTaxRateData = (data: any[]): void => {
+  console.log('Received tax rate data for storage:', {
+    type: Array.isArray(data) ? 'array' : typeof data,
+    length: Array.isArray(data) ? data.length : 'N/A',
+    firstItem: Array.isArray(data) && data.length > 0 ? data[0] : 'N/A',
+    sampleKeys: Array.isArray(data) && data.length > 0 ? Object.keys(data[0]) : 'N/A'
+  });
 };
 
 // Retrieve tax rate data from localForage with migration support
@@ -123,16 +176,27 @@ export const getTaxRateData = async (): Promise<TaxRateData[] | null> => {
       taxRateStore.getItem<StoredDataMetadata>('metadata')
     ]);
 
-    if (!data || !metadata) return null;
+    if (!data) return null;
 
-    if (metadata.version === CURRENT_VERSION && validateData(data)) {
-      return data;
+    // If no metadata, assume it's old data and migrate it
+    if (!metadata) {
+      const migratedData = migrateToCurrentVersion(data, 1);
+      await storeTaxRateData(migratedData, new Date().getFullYear().toString());
+      return migratedData;
+    }
+
+    if (metadata.version === CURRENT_VERSION) {
+      const validation = validateData(data);
+      if (validation.isValid) {
+        return data;
+      }
     }
 
     let migratedData = migrateToCurrentVersion(data, metadata.version);
     
-    if (!validateData(migratedData)) {
-      console.error('Migrated data failed validation');
+    const validation = validateData(migratedData);
+    if (!validation.isValid) {
+      console.error('Migrated data failed validation:', validation.errors);
       return null;
     }
     

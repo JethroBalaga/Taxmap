@@ -6,8 +6,6 @@ export interface BarangayData {
   barangay_id: string;
   district_id: string;
   barangay: string;
-  // Add any new columns here when you add them to the database
-  // example: new_column?: string;
 }
 
 // Configure localForage instance for barangay data
@@ -36,25 +34,74 @@ const generateSchemaHash = (): string => {
 
 const CURRENT_SCHEMA_HASH = generateSchemaHash();
 
+// Enhanced validation with detailed error reporting
+const validateData = (data: any[]): { isValid: boolean; errors: string[] } => {
+  const errors: string[] = [];
+  
+  if (!Array.isArray(data)) {
+    errors.push('Data is not an array');
+    return { isValid: false, errors };
+  }
+  
+  if (data.length === 0) {
+    errors.push('Data array is empty');
+    return { isValid: false, errors };
+  }
+  
+  data.forEach((item, index) => {
+    if (typeof item !== 'object' || item === null) {
+      errors.push(`Item at index ${index} is not an object`);
+      return;
+    }
+    
+    if (typeof item.barangay_id !== 'string') {
+      errors.push(`Item at index ${index} has invalid barangay_id: ${typeof item.barangay_id} (${item.barangay_id})`);
+    }
+    
+    if (typeof item.district_id !== 'string') {
+      errors.push(`Item at index ${index} has invalid district_id: ${typeof item.district_id} (${item.district_id})`);
+    }
+    
+    if (typeof item.barangay !== 'string') {
+      errors.push(`Item at index ${index} has invalid barangay: ${typeof item.barangay} (${item.barangay})`);
+    }
+  });
+  
+  return {
+    isValid: errors.length === 0,
+    errors
+  };
+};
+
 const migrateToCurrentVersion = (data: any[], fromVersion: number): BarangayData[] => {
   return data.map(item => {
     const migratedItem: Partial<BarangayData> = {};
     
-    if (typeof item.barangay_id === 'string') {
-      migratedItem.barangay_id = item.barangay_id;
+    // Handle different data formats that might come from different versions
+    if (typeof item.barangay_id === 'string' || typeof item.barangay_id === 'number') {
+      migratedItem.barangay_id = String(item.barangay_id);
+    } else {
+      migratedItem.barangay_id = '';
     }
     
-    if (typeof item.district_id === 'string') {
-      migratedItem.district_id = item.district_id;
+    if (typeof item.district_id === 'string' || typeof item.district_id === 'number') {
+      migratedItem.district_id = String(item.district_id);
+    } else {
+      migratedItem.district_id = '';
     }
 
     if (typeof item.barangay === 'string') {
       migratedItem.barangay = item.barangay;
+    } else if (typeof item.name === 'string') {
+      // Handle potential alternative field names
+      migratedItem.barangay = item.name;
+    } else {
+      migratedItem.barangay = '';
     }
 
     // Remove any unknown properties
     const validProperties = new Set(['barangay_id', 'district_id', 'barangay']);
-    Object.keys(migratedItem).forEach(key => {
+    Object.keys(item).forEach(key => {
       if (!validProperties.has(key)) {
         delete migratedItem[key as keyof BarangayData];
       }
@@ -64,29 +111,22 @@ const migrateToCurrentVersion = (data: any[], fromVersion: number): BarangayData
   });
 };
 
-const validateData = (data: any[]): data is BarangayData[] => {
-  if (!Array.isArray(data)) return false;
-  
-  return data.every(item => {
-    return (
-      typeof item === 'object' &&
-      item !== null &&
-      typeof item.barangay_id === 'string' &&
-      typeof item.district_id === 'string' &&
-      typeof item.barangay === 'string'
-    );
-  });
-};
-
-// Store barangay data with localForage
-export const storeBarangayData = async (data: BarangayData[]): Promise<void> => {
+// Store barangay data with localForage - enhanced with better error reporting
+export const storeBarangayData = async (data: any[]): Promise<void> => {
   try {
-    if (!validateData(data)) {
-      console.error('Invalid data format attempted to be stored');
-      return;
+    // First try to migrate the data in case it's from an older format
+    const migratedData = migrateToCurrentVersion(data, 1);
+    
+    const validation = validateData(migratedData);
+    
+    if (!validation.isValid) {
+      console.error('Invalid data format attempted to be stored:', validation.errors);
+      console.error('Raw data received:', data);
+      console.error('Migrated data:', migratedData);
+      throw new Error(`Data validation failed: ${validation.errors.join(', ')}`);
     }
     
-    await barangayStore.setItem('data', data);
+    await barangayStore.setItem('data', migratedData);
     await barangayStore.setItem('metadata', {
       version: CURRENT_VERSION,
       timestamp: Date.now(),
@@ -96,7 +136,18 @@ export const storeBarangayData = async (data: BarangayData[]): Promise<void> => 
     console.log('Barangay data stored successfully');
   } catch (error) {
     console.error('Error storing barangay data:', error);
+    throw error;
   }
+};
+
+// Debug function to log what data is being received
+export const debugBarangayData = (data: any[]): void => {
+  console.log('Received data for storage:', {
+    type: Array.isArray(data) ? 'array' : typeof data,
+    length: Array.isArray(data) ? data.length : 'N/A',
+    firstItem: Array.isArray(data) && data.length > 0 ? data[0] : 'N/A',
+    sampleKeys: Array.isArray(data) && data.length > 0 ? Object.keys(data[0]) : 'N/A'
+  });
 };
 
 // Retrieve barangay data from localForage with migration support
@@ -107,16 +158,27 @@ export const getBarangayData = async (): Promise<BarangayData[] | null> => {
       barangayStore.getItem<StoredDataMetadata>('metadata')
     ]);
 
-    if (!data || !metadata) return null;
+    if (!data) return null;
 
-    if (metadata.version === CURRENT_VERSION && validateData(data)) {
-      return data;
+    // If no metadata, assume it's old data and migrate it
+    if (!metadata) {
+      const migratedData = migrateToCurrentVersion(data, 1);
+      await storeBarangayData(migratedData);
+      return migratedData;
+    }
+
+    if (metadata.version === CURRENT_VERSION) {
+      const validation = validateData(data);
+      if (validation.isValid) {
+        return data;
+      }
     }
 
     let migratedData = migrateToCurrentVersion(data, metadata.version);
     
-    if (!validateData(migratedData)) {
-      console.error('Migrated data failed validation');
+    const validation = validateData(migratedData);
+    if (!validation.isValid) {
+      console.error('Migrated data failed validation:', validation.errors);
       return null;
     }
     
