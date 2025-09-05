@@ -1,159 +1,187 @@
 // utils/subclassLocalStorage.ts
 import localForage from 'localforage';
 
-// Interface for subclass data
 export interface SubclassData {
   subclass_id: string;
   barangay_id: string | null;
   subclass: string;
   class_id: string;
-  // Add any new columns here when you add them to the database
-  // example: new_column?: string;
 }
 
-// Configure localForage instance for subclass data
 const subclassStore = localForage.createInstance({
   name: 'TaxAppStorage',
   storeName: 'subclass_data'
 });
 
-// CURRENT VERSION - INCREMENT THIS WHEN YOU ADD NEW COLUMNS
-const CURRENT_VERSION = 2; // Use numbers for easier migration comparisons
+const CURRENT_VERSION = Date.now();
 
-// Migration functions
-const migrations: { [version: number]: (data: any[]) => SubclassData[] } = {
-  // Migration from version 1 to 2
-  2: (data: any[]) => {
-    console.log('Migrating subclass data to version 2');
-    return data.map(item => {
-      // Remove any deprecated columns or add new ones with defaults
-      const { deprecated_column, ...cleanItem } = item;
-      return {
-        ...cleanItem,
-        // new_column: item.new_column || 'default_value' // Example for new columns
-      };
-    });
-  }
+interface StoredDataMetadata {
+  version: number;
+  timestamp: number;
+  schemaHash: string;
+}
+
+const generateSchemaHash = (): string => {
+  const schema = {
+    subclass_id: 'string',
+    barangay_id: 'string | null',
+    subclass: 'string',
+    class_id: 'string'
+  };
+  return JSON.stringify(schema);
 };
 
-// Store subclass data with localForage
+const CURRENT_SCHEMA_HASH = generateSchemaHash();
+
+const migrateToCurrentVersion = (data: any[], fromVersion: number): SubclassData[] => {
+  return data.map(item => {
+    const migratedItem: Partial<SubclassData> = {};
+    
+    if (typeof item.subclass_id === 'string') {
+      migratedItem.subclass_id = item.subclass_id;
+    }
+    
+    if (typeof item.barangay_id === 'string' || item.barangay_id === null) {
+      migratedItem.barangay_id = item.barangay_id;
+    }
+
+    if (typeof item.subclass === 'string') {
+      migratedItem.subclass = item.subclass;
+    }
+
+    if (typeof item.class_id === 'string') {
+      migratedItem.class_id = item.class_id;
+    }
+
+    const validProperties = new Set(['subclass_id', 'barangay_id', 'subclass', 'class_id']);
+    Object.keys(migratedItem).forEach(key => {
+      if (!validProperties.has(key)) {
+        delete migratedItem[key as keyof SubclassData];
+      }
+    });
+    
+    return migratedItem as SubclassData;
+  });
+};
+
+const validateData = (data: any[]): data is SubclassData[] => {
+  if (!Array.isArray(data)) return false;
+  
+  return data.every(item => {
+    return (
+      typeof item === 'object' &&
+      item !== null &&
+      typeof item.subclass_id === 'string' &&
+      (typeof item.barangay_id === 'string' || item.barangay_id === null) &&
+      typeof item.subclass === 'string' &&
+      typeof item.class_id === 'string'
+    );
+  });
+};
+
 export const storeSubclassData = async (data: SubclassData[]): Promise<void> => {
   try {
+    if (!validateData(data)) {
+      console.error('Invalid data format attempted to be stored');
+      return;
+    }
+    
     await subclassStore.setItem('data', data);
-    await subclassStore.setItem('timestamp', Date.now());
-    await subclassStore.setItem('version', CURRENT_VERSION);
-    console.log('Subclass data stored successfully (version:', CURRENT_VERSION, ')');
+    await subclassStore.setItem('metadata', {
+      version: CURRENT_VERSION,
+      timestamp: Date.now(),
+      schemaHash: CURRENT_SCHEMA_HASH
+    } as StoredDataMetadata);
+    
   } catch (error) {
     console.error('Error storing subclass data:', error);
   }
 };
 
-// Retrieve subclass data from localForage with migration support
 export const getSubclassData = async (): Promise<SubclassData[] | null> => {
   try {
-    const [data, storedVersion, timestamp] = await Promise.all([
-      subclassStore.getItem<SubclassData[]>('data'),
-      subclassStore.getItem<number>('version'),
-      subclassStore.getItem<number>('timestamp')
+    const [data, metadata] = await Promise.all([
+      subclassStore.getItem<any[]>('data'),
+      subclassStore.getItem<StoredDataMetadata>('metadata')
     ]);
 
-    if (!data) return null;
+    if (!data || !metadata) return null;
 
-    // Apply migrations if needed
-    if (storedVersion && storedVersion < CURRENT_VERSION) {
-      console.log(`Migrating subclass data from v${storedVersion} to v${CURRENT_VERSION}`);
-      let migratedData = data;
-      
-      for (let version = storedVersion + 1; version <= CURRENT_VERSION; version++) {
-        if (migrations[version]) {
-          migratedData = migrations[version](migratedData);
-        }
-      }
-      
-      // Store the migrated data
-      await storeSubclassData(migratedData);
-      return migratedData;
+    if (metadata.version === CURRENT_VERSION && validateData(data)) {
+      return data;
     }
 
-    return data;
+    let migratedData = migrateToCurrentVersion(data, metadata.version);
+    
+    if (!validateData(migratedData)) {
+      console.error('Migrated data failed validation');
+      return null;
+    }
+    
+    await storeSubclassData(migratedData);
+    return migratedData;
+    
   } catch (error) {
     console.error('Error retrieving subclass data:', error);
     return null;
   }
 };
 
-// Check if subclass data is fresh (less than 24 hours old) AND matches current version
 export const isSubclassDataFresh = async (): Promise<boolean> => {
   try {
-    const [timestamp, storedVersion] = await Promise.all([
-      subclassStore.getItem<number>('timestamp'),
-      subclassStore.getItem<number>('version')
-    ]);
+    const metadata = await subclassStore.getItem<StoredDataMetadata>('metadata');
 
-    if (!timestamp || !storedVersion) return false;
+    if (!metadata) return false;
     
     const twentyFourHours = 24 * 60 * 60 * 1000;
+    const isRecent = (Date.now() - metadata.timestamp) < twentyFourHours;
+    const isCurrentVersion = metadata.version === CURRENT_VERSION;
+    const isCurrentSchema = metadata.schemaHash === CURRENT_SCHEMA_HASH;
     
-    // Check if data is outdated OR version mismatch
-    const isRecent = (Date.now() - timestamp) < twentyFourHours;
-    const isCurrentVersion = storedVersion === CURRENT_VERSION;
-    
-    if (isRecent && !isCurrentVersion) {
-      console.log('Subclass data is recent but outdated version. Migration will handle this.');
-      return false;
-    }
-    
-    return isRecent && isCurrentVersion;
+    return isRecent && isCurrentVersion && isCurrentSchema;
   } catch (error) {
     console.error('Error checking subclass data freshness:', error);
     return false;
   }
 };
 
-// Clear subclass data from localForage
 export const clearSubclassData = async (): Promise<void> => {
   try {
     await subclassStore.clear();
-    console.log('Subclass data cleared successfully');
   } catch (error) {
     console.error('Error clearing subclass data:', error);
   }
 };
 
-// Get the current version
 export const getCurrentSubclassVersion = (): number => {
   return CURRENT_VERSION;
 };
 
-// Get the stored version
 export const getStoredSubclassVersion = async (): Promise<number | null> => {
   try {
-    return await subclassStore.getItem<number>('version');
+    const metadata = await subclassStore.getItem<StoredDataMetadata>('metadata');
+    return metadata?.version || null;
   } catch (error) {
     console.error('Error retrieving subclass version:', error);
     return null;
   }
 };
 
-// Get subclass data only if it's fresh
 export const getFreshSubclassData = async (): Promise<SubclassData[] | null> => {
-  const data = await getSubclassData();
   const isFresh = await isSubclassDataFresh();
-  
-  return isFresh ? data : null;
+  return isFresh ? await getSubclassData() : null;
 };
 
-// Get the timestamp of when subclass data was last stored
 export const getSubclassTimestamp = async (): Promise<number | null> => {
   try {
-    return await subclassStore.getItem<number>('timestamp');
+    const metadata = await subclassStore.getItem<StoredDataMetadata>('metadata');
+    return metadata?.timestamp || null;
   } catch (error) {
     console.error('Error retrieving subclass timestamp:', error);
     return null;
   }
 };
 
-// Check if subclass data exists (regardless of freshness)
 export const hasSubclassData = async (): Promise<boolean> => {
   try {
     const data = await subclassStore.getItem('data');
@@ -164,7 +192,6 @@ export const hasSubclassData = async (): Promise<boolean> => {
   }
 };
 
-// Filter subclass data by class_id
 export const getSubclassesByClassId = async (classId: string): Promise<SubclassData[]> => {
   const data = await getSubclassData();
   if (!data) return [];
@@ -172,7 +199,6 @@ export const getSubclassesByClassId = async (classId: string): Promise<SubclassD
   return data.filter(item => item.class_id === classId);
 };
 
-// Filter subclass data by barangay_id
 export const getSubclassesByBarangayId = async (barangayId: string): Promise<SubclassData[]> => {
   const data = await getSubclassData();
   if (!data) return [];
@@ -180,7 +206,6 @@ export const getSubclassesByBarangayId = async (barangayId: string): Promise<Sub
   return data.filter(item => item.barangay_id === barangayId);
 };
 
-// Find a specific subclass by subclass_id
 export const getSubclassById = async (subclassId: string): Promise<SubclassData | null> => {
   const data = await getSubclassData();
   if (!data) return null;
@@ -188,7 +213,6 @@ export const getSubclassById = async (subclassId: string): Promise<SubclassData 
   return data.find(item => item.subclass_id === subclassId) || null;
 };
 
-// Get all unique class IDs from subclass data
 export const getUniqueClassIds = async (): Promise<string[]> => {
   const data = await getSubclassData();
   if (!data) return [];
@@ -199,7 +223,6 @@ export const getUniqueClassIds = async (): Promise<string[]> => {
   return Array.from(classIds);
 };
 
-// Get all unique barangay IDs from subclass data
 export const getUniqueBarangayIds = async (): Promise<string[]> => {
   const data = await getSubclassData();
   if (!data) return [];
@@ -214,7 +237,6 @@ export const getUniqueBarangayIds = async (): Promise<string[]> => {
   return Array.from(barangayIds);
 };
 
-// Get subclasses with no barangay assigned (null barangay_id)
 export const getSubclassesWithNoBarangay = async (): Promise<SubclassData[]> => {
   const data = await getSubclassData();
   if (!data) return [];
@@ -222,7 +244,6 @@ export const getSubclassesWithNoBarangay = async (): Promise<SubclassData[]> => 
   return data.filter(item => item.barangay_id === null);
 };
 
-// Search subclasses by name (case insensitive)
 export const searchSubclassesByName = async (name: string): Promise<SubclassData[]> => {
   const data = await getSubclassData();
   if (!data) return [];
@@ -233,7 +254,6 @@ export const searchSubclassesByName = async (name: string): Promise<SubclassData
   );
 };
 
-// Get subclasses by multiple class IDs
 export const getSubclassesByClassIds = async (classIds: string[]): Promise<SubclassData[]> => {
   const data = await getSubclassData();
   if (!data) return [];
@@ -242,7 +262,6 @@ export const getSubclassesByClassIds = async (classIds: string[]): Promise<Subcl
   return data.filter(item => classIdSet.has(item.class_id));
 };
 
-// Get subclasses by multiple barangay IDs
 export const getSubclassesByBarangayIds = async (barangayIds: string[]): Promise<SubclassData[]> => {
   const data = await getSubclassData();
   if (!data) return [];
@@ -251,7 +270,6 @@ export const getSubclassesByBarangayIds = async (barangayIds: string[]): Promise
   return data.filter(item => item.barangay_id && barangayIdSet.has(item.barangay_id));
 };
 
-// Get subclass count by class_id
 export const getSubclassCountByClass = async (): Promise<Record<string, number>> => {
   const data = await getSubclassData();
   if (!data) return {};
@@ -264,7 +282,6 @@ export const getSubclassCountByClass = async (): Promise<Record<string, number>>
   return countMap;
 };
 
-// Get subclass count by barangay_id
 export const getSubclassCountByBarangay = async (): Promise<Record<string, number>> => {
   const data = await getSubclassData();
   if (!data) return {};
@@ -279,7 +296,6 @@ export const getSubclassCountByBarangay = async (): Promise<Record<string, numbe
   return countMap;
 };
 
-// Get data size (useful for debugging)
 export const getSubclassDataSize = async (): Promise<number> => {
   try {
     const data = await subclassStore.getItem('data');
@@ -290,8 +306,107 @@ export const getSubclassDataSize = async (): Promise<number> => {
   }
 };
 
-// Get subclass count
 export const getSubclassCount = async (): Promise<number> => {
   const data = await getSubclassData();
   return data ? data.length : 0;
+};
+
+export const forceMigration = async (): Promise<SubclassData[] | null> => {
+  try {
+    const data = await subclassStore.getItem<any[]>('data');
+    const metadata = await subclassStore.getItem<StoredDataMetadata>('metadata');
+    
+    if (!data) return null;
+    
+    const fromVersion = metadata?.version || 1;
+    const migratedData = migrateToCurrentVersion(data, fromVersion);
+    
+    await storeSubclassData(migratedData);
+    return migratedData;
+    
+  } catch (error) {
+    console.error('Error forcing migration:', error);
+    return null;
+  }
+};
+
+export const getCurrentSchemaHash = (): string => {
+  return CURRENT_SCHEMA_HASH;
+};
+
+export const getStoredSchemaHash = async (): Promise<string | null> => {
+  try {
+    const metadata = await subclassStore.getItem<StoredDataMetadata>('metadata');
+    return metadata?.schemaHash || null;
+  } catch (error) {
+    console.error('Error retrieving schema hash:', error);
+    return null;
+  }
+};
+
+// Additional subclass-specific utility functions
+export const getSubclassDescription = async (subclassId: string): Promise<string | null> => {
+  const subclass = await getSubclassById(subclassId);
+  return subclass?.subclass || null;
+};
+
+export const getSubclassesByClassIdAndBarangayId = async (classId: string, barangayId: string): Promise<SubclassData[]> => {
+  const data = await getSubclassData();
+  if (!data) return [];
+  
+  return data.filter(item => item.class_id === classId && item.barangay_id === barangayId);
+};
+
+export const getSubclassesByClassIdWithoutBarangay = async (classId: string): Promise<SubclassData[]> => {
+  const data = await getSubclassData();
+  if (!data) return [];
+  
+  return data.filter(item => item.class_id === classId && item.barangay_id === null);
+};
+
+export const getSubclassesSortedByName = async (ascending: boolean = true): Promise<SubclassData[]> => {
+  const data = await getSubclassData();
+  if (!data) return [];
+  
+  return data.sort((a, b) => {
+    const comparison = a.subclass.localeCompare(b.subclass);
+    return ascending ? comparison : -comparison;
+  });
+};
+
+export const getSubclassesSortedById = async (ascending: boolean = true): Promise<SubclassData[]> => {
+  const data = await getSubclassData();
+  if (!data) return [];
+  
+  return data.sort((a, b) => {
+    const comparison = a.subclass_id.localeCompare(b.subclass_id);
+    return ascending ? comparison : -comparison;
+  });
+};
+
+export const getSubclassNames = async (): Promise<string[]> => {
+  const data = await getSubclassData();
+  if (!data) return [];
+  
+  return data.map(item => item.subclass);
+};
+
+export const getSubclassIds = async (): Promise<string[]> => {
+  const data = await getSubclassData();
+  if (!data) return [];
+  
+  return data.map(item => item.subclass_id);
+};
+
+export const searchSubclasses = async (searchTerm: string): Promise<SubclassData[]> => {
+  const data = await getSubclassData();
+  if (!data) return [];
+  
+  const lowerSearchTerm = searchTerm.toLowerCase();
+  return data.filter(item => 
+    item.subclass_id.toLowerCase().includes(lowerSearchTerm) ||
+    item.subclass.toLowerCase().includes(lowerSearchTerm) ||
+    (item.barangay_id && item.barangay_id.toLowerCase().includes(lowerSearchTerm)) ||
+    item.class_id.toLowerCase().includes(lowerSearchTerm)
+  );
 };
