@@ -1,7 +1,6 @@
 // utils/DeclarantLocalStorage.ts
 import localForage from 'localforage';
 
-// Interface for declarant data
 export interface DeclarantData {
   declarant_id: number;
   firstname: string;
@@ -10,149 +9,164 @@ export interface DeclarantData {
   // example: new_column?: string;
 }
 
-// Configure localForage instance for declarant data
 const declarantStore = localForage.createInstance({
   name: 'TaxAppStorage',
   storeName: 'declarant_data'
 });
 
-// CURRENT VERSION - INCREMENT THIS WHEN YOU ADD NEW COLUMNS
-const CURRENT_VERSION = 1; // Use numbers for easier migration comparisons
+const CURRENT_VERSION = Date.now();
 
-// Migration functions
-const migrations: { [version: number]: (data: any[]) => DeclarantData[] } = {
-  // Migration from version 1 to 2
-  2: (data: any[]) => {
-    console.log('Migrating declarant data to version 2');
-    return data.map(item => {
-      // Remove any deprecated columns or add new ones with defaults
-      const { deprecated_column, ...cleanItem } = item;
-      return {
-        ...cleanItem,
-        // new_column: item.new_column || 'default_value' // Example for new columns
-      };
-    });
-  }
+interface StoredDataMetadata {
+  version: number;
+  timestamp: number;
+  schemaHash: string;
+}
+
+const generateSchemaHash = (): string => {
+  const schema = {
+    declarant_id: 'number',
+    firstname: 'string',
+    lastname: 'string'
+  };
+  return JSON.stringify(schema);
 };
 
-// Store declarant data with localForage
+const CURRENT_SCHEMA_HASH = generateSchemaHash();
+
+const migrateToCurrentVersion = (data: any[], fromVersion: number): DeclarantData[] => {
+  return data.map(item => {
+    const migratedItem: Partial<DeclarantData> = {};
+    
+    if (typeof item.declarant_id === 'number') {
+      migratedItem.declarant_id = item.declarant_id;
+    }
+    
+    if (typeof item.firstname === 'string') {
+      migratedItem.firstname = item.firstname;
+    }
+
+    if (typeof item.lastname === 'string') {
+      migratedItem.lastname = item.lastname;
+    }
+
+    const validProperties = new Set(['declarant_id', 'firstname', 'lastname']);
+    Object.keys(migratedItem).forEach(key => {
+      if (!validProperties.has(key)) {
+        delete migratedItem[key as keyof DeclarantData];
+      }
+    });
+    
+    return migratedItem as DeclarantData;
+  });
+};
+
+const validateData = (data: any[]): data is DeclarantData[] => {
+  if (!Array.isArray(data)) return false;
+  
+  return data.every(item => {
+    return (
+      typeof item === 'object' &&
+      item !== null &&
+      typeof item.declarant_id === 'number' &&
+      typeof item.firstname === 'string' &&
+      typeof item.lastname === 'string'
+    );
+  });
+};
+
 export const storeDeclarantData = async (data: DeclarantData[]): Promise<void> => {
   try {
+    if (!validateData(data)) {
+      console.error('Invalid data format attempted to be stored');
+      return;
+    }
+    
     await declarantStore.setItem('data', data);
-    await declarantStore.setItem('timestamp', Date.now());
-    await declarantStore.setItem('version', CURRENT_VERSION);
-    console.log('Declarant data stored successfully (version:', CURRENT_VERSION, ')');
+    await declarantStore.setItem('metadata', {
+      version: CURRENT_VERSION,
+      timestamp: Date.now(),
+      schemaHash: CURRENT_SCHEMA_HASH
+    } as StoredDataMetadata);
+    
   } catch (error) {
     console.error('Error storing declarant data:', error);
   }
 };
 
-// Retrieve declarant data from localForage with migration support
 export const getDeclarantData = async (): Promise<DeclarantData[] | null> => {
   try {
-    const [data, storedVersion, timestamp] = await Promise.all([
-      declarantStore.getItem<DeclarantData[]>('data'),
-      declarantStore.getItem<number>('version'),
-      declarantStore.getItem<number>('timestamp')
+    const [data, metadata] = await Promise.all([
+      declarantStore.getItem<any[]>('data'),
+      declarantStore.getItem<StoredDataMetadata>('metadata')
     ]);
 
-    if (!data) return null;
+    if (!data || !metadata) return null;
 
-    // Apply migrations if needed
-    if (storedVersion && storedVersion < CURRENT_VERSION) {
-      console.log(`Migrating declarant data from v${storedVersion} to v${CURRENT_VERSION}`);
-      let migratedData = data;
-      
-      for (let version = storedVersion + 1; version <= CURRENT_VERSION; version++) {
-        if (migrations[version]) {
-          migratedData = migrations[version](migratedData);
-        }
-      }
-      
-      // Store the migrated data
-      await storeDeclarantData(migratedData);
-      return migratedData;
+    if (metadata.version === CURRENT_VERSION && validateData(data)) {
+      return data;
     }
 
-    return data;
+    let migratedData = migrateToCurrentVersion(data, metadata.version);
+    
+    if (!validateData(migratedData)) {
+      console.error('Migrated data failed validation');
+      return null;
+    }
+    
+    await storeDeclarantData(migratedData);
+    return migratedData;
+    
   } catch (error) {
     console.error('Error retrieving declarant data:', error);
     return null;
   }
 };
 
-// Check if declarant data is fresh (less than 24 hours old) AND matches current version
 export const isDeclarantDataFresh = async (): Promise<boolean> => {
   try {
-    const [timestamp, storedVersion] = await Promise.all([
-      declarantStore.getItem<number>('timestamp'),
-      declarantStore.getItem<number>('version')
-    ]);
+    const metadata = await declarantStore.getItem<StoredDataMetadata>('metadata');
 
-    if (!timestamp || !storedVersion) return false;
+    if (!metadata) return false;
     
     const twentyFourHours = 24 * 60 * 60 * 1000;
+    const isRecent = (Date.now() - metadata.timestamp) < twentyFourHours;
+    const isCurrentVersion = metadata.version === CURRENT_VERSION;
+    const isCurrentSchema = metadata.schemaHash === CURRENT_SCHEMA_HASH;
     
-    // Check if data is outdated OR version mismatch
-    const isRecent = (Date.now() - timestamp) < twentyFourHours;
-    const isCurrentVersion = storedVersion === CURRENT_VERSION;
-    
-    if (isRecent && !isCurrentVersion) {
-      console.log('Data is recent but outdated version. Migration will handle this.');
-      return false;
-    }
-    
-    return isRecent && isCurrentVersion;
+    return isRecent && isCurrentVersion && isCurrentSchema;
   } catch (error) {
     console.error('Error checking declarant data freshness:', error);
     return false;
   }
 };
 
-// Clear declarant data from localForage
 export const clearDeclarantData = async (): Promise<void> => {
   try {
     await declarantStore.clear();
-    console.log('Declarant data cleared successfully');
   } catch (error) {
     console.error('Error clearing declarant data:', error);
   }
 };
 
-// Get the current version
 export const getCurrentDeclarantVersion = (): number => {
   return CURRENT_VERSION;
 };
 
-// Get the stored version
 export const getStoredDeclarantVersion = async (): Promise<number | null> => {
   try {
-    return await declarantStore.getItem<number>('version');
+    const metadata = await declarantStore.getItem<StoredDataMetadata>('metadata');
+    return metadata?.version || null;
   } catch (error) {
     console.error('Error retrieving declarant version:', error);
     return null;
   }
 };
 
-// Get declarant data only if it's fresh
 export const getFreshDeclarantData = async (): Promise<DeclarantData[] | null> => {
-  const data = await getDeclarantData();
   const isFresh = await isDeclarantDataFresh();
-  
-  return isFresh ? data : null;
+  return isFresh ? await getDeclarantData() : null;
 };
 
-// Get the timestamp of when declarant data was last stored
-export const getDeclarantTimestamp = async (): Promise<number | null> => {
-  try {
-    return await declarantStore.getItem<number>('timestamp');
-  } catch (error) {
-    console.error('Error retrieving declarant timestamp:', error);
-    return null;
-  }
-};
-
-// Check if declarant data exists (regardless of freshness)
 export const hasDeclarantData = async (): Promise<boolean> => {
   try {
     const data = await declarantStore.getItem('data');
@@ -163,13 +177,95 @@ export const hasDeclarantData = async (): Promise<boolean> => {
   }
 };
 
-// Get data size (useful for debugging)
+export const getDeclarantById = async (declarantId: number): Promise<DeclarantData | null> => {
+  const data = await getDeclarantData();
+  if (!data) return null;
+  
+  return data.find(item => item.declarant_id === declarantId) || null;
+};
+
+export const getDeclarantTimestamp = async (): Promise<number | null> => {
+  try {
+    const metadata = await declarantStore.getItem<StoredDataMetadata>('metadata');
+    return metadata?.timestamp || null;
+  } catch (error) {
+    console.error('Error retrieving declarant timestamp:', error);
+    return null;
+  }
+};
+
 export const getDeclarantDataSize = async (): Promise<number> => {
   try {
     const data = await declarantStore.getItem('data');
     return data ? JSON.stringify(data).length : 0;
   } catch (error) {
-    console.error('Error getting data size:', error);
+    console.error('Error getting declarant data size:', error);
     return 0;
   }
+};
+
+export const getAllDeclarantNames = async (): Promise<string[]> => {
+  const data = await getDeclarantData();
+  if (!data) return [];
+  
+  return data.map(item => `${item.firstname} ${item.lastname}`).filter(Boolean);
+};
+
+export const searchDeclarantByName = async (searchTerm: string): Promise<DeclarantData[]> => {
+  const data = await getDeclarantData();
+  if (!data) return [];
+  
+  const lowerSearchTerm = searchTerm.toLowerCase();
+  return data.filter(item => 
+    item.firstname.toLowerCase().includes(lowerSearchTerm) ||
+    item.lastname.toLowerCase().includes(lowerSearchTerm)
+  );
+};
+
+export const forceMigration = async (): Promise<DeclarantData[] | null> => {
+  try {
+    const data = await declarantStore.getItem<any[]>('data');
+    const metadata = await declarantStore.getItem<StoredDataMetadata>('metadata');
+    
+    if (!data) return null;
+    
+    const fromVersion = metadata?.version || 1;
+    const migratedData = migrateToCurrentVersion(data, fromVersion);
+    
+    await storeDeclarantData(migratedData);
+    return migratedData;
+    
+  } catch (error) {
+    console.error('Error forcing migration:', error);
+    return null;
+  }
+};
+
+export const getCurrentSchemaHash = (): string => {
+  return CURRENT_SCHEMA_HASH;
+};
+
+export const getStoredSchemaHash = async (): Promise<string | null> => {
+  try {
+    const metadata = await declarantStore.getItem<StoredDataMetadata>('metadata');
+    return metadata?.schemaHash || null;
+  } catch (error) {
+    console.error('Error retrieving schema hash:', error);
+    return null;
+  }
+};
+
+// Additional declarant-specific utility functions
+export const getDeclarantFullName = async (declarantId: number): Promise<string | null> => {
+  const declarant = await getDeclarantById(declarantId);
+  if (!declarant) return null;
+  
+  return `${declarant.firstname} ${declarant.lastname}`;
+};
+
+export const getDeclarantIds = async (): Promise<number[]> => {
+  const data = await getDeclarantData();
+  if (!data) return [];
+  
+  return data.map(item => item.declarant_id);
 };
