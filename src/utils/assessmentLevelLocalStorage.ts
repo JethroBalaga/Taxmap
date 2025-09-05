@@ -20,40 +20,121 @@ const assessmentLevelStore = localForage.createInstance({
   storeName: 'assessment_level_data'
 });
 
-// CURRENT VERSION - INCREMENT THIS WHEN YOU ADD NEW COLUMNS
-const CURRENT_VERSION = 3; // Use numbers for easier migration comparisons
+// Use timestamp for versioning
+const CURRENT_VERSION = Date.now();
 
-// Migration functions
-const migrations: { [version: number]: (data: any[]) => AssessmentLevelData[] } = {
-  // Migration from version 1 to 2
-  2: (data: any[]) => {
-    console.log('Migrating assessment level data to version 2');
-    return data.map(item => {
-      // Remove any deprecated columns or add new ones with defaults
-      const { deprecated_column, ...cleanItem } = item;
-      return {
-        ...cleanItem,
-        // new_column: item.new_column || 'default_value' // Example for new columns
-      };
+interface StoredDataMetadata {
+  version: number;
+  timestamp: number;
+  schemaHash: string;
+  year?: number;
+}
+
+const generateSchemaHash = (): string => {
+  const schema = {
+    assessment_level_id: 'string',
+    kind_id: 'number',
+    effective_year: 'number',
+    class_id: 'string',
+    range1: 'number',
+    range2: 'number',
+    rate_percent: 'string'
+  };
+  return JSON.stringify(schema);
+};
+
+const CURRENT_SCHEMA_HASH = generateSchemaHash();
+
+const migrateToCurrentVersion = (data: any[], fromVersion: number): AssessmentLevelData[] => {
+  return data.map(item => {
+    const migratedItem: Partial<AssessmentLevelData> = {};
+    
+    if (typeof item.assessment_level_id === 'string') {
+      migratedItem.assessment_level_id = item.assessment_level_id;
+    }
+    
+    if (typeof item.kind_id === 'number') {
+      migratedItem.kind_id = item.kind_id;
+    }
+
+    if (typeof item.effective_year === 'number') {
+      migratedItem.effective_year = item.effective_year;
+    }
+
+    if (typeof item.class_id === 'string') {
+      migratedItem.class_id = item.class_id;
+    }
+
+    if (typeof item.range1 === 'number') {
+      migratedItem.range1 = item.range1;
+    }
+
+    if (typeof item.range2 === 'number') {
+      migratedItem.range2 = item.range2;
+    }
+
+    if (typeof item.rate_percent === 'string') {
+      migratedItem.rate_percent = item.rate_percent;
+    }
+
+    // Remove any unknown properties
+    const validProperties = new Set([
+      'assessment_level_id', 'kind_id', 'effective_year', 'class_id', 
+      'range1', 'range2', 'rate_percent'
+    ]);
+    
+    Object.keys(migratedItem).forEach(key => {
+      if (!validProperties.has(key)) {
+        delete migratedItem[key as keyof AssessmentLevelData];
+      }
     });
-  }
+    
+    return migratedItem as AssessmentLevelData;
+  });
+};
+
+const validateData = (data: any[]): data is AssessmentLevelData[] => {
+  if (!Array.isArray(data)) return false;
+  
+  return data.every(item => {
+    return (
+      typeof item === 'object' &&
+      item !== null &&
+      typeof item.assessment_level_id === 'string' &&
+      typeof item.kind_id === 'number' &&
+      typeof item.effective_year === 'number' &&
+      typeof item.class_id === 'string' &&
+      typeof item.range1 === 'number' &&
+      typeof item.range2 === 'number' &&
+      typeof item.rate_percent === 'string'
+    );
+  });
 };
 
 // Store assessment level data with localForage - only keeps the most recent year's data
 export const storeAssessmentLevelData = async (data: AssessmentLevelData[], year: number): Promise<void> => {
   try {
+    if (!validateData(data)) {
+      console.error('Invalid data format attempted to be stored');
+      return;
+    }
+    
     // Always clear any existing data from different years first
-    const storedYear = await getStoredAssessmentLevelYear();
-    if (storedYear !== null && storedYear !== year) {
-      console.log(`Replacing ${storedYear} data with ${year} data`);
-      await clearAssessmentLevelData(); // Clear completely since it's a different year
+    const storedMetadata = await assessmentLevelStore.getItem<StoredDataMetadata>('metadata');
+    if (storedMetadata?.year !== undefined && storedMetadata.year !== year) {
+      console.log(`Replacing ${storedMetadata.year} data with ${year} data`);
+      await clearAssessmentLevelData();
     }
     
     await assessmentLevelStore.setItem('data', data);
-    await assessmentLevelStore.setItem('timestamp', Date.now());
-    await assessmentLevelStore.setItem('version', CURRENT_VERSION);
-    await assessmentLevelStore.setItem('year', year);
-    console.log('Assessment level data stored successfully for year:', year, '(version:', CURRENT_VERSION, ')');
+    await assessmentLevelStore.setItem('metadata', {
+      version: CURRENT_VERSION,
+      timestamp: Date.now(),
+      schemaHash: CURRENT_SCHEMA_HASH,
+      year: year
+    } as StoredDataMetadata);
+    
+    console.log('Assessment level data stored successfully for year:', year);
   } catch (error) {
     console.error('Error storing assessment level data:', error);
   }
@@ -62,32 +143,27 @@ export const storeAssessmentLevelData = async (data: AssessmentLevelData[], year
 // Retrieve assessment level data from localForage with migration support
 export const getAssessmentLevelData = async (): Promise<AssessmentLevelData[] | null> => {
   try {
-    const [data, storedVersion, timestamp, storedYear] = await Promise.all([
-      assessmentLevelStore.getItem<AssessmentLevelData[]>('data'),
-      assessmentLevelStore.getItem<number>('version'),
-      assessmentLevelStore.getItem<number>('timestamp'),
-      assessmentLevelStore.getItem<number>('year')
+    const [data, metadata] = await Promise.all([
+      assessmentLevelStore.getItem<any[]>('data'),
+      assessmentLevelStore.getItem<StoredDataMetadata>('metadata')
     ]);
 
-    if (!data) return null;
+    if (!data || !metadata) return null;
 
-    // Apply migrations if needed
-    if (storedVersion && storedVersion < CURRENT_VERSION) {
-      console.log(`Migrating assessment level data from v${storedVersion} to v${CURRENT_VERSION}`);
-      let migratedData = data;
-      
-      for (let version = storedVersion + 1; version <= CURRENT_VERSION; version++) {
-        if (migrations[version]) {
-          migratedData = migrations[version](migratedData);
-        }
-      }
-      
-      // Store the migrated data
-      await storeAssessmentLevelData(migratedData, storedYear || new Date().getFullYear());
-      return migratedData;
+    if (metadata.version === CURRENT_VERSION && validateData(data)) {
+      return data;
     }
 
-    return data;
+    let migratedData = migrateToCurrentVersion(data, metadata.version);
+    
+    if (!validateData(migratedData)) {
+      console.error('Migrated data failed validation');
+      return null;
+    }
+    
+    await storeAssessmentLevelData(migratedData, metadata.year || new Date().getFullYear());
+    return migratedData;
+    
   } catch (error) {
     console.error('Error retrieving assessment level data:', error);
     return null;
@@ -97,28 +173,20 @@ export const getAssessmentLevelData = async (): Promise<AssessmentLevelData[] | 
 // Check if assessment level data is fresh (less than 24 hours old) AND matches current version AND current year
 export const isAssessmentLevelDataFresh = async (): Promise<boolean> => {
   try {
-    const [timestamp, storedVersion, storedYear] = await Promise.all([
-      assessmentLevelStore.getItem<number>('timestamp'),
-      assessmentLevelStore.getItem<number>('version'),
-      assessmentLevelStore.getItem<number>('year')
-    ]);
+    const metadata = await assessmentLevelStore.getItem<StoredDataMetadata>('metadata');
 
-    if (!timestamp || !storedVersion || !storedYear) return false;
+    if (!metadata) return false;
     
     const currentYear = new Date().getFullYear();
     const twentyFourHours = 24 * 60 * 60 * 1000;
     
     // Check if data is outdated OR version mismatch OR wrong year
-    const isRecent = (Date.now() - timestamp) < twentyFourHours;
-    const isCurrentVersion = storedVersion === CURRENT_VERSION;
-    const isCurrentYear = storedYear === currentYear;
+    const isRecent = (Date.now() - metadata.timestamp) < twentyFourHours;
+    const isCurrentVersion = metadata.version === CURRENT_VERSION;
+    const isCurrentSchema = metadata.schemaHash === CURRENT_SCHEMA_HASH;
+    const isCurrentYear = metadata.year === currentYear;
     
-    if (isRecent && (!isCurrentVersion || !isCurrentYear)) {
-      console.log('Assessment level data is recent but outdated version or year. Migration/cleanup will handle this.');
-      return false;
-    }
-    
-    return isRecent && isCurrentVersion && isCurrentYear;
+    return isRecent && isCurrentVersion && isCurrentSchema && isCurrentYear;
   } catch (error) {
     console.error('Error checking assessment level data freshness:', error);
     return false;
@@ -143,7 +211,8 @@ export const getCurrentAssessmentLevelVersion = (): number => {
 // Get the stored version
 export const getStoredAssessmentLevelVersion = async (): Promise<number | null> => {
   try {
-    return await assessmentLevelStore.getItem<number>('version');
+    const metadata = await assessmentLevelStore.getItem<StoredDataMetadata>('metadata');
+    return metadata?.version || null;
   } catch (error) {
     console.error('Error retrieving assessment level version:', error);
     return null;
@@ -153,7 +222,8 @@ export const getStoredAssessmentLevelVersion = async (): Promise<number | null> 
 // Get the year for which assessment level data was stored
 export const getStoredAssessmentLevelYear = async (): Promise<number | null> => {
   try {
-    return await assessmentLevelStore.getItem<number>('year');
+    const metadata = await assessmentLevelStore.getItem<StoredDataMetadata>('metadata');
+    return metadata?.year || null;
   } catch (error) {
     console.error('Error retrieving stored assessment level year:', error);
     return null;
@@ -165,10 +235,8 @@ export const getFreshAssessmentLevelData = async (): Promise<AssessmentLevelData
   // First check if we have old year data and clean it up
   await cleanupOldAssessmentLevelYearData();
   
-  const data = await getAssessmentLevelData();
   const isFresh = await isAssessmentLevelDataFresh();
-  
-  return isFresh ? data : null;
+  return isFresh ? await getAssessmentLevelData() : null;
 };
 
 // Check if assessment level data exists (regardless of freshness)
@@ -250,7 +318,8 @@ export const cleanupOldAssessmentLevelYearData = async (): Promise<void> => {
 // Get the timestamp of when assessment level data was last stored
 export const getAssessmentLevelTimestamp = async (): Promise<number | null> => {
   try {
-    return await assessmentLevelStore.getItem<number>('timestamp');
+    const metadata = await assessmentLevelStore.getItem<StoredDataMetadata>('metadata');
+    return metadata?.timestamp || null;
   } catch (error) {
     console.error('Error retrieving assessment level timestamp:', error);
     return null;
@@ -372,4 +441,56 @@ export const searchAssessmentLevels = async (options: {
   }
   
   return results;
+};
+
+// Force migration of assessment level data
+export const forceAssessmentLevelMigration = async (): Promise<AssessmentLevelData[] | null> => {
+  try {
+    const data = await assessmentLevelStore.getItem<any[]>('data');
+    const metadata = await assessmentLevelStore.getItem<StoredDataMetadata>('metadata');
+    
+    if (!data) return null;
+    
+    const fromVersion = metadata?.version || 1;
+    const migratedData = migrateToCurrentVersion(data, fromVersion);
+    
+    await storeAssessmentLevelData(migratedData, metadata?.year || new Date().getFullYear());
+    return migratedData;
+    
+  } catch (error) {
+    console.error('Error forcing migration:', error);
+    return null;
+  }
+};
+
+// Get current schema hash
+export const getCurrentAssessmentLevelSchemaHash = (): string => {
+  return CURRENT_SCHEMA_HASH;
+};
+
+// Get stored schema hash
+export const getStoredAssessmentLevelSchemaHash = async (): Promise<string | null> => {
+  try {
+    const metadata = await assessmentLevelStore.getItem<StoredDataMetadata>('metadata');
+    return metadata?.schemaHash || null;
+  } catch (error) {
+    console.error('Error retrieving schema hash:', error);
+    return null;
+  }
+};
+
+// Get assessment level by ID
+export const getAssessmentLevelById = async (assessmentLevelId: string): Promise<AssessmentLevelData | null> => {
+  const data = await getAssessmentLevelData();
+  if (!data) return null;
+  
+  return data.find(item => item.assessment_level_id === assessmentLevelId) || null;
+};
+
+// Get assessment levels by year
+export const getAssessmentLevelsByYear = async (year: number): Promise<AssessmentLevelData[]> => {
+  const data = await getAssessmentLevelData();
+  if (!data) return [];
+  
+  return data.filter(item => item.effective_year === year);
 };
