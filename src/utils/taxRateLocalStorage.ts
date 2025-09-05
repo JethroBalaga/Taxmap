@@ -17,40 +17,99 @@ const taxRateStore = localForage.createInstance({
   storeName: 'tax_rate_data'
 });
 
-// CURRENT VERSION - INCREMENT THIS WHEN YOU ADD NEW COLUMNS
-const CURRENT_VERSION = 2; // Use numbers for easier migration comparisons
+// Use timestamp for versioning
+const CURRENT_VERSION = Date.now();
 
-// Migration functions
-const migrations: { [version: number]: (data: any[]) => TaxRateData[] } = {
-  // Migration from version 1 to 2
-  2: (data: any[]) => {
-    console.log('Migrating tax rate data to version 2');
-    return data.map(item => {
-      // Remove any deprecated columns or add new ones with defaults
-      const { deprecated_column, ...cleanItem } = item;
-      return {
-        ...cleanItem,
-        // new_column: item.new_column || 'default_value' // Example for new columns
-      };
+interface StoredDataMetadata {
+  version: number;
+  timestamp: number;
+  schemaHash: string;
+  year?: string;
+}
+
+const generateSchemaHash = (): string => {
+  const schema = {
+    tax_rate_id: 'string',
+    effective_year: 'string',
+    rate_percent: 'string',
+    district_id: 'string'
+  };
+  return JSON.stringify(schema);
+};
+
+const CURRENT_SCHEMA_HASH = generateSchemaHash();
+
+const migrateToCurrentVersion = (data: any[], fromVersion: number): TaxRateData[] => {
+  return data.map(item => {
+    const migratedItem: Partial<TaxRateData> = {};
+    
+    if (typeof item.tax_rate_id === 'string') {
+      migratedItem.tax_rate_id = item.tax_rate_id;
+    }
+    
+    if (typeof item.effective_year === 'string') {
+      migratedItem.effective_year = item.effective_year;
+    }
+
+    if (typeof item.rate_percent === 'string') {
+      migratedItem.rate_percent = item.rate_percent;
+    }
+
+    if (typeof item.district_id === 'string') {
+      migratedItem.district_id = item.district_id;
+    }
+
+    // Remove any unknown properties
+    const validProperties = new Set(['tax_rate_id', 'effective_year', 'rate_percent', 'district_id']);
+    Object.keys(migratedItem).forEach(key => {
+      if (!validProperties.has(key)) {
+        delete migratedItem[key as keyof TaxRateData];
+      }
     });
-  }
+    
+    return migratedItem as TaxRateData;
+  });
+};
+
+const validateData = (data: any[]): data is TaxRateData[] => {
+  if (!Array.isArray(data)) return false;
+  
+  return data.every(item => {
+    return (
+      typeof item === 'object' &&
+      item !== null &&
+      typeof item.tax_rate_id === 'string' &&
+      typeof item.effective_year === 'string' &&
+      typeof item.rate_percent === 'string' &&
+      typeof item.district_id === 'string'
+    );
+  });
 };
 
 // Store tax rate data with localForage - only keeps the most recent year's data
 export const storeTaxRateData = async (data: TaxRateData[], year: string): Promise<void> => {
   try {
+    if (!validateData(data)) {
+      console.error('Invalid data format attempted to be stored');
+      return;
+    }
+    
     // Always clear any existing data from different years first
-    const storedYear = await getStoredTaxRateYear();
-    if (storedYear !== null && storedYear !== year) {
-      console.log(`Replacing ${storedYear} data with ${year} data`);
-      await clearTaxRateData(); // Clear completely since it's a different year
+    const storedMetadata = await taxRateStore.getItem<StoredDataMetadata>('metadata');
+    if (storedMetadata?.year !== undefined && storedMetadata.year !== year) {
+      console.log(`Replacing ${storedMetadata.year} data with ${year} data`);
+      await clearTaxRateData();
     }
     
     await taxRateStore.setItem('data', data);
-    await taxRateStore.setItem('timestamp', Date.now());
-    await taxRateStore.setItem('version', CURRENT_VERSION);
-    await taxRateStore.setItem('year', year);
-    console.log('Tax rate data stored successfully for year:', year, '(version:', CURRENT_VERSION, ')');
+    await taxRateStore.setItem('metadata', {
+      version: CURRENT_VERSION,
+      timestamp: Date.now(),
+      schemaHash: CURRENT_SCHEMA_HASH,
+      year: year
+    } as StoredDataMetadata);
+    
+    console.log('Tax rate data stored successfully for year:', year);
   } catch (error) {
     console.error('Error storing tax rate data:', error);
   }
@@ -59,32 +118,27 @@ export const storeTaxRateData = async (data: TaxRateData[], year: string): Promi
 // Retrieve tax rate data from localForage with migration support
 export const getTaxRateData = async (): Promise<TaxRateData[] | null> => {
   try {
-    const [data, storedVersion, timestamp, storedYear] = await Promise.all([
-      taxRateStore.getItem<TaxRateData[]>('data'),
-      taxRateStore.getItem<number>('version'),
-      taxRateStore.getItem<number>('timestamp'),
-      taxRateStore.getItem<string>('year')
+    const [data, metadata] = await Promise.all([
+      taxRateStore.getItem<any[]>('data'),
+      taxRateStore.getItem<StoredDataMetadata>('metadata')
     ]);
 
-    if (!data) return null;
+    if (!data || !metadata) return null;
 
-    // Apply migrations if needed
-    if (storedVersion && storedVersion < CURRENT_VERSION) {
-      console.log(`Migrating tax rate data from v${storedVersion} to v${CURRENT_VERSION}`);
-      let migratedData = data;
-      
-      for (let version = storedVersion + 1; version <= CURRENT_VERSION; version++) {
-        if (migrations[version]) {
-          migratedData = migrations[version](migratedData);
-        }
-      }
-      
-      // Store the migrated data
-      await storeTaxRateData(migratedData, storedYear || new Date().getFullYear().toString());
-      return migratedData;
+    if (metadata.version === CURRENT_VERSION && validateData(data)) {
+      return data;
     }
 
-    return data;
+    let migratedData = migrateToCurrentVersion(data, metadata.version);
+    
+    if (!validateData(migratedData)) {
+      console.error('Migrated data failed validation');
+      return null;
+    }
+    
+    await storeTaxRateData(migratedData, metadata.year || new Date().getFullYear().toString());
+    return migratedData;
+    
   } catch (error) {
     console.error('Error retrieving tax rate data:', error);
     return null;
@@ -94,28 +148,20 @@ export const getTaxRateData = async (): Promise<TaxRateData[] | null> => {
 // Check if tax rate data is fresh (less than 24 hours old) AND matches current version AND current year
 export const isTaxRateDataFresh = async (): Promise<boolean> => {
   try {
-    const [timestamp, storedVersion, storedYear] = await Promise.all([
-      taxRateStore.getItem<number>('timestamp'),
-      taxRateStore.getItem<number>('version'),
-      taxRateStore.getItem<string>('year')
-    ]);
+    const metadata = await taxRateStore.getItem<StoredDataMetadata>('metadata');
 
-    if (!timestamp || !storedVersion || !storedYear) return false;
+    if (!metadata) return false;
     
     const currentYear = new Date().getFullYear().toString();
     const twentyFourHours = 24 * 60 * 60 * 1000;
     
     // Check if data is outdated OR version mismatch OR wrong year
-    const isRecent = (Date.now() - timestamp) < twentyFourHours;
-    const isCurrentVersion = storedVersion === CURRENT_VERSION;
-    const isCurrentYear = storedYear === currentYear;
+    const isRecent = (Date.now() - metadata.timestamp) < twentyFourHours;
+    const isCurrentVersion = metadata.version === CURRENT_VERSION;
+    const isCurrentSchema = metadata.schemaHash === CURRENT_SCHEMA_HASH;
+    const isCurrentYear = metadata.year === currentYear;
     
-    if (isRecent && (!isCurrentVersion || !isCurrentYear)) {
-      console.log('Tax rate data is recent but outdated version or year. Migration/cleanup will handle this.');
-      return false;
-    }
-    
-    return isRecent && isCurrentVersion && isCurrentYear;
+    return isRecent && isCurrentVersion && isCurrentSchema && isCurrentYear;
   } catch (error) {
     console.error('Error checking tax rate data freshness:', error);
     return false;
@@ -140,7 +186,8 @@ export const getCurrentTaxRateVersion = (): number => {
 // Get the stored version
 export const getStoredTaxRateVersion = async (): Promise<number | null> => {
   try {
-    return await taxRateStore.getItem<number>('version');
+    const metadata = await taxRateStore.getItem<StoredDataMetadata>('metadata');
+    return metadata?.version || null;
   } catch (error) {
     console.error('Error retrieving tax rate version:', error);
     return null;
@@ -150,7 +197,8 @@ export const getStoredTaxRateVersion = async (): Promise<number | null> => {
 // Get the year for which tax rate data was stored
 export const getStoredTaxRateYear = async (): Promise<string | null> => {
   try {
-    return await taxRateStore.getItem<string>('year');
+    const metadata = await taxRateStore.getItem<StoredDataMetadata>('metadata');
+    return metadata?.year || null;
   } catch (error) {
     console.error('Error retrieving stored tax rate year:', error);
     return null;
@@ -162,10 +210,8 @@ export const getFreshTaxRateData = async (): Promise<TaxRateData[] | null> => {
   // First check if we have old year data and clean it up
   await cleanupOldTaxRateYearData();
   
-  const data = await getTaxRateData();
   const isFresh = await isTaxRateDataFresh();
-  
-  return isFresh ? data : null;
+  return isFresh ? await getTaxRateData() : null;
 };
 
 // Check if tax rate data exists (regardless of freshness)
@@ -247,7 +293,8 @@ export const cleanupOldTaxRateYearData = async (): Promise<void> => {
 // Get the timestamp of when tax rate data was last stored
 export const getTaxRateTimestamp = async (): Promise<number | null> => {
   try {
-    return await taxRateStore.getItem<number>('timestamp');
+    const metadata = await taxRateStore.getItem<StoredDataMetadata>('metadata');
+    return metadata?.timestamp || null;
   } catch (error) {
     console.error('Error retrieving tax rate timestamp:', error);
     return null;
@@ -353,4 +400,90 @@ export const searchTaxRates = async (options: {
   }
   
   return results;
+};
+
+// Force migration of tax rate data
+export const forceTaxRateMigration = async (): Promise<TaxRateData[] | null> => {
+  try {
+    const data = await taxRateStore.getItem<any[]>('data');
+    const metadata = await taxRateStore.getItem<StoredDataMetadata>('metadata');
+    
+    if (!data) return null;
+    
+    const fromVersion = metadata?.version || 1;
+    const migratedData = migrateToCurrentVersion(data, fromVersion);
+    
+    await storeTaxRateData(migratedData, metadata?.year || new Date().getFullYear().toString());
+    return migratedData;
+    
+  } catch (error) {
+    console.error('Error forcing migration:', error);
+    return null;
+  }
+};
+
+// Get current schema hash
+export const getCurrentTaxRateSchemaHash = (): string => {
+  return CURRENT_SCHEMA_HASH;
+};
+
+// Get stored schema hash
+export const getStoredTaxRateSchemaHash = async (): Promise<string | null> => {
+  try {
+    const metadata = await taxRateStore.getItem<StoredDataMetadata>('metadata');
+    return metadata?.schemaHash || null;
+  } catch (error) {
+    console.error('Error retrieving schema hash:', error);
+    return null;
+  }
+};
+
+// Get tax rate by ID
+export const getTaxRateById = async (taxRateId: string): Promise<TaxRateData | null> => {
+  const data = await getTaxRateData();
+  if (!data) return null;
+  
+  return data.find(item => item.tax_rate_id === taxRateId) || null;
+};
+
+// Get tax rates by year
+export const getTaxRatesByYear = async (year: string): Promise<TaxRateData[]> => {
+  const data = await getTaxRateData();
+  if (!data) return [];
+  
+  return data.filter(item => item.effective_year === year);
+};
+
+// Get average tax rate for a specific year
+export const getAverageTaxRateForYear = async (year: string): Promise<number | null> => {
+  const data = await getTaxRateData();
+  if (!data || data.length === 0) return null;
+  
+  const yearData = data.filter(item => item.effective_year === year);
+  if (yearData.length === 0) return null;
+  
+  const rates = yearData.map(item => parseFloat(item.rate_percent) || 0);
+  return rates.reduce((sum, rate) => sum + rate, 0) / rates.length;
+};
+
+// Get tax rates above a certain percentage
+export const getTaxRatesAbovePercentage = async (minPercentage: number): Promise<TaxRateData[]> => {
+  const data = await getTaxRateData();
+  if (!data) return [];
+  
+  return data.filter(item => {
+    const rate = parseFloat(item.rate_percent) || 0;
+    return rate >= minPercentage;
+  });
+};
+
+// Get tax rates below a certain percentage
+export const getTaxRatesBelowPercentage = async (maxPercentage: number): Promise<TaxRateData[]> => {
+  const data = await getTaxRateData();
+  if (!data) return [];
+  
+  return data.filter(item => {
+    const rate = parseFloat(item.rate_percent) || 0;
+    return rate <= maxPercentage;
+  });
 };
