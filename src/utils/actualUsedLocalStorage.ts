@@ -1,148 +1,170 @@
 // utils/actualUsedLocalStorage.ts
 import localForage from 'localforage';
 
-// Interface for actual used data
 export interface ActualUsedData {
   actual_used_id: string;
   description: string;
   class_id: string;
-  // Add any new columns here when you add them to the database
-  // example: new_column?: string;
 }
 
-// Configure localForage instance for actual used data
 const actualUsedStore = localForage.createInstance({
   name: 'TaxAppStorage',
   storeName: 'actual_used_data'
 });
 
-// CURRENT VERSION - INCREMENT THIS WHEN YOU ADD NEW COLUMNS
-const CURRENT_VERSION = 2; // Use numbers for easier migration comparisons
+const CURRENT_VERSION = Date.now();
 
-// Migration functions
-const migrations: { [version: number]: (data: any[]) => ActualUsedData[] } = {
-  // Migration from version 1 to 2
-  2: (data: any[]) => {
-    console.log('Migrating actual used data to version 2');
-    return data.map(item => {
-      // Remove any deprecated columns or add new ones with defaults
-      const { deprecated_column, ...cleanItem } = item;
-      return {
-        ...cleanItem,
-        // new_column: item.new_column || 'default_value' // Example for new columns
-      };
-    });
-  }
+interface StoredDataMetadata {
+  version: number;
+  timestamp: number;
+  schemaHash: string;
+}
+
+const generateSchemaHash = (): string => {
+  const schema = {
+    actual_used_id: 'string',
+    description: 'string',
+    class_id: 'string'
+  };
+  return JSON.stringify(schema);
 };
 
-// Store actual used data with localForage
+const CURRENT_SCHEMA_HASH = generateSchemaHash();
+
+const migrateToCurrentVersion = (data: any[], fromVersion: number): ActualUsedData[] => {
+  return data.map(item => {
+    const migratedItem: Partial<ActualUsedData> = {};
+    
+    if (typeof item.actual_used_id === 'string') {
+      migratedItem.actual_used_id = item.actual_used_id;
+    }
+    
+    if (typeof item.description === 'string') {
+      migratedItem.description = item.description;
+    }
+
+    if (typeof item.class_id === 'string') {
+      migratedItem.class_id = item.class_id;
+    }
+
+    const validProperties = new Set(['actual_used_id', 'description', 'class_id']);
+    Object.keys(migratedItem).forEach(key => {
+      if (!validProperties.has(key)) {
+        delete migratedItem[key as keyof ActualUsedData];
+      }
+    });
+    
+    return migratedItem as ActualUsedData;
+  });
+};
+
+const validateData = (data: any[]): data is ActualUsedData[] => {
+  if (!Array.isArray(data)) return false;
+  
+  return data.every(item => {
+    return (
+      typeof item === 'object' &&
+      item !== null &&
+      typeof item.actual_used_id === 'string' &&
+      typeof item.description === 'string' &&
+      typeof item.class_id === 'string'
+    );
+  });
+};
+
 export const storeActualUsedData = async (data: ActualUsedData[]): Promise<void> => {
   try {
+    if (!validateData(data)) {
+      console.error('Invalid data format attempted to be stored');
+      return;
+    }
+    
     await actualUsedStore.setItem('data', data);
-    await actualUsedStore.setItem('timestamp', Date.now());
-    await actualUsedStore.setItem('version', CURRENT_VERSION);
-    console.log('Actual used data stored successfully (version:', CURRENT_VERSION, ')');
+    await actualUsedStore.setItem('metadata', {
+      version: CURRENT_VERSION,
+      timestamp: Date.now(),
+      schemaHash: CURRENT_SCHEMA_HASH
+    } as StoredDataMetadata);
+    
   } catch (error) {
     console.error('Error storing actual used data:', error);
   }
 };
 
-// Retrieve actual used data from localForage with migration support
 export const getActualUsedData = async (): Promise<ActualUsedData[] | null> => {
   try {
-    const [data, storedVersion, timestamp] = await Promise.all([
-      actualUsedStore.getItem<ActualUsedData[]>('data'),
-      actualUsedStore.getItem<number>('version'),
-      actualUsedStore.getItem<number>('timestamp')
+    const [data, metadata] = await Promise.all([
+      actualUsedStore.getItem<any[]>('data'),
+      actualUsedStore.getItem<StoredDataMetadata>('metadata')
     ]);
 
-    if (!data) return null;
+    if (!data || !metadata) return null;
 
-    // Apply migrations if needed
-    if (storedVersion && storedVersion < CURRENT_VERSION) {
-      console.log(`Migrating actual used data from v${storedVersion} to v${CURRENT_VERSION}`);
-      let migratedData = data;
-      
-      for (let version = storedVersion + 1; version <= CURRENT_VERSION; version++) {
-        if (migrations[version]) {
-          migratedData = migrations[version](migratedData);
-        }
-      }
-      
-      // Store the migrated data
-      await storeActualUsedData(migratedData);
-      return migratedData;
+    if (metadata.version === CURRENT_VERSION && validateData(data)) {
+      return data;
     }
 
-    return data;
+    let migratedData = migrateToCurrentVersion(data, metadata.version);
+    
+    if (!validateData(migratedData)) {
+      console.error('Migrated data failed validation');
+      return null;
+    }
+    
+    await storeActualUsedData(migratedData);
+    return migratedData;
+    
   } catch (error) {
     console.error('Error retrieving actual used data:', error);
     return null;
   }
 };
 
-// Check if actual used data is fresh (less than 24 hours old) AND matches current version
 export const isActualUsedDataFresh = async (): Promise<boolean> => {
   try {
-    const [timestamp, storedVersion] = await Promise.all([
-      actualUsedStore.getItem<number>('timestamp'),
-      actualUsedStore.getItem<number>('version')
-    ]);
+    const metadata = await actualUsedStore.getItem<StoredDataMetadata>('metadata');
 
-    if (!timestamp || !storedVersion) return false;
+    if (!metadata) return false;
     
     const twentyFourHours = 24 * 60 * 60 * 1000;
+    const isRecent = (Date.now() - metadata.timestamp) < twentyFourHours;
+    const isCurrentVersion = metadata.version === CURRENT_VERSION;
+    const isCurrentSchema = metadata.schemaHash === CURRENT_SCHEMA_HASH;
     
-    // Check if data is outdated OR version mismatch
-    const isRecent = (Date.now() - timestamp) < twentyFourHours;
-    const isCurrentVersion = storedVersion === CURRENT_VERSION;
-    
-    if (isRecent && !isCurrentVersion) {
-      console.log('Actual used data is recent but outdated version. Migration will handle this.');
-      return false;
-    }
-    
-    return isRecent && isCurrentVersion;
+    return isRecent && isCurrentVersion && isCurrentSchema;
   } catch (error) {
     console.error('Error checking actual used data freshness:', error);
     return false;
   }
 };
 
-// Clear actual used data from localForage
 export const clearActualUsedData = async (): Promise<void> => {
   try {
     await actualUsedStore.clear();
-    console.log('Actual used data cleared successfully');
   } catch (error) {
     console.error('Error clearing actual used data:', error);
   }
 };
 
-// Get the current version
 export const getCurrentActualUsedVersion = (): number => {
   return CURRENT_VERSION;
 };
 
-// Get the stored version
 export const getStoredActualUsedVersion = async (): Promise<number | null> => {
   try {
-    return await actualUsedStore.getItem<number>('version');
+    const metadata = await actualUsedStore.getItem<StoredDataMetadata>('metadata');
+    return metadata?.version || null;
   } catch (error) {
     console.error('Error retrieving actual used version:', error);
     return null;
   }
 };
 
-// Get actual used data only if it's fresh
 export const getFreshActualUsedData = async (): Promise<ActualUsedData[] | null> => {
-  const data = await getActualUsedData();
   const isFresh = await isActualUsedDataFresh();
-  
-  return isFresh ? data : null;
+  return isFresh ? await getActualUsedData() : null;
 };
 
-// Check if actual used data exists (regardless of freshness)
 export const hasActualUsedData = async (): Promise<boolean> => {
   try {
     const data = await actualUsedStore.getItem('data');
@@ -153,7 +175,6 @@ export const hasActualUsedData = async (): Promise<boolean> => {
   }
 };
 
-// Filter actual used data by class_id
 export const getActualUsedByClassId = async (classId: string): Promise<ActualUsedData[]> => {
   const data = await getActualUsedData();
   if (!data) return [];
@@ -161,7 +182,6 @@ export const getActualUsedByClassId = async (classId: string): Promise<ActualUse
   return data.filter(item => item.class_id === classId);
 };
 
-// Find a specific actual used by ID
 export const getActualUsedById = async (actualUsedId: string): Promise<ActualUsedData | null> => {
   const data = await getActualUsedData();
   if (!data) return null;
@@ -169,7 +189,6 @@ export const getActualUsedById = async (actualUsedId: string): Promise<ActualUse
   return data.find(item => item.actual_used_id === actualUsedId) || null;
 };
 
-// Get all unique class IDs from actual used data
 export const getUniqueClassIds = async (): Promise<string[]> => {
   const data = await getActualUsedData();
   if (!data) return [];
@@ -180,17 +199,16 @@ export const getUniqueClassIds = async (): Promise<string[]> => {
   return Array.from(classIds);
 };
 
-// Get the timestamp of when actual used data was last stored
 export const getActualUsedTimestamp = async (): Promise<number | null> => {
   try {
-    return await actualUsedStore.getItem<number>('timestamp');
+    const metadata = await actualUsedStore.getItem<StoredDataMetadata>('metadata');
+    return metadata?.timestamp || null;
   } catch (error) {
     console.error('Error retrieving actual used timestamp:', error);
     return null;
   }
 };
 
-// Get data size (useful for debugging)
 export const getActualUsedDataSize = async (): Promise<number> => {
   try {
     const data = await actualUsedStore.getItem('data');
@@ -201,7 +219,6 @@ export const getActualUsedDataSize = async (): Promise<number> => {
   }
 };
 
-// Get all actual used descriptions
 export const getAllActualUsedDescriptions = async (): Promise<string[]> => {
   const data = await getActualUsedData();
   if (!data) return [];
@@ -209,7 +226,6 @@ export const getAllActualUsedDescriptions = async (): Promise<string[]> => {
   return data.map(item => item.description).filter(Boolean);
 };
 
-// Search actual used data by description
 export const searchActualUsedByDescription = async (searchTerm: string): Promise<ActualUsedData[]> => {
   const data = await getActualUsedData();
   if (!data) return [];
@@ -220,11 +236,43 @@ export const searchActualUsedByDescription = async (searchTerm: string): Promise
   );
 };
 
-// Get actual used data by multiple class IDs
 export const getActualUsedByClassIds = async (classIds: string[]): Promise<ActualUsedData[]> => {
   const data = await getActualUsedData();
   if (!data) return [];
   
   const classIdSet = new Set(classIds);
   return data.filter(item => classIdSet.has(item.class_id));
+};
+
+export const forceMigration = async (): Promise<ActualUsedData[] | null> => {
+  try {
+    const data = await actualUsedStore.getItem<any[]>('data');
+    const metadata = await actualUsedStore.getItem<StoredDataMetadata>('metadata');
+    
+    if (!data) return null;
+    
+    const fromVersion = metadata?.version || 1;
+    const migratedData = migrateToCurrentVersion(data, fromVersion);
+    
+    await storeActualUsedData(migratedData);
+    return migratedData;
+    
+  } catch (error) {
+    console.error('Error forcing migration:', error);
+    return null;
+  }
+};
+
+export const getCurrentSchemaHash = (): string => {
+  return CURRENT_SCHEMA_HASH;
+};
+
+export const getStoredSchemaHash = async (): Promise<string | null> => {
+  try {
+    const metadata = await actualUsedStore.getItem<StoredDataMetadata>('metadata');
+    return metadata?.schemaHash || null;
+  } catch (error) {
+    console.error('Error retrieving schema hash:', error);
+    return null;
+  }
 };
