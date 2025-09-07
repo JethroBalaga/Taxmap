@@ -36,6 +36,8 @@ interface FormViewProps {
   setKind: (value: string) => void;
   classification: string;
   setClassification: (value: string) => void;
+  subclass: string; // New prop for subclass
+  setSubclass: (value: string) => void; // New prop for setting subclass
   area: number;
   setArea: (value: number) => void;
   onNextClick: () => void;
@@ -67,6 +69,8 @@ const FormView: React.FC<FormViewProps> = ({
   setKind,
   classification,
   setClassification,
+  subclass, // New prop
+  setSubclass, // New prop
   area,
   setArea,
   onNextClick,
@@ -218,6 +222,25 @@ const FormView: React.FC<FormViewProps> = ({
               </IonSelect>
             </IonItem>
 
+            {/* Subclass Dropdown (Empty for now) */}
+            <IonItem className="custom-input" lines="none">
+              <IonLabel position="stacked" className="input-label">
+                Subclass
+              </IonLabel>
+              <IonSelect
+                value={subclass}
+                placeholder="Select Subclass"
+                onIonChange={(e) => setSubclass(e.detail.value)}
+                interface="popover"
+                className="modal-input"
+                disabled={true} // Disabled since it's empty for now
+              >
+                <IonSelectOption value="">
+                  No subclasses available
+                </IonSelectOption>
+              </IonSelect>
+            </IonItem>
+
             <Area value={area} onChange={setArea} />
             
             <div className="next-btn-container">
@@ -282,7 +305,7 @@ const FormView: React.FC<FormViewProps> = ({
                 ))}
               </div>
             )}
-          </div>
+          </div> 
         </IonContent>
       </IonModal>
     </>
