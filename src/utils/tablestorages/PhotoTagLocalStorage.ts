@@ -1,14 +1,16 @@
 // src/utils/PhotoTagLocalStorage.ts
+import { Geolocator } from '../Geolocator';
+
 export interface PhotoTagData {
   id: string;
   photoPath: string;
   longitude: number;
   latitude: number;
   timestamp: Date;
-  formDataId?: string; // Reference to form data
-  buildingDataId?: string; // Reference to building data
-  accuracy?: number; // GPS accuracy in meters
-  altitude?: number; // Altitude in meters
+  accuracy?: number;
+  altitude?: number;
+  formDataId?: string;
+  buildingDataId?: string;
 }
 
 const PHOTO_TAGS_KEY = 'photoTags';
@@ -29,7 +31,6 @@ export const PhotoTagLocalStorage = {
       const storedData = localStorage.getItem(PHOTO_TAGS_KEY);
       if (storedData) {
         const parsedData = JSON.parse(storedData);
-        // Convert timestamp strings back to Date objects
         return parsedData.map((tag: any) => ({
           ...tag,
           timestamp: new Date(tag.timestamp)
@@ -43,11 +44,11 @@ export const PhotoTagLocalStorage = {
   },
 
   // Add a new photo tag
-  addPhotoTag: (photoTag: Omit<PhotoTagData, 'id'>): PhotoTagData => {
+  addPhotoTag: (photoTagData: Omit<PhotoTagData, 'id'>): PhotoTagData => {
     try {
       const photoTags = PhotoTagLocalStorage.getPhotoTags();
       const newPhotoTag: PhotoTagData = {
-        ...photoTag,
+        ...photoTagData,
         id: Date.now().toString() + Math.random().toString(36).substr(2, 9)
       };
       
@@ -57,6 +58,43 @@ export const PhotoTagLocalStorage = {
       return newPhotoTag;
     } catch (error) {
       console.error('Error adding photo tag:', error);
+      throw error;
+    }
+  },
+
+  // Add photo tag with current location
+  async addPhotoTagWithCurrentLocation(
+    photoPath: string, 
+    formDataId?: string, 
+    buildingDataId?: string
+  ): Promise<PhotoTagData> {
+    try {
+      let latitude = 0;
+      let longitude = 0;
+      let accuracy: number | undefined;
+
+      try {
+        // Try to get current location
+        await Geolocator.requestPermissions();
+        const position = await Geolocator.getCurrentPosition();
+        latitude = position.latitude;
+        longitude = position.longitude;
+        accuracy = position.accuracy;
+      } catch (locationError) {
+        console.warn('Could not get location, using default coordinates');
+      }
+
+      return PhotoTagLocalStorage.addPhotoTag({
+        photoPath,
+        longitude,
+        latitude,
+        accuracy,
+        timestamp: new Date(),
+        formDataId,
+        buildingDataId
+      });
+    } catch (error) {
+      console.error('Error adding photo tag with location:', error);
       throw error;
     }
   },
@@ -92,24 +130,10 @@ export const PhotoTagLocalStorage = {
     const photoTags = PhotoTagLocalStorage.getPhotoTags();
     
     return photoTags.filter(tag => {
-      const distance = PhotoTagLocalStorage.calculateDistance(
+      const distance = Geolocator.calculateDistance(
         latitude, longitude, tag.latitude, tag.longitude
       );
       return distance <= radiusMeters;
     });
-  },
-
-  // Calculate distance between two coordinates using Haversine formula
-  calculateDistance: (lat1: number, lon1: number, lat2: number, lon2: number): number => {
-    const R = 6371000; // Earth's radius in meters
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    
-    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) 
-              Math.sin(dLon/2) * Math.sin(dLon/2);
-    
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    return R * c;
   }
 };
