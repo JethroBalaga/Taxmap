@@ -14,6 +14,7 @@ export interface FormData {
   kind: string;
   classification: string;
   subclass: string;
+  actualUse: string; // Add actualUse to FormData
   area: number;
 }
 
@@ -30,12 +31,14 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
   const [kind, setKind] = useState('');
   const [classification, setClassification] = useState('');
   const [subclass, setSubclass] = useState('');
+  const [actualUse, setActualUse] = useState(''); // Add actualUse state
   const [area, setArea] = useState<number>(0);
   const [districts, setDistricts] = useState<DistrictData[]>([]);
   const [declarants, setDeclarants] = useState<DeclarantData[]>([]);
   const [kinds, setKinds] = useState<KindData[]>([]);
   const [classifications, setClassifications] = useState<ClassificationData[]>([]);
   const [subclasses, setSubclasses] = useState<SubclassData[]>([]);
+  const [actualUses, setActualUses] = useState<string[]>([]); // Add actualUses state
   const [filteredDeclarants, setFilteredDeclarants] = useState<DeclarantData[]>([]);
   const [searchText, setSearchText] = useState('');
   const [showDeclarantSearch, setShowDeclarantSearch] = useState(false);
@@ -46,6 +49,19 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
   const [isLoadingClassifications, setIsLoadingClassifications] = useState(true);
   const [isLoadingSubclasses, setIsLoadingSubclasses] = useState(false);
   const [showBuildingModal, setShowBuildingModal] = useState(false);
+
+  // Define actual use options
+  const actualUseOptions = [
+    'Residential',
+    'Commercial',
+    'Industrial',
+    'Agricultural',
+    'Institutional',
+    'Recreational',
+    'Mixed Use',
+    'Vacant',
+    'Other'
+  ];
 
   // Data loading effect
   useEffect(() => {
@@ -70,6 +86,9 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
         }
         if (kindData) setKinds(kindData);
         if (classificationData) setClassifications(classificationData);
+        
+        // Set actual uses
+        setActualUses(actualUseOptions);
       } catch (error) {
         console.error('Error loading data:', error);
       } finally {
@@ -134,14 +153,19 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
 
   // Check form validity
   useEffect(() => {
-    setIsFormValid(
-      district !== null &&
+    const isValid = district !== null &&
       declarantId !== null &&
       kind.trim() !== '' &&
       classification.trim() !== '' &&
-      area > 0
-    );
-  }, [district, declarantId, kind, classification, area]);
+      area > 0;
+    
+    // If it's a building kind, also require actual use to be selected
+    if (isBuildingKind()) {
+      setIsFormValid(isValid && actualUse.trim() !== '');
+    } else {
+      setIsFormValid(isValid);
+    }
+  }, [district, declarantId, kind, classification, area, actualUse]);
 
   // Helper function to check if selected kind is building
   const isBuildingKind = (): boolean => {
@@ -164,6 +188,7 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
     setKind('');
     setClassification('');
     setSubclass('');
+    setActualUse(''); // Reset actual use
     setArea(0);
     setSearchText('');
   };
@@ -181,7 +206,7 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
   };
 
   const handleBuildingModalSuccess = (buildingData: any) => {
-    console.log('Form data:', { district, declarantId, kind, classification, subclass, area });
+    console.log('Form data:', { district, declarantId, kind, classification, subclass, actualUse, area });
     console.log('Building data:', buildingData);
     setShowBuildingModal(false);
     onSuccess();
@@ -209,6 +234,7 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
     kind,
     classification,
     subclass,
+    actualUse, // Include actualUse in formData
     area
   };
 
@@ -228,6 +254,8 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
         setClassification={setClassification}
         subclass={subclass}
         setSubclass={setSubclass}
+        actualUse={actualUse} // Pass actualUse prop
+        setActualUse={setActualUse} // Pass setActualUse prop
         area={area}
         setArea={setArea}
         onNextClick={handleNextClick}
@@ -236,6 +264,7 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
         kinds={kinds}
         classifications={classifications}
         subclasses={subclasses}
+        actualUses={actualUses} // Pass actualUses prop
         isLoadingDistricts={isLoadingDistricts}
         isLoadingKinds={isLoadingKinds}
         isLoadingClassifications={isLoadingClassifications}

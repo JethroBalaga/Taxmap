@@ -39,6 +39,8 @@ interface FormViewProps {
   setClassification: (value: string) => void;
   subclass: string;
   setSubclass: (value: string) => void;
+  actualUse: string; // New prop for actual use
+  setActualUse: (value: string) => void; // New prop setter for actual use
   area: number;
   setArea: (value: number) => void;
   onNextClick: () => void;
@@ -47,6 +49,7 @@ interface FormViewProps {
   kinds: KindData[];
   classifications: ClassificationData[];
   subclasses: SubclassData[];
+  actualUses: string[]; // New prop for actual use options
   isLoadingDistricts: boolean;
   isLoadingKinds: boolean;
   isLoadingClassifications: boolean;
@@ -75,6 +78,8 @@ const FormView: React.FC<FormViewProps> = ({
   setClassification,
   subclass,
   setSubclass,
+  actualUse, // New prop
+  setActualUse, // New prop
   area,
   setArea,
   onNextClick,
@@ -83,6 +88,7 @@ const FormView: React.FC<FormViewProps> = ({
   kinds,
   classifications,
   subclasses,
+  actualUses, // New prop
   isLoadingDistricts,
   isLoadingKinds,
   isLoadingClassifications,
@@ -277,6 +283,37 @@ const FormView: React.FC<FormViewProps> = ({
                 )}
               </IonSelect>
             </IonItem>
+
+            {/* Actual Use Dropdown - Only shown for building kind */}
+            {isBuildingKind && (
+              <IonItem className="custom-input" lines="none">
+                <IonLabel position="stacked" className="input-label">
+                  Actual Use <span style={{ color: 'red' }}>*</span>
+                </IonLabel>
+                <IonSelect
+                  value={actualUse}
+                  placeholder="Select Actual Use"
+                  onIonChange={(e) => setActualUse(e.detail.value)}
+                  interface="popover"
+                  className="modal-input"
+                >
+                  {actualUses.length === 0 ? (
+                    <IonSelectOption value="" disabled>
+                      No actual uses available
+                    </IonSelectOption>
+                  ) : (
+                    actualUses.map((use, index) => (
+                      <IonSelectOption
+                        key={index}
+                        value={use}
+                      >
+                        {use}
+                      </IonSelectOption>
+                    ))
+                  )}
+                </IonSelect>
+              </IonItem>
+            )}
 
             <Area value={area} onChange={setArea} />
             
