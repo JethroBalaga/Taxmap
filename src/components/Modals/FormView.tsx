@@ -58,6 +58,7 @@ interface FormViewProps {
   filteredDeclarants: DeclarantData[];
   onSelectDeclarant: (id: number) => void;
   isLoadingDeclarants: boolean;
+  isBuildingKind: boolean; // New prop to indicate if selected kind is building
 }
 
 const FormView: React.FC<FormViewProps> = ({
@@ -92,7 +93,8 @@ const FormView: React.FC<FormViewProps> = ({
   setSearchText,
   filteredDeclarants,
   onSelectDeclarant,
-  isLoadingDeclarants
+  isLoadingDeclarants,
+  isBuildingKind // New prop
 }) => {
   return (
     <>
@@ -227,20 +229,35 @@ const FormView: React.FC<FormViewProps> = ({
               </IonSelect>
             </IonItem>
 
-            {/* Subclass Dropdown */}
+            {/* Subclass Dropdown - Disabled for building kind */}
             <IonItem className="custom-input" lines="none">
               <IonLabel position="stacked" className="input-label">
                 Subclass
+                {isBuildingKind && (
+                  <span style={{ fontStyle: 'italic', color: '#666', fontSize: '12px', marginLeft: '5px' }}>
+                    (Disabled for building kind)
+                  </span>
+                )}
               </IonLabel>
               <IonSelect
                 value={subclass}
-                placeholder={isLoadingSubclasses ? "Loading subclasses..." : "Select Subclass"}
+                placeholder={
+                  isBuildingKind 
+                    ? "Not available for building kind" 
+                    : isLoadingSubclasses 
+                      ? "Loading subclasses..." 
+                      : "Select Subclass"
+                }
                 onIonChange={(e) => setSubclass(e.detail.value)}
                 interface="popover"
                 className="modal-input"
-                disabled={isLoadingSubclasses || !classification}
+                disabled={isBuildingKind || isLoadingSubclasses || !classification}
               >
-                {isLoadingSubclasses ? (
+                {isBuildingKind ? (
+                  <IonSelectOption value="" disabled>
+                    Subclass not available for building kind
+                  </IonSelectOption>
+                ) : isLoadingSubclasses ? (
                   <IonSelectOption value="" disabled>
                     Loading subclasses...
                   </IonSelectOption>
