@@ -1,6 +1,7 @@
 // src/components/Modals/PhotoModal.tsx
 import React, { useState } from 'react';
 import { Camera, CameraResultType, CameraSource, CameraDirection } from '@capacitor/camera';
+import { Geolocation } from '@capacitor/geolocation';
 import { 
   IonButton, 
   IonImg, 
@@ -22,7 +23,6 @@ import SubmitButton from '../../components/GlobalComponent/SubmitButton';
 import { FormDataLocalStorage } from '../../utils/tablestorages/FormDataLocalStorage';
 import { BuildingDataLocalStorage } from '../../utils/tablestorages/BuildingDataLocalStorage';
 import { PhotoTagLocalStorage } from '../../utils/tablestorages/PhotoTagLocalStorage';
-import { Geolocator } from '../../utils/Geolocator';
 import '../../CSS/modal.css';
 
 interface PhotoModalProps {
@@ -76,21 +76,22 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
       setIsGettingLocation(true);
       setError(null);
       
-      // Request permissions
-      await Geolocator.requestPermissions();
+      // Use the proven pattern from your working GeoTag code
+      const position = await Geolocation.getCurrentPosition();
       
-      // Get current position
-      const position = await Geolocator.getCurrentPosition();
-      
+      if (!position?.coords) {
+        throw new Error('Unable to get GPS coordinates');
+      }
+
       setCurrentLocation({
-        latitude: position.latitude,
-        longitude: position.longitude,
-        accuracy: position.accuracy
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+        accuracy: position.coords.accuracy
       });
       
     } catch (err: any) {
-      setError('Location access: ' + err.message);
-      console.warn('Location not available, photo will be saved without coordinates');
+      console.warn('Location not available:', err);
+      setError('Could not get location. Photo will be saved without coordinates.');
     } finally {
       setIsGettingLocation(false);
     }
@@ -112,7 +113,6 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
   };
 
   const getFileSize = (dataURL: string): number => {
-    // Approximate calculation: base64 string length * 3/4 - padding
     const base64 = dataURL.split(',')[1];
     const padding = base64.endsWith('==') ? 2 : base64.endsWith('=') ? 1 : 0;
     return (base64.length * 3) / 4 - padding;
@@ -260,7 +260,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                           <IonIcon icon={location} color="success" style={{ fontSize: '14px' }} />
                           <span>{formatCoordinates(currentLocation.latitude, currentLocation.longitude)}</span>
                           <IonText color="medium" style={{ fontSize: '12px' }}>
-                            (±{currentLocation.accuracy.toFixed(1)}m)
+                            (±{currentLocation.accuracy?.toFixed(1)}m)
                           </IonText>
                         </div>
                       ) : (

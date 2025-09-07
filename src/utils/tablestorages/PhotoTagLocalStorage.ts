@@ -1,5 +1,5 @@
 // src/utils/PhotoTagLocalStorage.ts
-import { Geolocator } from '../Geolocator';
+import { Geolocation } from '@capacitor/geolocation';
 
 export interface PhotoTagData {
   id: string;
@@ -14,6 +14,20 @@ export interface PhotoTagData {
 }
 
 const PHOTO_TAGS_KEY = 'photoTags';
+
+// Simple distance calculation (Haversine formula)
+const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+  const R = 6371000; // Earth's radius in meters
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+
+  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLon/2) * Math.sin(dLon/2);
+
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+};
 
 export const PhotoTagLocalStorage = {
   // Save all photo tags
@@ -62,7 +76,7 @@ export const PhotoTagLocalStorage = {
     }
   },
 
-  // Add photo tag with current location
+  // Add photo tag with current location - FIXED VERSION
   async addPhotoTagWithCurrentLocation(
     photoPath: string, 
     formDataId?: string, 
@@ -74,14 +88,16 @@ export const PhotoTagLocalStorage = {
       let accuracy: number | undefined;
 
       try {
-        // Try to get current location
-        await Geolocator.requestPermissions();
-        const position = await Geolocator.getCurrentPosition();
-        latitude = position.latitude;
-        longitude = position.longitude;
-        accuracy = position.accuracy;
+        // Use the working pattern from GeoTag service
+        const position = await Geolocation.getCurrentPosition();
+        
+        if (position?.coords) {
+          latitude = position.coords.latitude;
+          longitude = position.coords.longitude;
+          accuracy = position.coords.accuracy;
+        }
       } catch (locationError) {
-        console.warn('Could not get location, using default coordinates');
+        console.warn('Could not get location, using default coordinates:', locationError);
       }
 
       return PhotoTagLocalStorage.addPhotoTag({
@@ -130,7 +146,7 @@ export const PhotoTagLocalStorage = {
     const photoTags = PhotoTagLocalStorage.getPhotoTags();
     
     return photoTags.filter(tag => {
-      const distance = Geolocator.calculateDistance(
+      const distance = calculateDistance(
         latitude, longitude, tag.latitude, tag.longitude
       );
       return distance <= radiusMeters;
