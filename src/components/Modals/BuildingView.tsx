@@ -2,10 +2,10 @@
 import React, { useState, useEffect } from 'react';
 import { BuildingData } from './BuildingModal';
 import { FormData } from './Form';
-import { StructureTypeData, getStructureTypesByKindId } from '../../utils/structureTypeLocalStorage';
+import { StructureTypeData, getStructureTypeData } from '../../utils/structureTypeLocalStorage';
 import { BuildingCodeData, getBuildingCodesByStructureCode } from '../../utils/buildingCodeLocalStorage';
 import BuildingViewUI from './BuildingViewUI';
-import BuildingInfoModal from './BuildingInfoModal'; // Import the new modal
+import BuildingInfoModal from './BuildingInfoModal';
 
 interface BuildingViewProps {
   onSuccess: (data: BuildingData) => void;
@@ -40,21 +40,16 @@ const BuildingView: React.FC<BuildingViewProps> = ({
   const [isLoadingStructureTypes, setIsLoadingStructureTypes] = useState(false);
   const [isLoadingBuildingCodes, setIsLoadingBuildingCodes] = useState(false);
   const [selectedBuildingCode, setSelectedBuildingCode] = useState<BuildingCodeData | null>(null);
-  const [isInfoModalOpen, setIsInfoModalOpen] = useState(false); // State for the info modal
+  const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
 
-  // Fetch structure types based on kind_id from formData
+  // Fetch all structure types (no longer filtering by kind_id)
   useEffect(() => {
     const fetchStructureTypes = async () => {
-      if (!formData.kind) return;
-
       setIsLoadingStructureTypes(true);
       try {
-        const kindId = parseInt(formData.kind);
-        if (!isNaN(kindId)) {
-          const structureTypesData = await getStructureTypesByKindId(kindId);
-          setStructureTypes(structureTypesData);
-          console.log('Fetched structure types for kind_id:', kindId, structureTypesData);
-        }
+        const structureTypesData = await getStructureTypeData();
+        setStructureTypes(structureTypesData || []);
+        console.log('Fetched all structure types:', structureTypesData);
       } catch (error) {
         console.error('Error fetching structure types:', error);
         setStructureTypes([]);
@@ -64,7 +59,7 @@ const BuildingView: React.FC<BuildingViewProps> = ({
     };
 
     fetchStructureTypes();
-  }, [formData.kind]);
+  }, []); // Empty dependency array to fetch only once
 
   // Fetch building codes when structure type changes
   useEffect(() => {
@@ -236,7 +231,7 @@ const BuildingView: React.FC<BuildingViewProps> = ({
         isOpen={isInfoModalOpen}
         onClose={() => setIsInfoModalOpen(false)}
         buildingData={buildingData}
-        formData={formData} // Add this line to pass formData
+        formData={formData}
         onSave={handleSaveBuildingInfo}
       />
     </>
