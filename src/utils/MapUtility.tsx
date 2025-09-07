@@ -78,6 +78,28 @@ import {
   getDeclarantDataSize,
   getCurrentDeclarantVersion
 } from './DeclarantLocalStorage';
+// ADD BUILDING COMPONENT IMPORTS
+import { 
+  getBuildingComponentData, 
+  isBuildingComponentDataFresh,
+  clearBuildingComponentData,
+  getStoredBuildingComponentVersion,
+  getBuildingComponentTimestamp,
+  hasBuildingComponentData,
+  getBuildingComponentDataSize,
+  getCurrentBuildingComponentVersion
+} from './buildingComponentLocalStorage';
+// ADD BUILDING SUBCOMPONENT IMPORTS
+import { 
+  getBuildingSubcomponentData, 
+  isBuildingSubcomponentDataFresh,
+  clearBuildingSubcomponentData,
+  getStoredBuildingSubcomponentVersion,
+  getBuildingSubcomponentTimestamp,
+  hasBuildingSubcomponentData,
+  getBuildingSubcomponentDataSize,
+  getCurrentBuildingSubcomponentVersion
+} from './BuildingSubcomponentLocalStorage';
 
 import { ClassificationFetcher } from './dataFetchers/ClassificationFetcher';
 import { SubclassFetcher } from './dataFetchers/SubclassFetcher';
@@ -92,6 +114,10 @@ import { StructureTypeFetcher } from './dataFetchers/StructureTypeFetcher';
 import { BuildingCodeFetcher } from './dataFetchers/BuildingCodeFetcher';
 // ADD DECLARANT FETCHER IMPORT
 import { DeclarantFetcher } from './dataFetchers/DeclarantFetcher';
+// ADD BUILDING COMPONENT FETCHER IMPORT
+import { BuildingComponentFetcher } from './dataFetchers/BuildingComponentFetcher';
+// ADD BUILDING SUBCOMPONENT FETCHER IMPORT
+import { BuildingSubcomponentFetcher } from './dataFetchers/BuildingSubcomponentFetcher';
 
 export interface FetchDataResult {
   success: boolean;
@@ -100,7 +126,7 @@ export interface FetchDataResult {
 }
 
 export class MapDataManager {
-  // Check if all data is fresh (including declarant data)
+  // Check if all data is fresh (including building component and subcomponent data)
   static async checkAllDataFreshness(): Promise<boolean> {
     try {
       const [
@@ -115,7 +141,9 @@ export class MapDataManager {
         isAssessmentLevelFresh,
         isStructureTypeFresh,
         isBuildingCodeFresh,
-        isDeclarantFresh // ADD DECLARANT FRESHNESS CHECK
+        isDeclarantFresh,
+        isBuildingComponentFresh, // ADD BUILDING COMPONENT FRESHNESS CHECK
+        isBuildingSubcomponentFresh // ADD BUILDING SUBCOMPONENT FRESHNESS CHECK
       ] = await Promise.all([
         isClassificationDataFresh(),
         isSubclassDataFresh(),
@@ -128,20 +156,23 @@ export class MapDataManager {
         isAssessmentLevelDataFresh(),
         isStructureTypeDataFresh(),
         isBuildingCodeDataFresh(),
-        isDeclarantDataFresh() // ADD DECLARANT FRESHNESS CHECK
+        isDeclarantDataFresh(),
+        isBuildingComponentDataFresh(), // ADD BUILDING COMPONENT FRESHNESS CHECK
+        isBuildingSubcomponentDataFresh() // ADD BUILDING SUBCOMPONENT FRESHNESS CHECK
       ]);
 
       return isClassFresh && isSubclassFresh && isRateFresh &&
              isActualUsedFresh && isDistrictFresh && isBarangayFresh &&
              isTaxRateFresh && isKindFresh && isAssessmentLevelFresh &&
-             isStructureTypeFresh && isBuildingCodeFresh && isDeclarantFresh; // ADD DECLARANT TO RETURN
+             isStructureTypeFresh && isBuildingCodeFresh && isDeclarantFresh &&
+             isBuildingComponentFresh && isBuildingSubcomponentFresh; // ADD BUILDING COMPONENT AND SUBCOMPONENT TO RETURN
     } catch (error) {
       console.error('Error checking data freshness:', error);
       return false;
     }
   }
 
-  // Fetch all data that needs updating (including declarant data)
+  // Fetch all data that needs updating (including building component and subcomponent data)
   static async fetchAllRequiredData(): Promise<{
     results: FetchDataResult[];
     hasErrors: boolean;
@@ -162,7 +193,9 @@ export class MapDataManager {
       existingAssessmentLevelData, isAssessmentLevelFresh,
       existingStructureTypeData, isStructureTypeFresh,
       existingBuildingCodeData, isBuildingCodeFresh,
-      existingDeclarantData, isDeclarantFresh // ADD DECLARANT DATA CHECKS
+      existingDeclarantData, isDeclarantFresh,
+      existingBuildingComponentData, isBuildingComponentFresh, // ADD BUILDING COMPONENT DATA CHECKS
+      existingBuildingSubcomponentData, isBuildingSubcomponentFresh // ADD BUILDING SUBCOMPONENT DATA CHECKS
     ] = await Promise.all([
       getClassificationData(), isClassificationDataFresh(),
       getSubclassData(), isSubclassDataFresh(),
@@ -175,7 +208,9 @@ export class MapDataManager {
       getAssessmentLevelData(), isAssessmentLevelDataFresh(),
       getStructureTypeData(), isStructureTypeDataFresh(),
       getBuildingCodeData(), isBuildingCodeDataFresh(),
-      getDeclarantData(), isDeclarantDataFresh() // ADD DECLARANT DATA CHECKS
+      getDeclarantData(), isDeclarantDataFresh(),
+      getBuildingComponentData(), isBuildingComponentDataFresh(), // ADD BUILDING COMPONENT DATA CHECKS
+      getBuildingSubcomponentData(), isBuildingSubcomponentDataFresh() // ADD BUILDING SUBCOMPONENT DATA CHECKS
     ]);
 
     // Fetch data that is not fresh or doesn't exist
@@ -252,10 +287,24 @@ export class MapDataManager {
       if (!result.success) hasErrors = true;
     }
 
+    // ADD BUILDING COMPONENT FETCHING
+    if (!existingBuildingComponentData || !isBuildingComponentFresh) {
+      const result = await BuildingComponentFetcher.fetchData();
+      results.push(result);
+      if (!result.success) hasErrors = true;
+    }
+
+    // ADD BUILDING SUBCOMPONENT FETCHING
+    if (!existingBuildingSubcomponentData || !isBuildingSubcomponentFresh) {
+      const result = await BuildingSubcomponentFetcher.fetchData();
+      results.push(result);
+      if (!result.success) hasErrors = true;
+    }
+
     return { results, hasErrors };
   }
 
-  // Clear all data (including declarant data)
+  // Clear all data (including building component and subcomponent data)
   static async clearAllData(): Promise<FetchDataResult[]> {
     const results: FetchDataResult[] = [];
     
@@ -266,7 +315,9 @@ export class MapDataManager {
         clearAssessmentLevelData(),
         clearStructureTypeData(),
         clearBuildingCodeData(),
-        clearDeclarantData() // ADD DECLARANT CLEAR
+        clearDeclarantData(),
+        clearBuildingComponentData(), // ADD BUILDING COMPONENT CLEAR
+        clearBuildingSubcomponentData() // ADD BUILDING SUBCOMPONENT CLEAR
         // Add clear functions for other data stores here
       ]);
       
@@ -450,6 +501,72 @@ export class MapDataManager {
     };
   }
 
+  // Get building component data statistics
+  static async getBuildingComponentDataStats(): Promise<{
+    exists: boolean;
+    isFresh: boolean;
+    timestamp: number | null;
+    version: number | null;
+    size: number;
+    currentVersion: number;
+  }> {
+    const [
+      exists,
+      isFresh,
+      timestamp,
+      storedVersion,
+      size
+    ] = await Promise.all([
+      hasBuildingComponentData(),
+      isBuildingComponentDataFresh(),
+      getBuildingComponentTimestamp(),
+      getStoredBuildingComponentVersion(),
+      getBuildingComponentDataSize()
+    ]);
+
+    return {
+      exists,
+      isFresh,
+      timestamp,
+      version: storedVersion,
+      size,
+      currentVersion: getCurrentBuildingComponentVersion()
+    };
+  }
+
+  // Get building subcomponent data statistics
+  static async getBuildingSubcomponentDataStats(): Promise<{
+    exists: boolean;
+    isFresh: boolean;
+    timestamp: number | null;
+    version: number | null;
+    size: number;
+    currentVersion: number;
+  }> {
+    const [
+      exists,
+      isFresh,
+      timestamp,
+      storedVersion,
+      size
+    ] = await Promise.all([
+      hasBuildingSubcomponentData(),
+      isBuildingSubcomponentDataFresh(),
+      getBuildingSubcomponentTimestamp(),
+      getStoredBuildingSubcomponentVersion(),
+      getBuildingSubcomponentDataSize()
+    ]);
+
+    return {
+      exists,
+      isFresh,
+      timestamp,
+      version: storedVersion,
+      size,
+      currentVersion: getCurrentBuildingSubcomponentVersion()
+    };
+  }
+
   // Get all data statistics
   static async getAllDataStats(): Promise<{
     declarant: Awaited<ReturnType<typeof MapDataManager.getDeclarantDataStats>>;
@@ -457,6 +574,8 @@ export class MapDataManager {
     assessmentLevel: Awaited<ReturnType<typeof MapDataManager.getAssessmentLevelDataStats>>;
     structureType: Awaited<ReturnType<typeof MapDataManager.getStructureTypeDataStats>>;
     buildingCode: Awaited<ReturnType<typeof MapDataManager.getBuildingCodeDataStats>>;
+    buildingComponent: Awaited<ReturnType<typeof MapDataManager.getBuildingComponentDataStats>>;
+    buildingSubcomponent: Awaited<ReturnType<typeof MapDataManager.getBuildingSubcomponentDataStats>>;
     // Add other data types here
   }> {
     const [
@@ -464,22 +583,28 @@ export class MapDataManager {
       kindStats,
       assessmentLevelStats,
       structureTypeStats,
-      buildingCodeStats
+      buildingCodeStats,
+      buildingComponentStats,
+      buildingSubcomponentStats
     ] = await Promise.all([
-      this.getDeclarantDataStats(), // ADD DECLARANT STATS
+      this.getDeclarantDataStats(),
       this.getKindDataStats(),
       this.getAssessmentLevelDataStats(),
       this.getStructureTypeDataStats(),
-      this.getBuildingCodeDataStats()
+      this.getBuildingCodeDataStats(),
+      this.getBuildingComponentDataStats(), // ADD BUILDING COMPONENT STATS
+      this.getBuildingSubcomponentDataStats() // ADD BUILDING SUBCOMPONENT STATS
       // Add other data type stats here
     ]);
 
     return {
-      declarant: declarantStats, // ADD DECLARANT TO RETURN
+      declarant: declarantStats,
       kind: kindStats,
       assessmentLevel: assessmentLevelStats,
       structureType: structureTypeStats,
-      buildingCode: buildingCodeStats
+      buildingCode: buildingCodeStats,
+      buildingComponent: buildingComponentStats, // ADD BUILDING COMPONENT TO RETURN
+      buildingSubcomponent: buildingSubcomponentStats // ADD BUILDING SUBCOMPONENT TO RETURN
     };
   }
 }
