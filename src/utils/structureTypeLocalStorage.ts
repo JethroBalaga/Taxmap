@@ -4,11 +4,8 @@ import localForage from 'localforage';
 // Interface for structure type data
 export interface StructureTypeData {
   structure_code: string;
-  kind_id: number;
   description: string;
   eff_date: string;
-  // Add any new columns here when you add them to the database
-  // example: new_column?: string;
 }
 
 // Configure localForage instance for structure type data
@@ -29,7 +26,6 @@ interface StoredDataMetadata {
 const generateSchemaHash = (): string => {
   const schema = {
     structure_code: 'string',
-    kind_id: 'number',
     description: 'string',
     eff_date: 'string'
   };
@@ -45,10 +41,6 @@ const migrateToCurrentVersion = (data: any[], fromVersion: number): StructureTyp
     if (typeof item.structure_code === 'string') {
       migratedItem.structure_code = item.structure_code;
     }
-    
-    if (typeof item.kind_id === 'number') {
-      migratedItem.kind_id = item.kind_id;
-    }
 
     if (typeof item.description === 'string') {
       migratedItem.description = item.description;
@@ -58,8 +50,8 @@ const migrateToCurrentVersion = (data: any[], fromVersion: number): StructureTyp
       migratedItem.eff_date = item.eff_date;
     }
 
-    // Remove any unknown properties
-    const validProperties = new Set(['structure_code', 'kind_id', 'description', 'eff_date']);
+    // Remove any unknown properties including kind_id
+    const validProperties = new Set(['structure_code', 'description', 'eff_date']);
     Object.keys(migratedItem).forEach(key => {
       if (!validProperties.has(key)) {
         delete migratedItem[key as keyof StructureTypeData];
@@ -78,7 +70,6 @@ const validateData = (data: any[]): data is StructureTypeData[] => {
       typeof item === 'object' &&
       item !== null &&
       typeof item.structure_code === 'string' &&
-      typeof item.kind_id === 'number' &&
       typeof item.description === 'string' &&
       typeof item.eff_date === 'string'
     );
@@ -222,14 +213,6 @@ export const getStructureTypeDataSize = async (): Promise<number> => {
   }
 };
 
-// Filter structure type data by kind_id
-export const getStructureTypesByKindId = async (kindId: number): Promise<StructureTypeData[]> => {
-  const data = await getStructureTypeData();
-  if (!data) return [];
-  
-  return data.filter(item => item.kind_id === kindId);
-};
-
 // Get structure type by structure_code
 export const getStructureTypeByCode = async (structureCode: string): Promise<StructureTypeData | null> => {
   const data = await getStructureTypeData();
@@ -240,7 +223,6 @@ export const getStructureTypeByCode = async (structureCode: string): Promise<Str
 
 // Search structure types with multiple criteria
 export const searchStructureTypes = async (options: {
-  kindId?: number;
   description?: string;
   limit?: number;
 }): Promise<StructureTypeData[]> => {
@@ -248,10 +230,6 @@ export const searchStructureTypes = async (options: {
   if (!data) return [];
   
   let results = data;
-  
-  if (options.kindId !== undefined) {
-    results = results.filter(item => item.kind_id === options.kindId);
-  }
   
   if (options.description) {
     const searchTerm = options.description.toLowerCase();
@@ -265,17 +243,6 @@ export const searchStructureTypes = async (options: {
   }
   
   return results;
-};
-
-// Get all unique kind IDs from structure type data
-export const getUniqueStructureTypeKindIds = async (): Promise<number[]> => {
-  const data = await getStructureTypeData();
-  if (!data) return [];
-  
-  const kindIds = new Set<number>();
-  data.forEach(item => kindIds.add(item.kind_id));
-  
-  return Array.from(kindIds).sort((a, b) => a - b);
 };
 
 // Get structure type count
@@ -320,15 +287,6 @@ export const getStoredStructureTypeSchemaHash = async (): Promise<string | null>
   }
 };
 
-// Get structure types by multiple kind IDs
-export const getStructureTypesByKindIds = async (kindIds: number[]): Promise<StructureTypeData[]> => {
-  const data = await getStructureTypeData();
-  if (!data) return [];
-  
-  const kindIdSet = new Set(kindIds);
-  return data.filter(item => kindIdSet.has(item.kind_id));
-};
-
 // Get structure types with description containing search term
 export const searchStructureTypesByDescription = async (searchTerm: string): Promise<StructureTypeData[]> => {
   const data = await getStructureTypeData();
@@ -348,16 +306,6 @@ export const getStructureTypesSortedByDescription = async (ascending: boolean = 
   return data.sort((a, b) => {
     const comparison = a.description.localeCompare(b.description);
     return ascending ? comparison : -comparison;
-  });
-};
-
-// Get structure types sorted by kind_id
-export const getStructureTypesSortedByKindId = async (ascending: boolean = true): Promise<StructureTypeData[]> => {
-  const data = await getStructureTypeData();
-  if (!data) return [];
-  
-  return data.sort((a, b) => {
-    return ascending ? a.kind_id - b.kind_id : b.kind_id - a.kind_id;
   });
 };
 
