@@ -11,12 +11,18 @@ import {
   IonToolbar, 
   IonTitle, 
   IonButtons, 
-  IonIcon
+  IonIcon,
+  IonSpinner,
+  IonText
 } from '@ionic/react';
-import { close, camera, informationCircle } from 'ionicons/icons';
+import { close, camera, informationCircle, location, locationOutline } from 'ionicons/icons';
 import { FormData } from './Form';
 import { BuildingData } from './BuildingModal';
-import SubmitButton from '../../components/GlobalComponent/SubmitButton'; // Import the styled button
+import SubmitButton from '../../components/GlobalComponent/SubmitButton';
+import { FormDataLocalStorage } from '../../utils/tablestorages/FormDataLocalStorage';
+import { BuildingDataLocalStorage } from '../../utils/tablestorages/BuildingDataLocalStorage';
+import { PhotoTagLocalStorage } from '../../utils/tablestorages/PhotoTagLocalStorage';
+import { Geolocator } from '../../utils/Geolocator';
 import '../../CSS/modal.css';
 
 interface PhotoModalProps {
@@ -39,6 +45,8 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
   const [photo, setPhoto] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
+  const [currentLocation, setCurrentLocation] = useState<{latitude: number; longitude: number; accuracy: number} | null>(null);
 
   const takePhoto = async () => {
     try {
@@ -53,6 +61,8 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
       if (image.dataUrl) {
         setPhoto(image.dataUrl);
         setError(null);
+        // Get location when photo is taken
+        await getCurrentLocation();
       } else {
         setError('No photo was taken.');
       }
@@ -61,11 +71,51 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
     }
   };
 
+  const getCurrentLocation = async () => {
+    try {
+      setIsGettingLocation(true);
+      setError(null);
+      
+      // Request permissions
+      await Geolocator.requestPermissions();
+      
+      // Get current position
+      const position = await Geolocator.getCurrentPosition();
+      
+      setCurrentLocation({
+        latitude: position.latitude,
+        longitude: position.longitude,
+        accuracy: position.accuracy
+      });
+      
+    } catch (err: any) {
+      setError('Location access: ' + err.message);
+      console.warn('Location not available, photo will be saved without coordinates');
+    } finally {
+      setIsGettingLocation(false);
+    }
+  };
+
   const handleClose = () => {
     setPhoto(null);
     setError(null);
     setIsSubmitting(false);
+    setIsGettingLocation(false);
+    setCurrentLocation(null);
     onClose();
+  };
+
+  const generateFileName = (): string => {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const random = Math.random().toString(36).substr(2, 6);
+    return `building_${timestamp}_${random}.jpg`;
+  };
+
+  const getFileSize = (dataURL: string): number => {
+    // Approximate calculation: base64 string length * 3/4 - padding
+    const base64 = dataURL.split(',')[1];
+    const padding = base64.endsWith('==') ? 2 : base64.endsWith('=') ? 1 : 0;
+    return (base64.length * 3) / 4 - padding;
   };
 
   const handleSubmit = async () => {
@@ -78,6 +128,37 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
     setError(null);
 
     try {
+      // Generate unique filename and photo path
+      const fileName = generateFileName();
+      const photoPath = `../phototags/${fileName}`;
+      
+      // Store form data if provided
+      if (formData) {
+        FormDataLocalStorage.saveFormData(formData);
+        console.log('Form data saved to localStorage');
+      }
+      
+      // Store building data if provided
+      if (buildingData) {
+        BuildingDataLocalStorage.saveBuildingData(buildingData);
+        console.log('Building data saved to localStorage');
+      }
+
+      // Store photo tag with location data
+      const photoTagData = {
+        photoPath,
+        longitude: currentLocation?.longitude || 0,
+        latitude: currentLocation?.latitude || 0,
+        accuracy: currentLocation?.accuracy,
+        timestamp: new Date(),
+        formDataId: formData ? 'current-form-data' : undefined,
+        buildingDataId: buildingData ? 'current-building-data' : undefined
+      };
+
+      const photoTag = PhotoTagLocalStorage.addPhotoTag(photoTagData);
+      console.log('Photo tag saved:', photoTag);
+
+      // Call the provided onSubmit callback if available
       if (onSubmit && formData && buildingData) {
         await onSubmit(photo, formData, buildingData);
       } else {
@@ -88,6 +169,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
       
     } catch (err) {
       setError('Submission failed: ' + (err as Error).message);
+      console.error('Submission error:', err);
     } finally {
       setIsSubmitting(false);
     }
@@ -96,6 +178,11 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
   const retakePhoto = () => {
     setPhoto(null);
     setError(null);
+    setCurrentLocation(null);
+  };
+
+  const formatCoordinates = (lat: number, lng: number): string => {
+    return `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
   };
 
   return (
@@ -162,13 +249,41 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                     <span className="info-label">Status:</span>
                     <span className="info-value">Captured</span>
                   </div>
+                  
+                  <div className="info-item">
+                    <span className="info-label">Location:</span>
+                    <div className="info-value">
+                      {isGettingLocation ? (
+                        <IonSpinner name="dots" style={{ width: '16px', height: '16px' }} />
+                      ) : currentLocation ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <IonIcon icon={location} color="success" style={{ fontSize: '14px' }} />
+                          <span>{formatCoordinates(currentLocation.latitude, currentLocation.longitude)}</span>
+                          <IonText color="medium" style={{ fontSize: '12px' }}>
+                            (±{currentLocation.accuracy.toFixed(1)}m)
+                          </IonText>
+                        </div>
+                      ) : (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <IonIcon icon={locationOutline} color="warning" style={{ fontSize: '14px' }} />
+                          <span>No location data</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
                   <div className="info-item">
                     <span className="info-label">Size:</span>
-                    <span className="info-value">Approx. 2.5 MB</span>
+                    <span className="info-value">
+                      {photo ? `${(getFileSize(photo) / 1024 / 1024).toFixed(2)} MB` : 'N/A'}
+                    </span>
                   </div>
+                  
                   <div className="info-item">
-                    <span className="info-label">Resolution:</span>
-                    <span className="info-value">1920×1080</span>
+                    <span className="info-label">File Path:</span>
+                    <span className="info-value" style={{ fontSize: '12px' }}>
+                      ../phototags/{generateFileName()}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -177,10 +292,24 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                 <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
                   <SubmitButton
                     onClick={handleSubmit}
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || isGettingLocation}
                     loading={isSubmitting}
                   />
                 </div>
+                
+                {!currentLocation && !isGettingLocation && (
+                  <div style={{ textAlign: 'center', marginBottom: '16px' }}>
+                    <IonButton 
+                      onClick={getCurrentLocation}
+                      size="small"
+                      fill="outline"
+                      color="medium"
+                    >
+                      <IonIcon icon={locationOutline} slot="start" />
+                      Get Location
+                    </IonButton>
+                  </div>
+                )}
                 
                 <div className="retake-link">
                   <button onClick={retakePhoto} disabled={isSubmitting}>
