@@ -12,31 +12,20 @@ import {
   IonTitle, 
   IonButtons, 
   IonIcon,
-  IonSpinner,
-  IonItem,
-  IonLabel
+  IonSpinner
 } from '@ionic/react';
 import { close, camera, informationCircle } from 'ionicons/icons';
 import { FormData } from './Form';
 import { BuildingData } from './BuildingModal';
 import '../../CSS/modal.css';
 
-// Define interface for building info data
-interface BuildingInfoData {
-    adjustment: string;
-    actualUse: string;
-    assessmentLevel: string;
-}
-
-// Update the interface to include the new props
 interface PhotoModalProps {
   isOpen: boolean;
   onClose: () => void;
   onPhotoTaken: (photo: string) => void;
   formData?: FormData;
   buildingData?: BuildingData;
-  buildingInfoData?: BuildingInfoData;
-  onSubmit?: (photo: string, formData: FormData, buildingData: BuildingData, buildingInfoData: BuildingInfoData) => Promise<void>;
+  onSubmit?: (photo: string, formData: FormData, buildingData: BuildingData) => Promise<void>;
 }
 
 const PhotoModal: React.FC<PhotoModalProps> = ({ 
@@ -44,8 +33,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
   onClose, 
   onPhotoTaken, 
   formData, 
-  buildingData, 
-  buildingInfoData,
+  buildingData,
   onSubmit 
 }) => {
   const [photo, setPhoto] = useState<string | null>(null);
@@ -90,15 +78,12 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
     setError(null);
 
     try {
-      if (onSubmit && formData && buildingData && buildingInfoData) {
-        // Use custom submit handler if provided with all data
-        await onSubmit(photo, formData, buildingData, buildingInfoData);
+      if (onSubmit && formData && buildingData) {
+        await onSubmit(photo, formData, buildingData);
       } else {
-        // Default behavior - just pass the photo
         onPhotoTaken(photo);
       }
       
-      // Close after successful submission
       handleClose();
       
     } catch (err) {
@@ -138,11 +123,9 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
 
           {!photo ? (
             <div className="photo-placeholder" style={{ textAlign: 'center', padding: '40px 0' }}>
-              <IonItem className="custom-input" lines="none">
-                <IonLabel className="input-label">
-                  Building Photo <span style={{ color: 'red' }}>*</span>
-                </IonLabel>
-              </IonItem>
+              <p className="input-label">
+                Building Photo <span style={{ color: 'red' }}>*</span>
+              </p>
               
               <IonButton 
                 onClick={takePhoto}
@@ -206,7 +189,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                   ) : (
                     <>
                       <IonIcon icon={informationCircle} slot="start" />
-                      Save Info
+                      Save Photo
                     </>
                   )}
                 </IonButton>

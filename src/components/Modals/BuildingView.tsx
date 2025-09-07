@@ -5,7 +5,7 @@ import { FormData } from './Form';
 import { StructureTypeData, getStructureTypeData } from '../../utils/structureTypeLocalStorage';
 import { BuildingCodeData, getBuildingCodesByStructureCode } from '../../utils/buildingCodeLocalStorage';
 import BuildingViewUI from './BuildingViewUI';
-import BuildingInfoModal from './BuildingInfoModal';
+import PhotoModal from './PhotoModal';
 
 interface BuildingViewProps {
   onSuccess: (data: BuildingData) => void;
@@ -40,9 +40,9 @@ const BuildingView: React.FC<BuildingViewProps> = ({
   const [isLoadingStructureTypes, setIsLoadingStructureTypes] = useState(false);
   const [isLoadingBuildingCodes, setIsLoadingBuildingCodes] = useState(false);
   const [selectedBuildingCode, setSelectedBuildingCode] = useState<BuildingCodeData | null>(null);
-  const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
+  const [isPhotoModalOpen, setIsPhotoModalOpen] = useState(false);
 
-  // Fetch all structure types (no longer filtering by kind_id)
+  // Fetch all structure types
   useEffect(() => {
     const fetchStructureTypes = async () => {
       setIsLoadingStructureTypes(true);
@@ -59,7 +59,7 @@ const BuildingView: React.FC<BuildingViewProps> = ({
     };
 
     fetchStructureTypes();
-  }, []); // Empty dependency array to fetch only once
+  }, []);
 
   // Fetch building codes when structure type changes
   useEffect(() => {
@@ -192,24 +192,40 @@ const BuildingView: React.FC<BuildingViewProps> = ({
     return Object.keys(newErrors).length === 0;
   };
 
-  // Handle form submission - open the info modal instead of calling onSuccess directly
+  // Handle form submission - open the photo modal instead of info modal
   const handleNextClick = () => {
     if (validateForm()) {
-      setIsInfoModalOpen(true);
+      setIsPhotoModalOpen(true);
     }
   };
 
-  // Handle saving from the info modal
-  const handleSaveBuildingInfo = (adjustment: string, assessmentLevel: string) => {
-    // Add the adjustment and assessment level to the building data
+  // Handle saving from the photo modal - now returns a Promise
+  const handleSaveBuildingInfo = async (
+    photo: string, 
+    formData: FormData, 
+    buildingData: BuildingData, 
+    buildingInfoData: any
+  ): Promise<void> => {
+    // Add the photo, adjustment, and assessment level to the building data
     const completeBuildingData = {
       ...buildingData,
-      adjustment,
-      assessmentLevel
+      photo,
+      adjustment: buildingInfoData.adjustment,
+      actualUse: buildingInfoData.actualUse,
+      assessmentLevel: buildingInfoData.assessmentLevel
     };
 
-    console.log('Complete building data:', completeBuildingData);
+    console.log('Complete building data with photo:', completeBuildingData);
     onSuccess(completeBuildingData);
+    
+    // Return a resolved promise to satisfy the async function requirement
+    return Promise.resolve();
+  };
+
+  // Basic photo handler for onPhotoTaken prop
+  const handlePhotoTaken = (photo: string) => {
+    console.log('Photo taken:', photo);
+    // You can handle basic photo capture here if needed
   };
 
   return (
@@ -227,12 +243,13 @@ const BuildingView: React.FC<BuildingViewProps> = ({
         onInputChange={handleInputChange}
         onNextClick={handleNextClick}
       />
-      <BuildingInfoModal
-        isOpen={isInfoModalOpen}
-        onClose={() => setIsInfoModalOpen(false)}
-        buildingData={buildingData}
+      
+      <PhotoModal
+        isOpen={isPhotoModalOpen}
+        onClose={() => setIsPhotoModalOpen(false)}
+        onPhotoTaken={handlePhotoTaken}
         formData={formData}
-        onSave={handleSaveBuildingInfo}
+        buildingData={buildingData}
       />
     </>
   );
