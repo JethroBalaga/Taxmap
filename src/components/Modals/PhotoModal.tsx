@@ -28,6 +28,47 @@ interface PhotoModalProps {
   onSubmit?: (photo: string, formData: FormData, buildingData: BuildingData) => Promise<void>;
 }
 
+const SubmitButton: React.FC<{ 
+  label?: string; 
+  className?: string;
+  onClick?: () => void;
+  disabled?: boolean;
+  loading?: boolean;
+}> = ({ 
+  label = 'Submit', 
+  className = '', 
+  onClick,
+  disabled = false,
+  loading = false
+}) => {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={`px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition ${className} ${
+        disabled ? 'opacity-50 cursor-not-allowed' : ''
+      }`}
+      style={{
+        minWidth: '120px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '8px'
+      }}
+    >
+      {loading ? (
+        <>
+          <IonSpinner name="crescent" style={{ width: '16px', height: '16px' }} />
+          Saving...
+        </>
+      ) : (
+        label
+      )}
+    </button>
+  );
+};
+
 const PhotoModal: React.FC<PhotoModalProps> = ({ 
   isOpen, 
   onClose, 
@@ -174,25 +215,14 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
               </div>
 
               <div className="photo-actions-single">
-                <IonButton 
-                  expand="block" 
-                  onClick={handleSubmit}
-                  disabled={isSubmitting}
-                  color="primary"
-                  className="save-info-button"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <IonSpinner name="crescent" slot="start" />
-                      Saving...
-                    </>
-                  ) : (
-                    <>
-                      <IonIcon icon={informationCircle} slot="start" />
-                      Save Photo
-                    </>
-                  )}
-                </IonButton>
+                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
+                  <SubmitButton
+                    onClick={handleSubmit}
+                    disabled={isSubmitting}
+                    loading={isSubmitting}
+                    className="save-info-button"
+                  />
+                </div>
                 
                 <div className="retake-link">
                   <button onClick={retakePhoto} disabled={isSubmitting}>
