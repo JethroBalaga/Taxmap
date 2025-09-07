@@ -22,6 +22,7 @@ import { DistrictData } from '../../utils/districtLocalStorage';
 import { DeclarantData } from '../../utils/DeclarantLocalStorage';
 import { KindData } from '../../utils/kindLocalStorage';
 import { ClassificationData } from '../../utils/classificationLocalStorage';
+import { SubclassData } from '../../utils/subclassLocalStorage';
 import '../../CSS/modal.css';
 
 interface FormViewProps {
@@ -36,8 +37,8 @@ interface FormViewProps {
   setKind: (value: string) => void;
   classification: string;
   setClassification: (value: string) => void;
-  subclass: string; // New prop for subclass
-  setSubclass: (value: string) => void; // New prop for setting subclass
+  subclass: string;
+  setSubclass: (value: string) => void;
   area: number;
   setArea: (value: number) => void;
   onNextClick: () => void;
@@ -45,9 +46,11 @@ interface FormViewProps {
   districts: DistrictData[];
   kinds: KindData[];
   classifications: ClassificationData[];
+  subclasses: SubclassData[];
   isLoadingDistricts: boolean;
   isLoadingKinds: boolean;
   isLoadingClassifications: boolean;
+  isLoadingSubclasses: boolean;
   showDeclarantSearchModal: boolean;
   setShowDeclarantSearchModal: (show: boolean) => void;
   searchText: string;
@@ -69,8 +72,8 @@ const FormView: React.FC<FormViewProps> = ({
   setKind,
   classification,
   setClassification,
-  subclass, // New prop
-  setSubclass, // New prop
+  subclass,
+  setSubclass,
   area,
   setArea,
   onNextClick,
@@ -78,9 +81,11 @@ const FormView: React.FC<FormViewProps> = ({
   districts,
   kinds,
   classifications,
+  subclasses,
   isLoadingDistricts,
   isLoadingKinds,
   isLoadingClassifications,
+  isLoadingSubclasses,
   showDeclarantSearchModal,
   setShowDeclarantSearchModal,
   searchText,
@@ -222,22 +227,37 @@ const FormView: React.FC<FormViewProps> = ({
               </IonSelect>
             </IonItem>
 
-            {/* Subclass Dropdown (Empty for now) */}
+            {/* Subclass Dropdown */}
             <IonItem className="custom-input" lines="none">
               <IonLabel position="stacked" className="input-label">
                 Subclass
               </IonLabel>
               <IonSelect
                 value={subclass}
-                placeholder="Select Subclass"
+                placeholder={isLoadingSubclasses ? "Loading subclasses..." : "Select Subclass"}
                 onIonChange={(e) => setSubclass(e.detail.value)}
                 interface="popover"
                 className="modal-input"
-                disabled={true} // Disabled since it's empty for now
+                disabled={isLoadingSubclasses || !classification}
               >
-                <IonSelectOption value="">
-                  No subclasses available
-                </IonSelectOption>
+                {isLoadingSubclasses ? (
+                  <IonSelectOption value="" disabled>
+                    Loading subclasses...
+                  </IonSelectOption>
+                ) : subclasses.length === 0 ? (
+                  <IonSelectOption value="" disabled>
+                    {classification ? "No subclasses available" : "Select classification first"}
+                  </IonSelectOption>
+                ) : (
+                  subclasses.map((subclassItem) => (
+                    <IonSelectOption
+                      key={subclassItem.subclass_id}
+                      value={subclassItem.subclass_id}
+                    >
+                      {subclassItem.subclass_id} - {subclassItem.subclass}
+                    </IonSelectOption>
+                  ))
+                )}
               </IonSelect>
             </IonItem>
 
