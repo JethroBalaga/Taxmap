@@ -11,12 +11,12 @@ import {
   IonToolbar, 
   IonTitle, 
   IonButtons, 
-  IonIcon,
-  IonSpinner
+  IonIcon
 } from '@ionic/react';
 import { close, camera, informationCircle } from 'ionicons/icons';
 import { FormData } from './Form';
 import { BuildingData } from './BuildingModal';
+import SubmitButton from '../../components/GlobalComponent/SubmitButton'; // Import the styled button
 import '../../CSS/modal.css';
 
 interface PhotoModalProps {
@@ -27,47 +27,6 @@ interface PhotoModalProps {
   buildingData?: BuildingData;
   onSubmit?: (photo: string, formData: FormData, buildingData: BuildingData) => Promise<void>;
 }
-
-const SubmitButton: React.FC<{ 
-  label?: string; 
-  className?: string;
-  onClick?: () => void;
-  disabled?: boolean;
-  loading?: boolean;
-}> = ({ 
-  label = 'Submit', 
-  className = '', 
-  onClick,
-  disabled = false,
-  loading = false
-}) => {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      className={`px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition ${className} ${
-        disabled ? 'opacity-50 cursor-not-allowed' : ''
-      }`}
-      style={{
-        minWidth: '120px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: '8px'
-      }}
-    >
-      {loading ? (
-        <>
-          <IonSpinner name="crescent" style={{ width: '16px', height: '16px' }} />
-          Saving...
-        </>
-      ) : (
-        label
-      )}
-    </button>
-  );
-};
 
 const PhotoModal: React.FC<PhotoModalProps> = ({ 
   isOpen, 
@@ -220,7 +179,6 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                     onClick={handleSubmit}
                     disabled={isSubmitting}
                     loading={isSubmitting}
-                    className="save-info-button"
                   />
                 </div>
                 
