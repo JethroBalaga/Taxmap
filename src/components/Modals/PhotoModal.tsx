@@ -16,7 +16,7 @@ import {
   IonSpinner,
   IonText
 } from '@ionic/react';
-import { close, camera, informationCircle, location, locationOutline } from 'ionicons/icons';
+import { close, camera, informationCircle, location, locationOutline, warning } from 'ionicons/icons';
 import { FormData } from './Form';
 import { BuildingData } from './BuildingModal';
 import SubmitButton from '../../components/GlobalComponent/SubmitButton';
@@ -47,6 +47,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [currentLocation, setCurrentLocation] = useState<{latitude: number; longitude: number; accuracy: number} | null>(null);
+  const [locationError, setLocationError] = useState<string | null>(null);
 
   const takePhoto = async () => {
     try {
@@ -61,6 +62,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
       if (image.dataUrl) {
         setPhoto(image.dataUrl);
         setError(null);
+        setLocationError(null);
         // Get location when photo is taken
         await getCurrentLocation();
       } else {
@@ -74,9 +76,9 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
   const getCurrentLocation = async () => {
     try {
       setIsGettingLocation(true);
-      setError(null);
+      setLocationError(null);
       
-      // Use the proven pattern from your working GeoTag code
+      // Use the EXACT same pattern as your working GeoTag code
       const position = await Geolocation.getCurrentPosition();
       
       if (!position?.coords) {
@@ -90,8 +92,19 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
       });
       
     } catch (err: any) {
-      console.warn('Location not available:', err);
-      setError('Could not get location. Photo will be saved without coordinates.');
+      console.warn('Location error:', err);
+      
+      // Use simpler error handling like your working code
+      let errorMessage = 'Could not get location. Photo will be saved without coordinates.';
+      
+      if (err.message?.includes('permission')) {
+        errorMessage = 'Location access denied. Please enable location permissions.';
+      } else if (err.message?.includes('timeout')) {
+        errorMessage = 'Location request timed out. Please try again.';
+      }
+      
+      setLocationError(errorMessage);
+      setCurrentLocation(null);
     } finally {
       setIsGettingLocation(false);
     }
@@ -100,6 +113,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
   const handleClose = () => {
     setPhoto(null);
     setError(null);
+    setLocationError(null);
     setIsSubmitting(false);
     setIsGettingLocation(false);
     setCurrentLocation(null);
@@ -178,6 +192,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
   const retakePhoto = () => {
     setPhoto(null);
     setError(null);
+    setLocationError(null);
     setCurrentLocation(null);
   };
 
@@ -254,7 +269,10 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                     <span className="info-label">Location:</span>
                     <div className="info-value">
                       {isGettingLocation ? (
-                        <IonSpinner name="dots" style={{ width: '16px', height: '16px' }} />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <IonSpinner name="dots" style={{ width: '16px', height: '16px' }} />
+                          <span>Getting location...</span>
+                        </div>
                       ) : currentLocation ? (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                           <IonIcon icon={location} color="success" style={{ fontSize: '14px' }} />
@@ -263,14 +281,30 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                             (±{currentLocation.accuracy?.toFixed(1)}m)
                           </IonText>
                         </div>
+                      ) : locationError ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <IonIcon icon={warning} color="warning" style={{ fontSize: '14px' }} />
+                          <span style={{ fontSize: '12px', color: 'var(--ion-color-warning)' }}>
+                            No location data
+                          </span>
+                        </div>
                       ) : (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <IonIcon icon={locationOutline} color="warning" style={{ fontSize: '14px' }} />
-                          <span>No location data</span>
+                          <IonIcon icon={locationOutline} color="medium" style={{ fontSize: '14px' }} />
+                          <span>Location not requested</span>
                         </div>
                       )}
                     </div>
                   </div>
+                  
+                  {locationError && (
+                    <div className="info-item" style={{ gridColumn: '1 / -1' }}>
+                      <span className="info-label">Location Error:</span>
+                      <span className="info-value" style={{ color: 'var(--ion-color-warning)', fontSize: '12px' }}>
+                        {locationError}
+                      </span>
+                    </div>
+                  )}
                   
                   <div className="info-item">
                     <span className="info-label">Size:</span>
@@ -297,16 +331,17 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                   />
                 </div>
                 
-                {!currentLocation && !isGettingLocation && (
+                {(!currentLocation && !isGettingLocation) && (
                   <div style={{ textAlign: 'center', marginBottom: '16px' }}>
                     <IonButton 
                       onClick={getCurrentLocation}
                       size="small"
                       fill="outline"
                       color="medium"
+                      disabled={isSubmitting}
                     >
                       <IonIcon icon={locationOutline} slot="start" />
-                      Get Location
+                      {locationError ? 'Retry Location' : 'Get Location'}
                     </IonButton>
                   </div>
                 )}
