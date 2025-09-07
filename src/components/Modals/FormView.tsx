@@ -39,8 +39,8 @@ interface FormViewProps {
   setClassification: (value: string) => void;
   subclass: string;
   setSubclass: (value: string) => void;
-  actualUse: string; // New prop for actual use
-  setActualUse: (value: string) => void; // New prop setter for actual use
+  actualUse: string;
+  setActualUse: (value: string) => void;
   area: number;
   setArea: (value: number) => void;
   onNextClick: () => void;
@@ -49,11 +49,12 @@ interface FormViewProps {
   kinds: KindData[];
   classifications: ClassificationData[];
   subclasses: SubclassData[];
-  actualUses: string[]; // New prop for actual use options
+  actualUses: Array<{value: string, label: string}>;
   isLoadingDistricts: boolean;
   isLoadingKinds: boolean;
   isLoadingClassifications: boolean;
   isLoadingSubclasses: boolean;
+  isLoadingActualUses: boolean;
   showDeclarantSearchModal: boolean;
   setShowDeclarantSearchModal: (show: boolean) => void;
   searchText: string;
@@ -61,7 +62,7 @@ interface FormViewProps {
   filteredDeclarants: DeclarantData[];
   onSelectDeclarant: (id: number) => void;
   isLoadingDeclarants: boolean;
-  isBuildingKind: boolean; // New prop to indicate if selected kind is building
+  isBuildingKind: boolean;
 }
 
 const FormView: React.FC<FormViewProps> = ({
@@ -78,8 +79,8 @@ const FormView: React.FC<FormViewProps> = ({
   setClassification,
   subclass,
   setSubclass,
-  actualUse, // New prop
-  setActualUse, // New prop
+  actualUse,
+  setActualUse,
   area,
   setArea,
   onNextClick,
@@ -88,11 +89,12 @@ const FormView: React.FC<FormViewProps> = ({
   kinds,
   classifications,
   subclasses,
-  actualUses, // New prop
+  actualUses,
   isLoadingDistricts,
   isLoadingKinds,
   isLoadingClassifications,
   isLoadingSubclasses,
+  isLoadingActualUses,
   showDeclarantSearchModal,
   setShowDeclarantSearchModal,
   searchText,
@@ -100,7 +102,7 @@ const FormView: React.FC<FormViewProps> = ({
   filteredDeclarants,
   onSelectDeclarant,
   isLoadingDeclarants,
-  isBuildingKind // New prop
+  isBuildingKind
 }) => {
   return (
     <>
@@ -292,22 +294,31 @@ const FormView: React.FC<FormViewProps> = ({
                 </IonLabel>
                 <IonSelect
                   value={actualUse}
-                  placeholder="Select Actual Use"
+                  placeholder={
+                    isLoadingActualUses 
+                      ? "Loading actual uses..." 
+                      : "Select Actual Use"
+                  }
                   onIonChange={(e) => setActualUse(e.detail.value)}
                   interface="popover"
                   className="modal-input"
+                  disabled={isLoadingActualUses}
                 >
-                  {actualUses.length === 0 ? (
+                  {isLoadingActualUses ? (
+                    <IonSelectOption value="" disabled>
+                      Loading actual uses...
+                    </IonSelectOption>
+                  ) : actualUses.length === 0 ? (
                     <IonSelectOption value="" disabled>
                       No actual uses available
                     </IonSelectOption>
                   ) : (
-                    actualUses.map((use, index) => (
+                    actualUses.map((use) => (
                       <IonSelectOption
-                        key={index}
-                        value={use}
+                        key={use.value}
+                        value={use.value}
                       >
-                        {use}
+                        {use.label}
                       </IonSelectOption>
                     ))
                   )}

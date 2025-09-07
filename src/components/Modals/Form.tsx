@@ -5,6 +5,7 @@ import { DistrictData, getDistrictData } from '../../utils/districtLocalStorage'
 import { KindData, getKindData } from '../../utils/kindLocalStorage';
 import { ClassificationData, getClassificationData } from '../../utils/classificationLocalStorage';
 import { SubclassData, getSubclassesByClassId } from '../../utils/subclassLocalStorage';
+import { ActualUsedData, getActualUsedByClassId } from '../../utils/actualUsedLocalStorage';
 import FormView from './FormView';
 import BuildingModal from './BuildingModal';
 
@@ -14,7 +15,7 @@ export interface FormData {
   kind: string;
   classification: string;
   subclass: string;
-  actualUse: string; // Add actualUse to FormData
+  actualUse: string;
   area: number;
 }
 
@@ -31,14 +32,14 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
   const [kind, setKind] = useState('');
   const [classification, setClassification] = useState('');
   const [subclass, setSubclass] = useState('');
-  const [actualUse, setActualUse] = useState(''); // Add actualUse state
+  const [actualUse, setActualUse] = useState('');
   const [area, setArea] = useState<number>(0);
   const [districts, setDistricts] = useState<DistrictData[]>([]);
   const [declarants, setDeclarants] = useState<DeclarantData[]>([]);
   const [kinds, setKinds] = useState<KindData[]>([]);
   const [classifications, setClassifications] = useState<ClassificationData[]>([]);
   const [subclasses, setSubclasses] = useState<SubclassData[]>([]);
-  const [actualUses, setActualUses] = useState<string[]>([]); // Add actualUses state
+  const [actualUses, setActualUses] = useState<ActualUsedData[]>([]);
   const [filteredDeclarants, setFilteredDeclarants] = useState<DeclarantData[]>([]);
   const [searchText, setSearchText] = useState('');
   const [showDeclarantSearch, setShowDeclarantSearch] = useState(false);
@@ -48,20 +49,8 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
   const [isLoadingKinds, setIsLoadingKinds] = useState(true);
   const [isLoadingClassifications, setIsLoadingClassifications] = useState(true);
   const [isLoadingSubclasses, setIsLoadingSubclasses] = useState(false);
+  const [isLoadingActualUses, setIsLoadingActualUses] = useState(false);
   const [showBuildingModal, setShowBuildingModal] = useState(false);
-
-  // Define actual use options
-  const actualUseOptions = [
-    'Residential',
-    'Commercial',
-    'Industrial',
-    'Agricultural',
-    'Institutional',
-    'Recreational',
-    'Mixed Use',
-    'Vacant',
-    'Other'
-  ];
 
   // Data loading effect
   useEffect(() => {
@@ -86,9 +75,6 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
         }
         if (kindData) setKinds(kindData);
         if (classificationData) setClassifications(classificationData);
-        
-        // Set actual uses
-        setActualUses(actualUseOptions);
       } catch (error) {
         console.error('Error loading data:', error);
       } finally {
@@ -116,7 +102,6 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
       try {
         const subclassData = await getSubclassesByClassId(classification);
         setSubclasses(subclassData || []);
-        console.log('Fetched subclasses for class:', classification, subclassData);
         
         // Reset subclass selection if the current selection is not available for the new classification
         if (subclass && !subclassData?.some(s => s.subclass_id === subclass)) {
@@ -133,6 +118,37 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
 
     fetchSubclasses();
   }, [classification, subclass]);
+
+  // Fetch actual uses when classification changes (only for building kinds)
+  useEffect(() => {
+    const fetchActualUses = async () => {
+      if (!classification || !isBuildingKind()) {
+        setActualUses([]);
+        setActualUse('');
+        setIsLoadingActualUses(false);
+        return;
+      }
+
+      setIsLoadingActualUses(true);
+      try {
+        const actualUsedData = await getActualUsedByClassId(classification);
+        setActualUses(actualUsedData || []);
+        
+        // Reset actual use selection if the current selection is not available for the new classification
+        if (actualUse && !actualUsedData?.some(a => a.actual_used_id === actualUse)) {
+          setActualUse('');
+        }
+      } catch (error) {
+        console.error('Error fetching actual uses:', error);
+        setActualUses([]);
+        setActualUse('');
+      } finally {
+        setIsLoadingActualUses(false);
+      }
+    };
+
+    fetchActualUses();
+  }, [classification, actualUse, kind]);
 
   // Filter declarants based on search text
   useEffect(() => {
@@ -188,7 +204,7 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
     setKind('');
     setClassification('');
     setSubclass('');
-    setActualUse(''); // Reset actual use
+    setActualUse('');
     setArea(0);
     setSearchText('');
   };
@@ -227,6 +243,14 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
     onDismiss();
   };
 
+  // Format actual uses for dropdown
+  const getFormattedActualUses = (): Array<{value: string, label: string}> => {
+    return actualUses.map(actualUse => ({
+      value: actualUse.actual_used_id,
+      label: `${actualUse.actual_used_id} - ${actualUse.description}`
+    }));
+  };
+
   // Prepare form data
   const formData: FormData = {
     district,
@@ -234,7 +258,7 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
     kind,
     classification,
     subclass,
-    actualUse, // Include actualUse in formData
+    actualUse,
     area
   };
 
@@ -254,8 +278,8 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
         setClassification={setClassification}
         subclass={subclass}
         setSubclass={setSubclass}
-        actualUse={actualUse} // Pass actualUse prop
-        setActualUse={setActualUse} // Pass setActualUse prop
+        actualUse={actualUse}
+        setActualUse={setActualUse}
         area={area}
         setArea={setArea}
         onNextClick={handleNextClick}
@@ -264,12 +288,13 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
         kinds={kinds}
         classifications={classifications}
         subclasses={subclasses}
-        actualUses={actualUses} // Pass actualUses prop
+        actualUses={getFormattedActualUses()}
         isLoadingDistricts={isLoadingDistricts}
         isLoadingKinds={isLoadingKinds}
         isLoadingClassifications={isLoadingClassifications}
         isLoadingSubclasses={isLoadingSubclasses}
-        isBuildingKind={isBuildingKind()} // Call the function to get the boolean value
+        isLoadingActualUses={isLoadingActualUses}
+        isBuildingKind={isBuildingKind()}
         showDeclarantSearchModal={showDeclarantSearch}
         setShowDeclarantSearchModal={setShowDeclarantSearch}
         searchText={searchText}
