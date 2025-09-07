@@ -4,7 +4,7 @@ import { DeclarantData, getDeclarantData } from '../../utils/DeclarantLocalStora
 import { DistrictData, getDistrictData } from '../../utils/districtLocalStorage';
 import { KindData, getKindData } from '../../utils/kindLocalStorage';
 import { ClassificationData, getClassificationData } from '../../utils/classificationLocalStorage';
-import { SubclassData, getSubclassesByClassId } from '../../utils/subclassLocalStorage'; // Import subclass functions
+import { SubclassData, getSubclassesByClassId } from '../../utils/subclassLocalStorage';
 import FormView from './FormView';
 import BuildingModal from './BuildingModal';
 
@@ -13,7 +13,7 @@ export interface FormData {
   declarantId: number | null;
   kind: string;
   classification: string;
-  subclass: string; // Added subclass to FormData
+  subclass: string;
   area: number;
 }
 
@@ -29,13 +29,13 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
   const [declarantId, setDeclarantId] = useState<number | null>(null);
   const [kind, setKind] = useState('');
   const [classification, setClassification] = useState('');
-  const [subclass, setSubclass] = useState(''); // Added subclass state
+  const [subclass, setSubclass] = useState('');
   const [area, setArea] = useState<number>(0);
   const [districts, setDistricts] = useState<DistrictData[]>([]);
   const [declarants, setDeclarants] = useState<DeclarantData[]>([]);
   const [kinds, setKinds] = useState<KindData[]>([]);
   const [classifications, setClassifications] = useState<ClassificationData[]>([]);
-  const [subclasses, setSubclasses] = useState<SubclassData[]>([]); // Added subclasses state
+  const [subclasses, setSubclasses] = useState<SubclassData[]>([]);
   const [filteredDeclarants, setFilteredDeclarants] = useState<DeclarantData[]>([]);
   const [searchText, setSearchText] = useState('');
   const [showDeclarantSearch, setShowDeclarantSearch] = useState(false);
@@ -44,7 +44,7 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
   const [isLoadingDeclarants, setIsLoadingDeclarants] = useState(true);
   const [isLoadingKinds, setIsLoadingKinds] = useState(true);
   const [isLoadingClassifications, setIsLoadingClassifications] = useState(true);
-  const [isLoadingSubclasses, setIsLoadingSubclasses] = useState(false); // Added loading state for subclasses
+  const [isLoadingSubclasses, setIsLoadingSubclasses] = useState(false);
   const [showBuildingModal, setShowBuildingModal] = useState(false);
 
   // Data loading effect
@@ -140,15 +140,16 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
       kind.trim() !== '' &&
       classification.trim() !== '' &&
       area > 0
-      // Note: subclass is optional, so we don't require it for form validity
     );
   }, [district, declarantId, kind, classification, area]);
 
-  // Helper functions
-  const isBuildingKind = () => {
-    if (!kind) return false;
+  // Helper function to check if selected kind is building
+  const isBuildingKind = (): boolean => {
+    if (!kind || isLoadingKinds || kinds.length === 0) return false;
+    
     const selectedKind = kinds.find(k => k.kind_id.toString() === kind);
-    return selectedKind?.description.toLowerCase().includes('building');
+    // Check if description contains "building" (case-insensitive)
+    return selectedKind?.description?.toLowerCase().includes('building') || false;
   };
 
   const getSelectedDeclarantDisplay = () => {
@@ -207,7 +208,7 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
     declarantId,
     kind,
     classification,
-    subclass, // Include subclass in form data
+    subclass,
     area
   };
 
@@ -225,8 +226,8 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
         setKind={setKind}
         classification={classification}
         setClassification={setClassification}
-        subclass={subclass} // Pass subclass prop
-        setSubclass={setSubclass} // Pass setSubclass prop
+        subclass={subclass}
+        setSubclass={setSubclass}
         area={area}
         setArea={setArea}
         onNextClick={handleNextClick}
@@ -234,11 +235,12 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
         districts={districts}
         kinds={kinds}
         classifications={classifications}
-        subclasses={subclasses} // Pass subclasses data
+        subclasses={subclasses}
         isLoadingDistricts={isLoadingDistricts}
         isLoadingKinds={isLoadingKinds}
         isLoadingClassifications={isLoadingClassifications}
-        isLoadingSubclasses={isLoadingSubclasses} // Pass loading state
+        isLoadingSubclasses={isLoadingSubclasses}
+        isBuildingKind={isBuildingKind()} // Call the function to get the boolean value
         showDeclarantSearchModal={showDeclarantSearch}
         setShowDeclarantSearchModal={setShowDeclarantSearch}
         searchText={searchText}
