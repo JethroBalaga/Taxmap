@@ -286,48 +286,45 @@ const FormView: React.FC<FormViewProps> = ({
               </IonSelect>
             </IonItem>
 
-            {/* Actual Use Dropdown - Show for all kinds */}
-            <IonItem className="custom-input" lines="none">
-              <IonLabel position="stacked" className="input-label">
-                Actual Use {isBuildingKind && <span style={{ color: 'red' }}>*</span>}
-                {!isBuildingKind && (
-                  <span style={{ fontStyle: 'italic', color: '#666', fontSize: '12px', marginLeft: '5px' }}>
-                    (Optional for non-building kinds)
-                  </span>
-                )}
-              </IonLabel>
-              <IonSelect
-                value={actualUse}
-                placeholder={
-                  isLoadingActualUses 
-                    ? "Loading actual uses..." 
-                    : "Select Actual Use"
-                }
-                onIonChange={(e) => setActualUse(e.detail.value)}
-                interface="popover"
-                className="modal-input"
-                disabled={isLoadingActualUses || !classification}
-              >
-                {isLoadingActualUses ? (
-                  <IonSelectOption value="" disabled>
-                    Loading actual uses...
-                  </IonSelectOption>
-                ) : actualUses.length === 0 ? (
-                  <IonSelectOption value="" disabled>
-                    {classification ? "No actual uses available" : "Select classification first"}
-                  </IonSelectOption>
-                ) : (
-                  actualUses.map((use) => (
-                    <IonSelectOption
-                      key={use.value}
-                      value={use.value}
-                    >
-                      {use.label}
+            {/* Actual Use Dropdown - Only shown for building kind */}
+            {isBuildingKind && (
+              <IonItem className="custom-input" lines="none">
+                <IonLabel position="stacked" className="input-label">
+                  Actual Use <span style={{ color: 'red' }}>*</span>
+                </IonLabel>
+                <IonSelect
+                  value={actualUse}
+                  placeholder={
+                    isLoadingActualUses 
+                      ? "Loading actual uses..." 
+                      : "Select Actual Use"
+                  }
+                  onIonChange={(e) => setActualUse(e.detail.value)}
+                  interface="popover"
+                  className="modal-input"
+                  disabled={isLoadingActualUses}
+                >
+                  {isLoadingActualUses ? (
+                    <IonSelectOption value="" disabled>
+                      Loading actual uses...
                     </IonSelectOption>
-                  ))
-                )}
-              </IonSelect>
-            </IonItem>
+                  ) : actualUses.length === 0 ? (
+                    <IonSelectOption value="" disabled>
+                      No actual uses available
+                    </IonSelectOption>
+                  ) : (
+                    actualUses.map((use) => (
+                      <IonSelectOption
+                        key={use.value}
+                        value={use.value}
+                      >
+                        {use.label}
+                      </IonSelectOption>
+                    ))
+                  )}
+                </IonSelect>
+              </IonItem>
+            )}
 
             <Area value={area} onChange={setArea} />
             

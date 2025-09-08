@@ -27,8 +27,8 @@ export interface BuildingData {
   dateOccupied: string | null;
   dateCompleted: string | null;
   depreciationRate: number | null;
-  adjustment?: string; // Add adjustment field
-  assessmentLevel?: string; // Add assessment level field
+  adjustment?: string;
+  assessmentLevel?: string;
 }
 
 interface BuildingModalProps {
@@ -44,7 +44,7 @@ const BuildingModal: React.FC<BuildingModalProps> = ({
   onDismiss, 
   onSuccess,
   formData,
-  initialData 
+  initialData
 }) => {
   const handleDismiss = () => {
     onDismiss();
@@ -73,7 +73,7 @@ const BuildingModal: React.FC<BuildingModalProps> = ({
       <IonContent className="modal-content">
         <BuildingView
           onSuccess={onSuccess}
-          onDismiss={onDismiss}
+          onDismiss={handleDismiss}
           formData={formData}
           initialData={initialData}
         />

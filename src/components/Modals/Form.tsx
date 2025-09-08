@@ -103,7 +103,6 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
         const subclassData = await getSubclassesByClassId(classification);
         setSubclasses(subclassData || []);
         
-        // Reset subclass selection if the current selection is not available for the new classification
         if (subclass && !subclassData?.some(s => s.subclass_id === subclass)) {
           setSubclass('');
         }
@@ -119,10 +118,10 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
     fetchSubclasses();
   }, [classification, subclass]);
 
-  // Fetch actual uses when classification changes
+  // Fetch actual uses when classification changes (only for building kinds)
   useEffect(() => {
     const fetchActualUses = async () => {
-      if (!classification) {
+      if (!classification || !isBuildingKind()) {
         setActualUses([]);
         setActualUse('');
         setIsLoadingActualUses(false);
@@ -134,7 +133,6 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
         const actualUsedData = await getActualUsedByClassId(classification);
         setActualUses(actualUsedData || []);
         
-        // Reset actual use selection if the current selection is not available for the new classification
         if (actualUse && !actualUsedData?.some(a => a.actual_used_id === actualUse)) {
           setActualUse('');
         }
@@ -148,7 +146,7 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
     };
 
     fetchActualUses();
-  }, [classification, actualUse]);
+  }, [classification, actualUse, kind]);
 
   // Filter declarants based on search text
   useEffect(() => {
@@ -175,15 +173,10 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
       classification.trim() !== '' &&
       area > 0;
     
-    // Actual use is only required for building kinds
     if (isBuildingKind()) {
       setIsFormValid(isValid && actualUse.trim() !== '');
     } else {
       setIsFormValid(isValid);
-      // Optional: Reset actual use if not a building kind
-      if (actualUse.trim() !== '') {
-        setActualUse('');
-      }
     }
   }, [district, declarantId, kind, classification, area, actualUse]);
 
@@ -192,7 +185,6 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
     if (!kind || isLoadingKinds || kinds.length === 0) return false;
     
     const selectedKind = kinds.find(k => k.kind_id.toString() === kind);
-    // Check if description contains "building" (case-insensitive)
     return selectedKind?.description?.toLowerCase().includes('building') || false;
   };
 
@@ -217,9 +209,6 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
   const handleNextClick = () => {
     if (!isFormValid) return;
 
-    // Always close the form modal when Next is clicked
-    onDismiss();
-    
     if (isBuildingKind()) {
       setShowBuildingModal(true);
     } else {
@@ -229,10 +218,15 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
   };
 
   const handleBuildingModalSuccess = (buildingData: any) => {
+    console.log('=== FINAL SUBMISSION DATA ===');
     console.log('Form data:', { district, declarantId, kind, classification, subclass, actualUse, area });
     console.log('Building data:', buildingData);
+    console.log('=== END SUBMISSION DATA ===');
+    
+    // Close building modal and form modal
     setShowBuildingModal(false);
-    onSuccess();
+    resetForm();
+    onSuccess(); // This should close the main form modal
   };
 
   const handleBuildingModalDismiss = () => {

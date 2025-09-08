@@ -1,5 +1,5 @@
 // src/components/Modals/PhotoModal.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Camera, CameraResultType, CameraSource, CameraDirection } from '@capacitor/camera';
 import { Geolocation } from '@capacitor/geolocation';
 import { 
@@ -14,7 +14,13 @@ import {
   IonButtons, 
   IonIcon,
   IonSpinner,
-  IonText
+  IonText,
+  IonItem,
+  IonLabel,
+  IonCard,
+  IonCardContent,
+  IonCardHeader,
+  IonCardTitle
 } from '@ionic/react';
 import { close, camera, informationCircle, location, locationOutline, warning } from 'ionicons/icons';
 import { FormData } from './Form';
@@ -33,6 +39,7 @@ interface PhotoModalProps {
   formData?: FormData;
   buildingData?: BuildingData;
   onSubmit?: (photo: string, formData: FormData, buildingData: BuildingData) => Promise<void>;
+  onCompleteSubmission?: () => void;
 }
 
 const PhotoModal: React.FC<PhotoModalProps> = ({ 
@@ -41,7 +48,8 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
   onPhotoTaken, 
   formData, 
   buildingData,
-  onSubmit 
+  onSubmit,
+  onCompleteSubmission 
 }) => {
   const [photo, setPhoto] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -49,6 +57,21 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [currentLocation, setCurrentLocation] = useState<{latitude: number; longitude: number; accuracy: number} | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
+  const [storedData, setStoredData] = useState<{
+    formData: any;
+    buildingData: any;
+    photoTag: any;
+    valueInfo: any;
+  } | null>(null);
+
+  // Log the data when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      console.log('PhotoModal opened with formData:', formData);
+      console.log('PhotoModal opened with buildingData:', buildingData);
+      setStoredData(null);
+    }
+  }, [isOpen, formData, buildingData]);
 
   const takePhoto = async () => {
     try {
@@ -64,7 +87,6 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
         setPhoto(image.dataUrl);
         setError(null);
         setLocationError(null);
-        // Get location when photo is taken
         await getCurrentLocation();
       } else {
         setError('No photo was taken.');
@@ -79,7 +101,6 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
       setIsGettingLocation(true);
       setLocationError(null);
       
-      // Use the EXACT same pattern as your working GeoTag code
       const position = await Geolocation.getCurrentPosition();
       
       if (!position?.coords) {
@@ -95,7 +116,6 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
     } catch (err: any) {
       console.warn('Location error:', err);
       
-      // Use simpler error handling like your working code
       let errorMessage = 'Could not get location. Photo will be saved without coordinates.';
       
       if (err.message?.includes('permission')) {
@@ -118,6 +138,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
     setIsSubmitting(false);
     setIsGettingLocation(false);
     setCurrentLocation(null);
+    setStoredData(null);
     onClose();
   };
 
@@ -143,7 +164,6 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
     setError(null);
 
     try {
-      // Generate unique filename and photo path
       const fileName = generateFileName();
       const photoPath = `../phototags/${fileName}`;
       
@@ -152,13 +172,13 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
       let photoTag = null;
       let valueInfo = null;
 
-      // 1. Store FormData if provided and get the saved object with generated ID
+      // 1. Store FormData
       if (formData) {
         savedFormData = FormDataLocalStorage.saveFormData(formData);
-        console.log('Form data saved with ID:', savedFormData.id);
+        console.log('Form data saved:', savedFormData);
       }
       
-      // 2. Store PhotoTag with location data and get the generated ID
+      // 2. Store PhotoTag
       photoTag = PhotoTagLocalStorage.addPhotoTag({
         photoPath,
         longitude: currentLocation?.longitude || 0,
@@ -166,35 +186,45 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
         accuracy: currentLocation?.accuracy,
         timestamp: new Date()
       });
-      console.log('Photo tag saved with ID:', photoTag.id);
+      console.log('Photo tag saved:', photoTag);
 
-      // 3. Create ValueInfo entry to link FormData and PhotoTag if both exist
+      // 3. Create ValueInfo entry
       if (savedFormData && photoTag) {
         valueInfo = ValueInfoLocalStorage.addValueInfo({
           formDataId: savedFormData.id,
           photoTagId: photoTag.id,
           status: 'pending'
         });
-        console.log('ValueInfo created with ID:', valueInfo.id);
+        console.log('ValueInfo created:', valueInfo);
 
-        // 4. Store BuildingData with ValueInfo ID reference if building data exists
+        // 4. Store BuildingData
         if (buildingData && valueInfo) {
           savedBuildingData = BuildingDataLocalStorage.saveBuildingData({
             ...buildingData,
             valueInfoId: valueInfo.id
           });
-          console.log('Building data saved with ValueInfo reference:', valueInfo.id);
+          console.log('Building data saved:', savedBuildingData);
         }
       }
 
-      // Call the provided onSubmit callback if available
+      // Store all data for display
+      setStoredData({
+        formData: savedFormData,
+        buildingData: savedBuildingData,
+        photoTag: photoTag,
+        valueInfo: valueInfo
+      });
+
+      // Call callbacks
       if (onSubmit && formData && buildingData) {
         await onSubmit(photo, formData, buildingData);
       } else {
         onPhotoTaken(photo);
       }
       
-      handleClose();
+      if (onCompleteSubmission) {
+        onCompleteSubmission();
+      }
       
     } catch (err) {
       setError('Submission failed: ' + (err as Error).message);
@@ -209,10 +239,16 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
     setError(null);
     setLocationError(null);
     setCurrentLocation(null);
+    setStoredData(null);
   };
 
   const formatCoordinates = (lat: number, lng: number): string => {
     return `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+  };
+
+  const formatDataForDisplay = (data: any): string => {
+    if (!data) return 'No data';
+    return JSON.stringify(data, null, 2);
   };
 
   return (
@@ -236,6 +272,49 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
               buttons={['OK']}
               onDidDismiss={() => setError(null)}
             />
+          )}
+
+          {/* Stored Data Display */}
+          {storedData && (
+            <IonCard style={{ marginBottom: '15px' }}>
+              <IonCardHeader>
+                <IonCardTitle>Data Successfully Stored</IonCardTitle>
+              </IonCardHeader>
+              <IonCardContent>
+                <IonItem lines="none">
+                  <IonLabel>
+                    <strong>Form Data:</strong>
+                    <pre style={{ fontSize: '10px', overflow: 'auto' }}>
+                      {formatDataForDisplay(storedData.formData)}
+                    </pre>
+                  </IonLabel>
+                </IonItem>
+                <IonItem lines="none">
+                  <IonLabel>
+                    <strong>Building Data:</strong>
+                    <pre style={{ fontSize: '10px', overflow: 'auto' }}>
+                      {formatDataForDisplay(storedData.buildingData)}
+                    </pre>
+                  </IonLabel>
+                </IonItem>
+                <IonItem lines="none">
+                  <IonLabel>
+                    <strong>Photo Tag:</strong>
+                    <pre style={{ fontSize: '10px', overflow: 'auto' }}>
+                      {formatDataForDisplay(storedData.photoTag)}
+                    </pre>
+                  </IonLabel>
+                </IonItem>
+                <IonItem lines="none">
+                  <IonLabel>
+                    <strong>Value Info:</strong>
+                    <pre style={{ fontSize: '10px', overflow: 'auto' }}>
+                      {formatDataForDisplay(storedData.valueInfo)}
+                    </pre>
+                  </IonLabel>
+                </IonItem>
+              </IonCardContent>
+            </IonCard>
           )}
 
           {!photo ? (
@@ -277,7 +356,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                 <div className="info-grid">
                   <div className="info-item">
                     <span className="info-label">Status:</span>
-                    <span className="info-value">Captured</span>
+                    <span className="info-value">{storedData ? 'Stored' : 'Ready to Submit'}</span>
                   </div>
                   
                   <div className="info-item">
@@ -338,32 +417,47 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
               </div>
 
               <div className="photo-actions-single">
-                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
-                  <SubmitButton
-                    onClick={handleSubmit}
-                    disabled={isSubmitting || isGettingLocation}
-                    loading={isSubmitting}
-                  />
-                </div>
-                
-                {(!currentLocation && !isGettingLocation) && (
+                {!storedData ? (
+                  <>
+                    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
+                      <SubmitButton
+                        onClick={handleSubmit}
+                        disabled={isSubmitting || isGettingLocation}
+                        loading={isSubmitting}
+                      />
+                    </div>
+                    
+                    {(!currentLocation && !isGettingLocation) && (
+                      <div style={{ textAlign: 'center', marginBottom: '16px' }}>
+                        <IonButton 
+                          onClick={getCurrentLocation}
+                          size="small"
+                          fill="outline"
+                          color="medium"
+                          disabled={isSubmitting}
+                        >
+                          <IonIcon icon={locationOutline} slot="start" />
+                          {locationError ? 'Retry Location' : 'Get Location'}
+                        </IonButton>
+                      </div>
+                    )}
+                  </>
+                ) : (
                   <div style={{ textAlign: 'center', marginBottom: '16px' }}>
                     <IonButton 
-                      onClick={getCurrentLocation}
-                      size="small"
-                      fill="outline"
-                      color="medium"
-                      disabled={isSubmitting}
+                      onClick={handleClose}
+                      size="default"
+                      fill="solid"
+                      color="success"
                     >
-                      <IonIcon icon={locationOutline} slot="start" />
-                      {locationError ? 'Retry Location' : 'Get Location'}
+                      Close
                     </IonButton>
                   </div>
                 )}
                 
                 <div className="retake-link">
                   <button onClick={retakePhoto} disabled={isSubmitting}>
-                    Retake Photo
+                    {storedData ? 'Take New Photo' : 'Retake Photo'}
                   </button>
                 </div>
               </div>

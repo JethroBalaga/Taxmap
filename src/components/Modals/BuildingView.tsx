@@ -49,7 +49,6 @@ const BuildingView: React.FC<BuildingViewProps> = ({
       try {
         const structureTypesData = await getStructureTypeData();
         setStructureTypes(structureTypesData || []);
-        console.log('Fetched all structure types:', structureTypesData);
       } catch (error) {
         console.error('Error fetching structure types:', error);
         setStructureTypes([]);
@@ -74,9 +73,7 @@ const BuildingView: React.FC<BuildingViewProps> = ({
       try {
         const buildingCodesData = await getBuildingCodesByStructureCode(buildingData.structureType);
         setBuildingCodes(buildingCodesData);
-        console.log('Fetched building codes for structure:', buildingData.structureType, buildingCodesData);
 
-        // If there's a previously selected building code that matches the new structure type, keep it
         if (buildingData.buildingCode) {
           const matchingCode = buildingCodesData.find(
             code => code.building_code === buildingData.buildingCode
@@ -111,13 +108,6 @@ const BuildingView: React.FC<BuildingViewProps> = ({
       setSelectedBuildingCode(null);
     }
   }, [buildingData.buildingCode, buildingCodes]);
-
-  // Log received form data for debugging
-  useEffect(() => {
-    if (formData) {
-      console.log('Received form data in BuildingView:', formData);
-    }
-  }, [formData]);
 
   // Reset form when initialData changes
   useEffect(() => {
@@ -164,7 +154,6 @@ const BuildingView: React.FC<BuildingViewProps> = ({
       [field]: value
     }));
 
-    // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({
         ...prev,
@@ -192,34 +181,21 @@ const BuildingView: React.FC<BuildingViewProps> = ({
     return Object.keys(newErrors).length === 0;
   };
 
-  // Handle form submission - open the photo modal instead of info modal
+  // Handle form submission - open the photo modal
   const handleNextClick = () => {
+    console.log('Building data to be passed to PhotoModal:', buildingData);
     if (validateForm()) {
       setIsPhotoModalOpen(true);
     }
   };
 
-  // Handle saving from the photo modal - now returns a Promise
-  const handleSaveBuildingInfo = async (
-    photo: string, 
-    formData: FormData, 
-    buildingData: BuildingData
-  ): Promise<void> => {
-    // Only include the photo with the building data
-    const completeBuildingData = {
-      ...buildingData,
-      photo
-    };
-
-    console.log('Complete building data with photo:', completeBuildingData);
-    onSuccess(completeBuildingData);
-    
-    return Promise.resolve();
-  };
-
-  // Basic photo handler for onPhotoTaken prop
-  const handlePhotoTaken = (photo: string) => {
-    console.log('Photo taken:', photo);
+  // Handle photo modal completion
+  const handlePhotoModalComplete = () => {
+    console.log('Photo modal completed, sending building data to parent');
+    // Send the building data back to the Form component
+    onSuccess(buildingData);
+    setIsPhotoModalOpen(false);
+    onDismiss(); // Close the building modal
   };
 
   return (
@@ -241,9 +217,10 @@ const BuildingView: React.FC<BuildingViewProps> = ({
       <PhotoModal
         isOpen={isPhotoModalOpen}
         onClose={() => setIsPhotoModalOpen(false)}
-        onPhotoTaken={handlePhotoTaken}
+        onPhotoTaken={() => {}}
         formData={formData}
         buildingData={buildingData}
+        onCompleteSubmission={handlePhotoModalComplete}
       />
     </>
   );
