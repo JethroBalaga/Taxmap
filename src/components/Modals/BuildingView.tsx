@@ -203,29 +203,23 @@ const BuildingView: React.FC<BuildingViewProps> = ({
   const handleSaveBuildingInfo = async (
     photo: string, 
     formData: FormData, 
-    buildingData: BuildingData, 
-    buildingInfoData: any
+    buildingData: BuildingData
   ): Promise<void> => {
-    // Add the photo, adjustment, and assessment level to the building data
+    // Only include the photo with the building data
     const completeBuildingData = {
       ...buildingData,
-      photo,
-      adjustment: buildingInfoData.adjustment,
-      actualUse: buildingInfoData.actualUse,
-      assessmentLevel: buildingInfoData.assessmentLevel
+      photo
     };
 
     console.log('Complete building data with photo:', completeBuildingData);
     onSuccess(completeBuildingData);
     
-    // Return a resolved promise to satisfy the async function requirement
     return Promise.resolve();
   };
 
   // Basic photo handler for onPhotoTaken prop
   const handlePhotoTaken = (photo: string) => {
     console.log('Photo taken:', photo);
-    // You can handle basic photo capture here if needed
   };
 
   return (
