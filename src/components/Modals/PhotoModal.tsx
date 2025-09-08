@@ -23,6 +23,7 @@ import SubmitButton from '../../components/GlobalComponent/SubmitButton';
 import { FormDataLocalStorage } from '../../utils/tablestorages/FormDataLocalStorage';
 import { BuildingDataLocalStorage } from '../../utils/tablestorages/BuildingDataLocalStorage';
 import { PhotoTagLocalStorage } from '../../utils/tablestorages/PhotoTagLocalStorage';
+import { ValueInfoLocalStorage } from '../../utils/tablestorages/ValueInfoLocalStorage';
 import '../../CSS/modal.css';
 
 interface PhotoModalProps {
@@ -146,31 +147,45 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
       const fileName = generateFileName();
       const photoPath = `../phototags/${fileName}`;
       
-      // Store form data if provided
+      let savedFormData = null;
+      let savedBuildingData = null;
+      let photoTag = null;
+      let valueInfo = null;
+
+      // 1. Store FormData if provided and get the saved object with generated ID
       if (formData) {
-        FormDataLocalStorage.saveFormData(formData);
-        console.log('Form data saved to localStorage');
+        savedFormData = FormDataLocalStorage.saveFormData(formData);
+        console.log('Form data saved with ID:', savedFormData.id);
       }
       
-      // Store building data if provided
-      if (buildingData) {
-        BuildingDataLocalStorage.saveBuildingData(buildingData);
-        console.log('Building data saved to localStorage');
-      }
-
-      // Store photo tag with location data
-      const photoTagData = {
+      // 2. Store PhotoTag with location data and get the generated ID
+      photoTag = PhotoTagLocalStorage.addPhotoTag({
         photoPath,
         longitude: currentLocation?.longitude || 0,
         latitude: currentLocation?.latitude || 0,
         accuracy: currentLocation?.accuracy,
-        timestamp: new Date(),
-        formDataId: formData ? 'current-form-data' : undefined,
-        buildingDataId: buildingData ? 'current-building-data' : undefined
-      };
+        timestamp: new Date()
+      });
+      console.log('Photo tag saved with ID:', photoTag.id);
 
-      const photoTag = PhotoTagLocalStorage.addPhotoTag(photoTagData);
-      console.log('Photo tag saved:', photoTag);
+      // 3. Create ValueInfo entry to link FormData and PhotoTag if both exist
+      if (savedFormData && photoTag) {
+        valueInfo = ValueInfoLocalStorage.addValueInfo({
+          formDataId: savedFormData.id,
+          photoTagId: photoTag.id,
+          status: 'pending'
+        });
+        console.log('ValueInfo created with ID:', valueInfo.id);
+
+        // 4. Store BuildingData with ValueInfo ID reference if building data exists
+        if (buildingData && valueInfo) {
+          savedBuildingData = BuildingDataLocalStorage.saveBuildingData({
+            ...buildingData,
+            valueInfoId: valueInfo.id
+          });
+          console.log('Building data saved with ValueInfo reference:', valueInfo.id);
+        }
+      }
 
       // Call the provided onSubmit callback if available
       if (onSubmit && formData && buildingData) {
