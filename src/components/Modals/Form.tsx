@@ -119,10 +119,10 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
     fetchSubclasses();
   }, [classification, subclass]);
 
-  // Fetch actual uses when classification changes (only for building kinds)
+  // Fetch actual uses when classification changes
   useEffect(() => {
     const fetchActualUses = async () => {
-      if (!classification || !isBuildingKind()) {
+      if (!classification) {
         setActualUses([]);
         setActualUse('');
         setIsLoadingActualUses(false);
@@ -148,7 +148,7 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
     };
 
     fetchActualUses();
-  }, [classification, actualUse, kind]);
+  }, [classification, actualUse]);
 
   // Filter declarants based on search text
   useEffect(() => {
@@ -175,11 +175,15 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
       classification.trim() !== '' &&
       area > 0;
     
-    // If it's a building kind, also require actual use to be selected
+    // Actual use is only required for building kinds
     if (isBuildingKind()) {
       setIsFormValid(isValid && actualUse.trim() !== '');
     } else {
       setIsFormValid(isValid);
+      // Optional: Reset actual use if not a building kind
+      if (actualUse.trim() !== '') {
+        setActualUse('');
+      }
     }
   }, [district, declarantId, kind, classification, area, actualUse]);
 
@@ -210,27 +214,25 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
   };
 
   // Event handlers
-// In Form.tsx, modify the handleNextClick function:
-const handleNextClick = () => {
-  if (!isFormValid) return;
+  const handleNextClick = () => {
+    if (!isFormValid) return;
 
-  // Always close the form modal when Next is clicked
-  onDismiss();
-  
-  if (isBuildingKind()) {
-    setShowBuildingModal(true);
-  } else {
-    console.log('Form data:', { district, declarantId, kind, classification, subclass, area });
-    onSuccess();
-  }
-};
+    // Always close the form modal when Next is clicked
+    onDismiss();
+    
+    if (isBuildingKind()) {
+      setShowBuildingModal(true);
+    } else {
+      console.log('Form data:', { district, declarantId, kind, classification, subclass, area });
+      onSuccess();
+    }
+  };
 
   const handleBuildingModalSuccess = (buildingData: any) => {
     console.log('Form data:', { district, declarantId, kind, classification, subclass, actualUse, area });
     console.log('Building data:', buildingData);
     setShowBuildingModal(false);
     onSuccess();
-    onDismiss(); // Close the modal
   };
 
   const handleBuildingModalDismiss = () => {
