@@ -15,6 +15,12 @@ export interface PhotoTagData {
 
 const PHOTO_TAGS_KEY = 'photoTags';
 
+// Helper function to generate random string ID (consistent with FormDataLocalStorage)
+const generateRandomId = (): string => {
+  return Math.random().toString(36).substring(2, 15) + 
+         Math.random().toString(36).substring(2, 15);
+};
+
 // Simple distance calculation (Haversine formula)
 const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
   const R = 6371000; // Earth's radius in meters
@@ -57,13 +63,13 @@ export const PhotoTagLocalStorage = {
     }
   },
 
-  // Add a new photo tag
-  addPhotoTag: (photoTagData: Omit<PhotoTagData, 'id'>): PhotoTagData => {
+  // Add a new photo tag with consistent ID generation
+  addPhotoTag: (photoTagData: Omit<PhotoTagData, 'id'> & { id?: string }): PhotoTagData => {
     try {
       const photoTags = PhotoTagLocalStorage.getPhotoTags();
       const newPhotoTag: PhotoTagData = {
         ...photoTagData,
-        id: Date.now().toString() + Math.random().toString(36).substr(2, 9)
+        id: photoTagData.id || generateRandomId() // Use provided ID or generate random one
       };
       
       const updatedPhotoTags = [...photoTags, newPhotoTag];
@@ -86,6 +92,7 @@ export const PhotoTagLocalStorage = {
       let latitude = 0;
       let longitude = 0;
       let accuracy: number | undefined;
+      let altitude: number | undefined;
 
       try {
         // Use the working pattern from GeoTag service
@@ -95,6 +102,7 @@ export const PhotoTagLocalStorage = {
           latitude = position.coords.latitude;
           longitude = position.coords.longitude;
           accuracy = position.coords.accuracy;
+          altitude = position.coords.altitude || undefined;
         }
       } catch (locationError) {
         console.warn('Could not get location, using default coordinates:', locationError);
@@ -105,6 +113,7 @@ export const PhotoTagLocalStorage = {
         longitude,
         latitude,
         accuracy,
+        altitude,
         timestamp: new Date(),
         formDataId,
         buildingDataId
@@ -151,5 +160,38 @@ export const PhotoTagLocalStorage = {
       );
       return distance <= radiusMeters;
     });
+  },
+
+  // Update specific fields in photo tag data (preserves existing ID)
+  updatePhotoTag: (id: string, updates: Partial<PhotoTagData>): PhotoTagData | null => {
+    try {
+      const photoTags = PhotoTagLocalStorage.getPhotoTags();
+      const tagIndex = photoTags.findIndex(tag => tag.id === id);
+      
+      if (tagIndex === -1) {
+        return null;
+      }
+      
+      // Ensure we don't override the ID
+      const updatedTag = { 
+        ...photoTags[tagIndex], 
+        ...updates,
+        id: photoTags[tagIndex].id // Preserve original ID
+      };
+      
+      const updatedPhotoTags = [...photoTags];
+      updatedPhotoTags[tagIndex] = updatedTag;
+      
+      PhotoTagLocalStorage.savePhotoTags(updatedPhotoTags);
+      return updatedTag;
+    } catch (error) {
+      console.error('Error updating photo tag:', error);
+      return null;
+    }
+  },
+
+  // Generate a new random ID (consistent with FormDataLocalStorage)
+  generateId: (): string => {
+    return generateRandomId();
   }
 };
