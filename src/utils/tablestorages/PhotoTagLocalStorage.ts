@@ -9,8 +9,6 @@ export interface PhotoTagData {
   timestamp: Date;
   accuracy?: number;
   altitude?: number;
-  formDataId?: string;
-  buildingDataId?: string;
 }
 
 const PHOTO_TAGS_KEY = 'photoTags';
@@ -83,11 +81,7 @@ export const PhotoTagLocalStorage = {
   },
 
   // Add photo tag with current location - FIXED VERSION
-  async addPhotoTagWithCurrentLocation(
-    photoPath: string, 
-    formDataId?: string, 
-    buildingDataId?: string
-  ): Promise<PhotoTagData> {
+  async addPhotoTagWithCurrentLocation(photoPath: string): Promise<PhotoTagData> {
     try {
       let latitude = 0;
       let longitude = 0;
@@ -114,9 +108,7 @@ export const PhotoTagLocalStorage = {
         latitude,
         accuracy,
         altitude,
-        timestamp: new Date(),
-        formDataId,
-        buildingDataId
+        timestamp: new Date()
       });
     } catch (error) {
       console.error('Error adding photo tag with location:', error);
