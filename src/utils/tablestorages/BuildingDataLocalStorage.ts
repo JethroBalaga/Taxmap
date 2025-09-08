@@ -1,6 +1,6 @@
 // src/utils/BuildingDataLocalStorage.ts
 export interface BuildingData {
-  buildingInfoId: string; // Reference to BuildingInfo id
+  valueInfoId: string; // Reference to ValueInfo id
   structureType: string;
   buildingCode: string;
   storey: number | null;
@@ -40,14 +40,14 @@ export const BuildingDataLocalStorage = {
     }
   },
 
-  // Get building data by buildingInfoId
-  getBuildingDataByInfoId: (buildingInfoId: string): BuildingData | null => {
+  // Get building data by valueInfoId
+  getBuildingDataByInfoId: (valueInfoId: string): BuildingData | null => {
     try {
       const storedData = localStorage.getItem(BUILDING_DATA_KEY);
       if (storedData) {
         const buildingData = JSON.parse(storedData);
-        // Check if the stored data has the matching buildingInfoId
-        if (buildingData.buildingInfoId === buildingInfoId) {
+        // Check if the stored data has the matching valueInfoId
+        if (buildingData.valueInfoId === valueInfoId) {
           return buildingData;
         }
       }
@@ -80,9 +80,9 @@ export const BuildingDataLocalStorage = {
     }
   },
 
-  // Check if building data exists for a specific buildingInfoId
-  hasBuildingDataForInfoId: (buildingInfoId: string): boolean => {
+  // Check if building data exists for a specific valueInfoId
+  hasBuildingDataForInfoId: (valueInfoId: string): boolean => {
     const buildingData = BuildingDataLocalStorage.getBuildingData();
-    return buildingData ? buildingData.buildingInfoId === buildingInfoId : false;
+    return buildingData ? buildingData.valueInfoId === valueInfoId : false;
   }
 };
