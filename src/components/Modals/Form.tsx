@@ -210,22 +210,27 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
   };
 
   // Event handlers
-  const handleNextClick = () => {
-    if (!isFormValid) return;
+// In Form.tsx, modify the handleNextClick function:
+const handleNextClick = () => {
+  if (!isFormValid) return;
 
-    if (isBuildingKind()) {
-      setShowBuildingModal(true);
-    } else {
-      console.log('Form data:', { district, declarantId, kind, classification, subclass, area });
-      onSuccess();
-    }
-  };
+  // Always close the form modal when Next is clicked
+  onDismiss();
+  
+  if (isBuildingKind()) {
+    setShowBuildingModal(true);
+  } else {
+    console.log('Form data:', { district, declarantId, kind, classification, subclass, area });
+    onSuccess();
+  }
+};
 
   const handleBuildingModalSuccess = (buildingData: any) => {
     console.log('Form data:', { district, declarantId, kind, classification, subclass, actualUse, area });
     console.log('Building data:', buildingData);
     setShowBuildingModal(false);
     onSuccess();
+    onDismiss(); // Close the modal
   };
 
   const handleBuildingModalDismiss = () => {
