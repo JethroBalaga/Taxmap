@@ -14,13 +14,12 @@
 .forms-searchbar {
   width: 700px;
   flex-shrink: 0;
-  margin-right: 20px; /* Reduced from auto to keep icons closer */
+  margin-right: 20px;
 }
 
 .icon-group {
   display: flex;
   gap: 8px;
-  /* Removed margin-left: auto to prevent icons from going too far right */
 }
 
 /* Blue icons with !important to override Ionic defaults */
@@ -41,6 +40,20 @@
   opacity: 0.5;
   pointer-events: none;
   cursor: not-allowed;
+}
+
+/* Table styling */
+.selection-info {
+  margin-top: 16px;
+  padding: 12px;
+  background-color: var(--ion-color-light);
+  border-radius: 8px;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--ion-color-medium);
 }
 
 /* Responsive adjustments */
