@@ -21,6 +21,7 @@ import Map from './Map';
 import { clearSession } from '../utils/localStorage'; // Import the clearSession function
 import { supabase } from '../utils/supaBaseClient'; // Import supabase client
 import Forms from './Forms';
+import BuildingTable from './Formstabs/BuildingTable';
 
 const Menu: React.FC = () => {
     const router = useIonRouter();
@@ -86,6 +87,7 @@ const Menu: React.FC = () => {
                     <IonRouterOutlet id="main">
                         <Route exact path="/menu/map" component={Map} />
                         <Route exact path="/menu/forms" component={Forms} />
+                        <Route exact path="/menu/buildingtable" component={BuildingTable} />
                         <Route exact path="/menu">
                             <Redirect to="/menu/map" />
                         </Route>

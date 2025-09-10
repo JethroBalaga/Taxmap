@@ -12,12 +12,13 @@ import {
   IonIcon,
   IonAlert,
   IonText,
-  IonButton
+  IonRouterOutlet
 } from '@ionic/react';
-import { arrowUpCircle, trash, refresh, add } from 'ionicons/icons';
+import { arrowUpCircle, trash, refresh, informationCircleOutline } from 'ionicons/icons';
 import { FormDataLocalStorage, FormData } from '../utils/tablestorages/FormDataLocalStorage';
 import './../CSS/Forms.css';
 import DynamicTable from '../components/GlobalComponent/DynamicTable';
+import { Redirect, Route } from 'react-router';
 
 const Forms: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -28,27 +29,10 @@ const Forms: React.FC = () => {
 
   // Array of icon objects for better organization
   const iconActions = [
-    {
-      icon: refresh,
-      className: "icon-blue",
-      onClick: () => handleRefresh(),
-      title: "Refresh Data",
-      enabled: true
-    },
-    {
-      icon: arrowUpCircle,
-      className: selectedForm ? "icon-blue" : "icon-blue icon-disabled",
-      onClick: () => handleUpdateClick(),
-      title: "Update Selected Form",
-      enabled: !!selectedForm
-    },
-    {
-      icon: trash,
-      className: selectedForm ? "icon-blue" : "icon-blue icon-disabled",
-      onClick: () => handleDeleteClick(),
-      title: "Delete Selected Form",
-      enabled: !!selectedForm
-    }
+    { icon: refresh, className: "icon-blue", onClick: () => handleRefresh(), title: "Refresh Data", enabled: true },
+    { icon: arrowUpCircle, className: selectedForm ? "icon-blue" : "icon-blue icon-disabled", onClick: () => handleUpdateClick(), title: "Update Selected Form", enabled: !!selectedForm },
+    { icon: trash, className: selectedForm ? "icon-blue" : "icon-blue icon-disabled", onClick: () => handleDeleteClick(), title: "Delete Selected Form", enabled: !!selectedForm },
+    { icon: informationCircleOutline, className: selectedForm ? "icon-blue" : "icon-blue icon-disabled", onClick: () => handleDeleteClick(), title: "Delete Selected Form", enabled: !!selectedForm },
   ];
 
   // Load data from localStorage on component mount
@@ -57,33 +41,33 @@ const Forms: React.FC = () => {
   }, []);
 
   const loadFormData = () => {
-  setIsLoading(true);
-  try {
-    // Fetch ALL form data from localStorage
-    const allForms = FormDataLocalStorage.getAllFormData();
-    
-    // Ensure we always have an array, even if data is corrupted
-    if (Array.isArray(allForms)) {
-      setFormData(allForms);
-    } else {
-      // Handle legacy data format (single object instead of array)
-      if (allForms && typeof allForms === 'object' && 'id' in allForms) {
-        // Convert single form to array
-        setFormData([allForms]);
-        // Also update localStorage to new format
-        localStorage.setItem('formData', JSON.stringify([allForms]));
+    setIsLoading(true);
+    try {
+      // Fetch ALL form data from localStorage
+      const allForms = FormDataLocalStorage.getAllFormData();
+
+      // Ensure we always have an array, even if data is corrupted
+      if (Array.isArray(allForms)) {
+        setFormData(allForms);
       } else {
-        // No valid data found
-        setFormData([]);
+        // Handle legacy data format (single object instead of array)
+        if (allForms && typeof allForms === 'object' && 'id' in allForms) {
+          // Convert single form to array
+          setFormData([allForms]);
+          // Also update localStorage to new format
+          localStorage.setItem('formData', JSON.stringify([allForms]));
+        } else {
+          // No valid data found
+          setFormData([]);
+        }
       }
+    } catch (error) {
+      console.error('Error loading form data:', error);
+      setFormData([]);
+    } finally {
+      setIsLoading(false);
     }
-  } catch (error) {
-    console.error('Error loading form data:', error);
-    setFormData([]);
-  } finally {
-    setIsLoading(false);
-  }
-};
+  };
 
   const handleUpdateClick = () => {
     if (selectedForm) {
@@ -107,14 +91,14 @@ const Forms: React.FC = () => {
     if (selectedForm) {
       // Delete the selected form from localStorage
       const success = FormDataLocalStorage.deleteFormData(selectedForm.id);
-      
+
       if (success) {
         // Update local state
         const updatedForms = formData.filter(form => form.id !== selectedForm.id);
         setFormData(updatedForms);
         setSelectedForm(null);
         setShowDeleteAlert(false);
-        
+
         console.log('Deleted form:', selectedForm.id);
       } else {
         alert('Error deleting form');
@@ -130,12 +114,12 @@ const Forms: React.FC = () => {
   };
 
   // Filter forms based on search term - with additional safety check
-  const filteredForms = Array.isArray(formData) 
-    ? formData.filter(form => 
-        form && Object.values(form).some(value => 
-          value && value.toString().toLowerCase().includes(searchTerm.toLowerCase())
-        )
+  const filteredForms = Array.isArray(formData)
+    ? formData.filter(form =>
+      form && Object.values(form).some(value =>
+        value && value.toString().toLowerCase().includes(searchTerm.toLowerCase())
       )
+    )
     : [];
 
   return (
@@ -145,7 +129,7 @@ const Forms: React.FC = () => {
           <IonTitle>Forms Management</IonTitle>
         </IonToolbar>
       </IonHeader>
-      
+
       <IonContent fullscreen>
         <div className="forms-container">
           <IonGrid>
@@ -186,7 +170,7 @@ const Forms: React.FC = () => {
                       keyField="id"
                       onRowClick={handleRowClick}
                     />
-                    
+
                     {selectedForm && (
                       <div className="selection-info">
                         Selected Form: {selectedForm.id} - {selectedForm.kind} in District {selectedForm.district}
@@ -223,6 +207,14 @@ const Forms: React.FC = () => {
             ]}
           />
         </div>
+
+        <IonRouterOutlet id="main">
+          <Route exact path="/menu/map" component={Map} />
+          <Route exact path="/menu/forms" component={Forms} />
+          <Route exact path="/menu">
+            <Redirect to="/menu/map" />
+          </Route>
+        </IonRouterOutlet>
       </IonContent>
     </IonPage>
   );
