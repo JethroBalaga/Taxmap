@@ -19,39 +19,88 @@ const generateRandomId = (): string => {
 };
 
 export const FormDataLocalStorage = {
-  // Save form data to localStorage with generated ID
-  saveFormData: (formData: Omit<FormData, 'id'> & { id?: string }): FormData => {
-    try {
-      // Generate ID if not provided
-      const dataWithId: FormData = {
-        ...formData,
-        id: formData.id || generateRandomId()
-      };
-      
-      localStorage.setItem(FORM_DATA_KEY, JSON.stringify(dataWithId));
-      return dataWithId;
-    } catch (error) {
-      console.error('Error saving form data to localStorage:', error);
-      throw error;
-    }
-  },
-
-  // Get form data from localStorage
-  getFormData: (): FormData | null => {
+  // Get ALL form data from localStorage
+  getAllFormData: (): FormData[] => {
     try {
       const storedData = localStorage.getItem(FORM_DATA_KEY);
       if (storedData) {
         return JSON.parse(storedData);
       }
-      return null;
+      return [];
+    } catch (error) {
+      console.error('Error retrieving form data from localStorage:', error);
+      return [];
+    }
+  },
+
+  // Get a specific form by ID
+  getFormData: (id: string): FormData | null => {
+    try {
+      const allForms = FormDataLocalStorage.getAllFormData();
+      return allForms.find(form => form.id === id) || null;
     } catch (error) {
       console.error('Error retrieving form data from localStorage:', error);
       return null;
     }
   },
 
-  // Clear form data from localStorage
-  clearFormData: (): void => {
+  // Save NEW form data to localStorage with generated ID
+  saveFormData: (formData: Omit<FormData, 'id'>): FormData => {
+    try {
+      const allForms = FormDataLocalStorage.getAllFormData();
+      const newForm: FormData = {
+        ...formData,
+        id: generateRandomId()
+      };
+      
+      const updatedForms = [...allForms, newForm];
+      localStorage.setItem(FORM_DATA_KEY, JSON.stringify(updatedForms));
+      return newForm;
+    } catch (error) {
+      console.error('Error saving form data to localStorage:', error);
+      throw error;
+    }
+  },
+
+  // Update existing form data
+  updateFormData: (id: string, updates: Partial<FormData>): FormData | null => {
+    try {
+      const allForms = FormDataLocalStorage.getAllFormData();
+      const formIndex = allForms.findIndex(form => form.id === id);
+      
+      if (formIndex === -1) {
+        return null;
+      }
+      
+      const updatedForm = { 
+        ...allForms[formIndex], 
+        ...updates
+      };
+      
+      allForms[formIndex] = updatedForm;
+      localStorage.setItem(FORM_DATA_KEY, JSON.stringify(allForms));
+      return updatedForm;
+    } catch (error) {
+      console.error('Error updating form data:', error);
+      return null;
+    }
+  },
+
+  // Delete form data
+  deleteFormData: (id: string): boolean => {
+    try {
+      const allForms = FormDataLocalStorage.getAllFormData();
+      const updatedForms = allForms.filter(form => form.id !== id);
+      localStorage.setItem(FORM_DATA_KEY, JSON.stringify(updatedForms));
+      return true;
+    } catch (error) {
+      console.error('Error deleting form data:', error);
+      return false;
+    }
+  },
+
+  // Clear ALL form data from localStorage
+  clearAllFormData: (): void => {
     try {
       localStorage.removeItem(FORM_DATA_KEY);
     } catch (error) {
@@ -59,30 +108,7 @@ export const FormDataLocalStorage = {
     }
   },
 
-  // Update specific fields in form data (preserves existing ID)
-  updateFormData: (updates: Partial<FormData>): FormData | null => {
-    try {
-      const currentData = FormDataLocalStorage.getFormData();
-      if (!currentData) {
-        return null;
-      }
-      
-      // Ensure we don't override the ID unless explicitly provided
-      const updatedData = { 
-        ...currentData, 
-        ...updates,
-        id: updates.id || currentData.id // Keep existing ID unless new one provided
-      };
-      
-      FormDataLocalStorage.saveFormData(updatedData);
-      return updatedData;
-    } catch (error) {
-      console.error('Error updating form data:', error);
-      return null;
-    }
-  },
-
-  // Generate a new random ID (optional utility method)
+  // Generate a new random ID
   generateId: (): string => {
     return generateRandomId();
   }
