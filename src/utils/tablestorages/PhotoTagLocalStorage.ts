@@ -34,25 +34,28 @@ const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: numbe
 };
 
 export const PhotoTagLocalStorage = {
-  // Save all photo tags
-  savePhotoTags: (photoTags: PhotoTagData[]): void => {
-    try {
-      localStorage.setItem(PHOTO_TAGS_KEY, JSON.stringify(photoTags));
-    } catch (error) {
-      console.error('Error saving photo tags to localStorage:', error);
-    }
-  },
-
-  // Get all photo tags
-  getPhotoTags: (): PhotoTagData[] => {
+  // Get ALL photo tags from localStorage
+  getAllPhotoTags: (): PhotoTagData[] => {
     try {
       const storedData = localStorage.getItem(PHOTO_TAGS_KEY);
       if (storedData) {
         const parsedData = JSON.parse(storedData);
-        return parsedData.map((tag: any) => ({
-          ...tag,
-          timestamp: new Date(tag.timestamp)
-        }));
+        // Handle both array format and legacy single object format
+        if (Array.isArray(parsedData)) {
+          return parsedData.map((tag: any) => ({
+            ...tag,
+            timestamp: new Date(tag.timestamp)
+          }));
+        } else if (parsedData && typeof parsedData === 'object' && parsedData.id) {
+          // Convert legacy single object to array
+          const convertedData = [{
+            ...parsedData,
+            timestamp: new Date(parsedData.timestamp)
+          }];
+          // Update storage to new format
+          localStorage.setItem(PHOTO_TAGS_KEY, JSON.stringify(convertedData));
+          return convertedData;
+        }
       }
       return [];
     } catch (error) {
@@ -61,17 +64,37 @@ export const PhotoTagLocalStorage = {
     }
   },
 
-  // Add a new photo tag with consistent ID generation
-  addPhotoTag: (photoTagData: Omit<PhotoTagData, 'id'> & { id?: string }): PhotoTagData => {
+  // Save ALL photo tags to localStorage
+  saveAllPhotoTags: (photoTags: PhotoTagData[]): void => {
     try {
-      const photoTags = PhotoTagLocalStorage.getPhotoTags();
+      localStorage.setItem(PHOTO_TAGS_KEY, JSON.stringify(photoTags));
+    } catch (error) {
+      console.error('Error saving photo tags to localStorage:', error);
+    }
+  },
+
+  // Get a specific photo tag by ID
+  getPhotoTag: (id: string): PhotoTagData | null => {
+    try {
+      const allPhotoTags = PhotoTagLocalStorage.getAllPhotoTags();
+      return allPhotoTags.find(tag => tag.id === id) || null;
+    } catch (error) {
+      console.error('Error retrieving photo tag from localStorage:', error);
+      return null;
+    }
+  },
+
+  // Add a new photo tag with consistent ID generation
+  addPhotoTag: (photoTagData: Omit<PhotoTagData, 'id'>): PhotoTagData => {
+    try {
+      const allPhotoTags = PhotoTagLocalStorage.getAllPhotoTags();
       const newPhotoTag: PhotoTagData = {
         ...photoTagData,
-        id: photoTagData.id || generateRandomId() // Use provided ID or generate random one
+        id: generateRandomId()
       };
       
-      const updatedPhotoTags = [...photoTags, newPhotoTag];
-      PhotoTagLocalStorage.savePhotoTags(updatedPhotoTags);
+      const updatedPhotoTags = [...allPhotoTags, newPhotoTag];
+      PhotoTagLocalStorage.saveAllPhotoTags(updatedPhotoTags);
       
       return newPhotoTag;
     } catch (error) {
@@ -80,7 +103,7 @@ export const PhotoTagLocalStorage = {
     }
   },
 
-  // Add photo tag with current location - FIXED VERSION
+  // Add photo tag with current location
   async addPhotoTagWithCurrentLocation(photoPath: string): Promise<PhotoTagData> {
     try {
       let latitude = 0;
@@ -116,25 +139,47 @@ export const PhotoTagLocalStorage = {
     }
   },
 
-  // Get photo tag by ID
-  getPhotoTagById: (id: string): PhotoTagData | null => {
-    const photoTags = PhotoTagLocalStorage.getPhotoTags();
-    return photoTags.find(tag => tag.id === id) || null;
-  },
-
-  // Delete photo tag by ID
-  deletePhotoTag: (id: string): void => {
+  // Update specific fields in photo tag data
+  updatePhotoTag: (id: string, updates: Partial<PhotoTagData>): PhotoTagData | null => {
     try {
-      const photoTags = PhotoTagLocalStorage.getPhotoTags();
-      const filteredTags = photoTags.filter(tag => tag.id !== id);
-      PhotoTagLocalStorage.savePhotoTags(filteredTags);
+      const allPhotoTags = PhotoTagLocalStorage.getAllPhotoTags();
+      const tagIndex = allPhotoTags.findIndex(tag => tag.id === id);
+      
+      if (tagIndex === -1) {
+        return null;
+      }
+      
+      const updatedTag = { 
+        ...allPhotoTags[tagIndex], 
+        ...updates
+      };
+      
+      const updatedPhotoTags = [...allPhotoTags];
+      updatedPhotoTags[tagIndex] = updatedTag;
+      
+      PhotoTagLocalStorage.saveAllPhotoTags(updatedPhotoTags);
+      return updatedTag;
     } catch (error) {
-      console.error('Error deleting photo tag:', error);
+      console.error('Error updating photo tag:', error);
+      return null;
     }
   },
 
-  // Clear all photo tags
-  clearPhotoTags: (): void => {
+  // Delete photo tag by ID
+  deletePhotoTag: (id: string): boolean => {
+    try {
+      const allPhotoTags = PhotoTagLocalStorage.getAllPhotoTags();
+      const filteredTags = allPhotoTags.filter(tag => tag.id !== id);
+      PhotoTagLocalStorage.saveAllPhotoTags(filteredTags);
+      return true;
+    } catch (error) {
+      console.error('Error deleting photo tag:', error);
+      return false;
+    }
+  },
+
+  // Clear ALL photo tags from localStorage
+  clearAllPhotoTags: (): void => {
     try {
       localStorage.removeItem(PHOTO_TAGS_KEY);
     } catch (error) {
@@ -144,9 +189,9 @@ export const PhotoTagLocalStorage = {
 
   // Get photo tags by coordinates (within a certain radius)
   getPhotoTagsByLocation: (latitude: number, longitude: number, radiusMeters: number = 100): PhotoTagData[] => {
-    const photoTags = PhotoTagLocalStorage.getPhotoTags();
+    const allPhotoTags = PhotoTagLocalStorage.getAllPhotoTags();
     
-    return photoTags.filter(tag => {
+    return allPhotoTags.filter(tag => {
       const distance = calculateDistance(
         latitude, longitude, tag.latitude, tag.longitude
       );
@@ -154,32 +199,10 @@ export const PhotoTagLocalStorage = {
     });
   },
 
-  // Update specific fields in photo tag data (preserves existing ID)
-  updatePhotoTag: (id: string, updates: Partial<PhotoTagData>): PhotoTagData | null => {
-    try {
-      const photoTags = PhotoTagLocalStorage.getPhotoTags();
-      const tagIndex = photoTags.findIndex(tag => tag.id === id);
-      
-      if (tagIndex === -1) {
-        return null;
-      }
-      
-      // Ensure we don't override the ID
-      const updatedTag = { 
-        ...photoTags[tagIndex], 
-        ...updates,
-        id: photoTags[tagIndex].id // Preserve original ID
-      };
-      
-      const updatedPhotoTags = [...photoTags];
-      updatedPhotoTags[tagIndex] = updatedTag;
-      
-      PhotoTagLocalStorage.savePhotoTags(updatedPhotoTags);
-      return updatedTag;
-    } catch (error) {
-      console.error('Error updating photo tag:', error);
-      return null;
-    }
+  // Get photo tags count
+  getPhotoTagsCount: (): number => {
+    const allPhotoTags = PhotoTagLocalStorage.getAllPhotoTags();
+    return allPhotoTags.length;
   },
 
   // Generate a new random ID (consistent with FormDataLocalStorage)
