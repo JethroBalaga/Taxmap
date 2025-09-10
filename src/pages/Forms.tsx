@@ -11,9 +11,10 @@ import {
   IonSearchbar,
   IonIcon,
   IonAlert,
-  IonText
+  IonText,
+  IonButton
 } from '@ionic/react';
-import { arrowUpCircle, trash, refresh } from 'ionicons/icons';
+import { arrowUpCircle, trash, refresh, add } from 'ionicons/icons';
 import { FormDataLocalStorage, FormData } from '../utils/tablestorages/FormDataLocalStorage';
 import './../CSS/Forms.css';
 import DynamicTable from '../components/GlobalComponent/DynamicTable';
@@ -31,29 +32,38 @@ const Forms: React.FC = () => {
   }, []);
 
   const loadFormData = () => {
-    setIsLoading(true);
-    try {
-      // Fetch the form data from localStorage
-      const storedFormData = FormDataLocalStorage.getFormData();
-      
-      if (storedFormData) {
-        // Convert to array format for the table
-        setFormData([storedFormData]);
+  setIsLoading(true);
+  try {
+    // Fetch ALL form data from localStorage
+    const allForms = FormDataLocalStorage.getAllFormData();
+    
+    // Ensure we always have an array, even if data is corrupted
+    if (Array.isArray(allForms)) {
+      setFormData(allForms);
+    } else {
+      // Handle legacy data format (single object instead of array)
+      if (allForms && typeof allForms === 'object' && 'id' in allForms) {
+        // Convert single form to array
+        setFormData([allForms]);
+        // Also update localStorage to new format
+        localStorage.setItem('formData', JSON.stringify([allForms]));
       } else {
-        // No data found in localStorage
+        // No valid data found
         setFormData([]);
       }
-    } catch (error) {
-      console.error('Error loading form data:', error);
-    } finally {
-      setIsLoading(false);
     }
-  };
+  } catch (error) {
+    console.error('Error loading form data:', error);
+    setFormData([]);
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const handleUpdateClick = () => {
     if (selectedForm) {
       console.log('Update form:', selectedForm);
-      // In a real app, you would implement update functionality
+      // In a real app, you would navigate to an edit form
       alert(`Would update form with ID: ${selectedForm.id}`);
     } else {
       alert('Please select a form to update');
@@ -70,18 +80,22 @@ const Forms: React.FC = () => {
 
   const confirmDelete = () => {
     if (selectedForm) {
-      // Clear the form data from localStorage
-      FormDataLocalStorage.clearFormData();
+      // Delete the selected form from localStorage
+      const success = FormDataLocalStorage.deleteFormData(selectedForm.id);
       
-      // Update local state
-      setFormData([]);
-      setSelectedForm(null);
-      setShowDeleteAlert(false);
-      
-      console.log('Deleted form:', selectedForm.id);
+      if (success) {
+        // Update local state
+        const updatedForms = formData.filter(form => form.id !== selectedForm.id);
+        setFormData(updatedForms);
+        setSelectedForm(null);
+        setShowDeleteAlert(false);
+        
+        console.log('Deleted form:', selectedForm.id);
+      } else {
+        alert('Error deleting form');
+      }
     }
   };
-
   const handleRowClick = (rowData: any) => {
     setSelectedForm(rowData);
   };
@@ -90,12 +104,14 @@ const Forms: React.FC = () => {
     loadFormData();
   };
 
-  // Filter forms based on search term
-  const filteredForms = formData.filter(form => 
-    Object.values(form).some(value => 
-      value && value.toString().toLowerCase().includes(searchTerm.toLowerCase())
-    )
-  );
+  // Filter forms based on search term - with additional safety check
+  const filteredForms = Array.isArray(formData) 
+    ? formData.filter(form => 
+        form && Object.values(form).some(value => 
+          value && value.toString().toLowerCase().includes(searchTerm.toLowerCase())
+        )
+      )
+    : [];
 
   return (
     <IonPage>
@@ -150,14 +166,14 @@ const Forms: React.FC = () => {
                   <>
                     <DynamicTable
                       data={filteredForms}
-                      title="Stored Form Data"
+                      title={`Forms (${filteredForms.length} of ${formData.length})`}
                       keyField="id"
                       onRowClick={handleRowClick}
                     />
                     
                     {selectedForm && (
                       <div className="selection-info">
-                        Selected Form: {selectedForm.id}
+                        Selected Form: {selectedForm.id} - {selectedForm.kind} in District {selectedForm.district}
                       </div>
                     )}
                   </>
@@ -165,7 +181,7 @@ const Forms: React.FC = () => {
                   <div className="empty-state">
                     <IonText>
                       <h3>No Form Data Found</h3>
-                      <p>There is no form data stored in localStorage.</p>
+                      <p>Click "Add New" to create your first form.</p>
                     </IonText>
                   </div>
                 )}
@@ -177,7 +193,7 @@ const Forms: React.FC = () => {
             isOpen={showDeleteAlert}
             onDidDismiss={() => setShowDeleteAlert(false)}
             header={'Confirm Delete'}
-            message={'Are you sure you want to delete this form?'}
+            message={'Are you sure you want to delete this form? This action cannot be undone.'}
             buttons={[
               {
                 text: 'Cancel',
@@ -185,6 +201,7 @@ const Forms: React.FC = () => {
               },
               {
                 text: 'Delete',
+                role: 'destructive',
                 handler: confirmDelete
               }
             ]}
