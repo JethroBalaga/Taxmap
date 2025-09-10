@@ -12,13 +12,13 @@ import {
   IonIcon,
   IonAlert,
   IonText,
-  IonRouterOutlet
+  IonButton,
 } from '@ionic/react';
 import { arrowUpCircle, trash, refresh, informationCircleOutline } from 'ionicons/icons';
 import { FormDataLocalStorage, FormData } from '../utils/tablestorages/FormDataLocalStorage';
 import './../CSS/Forms.css';
 import DynamicTable from '../components/GlobalComponent/DynamicTable';
-import { Redirect, Route } from 'react-router';
+import BuildingTable from './Formstabs/BuildingTable';
 
 const Forms: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -26,16 +26,15 @@ const Forms: React.FC = () => {
   const [selectedForm, setSelectedForm] = useState<FormData | null>(null);
   const [showDeleteAlert, setShowDeleteAlert] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [showBuildingTable, setShowBuildingTable] = useState(false);
 
-  // Array of icon objects for better organization
   const iconActions = [
     { icon: refresh, className: "icon-blue", onClick: () => handleRefresh(), title: "Refresh Data", enabled: true },
     { icon: arrowUpCircle, className: selectedForm ? "icon-blue" : "icon-blue icon-disabled", onClick: () => handleUpdateClick(), title: "Update Selected Form", enabled: !!selectedForm },
     { icon: trash, className: selectedForm ? "icon-blue" : "icon-blue icon-disabled", onClick: () => handleDeleteClick(), title: "Delete Selected Form", enabled: !!selectedForm },
-    { icon: informationCircleOutline, className: selectedForm ? "icon-blue" : "icon-blue icon-disabled", onClick: () => handleDeleteClick(), title: "Delete Selected Form", enabled: !!selectedForm },
+    { icon: informationCircleOutline, className: selectedForm ? "icon-blue" : "icon-blue icon-disabled", onClick: () => handleInfoClick(), title: "View Building Details", enabled: !!selectedForm },
   ];
 
-  // Load data from localStorage on component mount
   useEffect(() => {
     loadFormData();
   }, []);
@@ -43,23 +42,14 @@ const Forms: React.FC = () => {
   const loadFormData = () => {
     setIsLoading(true);
     try {
-      // Fetch ALL form data from localStorage
       const allForms = FormDataLocalStorage.getAllFormData();
-
-      // Ensure we always have an array, even if data is corrupted
       if (Array.isArray(allForms)) {
         setFormData(allForms);
+      } else if (allForms && typeof allForms === 'object' && 'id' in allForms) {
+        setFormData([allForms]);
+        localStorage.setItem('formData', JSON.stringify([allForms]));
       } else {
-        // Handle legacy data format (single object instead of array)
-        if (allForms && typeof allForms === 'object' && 'id' in allForms) {
-          // Convert single form to array
-          setFormData([allForms]);
-          // Also update localStorage to new format
-          localStorage.setItem('formData', JSON.stringify([allForms]));
-        } else {
-          // No valid data found
-          setFormData([]);
-        }
+        setFormData([]);
       }
     } catch (error) {
       console.error('Error loading form data:', error);
@@ -71,8 +61,6 @@ const Forms: React.FC = () => {
 
   const handleUpdateClick = () => {
     if (selectedForm) {
-      console.log('Update form:', selectedForm);
-      // In a real app, you would navigate to an edit form
       alert(`Would update form with ID: ${selectedForm.id}`);
     } else {
       alert('Please select a form to update');
@@ -87,24 +75,37 @@ const Forms: React.FC = () => {
     }
   };
 
+  const handleInfoClick = () => {
+    if (selectedForm) {
+      // Convert id to number for comparison if it's stored as string
+      const id = typeof selectedForm.id === 'string' 
+        ? parseInt(selectedForm.id) 
+        : selectedForm.id;
+      
+      if (id === 2) {
+        setShowBuildingTable(true);
+      } else {
+        alert('Building details are only available for form with ID = 2');
+      }
+    } else {
+      alert('Please select a form to view details');
+    }
+  };
+
   const confirmDelete = () => {
     if (selectedForm) {
-      // Delete the selected form from localStorage
       const success = FormDataLocalStorage.deleteFormData(selectedForm.id);
-
       if (success) {
-        // Update local state
         const updatedForms = formData.filter(form => form.id !== selectedForm.id);
         setFormData(updatedForms);
         setSelectedForm(null);
         setShowDeleteAlert(false);
-
-        console.log('Deleted form:', selectedForm.id);
       } else {
         alert('Error deleting form');
       }
     }
   };
+
   const handleRowClick = (rowData: any) => {
     setSelectedForm(rowData);
   };
@@ -113,7 +114,10 @@ const Forms: React.FC = () => {
     loadFormData();
   };
 
-  // Filter forms based on search term - with additional safety check
+  const handleBackToForms = () => {
+    setShowBuildingTable(false);
+  };
+
   const filteredForms = Array.isArray(formData)
     ? formData.filter(form =>
       form && Object.values(form).some(value =>
@@ -121,6 +125,22 @@ const Forms: React.FC = () => {
       )
     )
     : [];
+
+  if (showBuildingTable && selectedForm) {
+    return (
+      <IonPage>
+        <IonHeader>
+          <IonToolbar>
+            <IonTitle>Building Details</IonTitle>
+            <IonButton slot="end" onClick={handleBackToForms}>
+              Back to Forms
+            </IonButton>
+          </IonToolbar>
+        </IonHeader>
+        <BuildingTable form_id={selectedForm.id} />
+      </IonPage>
+    );
+  }
 
   return (
     <IonPage>
@@ -142,7 +162,6 @@ const Forms: React.FC = () => {
                     onIonInput={(e) => setSearchTerm(e.detail.value!)}
                     className="forms-searchbar"
                   />
-
                   <div className="icon-group">
                     {iconActions.map((action, index) => (
                       <IonIcon
@@ -170,7 +189,6 @@ const Forms: React.FC = () => {
                       keyField="id"
                       onRowClick={handleRowClick}
                     />
-
                     {selectedForm && (
                       <div className="selection-info">
                         Selected Form: {selectedForm.id} - {selectedForm.kind} in District {selectedForm.district}
@@ -195,26 +213,11 @@ const Forms: React.FC = () => {
             header={'Confirm Delete'}
             message={'Are you sure you want to delete this form? This action cannot be undone.'}
             buttons={[
-              {
-                text: 'Cancel',
-                role: 'cancel',
-              },
-              {
-                text: 'Delete',
-                role: 'destructive',
-                handler: confirmDelete
-              }
+              { text: 'Cancel', role: 'cancel' },
+              { text: 'Delete', role: 'destructive', handler: confirmDelete }
             ]}
           />
         </div>
-
-        <IonRouterOutlet id="main">
-          <Route exact path="/menu/map" component={Map} />
-          <Route exact path="/menu/forms" component={Forms} />
-          <Route exact path="/menu">
-            <Redirect to="/menu/map" />
-          </Route>
-        </IonRouterOutlet>
       </IonContent>
     </IonPage>
   );
