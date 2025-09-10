@@ -137,7 +137,7 @@ const Forms: React.FC = () => {
             </IonButton>
           </IonToolbar>
         </IonHeader>
-        <BuildingTable form_id={selectedForm.id} />
+        <BuildingTable form_id={selectedForm.id} onBack={handleBackToForms} />
       </IonPage>
     );
   }
