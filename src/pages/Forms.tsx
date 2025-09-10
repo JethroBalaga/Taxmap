@@ -77,15 +77,15 @@ const Forms: React.FC = () => {
 
   const handleInfoClick = () => {
     if (selectedForm) {
-      // Convert id to number for comparison if it's stored as string
-      const id = typeof selectedForm.id === 'string' 
-        ? parseInt(selectedForm.id) 
-        : selectedForm.id;
+      // Convert kind to number for comparison if it's stored as string
+      const kind = typeof selectedForm.kind === 'string' 
+        ? parseInt(selectedForm.kind) 
+        : selectedForm.kind;
       
-      if (id === 2) {
+      if (kind === 2) {
         setShowBuildingTable(true);
       } else {
-        alert('Building details are only available for form with ID = 2');
+        alert('Building details are only available for forms with kind = 2');
       }
     } else {
       alert('Please select a form to view details');
@@ -191,7 +191,7 @@ const Forms: React.FC = () => {
                     />
                     {selectedForm && (
                       <div className="selection-info">
-                        Selected Form: {selectedForm.id} - {selectedForm.kind} in District {selectedForm.district}
+                        Selected Form: {selectedForm.id} - Kind: {selectedForm.kind} in District {selectedForm.district}
                       </div>
                     )}
                   </>

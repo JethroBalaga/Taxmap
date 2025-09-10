@@ -21,7 +21,6 @@ const BuildingTable: React.FC<BuildingTableProps> = ({ form_id }) => {
       </IonHeader>
 
       <IonContent>
-        <p>Building details for form: {form_id}</p>
       </IonContent>
     </IonPage>
   );
