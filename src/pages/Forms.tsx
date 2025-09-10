@@ -26,6 +26,31 @@ const Forms: React.FC = () => {
   const [showDeleteAlert, setShowDeleteAlert] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Array of icon objects for better organization
+  const iconActions = [
+    {
+      icon: refresh,
+      className: "icon-blue",
+      onClick: () => handleRefresh(),
+      title: "Refresh Data",
+      enabled: true
+    },
+    {
+      icon: arrowUpCircle,
+      className: selectedForm ? "icon-blue" : "icon-blue icon-disabled",
+      onClick: () => handleUpdateClick(),
+      title: "Update Selected Form",
+      enabled: !!selectedForm
+    },
+    {
+      icon: trash,
+      className: selectedForm ? "icon-blue" : "icon-blue icon-disabled",
+      onClick: () => handleDeleteClick(),
+      title: "Delete Selected Form",
+      enabled: !!selectedForm
+    }
+  ];
+
   // Load data from localStorage on component mount
   useEffect(() => {
     loadFormData();
@@ -135,24 +160,15 @@ const Forms: React.FC = () => {
                   />
 
                   <div className="icon-group">
-                    <IonIcon
-                      icon={refresh}
-                      className="icon-yellow"
-                      onClick={handleRefresh}
-                      title="Refresh Data"
-                    />
-                    <IonIcon
-                      icon={arrowUpCircle}
-                      className={selectedForm ? "icon-yellow" : "icon-yellow icon-disabled"}
-                      onClick={handleUpdateClick}
-                      title="Update Selected Form"
-                    />
-                    <IonIcon
-                      icon={trash}
-                      className={selectedForm ? "icon-yellow" : "icon-yellow icon-disabled"}
-                      onClick={handleDeleteClick}
-                      title="Delete Selected Form"
-                    />
+                    {iconActions.map((action, index) => (
+                      <IonIcon
+                        key={index}
+                        icon={action.icon}
+                        className={action.className}
+                        onClick={action.onClick}
+                        title={action.title}
+                      />
+                    ))}
                   </div>
                 </div>
               </IonCol>
