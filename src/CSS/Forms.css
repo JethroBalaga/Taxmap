@@ -1,0 +1,62 @@
+/* Forms.css */
+.forms-container {
+  padding: 10px;
+}
+
+.search-container {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  padding: 10px;
+}
+
+.forms-searchbar {
+  width: 700px;
+  flex-shrink: 0;
+  margin-right: 20px; /* Reduced from auto to keep icons closer */
+}
+
+.icon-group {
+  display: flex;
+  gap: 8px;
+  /* Removed margin-left: auto to prevent icons from going too far right */
+}
+
+/* Blue icons with !important to override Ionic defaults */
+.icon-yellow {
+  color: #00a2ff !important;
+  --ion-color-base: #00d9ff !important;
+  --ion-color-contrast: #000000 !important;
+  font-size: 24px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.icon-yellow:hover {
+  opacity: 0.8;
+}
+
+.icon-disabled {
+  opacity: 0.5;
+  pointer-events: none;
+  cursor: not-allowed;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .search-container {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .forms-searchbar {
+    width: 100% !important;
+    margin-right: 0;
+  }
+  
+  .icon-group {
+    align-self: center;
+    margin-top: 10px;
+  }
+}

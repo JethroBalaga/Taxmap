@@ -14,17 +14,19 @@ import {
     IonList,
     IonLabel
 } from '@ionic/react'
-import { locateOutline, mapOutline, logOutOutline } from 'ionicons/icons';
+import {mapOutline, logOutOutline, documentTextOutline } from 'ionicons/icons';
 import { Redirect, Route } from 'react-router';
 import { useIonRouter } from '@ionic/react';
 import Map from './Map';
 import { clearSession } from '../utils/localStorage'; // Import the clearSession function
 import { supabase } from '../utils/supaBaseClient'; // Import supabase client
+import Forms from './Forms';
 
 const Menu: React.FC = () => {
     const router = useIonRouter();
     const path = [
-        { name: 'Map', url: '/app/map', icon: mapOutline},
+        { name: 'Map', url: '/menu/map', icon: mapOutline},
+        { name: 'Forms', url: '/menu/forms', icon: documentTextOutline},
     ]
 
     const handleLogout = async () => {
@@ -83,6 +85,7 @@ const Menu: React.FC = () => {
                 <IonContent className="ion-padding">
                     <IonRouterOutlet id="main">
                         <Route exact path="/menu/map" component={Map} />
+                        <Route exact path="/menu/forms" component={Forms} />
                         <Route exact path="/menu">
                             <Redirect to="/menu/map" />
                         </Route>
