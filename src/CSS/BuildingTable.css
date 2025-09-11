@@ -1,182 +1,140 @@
 .building-content {
-    --background: #0f0f0f; /* Dark background */
+    --background: #0a0a0a;
     padding: 16px;
-    color: #f1f3f5; /* Light text color */
 }
 
-/* Search container */
 .search-container {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 10px;
     padding: 10px;
-    background: #1a1a1a; /* Dark background for search */
+    background: rgb(10, 10, 10);
     border-radius: 8px;
     margin-bottom: 16px;
 }
 
-.building-searchbar {
-    --background: #2a2a2a; /* Darker background for searchbar */
-    --border-radius: 8px;
-    --color: #f1f3f5; /* Light text color */
-    --placeholder-color: #888; /* Lighter placeholder */
-    --icon-color: #f1f3f5; /* Light icon color */
+.forms-searchbar {
+    width: 700px;
+    flex-shrink: 0;
+    margin-right: 20px;
 }
 
 /* Table styles */
 .table-header {
     font-weight: bold;
-    background-color: #1a1a1a; /* Dark header background */
-    border-bottom: 2px solid #333; /* Darker border */
+    background-color: #0c0c0c;
+    border-bottom: 2px solid #dee2e6;
     padding: 12px 0;
-    color: #f1f3f5; /* Light text color */
+    color: #f4f6f8;
 }
 
 .table-row {
-    border-bottom: 1px solid #333; /* Darker border */
+    border-bottom: 1px solid #eee;
     padding: 10px 0;
-    color: #f1f3f5; /* Light text color */
+    background: rgb(19, 18, 18);
+    cursor: pointer;
+    transition: background-color 0.2s;
 }
 
 .table-row:hover {
-    background-color: #1e1e1e; /* Slightly lighter dark background on hover */
+    background-color: #070707;
 }
 
-/* Modal styles */
-.building-card-modal {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 90%;
-    max-width: 600px;
-    max-height: 80vh;
-    background: #1a1a1a; /* Dark modal background */
-    border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-    z-index: 1000;
-    overflow: hidden;
-    color: #f1f3f5; /* Light text color */
+.table-row.selected {
+    background-color: #e3f2fd;
+    border-left: 4px solid #2196f3;
 }
 
-.modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 15px 20px;
-    border-bottom: 1px solid #333; /* Darker border */
-    background: #2a2a2a; /* Darker header background */
+/* Details card */
+.details-card {
+    margin: 10px 0;
+    background: rgb(10, 10, 10);
+    border: 1px solid #e0e0e0;
 }
 
-.modal-content {
-    padding: 20px;
-    max-height: 60vh;
-    overflow-y: auto;
-    background: #1a1a1a; /* Dark content background */
-}
-
-/* Overlay for modal */
-.building-content::before {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.7); /* Dark overlay */
-    z-index: 999;
-    display: block;
-}
-
-/* No results and no data states */
-.no-results, .no-data {
-    text-align: center;
-    padding: 40px 20px;
-    color: #888; /* Lighter text for empty states */
-}
-
-/* Icon styles */
-.icon-blue {
-    color: #4dabf7; /* Bright blue for icons */
-}
-
-/* Button styles */
-ion-button {
-    --color: #f1f3f5; /* Light text color for buttons */
-}
-
-/* Card styles (for the modal content) */
-.building-card-container {
-    display: flex;
-    justify-content: flex-start;
-    align-items: flex-start;
-    min-height: 100%;
-}
-
-.building-data-card {
-    width: 100%;
-    min-height: 500px;
-    margin: 0;
-    border-radius: 12px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-    background: #1a1a1a; /* Dark card background */
-    color: #f1f3f5; /* Light text color */
-}
-
-.building-data-section {
+.building-details-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 12px;
     padding: 8px;
 }
 
-.building-info-id {
-    display: block;
-    font-size: 16px;
-    font-weight: 600;
-    color: #f2f3f5; /* Light text color */
-    margin-bottom: 20px;
-    padding-bottom: 12px;
-    border-bottom: 2px solid #333; /* Darker border */
-    text-align: center;
-}
-
-.building-details {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.building-detail-row {
+.detail-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 8px 0;
-    border-bottom: 1px solid #333; /* Darker border */
+    border-bottom: 1px solid #f0f0f0;
 }
 
-.building-detail-row:last-child {
+.detail-item:last-child {
     border-bottom: none;
 }
 
 .detail-label {
     font-size: 14px;
     font-weight: 500;
-    color: #e0e0e0; /* Slightly lighter text for labels */
+    color: #f0f4f7;
     flex: 1;
 }
 
 .detail-value {
     font-size: 14px;
     font-weight: 400;
-    color: #f1f3f5; /* Light text color */
+    color: #fffdfd;
     text-align: right;
     flex: 1;
     padding-left: 8px;
 }
 
-/* Responsive design */
+/* Blue icons */
+.icon-blue {
+    color: #00a2ff !important;
+    --ion-color-base: #00d9ff !important;
+    --ion-color-contrast: #000000 !important;
+    font-size: 24px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.icon-blue:hover {
+    opacity: 0.8;
+}
+
+.icon-disabled {
+    opacity: 0.5;
+    pointer-events: none;
+    cursor: not-allowed;
+}
+
+/* No results and no data states */
+.no-results, .no-data {
+    text-align: center;
+    padding: 40px 20px;
+    color: #6c757d;
+    background: white;
+    border-radius: 8px;
+    margin: 20px 0;
+}
+
+/* Responsive adjustments */
 @media (max-width: 768px) {
-    .building-data-card {
-        width: 100%;
-        min-height: 500px;
+    .search-container {
+        flex-direction: column;
+        align-items: stretch;
     }
     
-    .building-detail-row {
+    .forms-searchbar {
+        width: 100% !important;
+        margin-right: 0;
+    }
+    
+    .building-details-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .detail-item {
         flex-direction: column;
         align-items: flex-start;
         gap: 4px;
@@ -187,43 +145,17 @@ ion-button {
         padding-left: 0;
     }
     
-    .building-card-modal {
-        width: 95%;
-        max-width: none;
-    }
-    
     .table-header,
     .table-row {
         font-size: 14px;
     }
 }
 
-/* Hover effects */
-.building-data-card:hover {
-    transform: translateY(-2px);
-    transition: transform 0.2s ease;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+/* Button styles */
+ion-button {
+    --color: #00a2ff;
 }
 
-/* Button hover effects */
 ion-button:hover {
-    --background-hover: #333; /* Darker background on hover */
-}
-
-/* Scrollbar styling for modal */
-.modal-content::-webkit-scrollbar {
-    width: 8px;
-}
-
-.modal-content::-webkit-scrollbar-track {
-    background: #1a1a1a; /* Dark track */
-}
-
-.modal-content::-webkit-scrollbar-thumb {
-    background: #444; /* Darker thumb */
-    border-radius: 4px;
-}
-
-.modal-content::-webkit-scrollbar-thumb:hover {
-    background: #555; /* Lighter thumb on hover */
+    --background-hover: rgba(0, 162, 255, 0.1);
 }

@@ -5,15 +5,18 @@ import {
     IonToolbar,
     IonTitle,
     IonContent,
-    IonLabel,
     IonButton,
     IonButtons,
     IonIcon,
+    IonText,
+    IonSearchbar,
+    IonGrid,
+    IonRow,
+    IonCol,
     IonCard,
-    IonCardContent,
-    IonText
+    IonCardContent
 } from "@ionic/react";
-import { arrowBack } from "ionicons/icons";
+import { arrowBack, informationCircle } from "ionicons/icons";
 import { ValueInfoLocalStorage, ValueInfo } from '../../utils/tablestorages/ValueInfoLocalStorage';
 import { BuildingDataLocalStorage, BuildingData } from '../../utils/tablestorages/BuildingDataLocalStorage';
 import '../../CSS/BuildingTable.css';
@@ -24,8 +27,10 @@ interface BuildingTableProps {
 }
 
 const BuildingTable: React.FC<BuildingTableProps> = ({ form_id, onBack }) => {
-    const [buildingInfoId, setBuildingInfoId] = useState<string | null>(null);
-    const [buildingData, setBuildingData] = useState<BuildingData | null>(null);
+    const [buildingInfoIds, setBuildingInfoIds] = useState<string[]>([]);
+    const [buildingDataList, setBuildingDataList] = useState<Map<string, BuildingData>>(new Map());
+    const [selectedBuildingId, setSelectedBuildingId] = useState<string | null>(null);
+    const [searchTerm, setSearchTerm] = useState('');
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -35,19 +40,49 @@ const BuildingTable: React.FC<BuildingTableProps> = ({ form_id, onBack }) => {
     const loadBuildingData = () => {
         setLoading(true);
         try {
-            const info = ValueInfoLocalStorage.getValueInfoByFormDataId(form_id);
-            setBuildingInfoId(info ? info.id : null);
+            // Get all ValueInfo and filter by formDataId
+            const allInfos = ValueInfoLocalStorage.getAllValueInfo();
+            const infos = allInfos.filter(info => info.formDataId === form_id);
             
-            if (info?.id) {
-                const data = BuildingDataLocalStorage.getBuildingData(info.id);
-                setBuildingData(data);
-            }
+            const ids = infos.map(info => info.id);
+            setBuildingInfoIds(ids);
+            
+            const buildingDataMap = new Map<string, BuildingData>();
+            ids.forEach(id => {
+                const data = BuildingDataLocalStorage.getBuildingData(id);
+                if (data) {
+                    buildingDataMap.set(id, data);
+                }
+            });
+            setBuildingDataList(buildingDataMap);
         } catch (error) {
             console.error('Error loading building data:', error);
         } finally {
             setLoading(false);
         }
     };
+
+    const handleSearch = (e: CustomEvent) => {
+        setSearchTerm(e.detail.value || '');
+    };
+
+    const handleViewDetails = (buildingId: string) => {
+        setSelectedBuildingId(buildingId === selectedBuildingId ? null : buildingId);
+    };
+
+    const filteredBuildingIds = buildingInfoIds.filter(id => {
+        if (!searchTerm) return true;
+        
+        const buildingData = buildingDataList.get(id);
+        if (!buildingData) return false;
+        
+        // Search through all building data properties
+        return Object.values(buildingData).some(value => 
+            value && value.toString().toLowerCase().includes(searchTerm.toLowerCase())
+        );
+    });
+
+    const selectedBuildingData = selectedBuildingId ? buildingDataList.get(selectedBuildingId) : null;
 
     return (
         <IonPage>
@@ -56,85 +91,146 @@ const BuildingTable: React.FC<BuildingTableProps> = ({ form_id, onBack }) => {
                     <IonButtons slot="start">
                         <IonButton onClick={onBack}>
                             <IonIcon icon={arrowBack} />
+                            Back
                         </IonButton>
                     </IonButtons>
-                    <IonTitle>Form ID: {form_id}</IonTitle>
+                    <IonTitle>Building Information - Form ID: {form_id}</IonTitle>
                 </IonToolbar>
             </IonHeader>
 
             <IonContent className="building-content">
+                {/* Search Bar */}
+                <div className="search-container">
+                    <IonSearchbar
+                        placeholder="Search building information..."
+                        value={searchTerm}
+                        onIonInput={handleSearch}
+                        className="forms-searchbar"
+                    />
+                </div>
+
                 {loading ? (
                     <IonText>Loading building information...</IonText>
-                ) : buildingData ? (
-                    <div className="building-card-container">
-                        <IonCard className="building-data-card">
-                            <IonCardContent>
-                                <div className="building-data-section">
-                                    <IonLabel className="building-info-id">
-                                        Building Info ID: {buildingInfoId}
-                                    </IonLabel>
-                                    
-                                    <div className="building-details">
-                                        <div className="building-detail-row">
-                                            <span className="detail-label">Structure Type:</span>
-                                            <span className="detail-value">{buildingData.structureType || 'N/A'}</span>
-                                        </div>
+                ) : buildingInfoIds.length > 0 ? (
+                    <>
+                        {/* Building List */}
+                        <IonGrid>
+                            <IonRow className="table-header">
+                                <IonCol size="2">Building ID</IonCol>
+                                <IonCol size="2">Structure Type</IonCol>
+                                <IonCol size="2">Building Code</IonCol>
+                                <IonCol size="2">Storey</IonCol>
+                                <IonCol size="2">Building Age</IonCol>
+                                <IonCol size="2">Actions</IonCol>
+                            </IonRow>
+                            
+                            {filteredBuildingIds.map((id) => {
+                                const buildingData = buildingDataList.get(id);
+                                const isSelected = id === selectedBuildingId;
+                                
+                                return (
+                                    <React.Fragment key={id}>
+                                        <IonRow 
+                                            className={`table-row ${isSelected ? 'selected' : ''}`}
+                                            onClick={() => handleViewDetails(id)}
+                                        >
+                                            <IonCol size="2">{id}</IonCol>
+                                            <IonCol size="2">{buildingData?.structureType || 'N/A'}</IonCol>
+                                            <IonCol size="2">{buildingData?.buildingCode || 'N/A'}</IonCol>
+                                            <IonCol size="2">{buildingData?.storey || 'N/A'}</IonCol>
+                                            <IonCol size="2">{buildingData?.buildingAge || 'N/A'}</IonCol>
+                                            <IonCol size="2">
+                                                <IonButton
+                                                    fill="clear"
+                                                    size="small"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleViewDetails(id);
+                                                    }}
+                                                    title="View Details"
+                                                >
+                                                    <IonIcon 
+                                                        icon={informationCircle} 
+                                                        className={isSelected ? "icon-blue" : "icon-blue icon-disabled"} 
+                                                    />
+                                                </IonButton>
+                                            </IonCol>
+                                        </IonRow>
                                         
-                                        <div className="building-detail-row">
-                                            <span className="detail-label">Building Code:</span>
-                                            <span className="detail-value">{buildingData.buildingCode || 'N/A'}</span>
-                                        </div>
-                                        
-                                        <div className="building-detail-row">
-                                            <span className="detail-label">Storey:</span>
-                                            <span className="detail-value">{buildingData.storey || 'N/A'}</span>
-                                        </div>
-                                        
-                                        <div className="building-detail-row">
-                                            <span className="detail-label">Floor Order:</span>
-                                            <span className="detail-value">{buildingData.floorOrder || 'N/A'}</span>
-                                        </div>
-                                        
-                                        <div className="building-detail-row">
-                                            <span className="detail-label">Building Age:</span>
-                                            <span className="detail-value">{buildingData.buildingAge || 'N/A'}</span>
-                                        </div>
-                                        
-                                        <div className="building-detail-row">
-                                            <span className="detail-label">Building Permit:</span>
-                                            <span className="detail-value">{buildingData.buildingPermit || 'N/A'}</span>
-                                        </div>
-                                        
-                                        <div className="building-detail-row">
-                                            <span className="detail-label">Construction %:</span>
-                                            <span className="detail-value">{buildingData.constructionPercent !== null ? `${buildingData.constructionPercent}%` : 'N/A'}</span>
-                                        </div>
-                                        
-                                        <div className="building-detail-row">
-                                            <span className="detail-label">Depreciation Rate:</span>
-                                            <span className="detail-value">{buildingData.depreciationRate !== null ? `${buildingData.depreciationRate}%` : 'N/A'}</span>
-                                        </div>
-                                        
-                                        <div className="building-detail-row">
-                                            <span className="detail-label">Date Constructed:</span>
-                                            <span className="detail-value">{buildingData.dateConstructed || 'N/A'}</span>
-                                        </div>
-                                        
-                                        <div className="building-detail-row">
-                                            <span className="detail-label">Date Occupied:</span>
-                                            <span className="detail-value">{buildingData.dateOccupied || 'N/A'}</span>
-                                        </div>
-                                        
-                                        <div className="building-detail-row">
-                                            <span className="detail-label">Date Completed:</span>
-                                            <span className="detail-value">{buildingData.dateCompleted || 'N/A'}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </IonCardContent>
-                        </IonCard>
+                                        {/* Details Card */}
+                                        {isSelected && buildingData && (
+                                            <IonRow>
+                                                <IonCol size="12">
+                                                    <IonCard className="details-card">
+                                                        <IonCardContent>
+                                                            <div className="building-details-grid">
+                                                                <div className="detail-item">
+                                                                    <span className="detail-label">Structure Type:</span>
+                                                                    <span className="detail-value">{buildingData.structureType || 'N/A'}</span>
+                                                                </div>
+                                                                <div className="detail-item">
+                                                                    <span className="detail-label">Building Code:</span>
+                                                                    <span className="detail-value">{buildingData.buildingCode || 'N/A'}</span>
+                                                                </div>
+                                                                <div className="detail-item">
+                                                                    <span className="detail-label">Storey:</span>
+                                                                    <span className="detail-value">{buildingData.storey || 'N/A'}</span>
+                                                                </div>
+                                                                <div className="detail-item">
+                                                                    <span className="detail-label">Floor Order:</span>
+                                                                    <span className="detail-value">{buildingData.floorOrder || 'N/A'}</span>
+                                                                </div>
+                                                                <div className="detail-item">
+                                                                    <span className="detail-label">Building Age:</span>
+                                                                    <span className="detail-value">{buildingData.buildingAge || 'N/A'}</span>
+                                                                </div>
+                                                                <div className="detail-item">
+                                                                    <span className="detail-label">Building Permit:</span>
+                                                                    <span className="detail-value">{buildingData.buildingPermit || 'N/A'}</span>
+                                                                </div>
+                                                                <div className="detail-item">
+                                                                    <span className="detail-label">Construction %:</span>
+                                                                    <span className="detail-value">{buildingData.constructionPercent !== null ? `${buildingData.constructionPercent}%` : 'N/A'}</span>
+                                                                </div>
+                                                                <div className="detail-item">
+                                                                    <span className="detail-label">Depreciation Rate:</span>
+                                                                    <span className="detail-value">{buildingData.depreciationRate !== null ? `${buildingData.depreciationRate}%` : 'N/A'}</span>
+                                                                </div>
+                                                                <div className="detail-item">
+                                                                    <span className="detail-label">Date Constructed:</span>
+                                                                    <span className="detail-value">{buildingData.dateConstructed || 'N/A'}</span>
+                                                                </div>
+                                                                <div className="detail-item">
+                                                                    <span className="detail-label">Date Occupied:</span>
+                                                                    <span className="detail-value">{buildingData.dateOccupied || 'N/A'}</span>
+                                                                </div>
+                                                                <div className="detail-item">
+                                                                    <span className="detail-label">Date Completed:</span>
+                                                                    <span className="detail-value">{buildingData.dateCompleted || 'N/A'}</span>
+                                                                </div>
+                                                            </div>
+                                                        </IonCardContent>
+                                                    </IonCard>
+                                                </IonCol>
+                                            </IonRow>
+                                        )}
+                                    </React.Fragment>
+                                );
+                            })}
+                        </IonGrid>
+
+                        {/* Show message if no results */}
+                        {filteredBuildingIds.length === 0 && (
+                            <div className="no-results">
+                                <IonText>No building information found matching your search.</IonText>
+                            </div>
+                        )}
+                    </>
+                ) : (
+                    <div className="no-data">
+                        <IonText>No building information available for this form.</IonText>
                     </div>
-                ) : null}
+                )}
             </IonContent>
         </IonPage>
     );
