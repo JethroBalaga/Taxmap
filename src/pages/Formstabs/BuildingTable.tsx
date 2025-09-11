@@ -19,6 +19,7 @@ import {
 import { arrowBack, informationCircle } from "ionicons/icons";
 import { ValueInfoLocalStorage, ValueInfo } from '../../utils/tablestorages/ValueInfoLocalStorage';
 import { BuildingDataLocalStorage, BuildingData } from '../../utils/tablestorages/BuildingDataLocalStorage';
+import { getBuildingCodeByCode, BuildingCodeData } from '../../utils/buildingCodeLocalStorage';
 import '../../CSS/BuildingTable.css';
 
 interface BuildingTableProps {
@@ -26,12 +27,14 @@ interface BuildingTableProps {
     onBack: () => void;
     kind: string | number;
     classification: string;
-    area: number; // Changed to number
+    area: number;
 }
 
 const BuildingTable: React.FC<BuildingTableProps> = ({ form_id, onBack, kind, classification, area }) => {
     const [buildingInfoIds, setBuildingInfoIds] = useState<string[]>([]);
     const [buildingDataList, setBuildingDataList] = useState<Map<string, BuildingData>>(new Map());
+    const [buildingCodeRates, setBuildingCodeRates] = useState<Map<string, number>>(new Map());
+    const [baseMarketValues, setBaseMarketValues] = useState<Map<string, number>>(new Map());
     const [selectedBuildingId, setSelectedBuildingId] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [loading, setLoading] = useState(true);
@@ -40,7 +43,7 @@ const BuildingTable: React.FC<BuildingTableProps> = ({ form_id, onBack, kind, cl
         loadBuildingData();
     }, [form_id]);
 
-    const loadBuildingData = () => {
+    const loadBuildingData = async () => {
         setLoading(true);
         try {
             // Get all ValueInfo and filter by formDataId
@@ -51,13 +54,32 @@ const BuildingTable: React.FC<BuildingTableProps> = ({ form_id, onBack, kind, cl
             setBuildingInfoIds(ids);
             
             const buildingDataMap = new Map<string, BuildingData>();
-            ids.forEach(id => {
+            const ratesMap = new Map<string, number>();
+            const marketValuesMap = new Map<string, number>();
+            
+            // Load building data and fetch rates
+            for (const id of ids) {
                 const data = BuildingDataLocalStorage.getBuildingData(id);
                 if (data) {
                     buildingDataMap.set(id, data);
+                    
+                    // Fetch building code rate if buildingCode exists
+                    if (data.buildingCode) {
+                        const buildingCodeData = await getBuildingCodeByCode(data.buildingCode);
+                        if (buildingCodeData) {
+                            ratesMap.set(id, buildingCodeData.rate);
+                            
+                            // Calculate Base Market Value: Area × Building Code Rate
+                            const baseMarketValue = area * buildingCodeData.rate;
+                            marketValuesMap.set(id, baseMarketValue);
+                        }
+                    }
                 }
-            });
+            }
+            
             setBuildingDataList(buildingDataMap);
+            setBuildingCodeRates(ratesMap);
+            setBaseMarketValues(marketValuesMap);
         } catch (error) {
             console.error('Error loading building data:', error);
         } finally {
@@ -86,6 +108,8 @@ const BuildingTable: React.FC<BuildingTableProps> = ({ form_id, onBack, kind, cl
     });
 
     const selectedBuildingData = selectedBuildingId ? buildingDataList.get(selectedBuildingId) : null;
+    const selectedBuildingRate = selectedBuildingId ? buildingCodeRates.get(selectedBuildingId) : null;
+    const selectedMarketValue = selectedBuildingId ? baseMarketValues.get(selectedBuildingId) : null;
 
     return (
         <IonPage>
@@ -138,16 +162,15 @@ const BuildingTable: React.FC<BuildingTableProps> = ({ form_id, onBack, kind, cl
                         {/* Building List */}
                         <IonGrid>
                             <IonRow className="table-header">
-                                <IonCol size="2">Building ID</IonCol>
-                                <IonCol size="2">Kind</IonCol>
-                                <IonCol size="2">Classification</IonCol>
-                                <IonCol size="2">Area (sq ft)</IonCol> {/* Updated header */}
-                                <IonCol size="2">Building Code</IonCol>
-                                <IonCol size="2">Actions</IonCol>
+                                <IonCol size="3">Building ID</IonCol>
+                                <IonCol size="3">Structure Type</IonCol>
+                                <IonCol size="3">Base Market Value</IonCol>
+                                <IonCol size="3">Actions</IonCol>
                             </IonRow>
                             
                             {filteredBuildingIds.map((id) => {
                                 const buildingData = buildingDataList.get(id);
+                                const baseMarketValue = baseMarketValues.get(id);
                                 const isSelected = id === selectedBuildingId;
                                 
                                 return (
@@ -156,12 +179,15 @@ const BuildingTable: React.FC<BuildingTableProps> = ({ form_id, onBack, kind, cl
                                             className={`table-row ${isSelected ? 'selected' : ''}`}
                                             onClick={() => handleViewDetails(id)}
                                         >
-                                            <IonCol size="2">{id}</IonCol>
-                                            <IonCol size="2">{kind || 'N/A'}</IonCol>
-                                            <IonCol size="2">{classification || 'N/A'}</IonCol>
-                                            <IonCol size="2">{area ? area.toLocaleString() : 'N/A'}</IonCol> {/* Updated display */}
-                                            <IonCol size="2">{buildingData?.buildingCode || 'N/A'}</IonCol>
-                                            <IonCol size="2">
+                                            <IonCol size="3">{id}</IonCol>
+                                            <IonCol size="3">{buildingData?.structureType || 'N/A'}</IonCol>
+                                            <IonCol size="3">
+                                                {baseMarketValue !== undefined 
+                                                    ? `₱${baseMarketValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` 
+                                                    : 'N/A'
+                                                }
+                                            </IonCol>
+                                            <IonCol size="3">
                                                 <IonButton
                                                     fill="clear"
                                                     size="small"
@@ -175,6 +201,7 @@ const BuildingTable: React.FC<BuildingTableProps> = ({ form_id, onBack, kind, cl
                                                         icon={informationCircle} 
                                                         className={isSelected ? "icon-blue" : "icon-blue icon-disabled"} 
                                                     />
+                                                    View Details
                                                 </IonButton>
                                             </IonCol>
                                         </IonRow>
@@ -196,7 +223,7 @@ const BuildingTable: React.FC<BuildingTableProps> = ({ form_id, onBack, kind, cl
                                                                 </div>
                                                                 <div className="detail-item">
                                                                     <span className="detail-label">Area:</span>
-                                                                    <span className="detail-value">{area ? `${area.toLocaleString()} sq ft` : 'N/A'}</span> {/* Updated display */}
+                                                                    <span className="detail-value">{area ? `${area.toLocaleString()} sq ft` : 'N/A'}</span>
                                                                 </div>
                                                                 <div className="detail-item">
                                                                     <span className="detail-label">Structure Type:</span>
@@ -206,6 +233,15 @@ const BuildingTable: React.FC<BuildingTableProps> = ({ form_id, onBack, kind, cl
                                                                     <span className="detail-label">Building Code:</span>
                                                                     <span className="detail-value">{buildingData.buildingCode || 'N/A'}</span>
                                                                 </div>
+                                                                {/* Show Building Code Rate if available */}
+                                                                {selectedBuildingRate !== undefined && selectedBuildingRate !== null && (
+                                                                    <div className="detail-item">
+                                                                        <span className="detail-label">Building Code Rate:</span>
+                                                                        <span className="detail-value">
+                                                                            ₱{selectedBuildingRate.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                                        </span>
+                                                                    </div>
+                                                                )}
                                                                 <div className="detail-item">
                                                                     <span className="detail-label">Storey:</span>
                                                                     <span className="detail-value">{buildingData.storey || 'N/A'}</span>
