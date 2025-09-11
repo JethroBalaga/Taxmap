@@ -24,9 +24,12 @@ import '../../CSS/BuildingTable.css';
 interface BuildingTableProps {
     form_id: string;
     onBack: () => void;
+    kind: string | number;
+    classification: string;
+    area: number; // Changed to number
 }
 
-const BuildingTable: React.FC<BuildingTableProps> = ({ form_id, onBack }) => {
+const BuildingTable: React.FC<BuildingTableProps> = ({ form_id, onBack, kind, classification, area }) => {
     const [buildingInfoIds, setBuildingInfoIds] = useState<string[]>([]);
     const [buildingDataList, setBuildingDataList] = useState<Map<string, BuildingData>>(new Map());
     const [selectedBuildingId, setSelectedBuildingId] = useState<string | null>(null);
@@ -99,6 +102,25 @@ const BuildingTable: React.FC<BuildingTableProps> = ({ form_id, onBack }) => {
             </IonHeader>
 
             <IonContent className="building-content">
+                {/* Form Information Summary */}
+                <IonCard className="form-summary-card">
+                    <IonCardContent>
+                        <IonGrid>
+                            <IonRow>
+                                <IonCol size="4">
+                                    <strong>Kind:</strong> {kind}
+                                </IonCol>
+                                <IonCol size="4">
+                                    <strong>Classification:</strong> {classification}
+                                </IonCol>
+                                <IonCol size="4">
+                                    <strong>Area:</strong> {area ? `${area.toLocaleString()} sq ft` : 'N/A'}
+                                </IonCol>
+                            </IonRow>
+                        </IonGrid>
+                    </IonCardContent>
+                </IonCard>
+
                 {/* Search Bar */}
                 <div className="search-container">
                     <IonSearchbar
@@ -117,10 +139,10 @@ const BuildingTable: React.FC<BuildingTableProps> = ({ form_id, onBack }) => {
                         <IonGrid>
                             <IonRow className="table-header">
                                 <IonCol size="2">Building ID</IonCol>
-                                <IonCol size="2">Structure Type</IonCol>
+                                <IonCol size="2">Kind</IonCol>
+                                <IonCol size="2">Classification</IonCol>
+                                <IonCol size="2">Area (sq ft)</IonCol> {/* Updated header */}
                                 <IonCol size="2">Building Code</IonCol>
-                                <IonCol size="2">Storey</IonCol>
-                                <IonCol size="2">Building Age</IonCol>
                                 <IonCol size="2">Actions</IonCol>
                             </IonRow>
                             
@@ -135,10 +157,10 @@ const BuildingTable: React.FC<BuildingTableProps> = ({ form_id, onBack }) => {
                                             onClick={() => handleViewDetails(id)}
                                         >
                                             <IonCol size="2">{id}</IonCol>
-                                            <IonCol size="2">{buildingData?.structureType || 'N/A'}</IonCol>
+                                            <IonCol size="2">{kind || 'N/A'}</IonCol>
+                                            <IonCol size="2">{classification || 'N/A'}</IonCol>
+                                            <IonCol size="2">{area ? area.toLocaleString() : 'N/A'}</IonCol> {/* Updated display */}
                                             <IonCol size="2">{buildingData?.buildingCode || 'N/A'}</IonCol>
-                                            <IonCol size="2">{buildingData?.storey || 'N/A'}</IonCol>
-                                            <IonCol size="2">{buildingData?.buildingAge || 'N/A'}</IonCol>
                                             <IonCol size="2">
                                                 <IonButton
                                                     fill="clear"
@@ -164,6 +186,18 @@ const BuildingTable: React.FC<BuildingTableProps> = ({ form_id, onBack }) => {
                                                     <IonCard className="details-card">
                                                         <IonCardContent>
                                                             <div className="building-details-grid">
+                                                                <div className="detail-item">
+                                                                    <span className="detail-label">Kind:</span>
+                                                                    <span className="detail-value">{kind || 'N/A'}</span>
+                                                                </div>
+                                                                <div className="detail-item">
+                                                                    <span className="detail-label">Classification:</span>
+                                                                    <span className="detail-value">{classification || 'N/A'}</span>
+                                                                </div>
+                                                                <div className="detail-item">
+                                                                    <span className="detail-label">Area:</span>
+                                                                    <span className="detail-value">{area ? `${area.toLocaleString()} sq ft` : 'N/A'}</span> {/* Updated display */}
+                                                                </div>
                                                                 <div className="detail-item">
                                                                     <span className="detail-label">Structure Type:</span>
                                                                     <span className="detail-value">{buildingData.structureType || 'N/A'}</span>
