@@ -1,8 +1,108 @@
 .building-content {
-    --background: #0f0f0f; /* Light gray background */
+    --background: #0f0f0f; /* Dark background */
     padding: 16px;
+    color: #f1f3f5; /* Light text color */
 }
 
+/* Search container */
+.search-container {
+    padding: 10px;
+    background: #1a1a1a; /* Dark background for search */
+    border-radius: 8px;
+    margin-bottom: 16px;
+}
+
+.building-searchbar {
+    --background: #2a2a2a; /* Darker background for searchbar */
+    --border-radius: 8px;
+    --color: #f1f3f5; /* Light text color */
+    --placeholder-color: #888; /* Lighter placeholder */
+    --icon-color: #f1f3f5; /* Light icon color */
+}
+
+/* Table styles */
+.table-header {
+    font-weight: bold;
+    background-color: #1a1a1a; /* Dark header background */
+    border-bottom: 2px solid #333; /* Darker border */
+    padding: 12px 0;
+    color: #f1f3f5; /* Light text color */
+}
+
+.table-row {
+    border-bottom: 1px solid #333; /* Darker border */
+    padding: 10px 0;
+    color: #f1f3f5; /* Light text color */
+}
+
+.table-row:hover {
+    background-color: #1e1e1e; /* Slightly lighter dark background on hover */
+}
+
+/* Modal styles */
+.building-card-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90%;
+    max-width: 600px;
+    max-height: 80vh;
+    background: #1a1a1a; /* Dark modal background */
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    overflow: hidden;
+    color: #f1f3f5; /* Light text color */
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    border-bottom: 1px solid #333; /* Darker border */
+    background: #2a2a2a; /* Darker header background */
+}
+
+.modal-content {
+    padding: 20px;
+    max-height: 60vh;
+    overflow-y: auto;
+    background: #1a1a1a; /* Dark content background */
+}
+
+/* Overlay for modal */
+.building-content::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7); /* Dark overlay */
+    z-index: 999;
+    display: block;
+}
+
+/* No results and no data states */
+.no-results, .no-data {
+    text-align: center;
+    padding: 40px 20px;
+    color: #888; /* Lighter text for empty states */
+}
+
+/* Icon styles */
+.icon-blue {
+    color: #4dabf7; /* Bright blue for icons */
+}
+
+/* Button styles */
+ion-button {
+    --color: #f1f3f5; /* Light text color for buttons */
+}
+
+/* Card styles (for the modal content) */
 .building-card-container {
     display: flex;
     justify-content: flex-start;
@@ -11,12 +111,13 @@
 }
 
 .building-data-card {
-    width: 350px;
-    min-height: 600px;
+    width: 100%;
+    min-height: 500px;
     margin: 0;
     border-radius: 12px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-    background: rgb(7, 7, 7); /* Card itself stays white */
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    background: #1a1a1a; /* Dark card background */
+    color: #f1f3f5; /* Light text color */
 }
 
 .building-data-section {
@@ -27,10 +128,10 @@
     display: block;
     font-size: 16px;
     font-weight: 600;
-    color: #f2f3f5;
+    color: #f2f3f5; /* Light text color */
     margin-bottom: 20px;
     padding-bottom: 12px;
-    border-bottom: 2px solid #e8eaf6;
+    border-bottom: 2px solid #333; /* Darker border */
     text-align: center;
 }
 
@@ -45,7 +146,7 @@
     justify-content: space-between;
     align-items: center;
     padding: 8px 0;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid #333; /* Darker border */
 }
 
 .building-detail-row:last-child {
@@ -55,14 +156,14 @@
 .detail-label {
     font-size: 14px;
     font-weight: 500;
-    color: #eff2f3;
+    color: #e0e0e0; /* Slightly lighter text for labels */
     flex: 1;
 }
 
 .detail-value {
     font-size: 14px;
     font-weight: 400;
-    color: #f1f3f5;
+    color: #f1f3f5; /* Light text color */
     text-align: right;
     flex: 1;
     padding-left: 8px;
@@ -85,11 +186,44 @@
         text-align: left;
         padding-left: 0;
     }
+    
+    .building-card-modal {
+        width: 95%;
+        max-width: none;
+    }
+    
+    .table-header,
+    .table-row {
+        font-size: 14px;
+    }
 }
 
 /* Hover effects */
 .building-data-card:hover {
     transform: translateY(-2px);
     transition: transform 0.2s ease;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+
+/* Button hover effects */
+ion-button:hover {
+    --background-hover: #333; /* Darker background on hover */
+}
+
+/* Scrollbar styling for modal */
+.modal-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.modal-content::-webkit-scrollbar-track {
+    background: #1a1a1a; /* Dark track */
+}
+
+.modal-content::-webkit-scrollbar-thumb {
+    background: #444; /* Darker thumb */
+    border-radius: 4px;
+}
+
+.modal-content::-webkit-scrollbar-thumb:hover {
+    background: #555; /* Lighter thumb on hover */
 }
