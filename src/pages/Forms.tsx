@@ -17,6 +17,7 @@ import {
   IonRefresherContent,
   useIonViewWillEnter,
   useIonViewDidEnter,
+  IonSpinner
 } from '@ionic/react';
 import { arrowUpCircle, trash, informationCircleOutline } from 'ionicons/icons';
 import { FormDataLocalStorage, FormData } from '../utils/tablestorages/FormDataLocalStorage';
@@ -169,7 +170,13 @@ const Forms: React.FC = () => {
             </IonButton>
           </IonToolbar>
         </IonHeader>
-        <BuildingTable form_id={selectedForm.id} onBack={handleBackToForms} />
+        <BuildingTable 
+          form_id={selectedForm.id} 
+          onBack={handleBackToForms}
+          kind={selectedForm.kind}
+          classification={selectedForm.classification}
+          area={selectedForm.area}
+        />
       </IonPage>
     );
   }
@@ -219,7 +226,10 @@ const Forms: React.FC = () => {
             <IonRow>
               <IonCol size="12">
                 {isLoading ? (
-                  <IonText>Loading form data...</IonText>
+                  <div className="loading-indicator">
+                    <IonSpinner name="crescent" />
+                    <IonText>Loading form data...</IonText>
+                  </div>
                 ) : formData.length > 0 ? (
                   <>
                     <DynamicTable

@@ -20,29 +20,42 @@
     margin-right: 20px;
 }
 
+/* Form Summary Card */
+.form-summary-card {
+    margin: 16px;
+    background-color: #1a1a1a;
+    border: 1px solid #333;
+    color: #f4f6f8;
+}
+
+.form-summary-card ion-col {
+    padding: 8px;
+}
+
 /* Table styles */
 .table-header {
     font-weight: bold;
     background-color: #0c0c0c;
-    border-bottom: 2px solid #dee2e6;
+    border-bottom: 2px solid #333;
     padding: 12px 0;
     color: #f4f6f8;
 }
 
 .table-row {
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid #333;
     padding: 10px 0;
     background: rgb(19, 18, 18);
     cursor: pointer;
     transition: background-color 0.2s;
+    color: #f4f6f8;
 }
 
 .table-row:hover {
-    background-color: #070707;
+    background-color: #252525;
 }
 
 .table-row.selected {
-    background-color: #e3f2fd;
+    background-color: #2a4365;
     border-left: 4px solid #2196f3;
 }
 
@@ -50,7 +63,8 @@
 .details-card {
     margin: 10px 0;
     background: rgb(10, 10, 10);
-    border: 1px solid #e0e0e0;
+    border: 1px solid #333;
+    color: #f4f6f8;
 }
 
 .building-details-grid {
@@ -65,7 +79,7 @@
     justify-content: space-between;
     align-items: center;
     padding: 8px 0;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid #333;
 }
 
 .detail-item:last-child {
@@ -108,14 +122,39 @@
     cursor: not-allowed;
 }
 
+/* Loading indicator */
+.loading-indicator {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    color: #f4f6f8;
+}
+
+.loading-indicator ion-spinner {
+    margin-bottom: 10px;
+    --color: #00a2ff;
+}
+
 /* No results and no data states */
 .no-results, .no-data {
     text-align: center;
     padding: 40px 20px;
-    color: #6c757d;
-    background: white;
+    color: #888;
+    background: #1a1a1a;
     border-radius: 8px;
     margin: 20px 0;
+    border: 1px solid #333;
+}
+
+/* Button styles */
+ion-button {
+    --color: #00a2ff;
+}
+
+ion-button:hover {
+    --background-hover: rgba(0, 162, 255, 0.1);
 }
 
 /* Responsive adjustments */
@@ -149,13 +188,51 @@
     .table-row {
         font-size: 14px;
     }
+    
+    .form-summary-card ion-row {
+        flex-direction: column;
+    }
+    
+    .form-summary-card ion-col {
+        margin-bottom: 8px;
+    }
 }
 
-/* Button styles */
-ion-button {
-    --color: #00a2ff;
+/* Additional dark theme enhancements */
+ion-card {
+    --background: #1a1a1a;
+    --color: #f4f6f8;
 }
 
-ion-button:hover {
-    --background-hover: rgba(0, 162, 255, 0.1);
+ion-searchbar {
+    --background: #2d2d2d;
+    --color: #fff;
+    --placeholder-color: #888;
+    --icon-color: #00a2ff;
+}
+
+ion-toolbar {
+    --background: #0a0a0a;
+    --color: #fff;
+    --border-color: #333;
+}
+
+/* Table column specific styling */
+ion-col {
+    color: inherit;
+}
+
+/* Ensure text visibility in dark mode */
+ion-text {
+    color: #f4f6f8;
+}
+
+/* Selection info styling */
+.selection-info {
+    background-color: #2a4365;
+    padding: 10px;
+    border-radius: 4px;
+    margin: 10px 0;
+    color: #fff;
+    border-left: 4px solid #00a2ff;
 }
