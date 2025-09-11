@@ -17,9 +17,9 @@ import {
     IonCardContent
 } from "@ionic/react";
 import { arrowBack, informationCircle } from "ionicons/icons";
-import { ValueInfoLocalStorage, ValueInfo } from '../../utils/tablestorages/ValueInfoLocalStorage';
-import { BuildingDataLocalStorage, BuildingData } from '../../utils/tablestorages/BuildingDataLocalStorage';
-import { getBuildingCodeByCode, BuildingCodeData } from '../../utils/buildingCodeLocalStorage';
+import { ValueInfoLocalStorage } from '../../utils/tablestorages/ValueInfoLocalStorage';
+import { BuildingDataLocalStorage } from '../../utils/tablestorages/BuildingDataLocalStorage';
+import { getBuildingCodeByCode } from '../../utils/buildingCodeLocalStorage';
 import '../../CSS/BuildingTable.css';
 
 interface BuildingTableProps {
@@ -32,9 +32,10 @@ interface BuildingTableProps {
 
 const BuildingTable: React.FC<BuildingTableProps> = ({ form_id, onBack, kind, classification, area }) => {
     const [buildingInfoIds, setBuildingInfoIds] = useState<string[]>([]);
-    const [buildingDataList, setBuildingDataList] = useState<Map<string, BuildingData>>(new Map());
+    const [buildingDataList, setBuildingDataList] = useState<Map<string, any>>(new Map());
     const [buildingCodeRates, setBuildingCodeRates] = useState<Map<string, number>>(new Map());
     const [baseMarketValues, setBaseMarketValues] = useState<Map<string, number>>(new Map());
+    const [adjustedMarketValues, setAdjustedMarketValues] = useState<Map<string, number>>(new Map());
     const [selectedBuildingId, setSelectedBuildingId] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [loading, setLoading] = useState(true);
@@ -43,19 +44,40 @@ const BuildingTable: React.FC<BuildingTableProps> = ({ form_id, onBack, kind, cl
         loadBuildingData();
     }, [form_id]);
 
+    const calculateMarketValues = (buildingCodeRate: number, depreciationRate: number | null, area: number): { base: number, adjusted: number } => {
+        // Calculate base market value (without depreciation)
+        const baseMarketValue = buildingCodeRate * area;
+        
+        // Calculate adjusted market value (with depreciation applied)
+        let adjustedMarketValue = baseMarketValue;
+        
+        if (depreciationRate !== null && depreciationRate !== undefined) {
+            // Convert percentage to decimal (e.g., 2% becomes 0.02)
+            const depreciationDecimal = depreciationRate / 100;
+            // Apply depreciation: baseMarketValue * (1 - depreciationDecimal)
+            adjustedMarketValue = baseMarketValue * (1 - depreciationDecimal);
+        }
+        
+        return {
+            base: baseMarketValue,
+            adjusted: adjustedMarketValue
+        };
+    };
+
     const loadBuildingData = async () => {
         setLoading(true);
         try {
             // Get all ValueInfo and filter by formDataId
             const allInfos = ValueInfoLocalStorage.getAllValueInfo();
-            const infos = allInfos.filter(info => info.formDataId === form_id);
+            const infos = allInfos.filter((info: any) => info.formDataId === form_id);
             
-            const ids = infos.map(info => info.id);
+            const ids = infos.map((info: any) => info.id);
             setBuildingInfoIds(ids);
             
-            const buildingDataMap = new Map<string, BuildingData>();
+            const buildingDataMap = new Map<string, any>();
             const ratesMap = new Map<string, number>();
-            const marketValuesMap = new Map<string, number>();
+            const baseMarketValuesMap = new Map<string, number>();
+            const adjustedMarketValuesMap = new Map<string, number>();
             
             // Load building data and fetch rates
             for (const id of ids) {
@@ -69,9 +91,15 @@ const BuildingTable: React.FC<BuildingTableProps> = ({ form_id, onBack, kind, cl
                         if (buildingCodeData) {
                             ratesMap.set(id, buildingCodeData.rate);
                             
-                            // Calculate Base Market Value: Area × Building Code Rate
-                            const baseMarketValue = area * buildingCodeData.rate;
-                            marketValuesMap.set(id, baseMarketValue);
+                            // Calculate both base and adjusted market values
+                            const marketValues = calculateMarketValues(
+                                buildingCodeData.rate, 
+                                data.depreciationRate, 
+                                area
+                            );
+                            
+                            baseMarketValuesMap.set(id, marketValues.base);
+                            adjustedMarketValuesMap.set(id, marketValues.adjusted);
                         }
                     }
                 }
@@ -79,7 +107,8 @@ const BuildingTable: React.FC<BuildingTableProps> = ({ form_id, onBack, kind, cl
             
             setBuildingDataList(buildingDataMap);
             setBuildingCodeRates(ratesMap);
-            setBaseMarketValues(marketValuesMap);
+            setBaseMarketValues(baseMarketValuesMap);
+            setAdjustedMarketValues(adjustedMarketValuesMap);
         } catch (error) {
             console.error('Error loading building data:', error);
         } finally {
@@ -87,7 +116,7 @@ const BuildingTable: React.FC<BuildingTableProps> = ({ form_id, onBack, kind, cl
         }
     };
 
-    const handleSearch = (e: CustomEvent) => {
+    const handleSearch = (e: any) => {
         setSearchTerm(e.detail.value || '');
     };
 
@@ -102,14 +131,15 @@ const BuildingTable: React.FC<BuildingTableProps> = ({ form_id, onBack, kind, cl
         if (!buildingData) return false;
         
         // Search through all building data properties
-        return Object.values(buildingData).some(value => 
+        return Object.values(buildingData).some((value: any) => 
             value && value.toString().toLowerCase().includes(searchTerm.toLowerCase())
         );
     });
 
     const selectedBuildingData = selectedBuildingId ? buildingDataList.get(selectedBuildingId) : null;
     const selectedBuildingRate = selectedBuildingId ? buildingCodeRates.get(selectedBuildingId) : null;
-    const selectedMarketValue = selectedBuildingId ? baseMarketValues.get(selectedBuildingId) : null;
+    const selectedBaseMarketValue = selectedBuildingId ? baseMarketValues.get(selectedBuildingId) : null;
+    const selectedAdjustedMarketValue = selectedBuildingId ? adjustedMarketValues.get(selectedBuildingId) : null;
 
     return (
         <IonPage>
@@ -162,39 +192,41 @@ const BuildingTable: React.FC<BuildingTableProps> = ({ form_id, onBack, kind, cl
                         {/* Building List */}
                         <IonGrid>
                             <IonRow className="table-header">
-                                <IonCol size="3">Building ID</IonCol>
-                                <IonCol size="3">Structure Type</IonCol>
-                                <IonCol size="3">Base Market Value</IonCol>
-                                <IonCol size="3">Actions</IonCol>
+                                <IonCol size="2">Building ID</IonCol>
+                                <IonCol size="2">Structure Type</IonCol>
+                                <IonCol size="2">Base Market Value</IonCol>
+                                <IonCol size="2">Adjusted Market Value</IonCol>
+                                <IonCol size="4">Actions</IonCol>
                             </IonRow>
                             
                             {filteredBuildingIds.map((id) => {
                                 const buildingData = buildingDataList.get(id);
                                 const baseMarketValue = baseMarketValues.get(id);
+                                const adjustedMarketValue = adjustedMarketValues.get(id);
                                 const isSelected = id === selectedBuildingId;
                                 
                                 return (
                                     <React.Fragment key={id}>
-                                        <IonRow 
-                                            className={`table-row ${isSelected ? 'selected' : ''}`}
-                                            onClick={() => handleViewDetails(id)}
-                                        >
-                                            <IonCol size="3">{id}</IonCol>
-                                            <IonCol size="3">{buildingData?.structureType || 'N/A'}</IonCol>
-                                            <IonCol size="3">
+                                        <IonRow className={`table-row ${isSelected ? 'selected' : ''}`}>
+                                            <IonCol size="2">{id}</IonCol>
+                                            <IonCol size="2">{buildingData?.structureType || 'N/A'}</IonCol>
+                                            <IonCol size="2">
                                                 {baseMarketValue !== undefined 
                                                     ? `₱${baseMarketValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` 
                                                     : 'N/A'
                                                 }
                                             </IonCol>
-                                            <IonCol size="3">
+                                            <IonCol size="2">
+                                                {adjustedMarketValue !== undefined 
+                                                    ? `₱${adjustedMarketValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` 
+                                                    : 'N/A'
+                                                }
+                                            </IonCol>
+                                            <IonCol size="4">
                                                 <IonButton
                                                     fill="clear"
                                                     size="small"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleViewDetails(id);
-                                                    }}
+                                                    onClick={() => handleViewDetails(id)}
                                                     title="View Details"
                                                 >
                                                     <IonIcon 
@@ -213,18 +245,6 @@ const BuildingTable: React.FC<BuildingTableProps> = ({ form_id, onBack, kind, cl
                                                     <IonCard className="details-card">
                                                         <IonCardContent>
                                                             <div className="building-details-grid">
-                                                                <div className="detail-item">
-                                                                    <span className="detail-label">Kind:</span>
-                                                                    <span className="detail-value">{kind || 'N/A'}</span>
-                                                                </div>
-                                                                <div className="detail-item">
-                                                                    <span className="detail-label">Classification:</span>
-                                                                    <span className="detail-value">{classification || 'N/A'}</span>
-                                                                </div>
-                                                                <div className="detail-item">
-                                                                    <span className="detail-label">Area:</span>
-                                                                    <span className="detail-value">{area ? `${area.toLocaleString()} sq ft` : 'N/A'}</span>
-                                                                </div>
                                                                 <div className="detail-item">
                                                                     <span className="detail-label">Structure Type:</span>
                                                                     <span className="detail-value">{buildingData.structureType || 'N/A'}</span>
