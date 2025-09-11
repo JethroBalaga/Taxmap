@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   IonPage,
   IonHeader,
@@ -13,8 +13,12 @@ import {
   IonAlert,
   IonText,
   IonButton,
+  IonRefresher,
+  IonRefresherContent,
+  useIonViewWillEnter,
+  useIonViewDidEnter,
 } from '@ionic/react';
-import { arrowUpCircle, trash, refresh, informationCircleOutline } from 'ionicons/icons';
+import { arrowUpCircle, trash, informationCircleOutline } from 'ionicons/icons';
 import { FormDataLocalStorage, FormData } from '../utils/tablestorages/FormDataLocalStorage';
 import './../CSS/Forms.css';
 import DynamicTable from '../components/GlobalComponent/DynamicTable';
@@ -27,19 +31,16 @@ const Forms: React.FC = () => {
   const [showDeleteAlert, setShowDeleteAlert] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [showBuildingTable, setShowBuildingTable] = useState(false);
+  const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
 
   const iconActions = [
-    { icon: refresh, className: "icon-blue", onClick: () => handleRefresh(), title: "Refresh Data", enabled: true },
     { icon: arrowUpCircle, className: selectedForm ? "icon-blue" : "icon-blue icon-disabled", onClick: () => handleUpdateClick(), title: "Update Selected Form", enabled: !!selectedForm },
     { icon: trash, className: selectedForm ? "icon-blue" : "icon-blue icon-disabled", onClick: () => handleDeleteClick(), title: "Delete Selected Form", enabled: !!selectedForm },
     { icon: informationCircleOutline, className: selectedForm ? "icon-blue" : "icon-blue icon-disabled", onClick: () => handleInfoClick(), title: "View Building Details", enabled: !!selectedForm },
   ];
 
-  useEffect(() => {
-    loadFormData();
-  }, []);
-
-  const loadFormData = () => {
+  // Use useCallback to memoize the loadFormData function
+  const loadFormData = useCallback(() => {
     setIsLoading(true);
     try {
       const allForms = FormDataLocalStorage.getAllFormData();
@@ -51,12 +52,45 @@ const Forms: React.FC = () => {
       } else {
         setFormData([]);
       }
+      setLastRefresh(new Date());
     } catch (error) {
       console.error('Error loading form data:', error);
       setFormData([]);
     } finally {
       setIsLoading(false);
     }
+  }, []);
+
+  // This will run when the component is about to enter
+  useIonViewWillEnter(() => {
+    loadFormData();
+  });
+
+  // This will run when the component has fully entered
+  useIonViewDidEnter(() => {
+    loadFormData();
+  });
+
+  useEffect(() => {
+    // Load data immediately when component mounts
+    loadFormData();
+    
+    // Set up an interval to refresh data periodically (every 30 seconds)
+    const refreshInterval = setInterval(() => {
+      loadFormData();
+    }, 30000);
+    
+    // Clean up interval on component unmount
+    return () => clearInterval(refreshInterval);
+  }, [loadFormData]);
+
+  const handleRefresh = (event: CustomEvent) => {
+    loadFormData();
+    setTimeout(() => {
+      if (event.detail) {
+        event.detail.complete();
+      }
+    }, 1000);
   };
 
   const handleUpdateClick = () => {
@@ -110,12 +144,10 @@ const Forms: React.FC = () => {
     setSelectedForm(rowData);
   };
 
-  const handleRefresh = () => {
-    loadFormData();
-  };
-
   const handleBackToForms = () => {
     setShowBuildingTable(false);
+    // Refresh data when returning from building table
+    loadFormData();
   };
 
   const filteredForms = Array.isArray(formData)
@@ -151,6 +183,10 @@ const Forms: React.FC = () => {
       </IonHeader>
 
       <IonContent fullscreen>
+        <IonRefresher slot="fixed" onIonRefresh={handleRefresh}>
+          <IonRefresherContent></IonRefresherContent>
+        </IonRefresher>
+        
         <div className="forms-container">
           <IonGrid>
             <IonRow>
@@ -173,6 +209,9 @@ const Forms: React.FC = () => {
                       />
                     ))}
                   </div>
+                </div>
+                <div className="last-refresh">
+                  Last refreshed: {lastRefresh.toLocaleTimeString()}
                 </div>
               </IonCol>
             </IonRow>
