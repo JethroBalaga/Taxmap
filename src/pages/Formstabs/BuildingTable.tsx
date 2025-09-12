@@ -50,149 +50,48 @@ const BuildingTable: React.FC<BuildingTableProps> = ({ form_id, onBack, kind, cl
     const [selectedBuildingId, setSelectedBuildingId] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [loading, setLoading] = useState(true);
-    const [kindId, setKindId] = useState<number>(2); // Set default to 2
+    const [kindId, setKindId] = useState<number>(2);
 
     useEffect(() => {
-        console.log('BuildingTable props:', { 
-            form_id, 
-            kind, 
-            typeof_kind: typeof kind,
-            classification, 
-            area 
-        });
-        
-        // Directly use the expected value since parsing is not working
-        // For buildings, the kind should be 2
+        console.log('BuildingTable props:', { form_id, kind, classification, area });
         setKindId(2);
-        
         loadBuildingData();
     }, [form_id, kind, classification]);
 
     const calculateMarketValues = (buildingCodeRate: number, depreciationRate: number | null, area: number): { base: number, adjusted: number } => {
-        // Calculate base market value (without depreciation)
         const baseMarketValue = buildingCodeRate * area;
-        
-        // Calculate adjusted market value (with depreciation applied)
         let adjustedMarketValue = baseMarketValue;
         
         if (depreciationRate !== null && depreciationRate !== undefined) {
-            // Convert percentage to decimal (e.g., 2% becomes 0.02)
             const depreciationDecimal = depreciationRate / 100;
-            // Apply depreciation: baseMarketValue * (1 - depreciationDecimal)
             adjustedMarketValue = baseMarketValue * (1 - depreciationDecimal);
         }
         
-        return {
-            base: baseMarketValue,
-            adjusted: adjustedMarketValue
-        };
+        return { base: baseMarketValue, adjusted: adjustedMarketValue };
     };
 
     const getAssessmentLevelForBuilding = async (adjustedValue: number): Promise<AssessmentLevelInfo | null> => {
         try {
-            // Convert the adjusted value to a proper number (remove commas and decimals)
             const numericValue = Math.floor(adjustedValue);
             
-            console.log('Getting assessment level for:', {
-                original_value: adjustedValue,
-                numeric_value: numericValue,
-                kindId,
-                classification
-            });
-            
-            // Get all assessment levels
             const allAssessmentLevels = await getAssessmentLevelData();
             
             if (allAssessmentLevels && allAssessmentLevels.length > 0) {
-                console.log('Available assessment levels count:', allAssessmentLevels.length);
-                
-                // Log all assessment levels for debugging
-                console.log('All assessment levels:', allAssessmentLevels.map(level => ({
-                    kind_id: level.kind_id,
-                    class_id: level.class_id,
-                    range1: level.range1,
-                    range2: level.range2,
-                    rate_percent: level.rate_percent
-                })));
-                
-                // Find the assessment level that matches kind_id, class_id, and value range
                 const matchingLevel = allAssessmentLevels.find(level => {
-                    // Convert both to string for comparison to avoid type mismatches
                     const matchesKind = level.kind_id === kindId;
                     const matchesClass = level.class_id.toString() === classification.toString();
                     const inRange = numericValue >= level.range1 && numericValue <= level.range2;
-                    
-                    if (matchesKind && matchesClass) {
-                        console.log('Potential match found:', {
-                            level_kind_id: level.kind_id,
-                            level_class_id: level.class_id,
-                            level_range: `${level.range1} - ${level.range2}`,
-                            our_kind_id: kindId,
-                            our_classification: classification,
-                            our_value: numericValue,
-                            inRange,
-                            matchesAll: matchesKind && matchesClass && inRange
-                        });
-                    }
-                    
                     return matchesKind && matchesClass && inRange;
                 });
                 
                 if (matchingLevel) {
-                    console.log('Found assessment level:', matchingLevel);
                     return {
                         rate_percent: matchingLevel.rate_percent,
                         range1: matchingLevel.range1,
                         range2: matchingLevel.range2
                     };
                 }
-                
-                // If no exact match, try to find the closest match for debugging
-                const levelsWithSameKindClass = allAssessmentLevels.filter(level => 
-                    level.kind_id === kindId && level.class_id.toString() === classification.toString()
-                );
-                
-                console.log('Levels with same kind/classification:', levelsWithSameKindClass.map(level => ({
-                    range1: level.range1,
-                    range2: level.range2,
-                    rate: level.rate_percent,
-                    our_value: numericValue,
-                    inRange: numericValue >= level.range1 && numericValue <= level.range2
-                })));
-                
-                if (levelsWithSameKindClass.length > 0) {
-                    console.log('Value falls outside all ranges for matching kind/classification');
-                    console.log('Our value:', numericValue);
-                    console.log('Available ranges:', levelsWithSameKindClass.map(level => ({
-                        range: `${level.range1} - ${level.range2}`,
-                        difference_from_start: numericValue - level.range1,
-                        difference_from_end: numericValue - level.range2
-                    })));
-                } else {
-                    console.log('No assessment levels found for kind:', kindId, 'and classification:', classification);
-                    
-                    // Check if there are any levels with the same kind but different classification
-                    const levelsWithSameKind = allAssessmentLevels.filter(level => level.kind_id === kindId);
-                    console.log('Levels with same kind:', levelsWithSameKind);
-                    
-                    // Check if there are any levels with the same classification but different kind
-                    const levelsWithSameClassification = allAssessmentLevels.filter(level => level.class_id.toString() === classification.toString());
-                    console.log('Levels with same classification:', levelsWithSameClassification);
-                    
-                    // Try to find any level that matches the value range regardless of kind/class
-                    const anyMatchingLevel = allAssessmentLevels.find(level => 
-                        numericValue >= level.range1 && numericValue <= level.range2
-                    );
-                    
-                    if (anyMatchingLevel) {
-                        console.log('Found level that matches value range (but not kind/class):', anyMatchingLevel);
-                    }
-                }
-            } else {
-                console.log('No assessment levels available in database');
             }
-            
-            console.log('No assessment levels available or none match');
             return null;
         } catch (error) {
             console.error('Error getting assessment level:', error);
@@ -203,10 +102,8 @@ const BuildingTable: React.FC<BuildingTableProps> = ({ form_id, onBack, kind, cl
     const loadBuildingData = async () => {
         setLoading(true);
         try {
-            // Get all ValueInfo and filter by formDataId
             const allInfos = ValueInfoLocalStorage.getAllValueInfo();
             const infos = allInfos.filter((info: any) => info.formDataId === form_id);
-            
             const ids = infos.map((info: any) => info.id);
             setBuildingInfoIds(ids);
             
@@ -216,34 +113,21 @@ const BuildingTable: React.FC<BuildingTableProps> = ({ form_id, onBack, kind, cl
             const adjustedMarketValuesMap = new Map<string, number>();
             const assessmentLevelsMap = new Map<string, AssessmentLevelInfo>();
             
-            // Load building data and fetch rates
             for (const id of ids) {
                 const data = BuildingDataLocalStorage.getBuildingData(id);
                 if (data) {
                     buildingDataMap.set(id, data);
                     
-                    // Fetch building code rate if buildingCode exists
                     if (data.buildingCode) {
                         const buildingCodeData = await getBuildingCodeByCode(data.buildingCode);
                         if (buildingCodeData) {
                             ratesMap.set(id, buildingCodeData.rate);
-                            
-                            // Calculate both base and adjusted market values
-                            const marketValues = calculateMarketValues(
-                                buildingCodeData.rate, 
-                                data.depreciationRate, 
-                                area
-                            );
-                            
+                            const marketValues = calculateMarketValues(buildingCodeData.rate, data.depreciationRate, area);
                             baseMarketValuesMap.set(id, marketValues.base);
                             adjustedMarketValuesMap.set(id, marketValues.adjusted);
-                            
-                            // Get assessment level for this building
                             const assessmentLevel = await getAssessmentLevelForBuilding(marketValues.adjusted);
                             if (assessmentLevel) {
                                 assessmentLevelsMap.set(id, assessmentLevel);
-                            } else {
-                                console.log('No assessment level found for building:', id, 'with value:', marketValues.adjusted);
                             }
                         }
                     }
@@ -272,11 +156,8 @@ const BuildingTable: React.FC<BuildingTableProps> = ({ form_id, onBack, kind, cl
 
     const filteredBuildingIds = buildingInfoIds.filter(id => {
         if (!searchTerm) return true;
-        
         const buildingData = buildingDataList.get(id);
         if (!buildingData) return false;
-        
-        // Search through all building data properties
         return Object.values(buildingData).some((value: any) => 
             value && value.toString().toLowerCase().includes(searchTerm.toLowerCase())
         );
@@ -287,6 +168,28 @@ const BuildingTable: React.FC<BuildingTableProps> = ({ form_id, onBack, kind, cl
     const selectedBaseMarketValue = selectedBuildingId ? baseMarketValues.get(selectedBuildingId) : null;
     const selectedAdjustedMarketValue = selectedBuildingId ? adjustedMarketValues.get(selectedBuildingId) : null;
     const selectedAssessmentLevel = selectedBuildingId ? assessmentLevels.get(selectedBuildingId) : null;
+
+    // Array of building detail items to display - with proper null checks
+    const buildingDetailItems = selectedBuildingData ? [
+        { label: "Structure Type", value: selectedBuildingData.structureType || 'N/A' },
+        { label: "Building Code", value: selectedBuildingData.buildingCode || 'N/A' },
+        ...(selectedBuildingRate !== undefined && selectedBuildingRate !== null ? [
+            { label: "Building Code Rate", value: `₱${selectedBuildingRate.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` }
+        ] : []),
+        { label: "Storey", value: selectedBuildingData.storey || 'N/A' },
+        { label: "Floor Order", value: selectedBuildingData.floorOrder || 'N/A' },
+        { label: "Building Age", value: selectedBuildingData.buildingAge || 'N/A' },
+        { label: "Building Permit", value: selectedBuildingData.buildingPermit || 'N/A' },
+        { label: "Construction %", value: selectedBuildingData.constructionPercent !== null ? `${selectedBuildingData.constructionPercent}%` : 'N/A' },
+        { label: "Depreciation Rate", value: selectedBuildingData.depreciationRate !== null ? `${selectedBuildingData.depreciationRate}%` : 'N/A' },
+        { label: "Date Constructed", value: selectedBuildingData.dateConstructed || 'N/A' },
+        { label: "Date Occupied", value: selectedBuildingData.dateOccupied || 'N/A' },
+        { label: "Date Completed", value: selectedBuildingData.dateCompleted || 'N/A' },
+        ...(selectedAssessmentLevel ? [
+            { label: "Assessment Level", value: `${selectedAssessmentLevel.rate_percent}%` },
+            { label: "Value Range", value: `₱${selectedAssessmentLevel.range1.toLocaleString()} - ₱${selectedAssessmentLevel.range2.toLocaleString()}` }
+        ] : [])
+    ] : [];
 
     return (
         <IonPage>
@@ -303,34 +206,17 @@ const BuildingTable: React.FC<BuildingTableProps> = ({ form_id, onBack, kind, cl
             </IonHeader>
 
             <IonContent className="building-content">
-                {/* Form Information Summary */}
                 <IonCard className="form-summary-card">
                     <IonCardContent>
                         <IonGrid>
                             <IonRow>
-                                <IonCol size="4">
-                                    <strong>Kind:</strong> {kind}
-                                </IonCol>
-                                <IonCol size="4">
-                                    <strong>Classification:</strong> {classification}
-                                </IonCol>
-                                <IonCol size="4">
-                                    <strong>Area:</strong> {area ? `${area.toLocaleString()} sq ft` : 'N/A'}
-                                </IonCol>
+                                <IonCol size="4"><strong>Kind:</strong> {kind}</IonCol>
+                                <IonCol size="4"><strong>Classification:</strong> {classification}</IonCol>
+                                <IonCol size="4"><strong>Area:</strong> {area ? `${area.toLocaleString()} sq ft` : 'N/A'}</IonCol>
                             </IonRow>
                         </IonGrid>
                     </IonCardContent>
                 </IonCard>
-
-                {/* Search Bar */}
-                <div className="search-container">
-                    <IonSearchbar
-                        placeholder="Search building information..."
-                        value={searchTerm}
-                        onIonInput={handleSearch}
-                        className="forms-searchbar"
-                    />
-                </div>
 
                 {loading ? (
                     <div className="loading-container">
@@ -339,7 +225,6 @@ const BuildingTable: React.FC<BuildingTableProps> = ({ form_id, onBack, kind, cl
                     </div>
                 ) : buildingInfoIds.length > 0 ? (
                     <>
-                        {/* Building List */}
                         <IonGrid>
                             <IonRow className="table-header">
                                 <IonCol size="2">Building ID</IonCol>
@@ -375,87 +260,28 @@ const BuildingTable: React.FC<BuildingTableProps> = ({ form_id, onBack, kind, cl
                                                 }
                                             </IonCol>
                                             <IonCol size="2">
-                                                {assessmentLevel 
-                                                    ? `${assessmentLevel.rate_percent}%` 
-                                                    : 'N/A'
-                                                }
+                                                {assessmentLevel ? `${assessmentLevel.rate_percent}%` : 'N/A'}
                                             </IonCol>
                                             <IonCol size="2">
-                                                <IonButton
-                                                    fill="clear"
-                                                    size="small"
-                                                    onClick={() => handleViewDetails(id)}
-                                                    title="View Details"
-                                                >
-                                                    <IonIcon 
-                                                        icon={informationCircle} 
-                                                        className={isSelected ? "icon-blue" : "icon-blue icon-disabled"} 
-                                                    />
+                                                <IonButton fill="clear" size="small" onClick={() => handleViewDetails(id)} title="View Details">
+                                                    <IonIcon icon={informationCircle} className={isSelected ? "icon-blue" : "icon-blue icon-disabled"} />
                                                     View Details
                                                 </IonButton>
                                             </IonCol>
                                         </IonRow>
                                         
-                                        {/* Details Card */}
                                         {isSelected && buildingData && (
                                             <IonRow>
                                                 <IonCol size="12">
                                                     <IonCard className="details-card">
                                                         <IonCardContent>
                                                             <div className="building-details-grid">
-                                                                <div className="detail-item">
-                                                                    <span className="detail-label">Structure Type:</span>
-                                                                    <span className="detail-value">{buildingData.structureType || 'N/A'}</span>
-                                                                </div>
-                                                                <div className="detail-item">
-                                                                    <span className="detail-label">Building Code:</span>
-                                                                    <span className="detail-value">{buildingData.buildingCode || 'N/A'}</span>
-                                                                </div>
-                                                                {/* Show Building Code Rate if available */}
-                                                                {selectedBuildingRate !== undefined && selectedBuildingRate !== null && (
-                                                                    <div className="detail-item">
-                                                                        <span className="detail-label">Building Code Rate:</span>
-                                                                        <span className="detail-value">
-                                                                            ₱{selectedBuildingRate.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                                                        </span>
+                                                                {buildingDetailItems.map((item, index) => (
+                                                                    <div key={index} className="detail-item">
+                                                                        <span className="detail-label">{item.label}:</span>
+                                                                        <span className="detail-value">{item.value}</span>
                                                                     </div>
-                                                                )}
-                                                                <div className="detail-item">
-                                                                    <span className="detail-label">Storey:</span>
-                                                                    <span className="detail-value">{buildingData.storey || 'N/A'}</span>
-                                                                </div>
-                                                                <div className="detail-item">
-                                                                    <span className="detail-label">Floor Order:</span>
-                                                                    <span className="detail-value">{buildingData.floorOrder || 'N/A'}</span>
-                                                                </div>
-                                                                <div className="detail-item">
-                                                                    <span className="detail-label">Building Age:</span>
-                                                                    <span className="detail-value">{buildingData.buildingAge || 'N/A'}</span>
-                                                                </div>
-                                                                <div className="detail-item">
-                                                                    <span className="detail-label">Building Permit:</span>
-                                                                    <span className="detail-value">{buildingData.buildingPermit || 'N/A'}</span>
-                                                                </div>
-                                                                <div className="detail-item">
-                                                                    <span className="detail-label">Construction %:</span>
-                                                                    <span className="detail-value">{buildingData.constructionPercent !== null ? `${buildingData.constructionPercent}%` : 'N/A'}</span>
-                                                                </div>
-                                                                <div className="detail-item">
-                                                                    <span className="detail-label">Depreciation Rate:</span>
-                                                                    <span className="detail-value">{buildingData.depreciationRate !== null ? `${buildingData.depreciationRate}%` : 'N/A'}</span>
-                                                                </div>
-                                                                <div className="detail-item">
-                                                                    <span className="detail-label">Date Constructed:</span>
-                                                                    <span className="detail-value">{buildingData.dateConstructed || 'N/A'}</span>
-                                                                </div>
-                                                                <div className="detail-item">
-                                                                    <span className="detail-label">Date Occupied:</span>
-                                                                    <span className="detail-value">{buildingData.dateOccupied || 'N/A'}</span>
-                                                                </div>
-                                                                <div className="detail-item">
-                                                                    <span className="detail-label">Date Completed:</span>
-                                                                    <span className="detail-value">{buildingData.dateCompleted || 'N/A'}</span>
-                                                                </div>
+                                                                ))}
                                                             </div>
                                                         </IonCardContent>
                                                     </IonCard>
@@ -467,7 +293,15 @@ const BuildingTable: React.FC<BuildingTableProps> = ({ form_id, onBack, kind, cl
                             })}
                         </IonGrid>
 
-                        {/* Show message if no results */}
+                        <div className="search-container">
+                            <IonSearchbar
+                                placeholder="Search adjustments"
+                                value={searchTerm}
+                                onIonInput={handleSearch}
+                                className="forms-searchbar"
+                            />
+                        </div>
+
                         {filteredBuildingIds.length === 0 && (
                             <div className="no-results">
                                 <IonText>No building information found matching your search.</IonText>
