@@ -456,21 +456,6 @@ const BuildingTable: React.FC<BuildingTableProps> = ({ form_id, onBack, kind, cl
                                                                     <span className="detail-label">Date Completed:</span>
                                                                     <span className="detail-value">{buildingData.dateCompleted || 'N/A'}</span>
                                                                 </div>
-                                                                {/* Show Assessment Level Details if available */}
-                                                                {selectedAssessmentLevel && (
-                                                                    <>
-                                                                        <div className="detail-item">
-                                                                            <span className="detail-label">Assessment Level:</span>
-                                                                            <span className="detail-value">{selectedAssessmentLevel.rate_percent}%</span>
-                                                                        </div>
-                                                                        <div className="detail-item">
-                                                                            <span className="detail-label">Value Range:</span>
-                                                                            <span className="detail-value">
-                                                                                ₱{selectedAssessmentLevel.range1.toLocaleString()} - ₱{selectedAssessmentLevel.range2.toLocaleString()}
-                                                                            </span>
-                                                                        </div>
-                                                                    </>
-                                                                )}
                                                             </div>
                                                         </IonCardContent>
                                                     </IonCard>
