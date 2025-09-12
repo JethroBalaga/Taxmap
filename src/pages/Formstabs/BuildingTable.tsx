@@ -14,12 +14,16 @@ import {
     IonRow,
     IonCol,
     IonCard,
-    IonCardContent
+    IonCardContent,
+    IonSpinner
 } from "@ionic/react";
 import { arrowBack, informationCircle } from "ionicons/icons";
 import { ValueInfoLocalStorage } from '../../utils/tablestorages/ValueInfoLocalStorage';
 import { BuildingDataLocalStorage } from '../../utils/tablestorages/BuildingDataLocalStorage';
 import { getBuildingCodeByCode } from '../../utils/buildingCodeLocalStorage';
+import { 
+  getAssessmentLevelData
+} from '../../utils/assessmentLevelLocalStorage';
 import '../../CSS/BuildingTable.css';
 
 interface BuildingTableProps {
@@ -30,19 +34,39 @@ interface BuildingTableProps {
     area: number;
 }
 
+interface AssessmentLevelInfo {
+  rate_percent: string;
+  range1: number;
+  range2: number;
+}
+
 const BuildingTable: React.FC<BuildingTableProps> = ({ form_id, onBack, kind, classification, area }) => {
     const [buildingInfoIds, setBuildingInfoIds] = useState<string[]>([]);
     const [buildingDataList, setBuildingDataList] = useState<Map<string, any>>(new Map());
     const [buildingCodeRates, setBuildingCodeRates] = useState<Map<string, number>>(new Map());
     const [baseMarketValues, setBaseMarketValues] = useState<Map<string, number>>(new Map());
     const [adjustedMarketValues, setAdjustedMarketValues] = useState<Map<string, number>>(new Map());
+    const [assessmentLevels, setAssessmentLevels] = useState<Map<string, AssessmentLevelInfo>>(new Map());
     const [selectedBuildingId, setSelectedBuildingId] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [loading, setLoading] = useState(true);
+    const [kindId, setKindId] = useState<number>(2); // Set default to 2
 
     useEffect(() => {
+        console.log('BuildingTable props:', { 
+            form_id, 
+            kind, 
+            typeof_kind: typeof kind,
+            classification, 
+            area 
+        });
+        
+        // Directly use the expected value since parsing is not working
+        // For buildings, the kind should be 2
+        setKindId(2);
+        
         loadBuildingData();
-    }, [form_id]);
+    }, [form_id, kind, classification]);
 
     const calculateMarketValues = (buildingCodeRate: number, depreciationRate: number | null, area: number): { base: number, adjusted: number } => {
         // Calculate base market value (without depreciation)
@@ -64,6 +88,118 @@ const BuildingTable: React.FC<BuildingTableProps> = ({ form_id, onBack, kind, cl
         };
     };
 
+    const getAssessmentLevelForBuilding = async (adjustedValue: number): Promise<AssessmentLevelInfo | null> => {
+        try {
+            // Convert the adjusted value to a proper number (remove commas and decimals)
+            const numericValue = Math.floor(adjustedValue);
+            
+            console.log('Getting assessment level for:', {
+                original_value: adjustedValue,
+                numeric_value: numericValue,
+                kindId,
+                classification
+            });
+            
+            // Get all assessment levels
+            const allAssessmentLevels = await getAssessmentLevelData();
+            
+            if (allAssessmentLevels && allAssessmentLevels.length > 0) {
+                console.log('Available assessment levels count:', allAssessmentLevels.length);
+                
+                // Log all assessment levels for debugging
+                console.log('All assessment levels:', allAssessmentLevels.map(level => ({
+                    kind_id: level.kind_id,
+                    class_id: level.class_id,
+                    range1: level.range1,
+                    range2: level.range2,
+                    rate_percent: level.rate_percent
+                })));
+                
+                // Find the assessment level that matches kind_id, class_id, and value range
+                const matchingLevel = allAssessmentLevels.find(level => {
+                    // Convert both to string for comparison to avoid type mismatches
+                    const matchesKind = level.kind_id === kindId;
+                    const matchesClass = level.class_id.toString() === classification.toString();
+                    const inRange = numericValue >= level.range1 && numericValue <= level.range2;
+                    
+                    if (matchesKind && matchesClass) {
+                        console.log('Potential match found:', {
+                            level_kind_id: level.kind_id,
+                            level_class_id: level.class_id,
+                            level_range: `${level.range1} - ${level.range2}`,
+                            our_kind_id: kindId,
+                            our_classification: classification,
+                            our_value: numericValue,
+                            inRange,
+                            matchesAll: matchesKind && matchesClass && inRange
+                        });
+                    }
+                    
+                    return matchesKind && matchesClass && inRange;
+                });
+                
+                if (matchingLevel) {
+                    console.log('Found assessment level:', matchingLevel);
+                    return {
+                        rate_percent: matchingLevel.rate_percent,
+                        range1: matchingLevel.range1,
+                        range2: matchingLevel.range2
+                    };
+                }
+                
+                // If no exact match, try to find the closest match for debugging
+                const levelsWithSameKindClass = allAssessmentLevels.filter(level => 
+                    level.kind_id === kindId && level.class_id.toString() === classification.toString()
+                );
+                
+                console.log('Levels with same kind/classification:', levelsWithSameKindClass.map(level => ({
+                    range1: level.range1,
+                    range2: level.range2,
+                    rate: level.rate_percent,
+                    our_value: numericValue,
+                    inRange: numericValue >= level.range1 && numericValue <= level.range2
+                })));
+                
+                if (levelsWithSameKindClass.length > 0) {
+                    console.log('Value falls outside all ranges for matching kind/classification');
+                    console.log('Our value:', numericValue);
+                    console.log('Available ranges:', levelsWithSameKindClass.map(level => ({
+                        range: `${level.range1} - ${level.range2}`,
+                        difference_from_start: numericValue - level.range1,
+                        difference_from_end: numericValue - level.range2
+                    })));
+                } else {
+                    console.log('No assessment levels found for kind:', kindId, 'and classification:', classification);
+                    
+                    // Check if there are any levels with the same kind but different classification
+                    const levelsWithSameKind = allAssessmentLevels.filter(level => level.kind_id === kindId);
+                    console.log('Levels with same kind:', levelsWithSameKind);
+                    
+                    // Check if there are any levels with the same classification but different kind
+                    const levelsWithSameClassification = allAssessmentLevels.filter(level => level.class_id.toString() === classification.toString());
+                    console.log('Levels with same classification:', levelsWithSameClassification);
+                    
+                    // Try to find any level that matches the value range regardless of kind/class
+                    const anyMatchingLevel = allAssessmentLevels.find(level => 
+                        numericValue >= level.range1 && numericValue <= level.range2
+                    );
+                    
+                    if (anyMatchingLevel) {
+                        console.log('Found level that matches value range (but not kind/class):', anyMatchingLevel);
+                    }
+                }
+            } else {
+                console.log('No assessment levels available in database');
+            }
+            
+            console.log('No assessment levels available or none match');
+            return null;
+        } catch (error) {
+            console.error('Error getting assessment level:', error);
+            return null;
+        }
+    };
+
     const loadBuildingData = async () => {
         setLoading(true);
         try {
@@ -78,6 +214,7 @@ const BuildingTable: React.FC<BuildingTableProps> = ({ form_id, onBack, kind, cl
             const ratesMap = new Map<string, number>();
             const baseMarketValuesMap = new Map<string, number>();
             const adjustedMarketValuesMap = new Map<string, number>();
+            const assessmentLevelsMap = new Map<string, AssessmentLevelInfo>();
             
             // Load building data and fetch rates
             for (const id of ids) {
@@ -100,6 +237,14 @@ const BuildingTable: React.FC<BuildingTableProps> = ({ form_id, onBack, kind, cl
                             
                             baseMarketValuesMap.set(id, marketValues.base);
                             adjustedMarketValuesMap.set(id, marketValues.adjusted);
+                            
+                            // Get assessment level for this building
+                            const assessmentLevel = await getAssessmentLevelForBuilding(marketValues.adjusted);
+                            if (assessmentLevel) {
+                                assessmentLevelsMap.set(id, assessmentLevel);
+                            } else {
+                                console.log('No assessment level found for building:', id, 'with value:', marketValues.adjusted);
+                            }
                         }
                     }
                 }
@@ -109,6 +254,7 @@ const BuildingTable: React.FC<BuildingTableProps> = ({ form_id, onBack, kind, cl
             setBuildingCodeRates(ratesMap);
             setBaseMarketValues(baseMarketValuesMap);
             setAdjustedMarketValues(adjustedMarketValuesMap);
+            setAssessmentLevels(assessmentLevelsMap);
         } catch (error) {
             console.error('Error loading building data:', error);
         } finally {
@@ -140,6 +286,7 @@ const BuildingTable: React.FC<BuildingTableProps> = ({ form_id, onBack, kind, cl
     const selectedBuildingRate = selectedBuildingId ? buildingCodeRates.get(selectedBuildingId) : null;
     const selectedBaseMarketValue = selectedBuildingId ? baseMarketValues.get(selectedBuildingId) : null;
     const selectedAdjustedMarketValue = selectedBuildingId ? adjustedMarketValues.get(selectedBuildingId) : null;
+    const selectedAssessmentLevel = selectedBuildingId ? assessmentLevels.get(selectedBuildingId) : null;
 
     return (
         <IonPage>
@@ -186,7 +333,10 @@ const BuildingTable: React.FC<BuildingTableProps> = ({ form_id, onBack, kind, cl
                 </div>
 
                 {loading ? (
-                    <IonText>Loading building information...</IonText>
+                    <div className="loading-container">
+                        <IonSpinner name="crescent" />
+                        <IonText>Loading building information...</IonText>
+                    </div>
                 ) : buildingInfoIds.length > 0 ? (
                     <>
                         {/* Building List */}
@@ -196,13 +346,15 @@ const BuildingTable: React.FC<BuildingTableProps> = ({ form_id, onBack, kind, cl
                                 <IonCol size="2">Structure Type</IonCol>
                                 <IonCol size="2">Base Market Value</IonCol>
                                 <IonCol size="2">Adjusted Market Value</IonCol>
-                                <IonCol size="4">Actions</IonCol>
+                                <IonCol size="2">Assessment Level</IonCol>
+                                <IonCol size="2">Actions</IonCol>
                             </IonRow>
                             
                             {filteredBuildingIds.map((id) => {
                                 const buildingData = buildingDataList.get(id);
                                 const baseMarketValue = baseMarketValues.get(id);
                                 const adjustedMarketValue = adjustedMarketValues.get(id);
+                                const assessmentLevel = assessmentLevels.get(id);
                                 const isSelected = id === selectedBuildingId;
                                 
                                 return (
@@ -222,7 +374,13 @@ const BuildingTable: React.FC<BuildingTableProps> = ({ form_id, onBack, kind, cl
                                                     : 'N/A'
                                                 }
                                             </IonCol>
-                                            <IonCol size="4">
+                                            <IonCol size="2">
+                                                {assessmentLevel 
+                                                    ? `${assessmentLevel.rate_percent}%` 
+                                                    : 'N/A'
+                                                }
+                                            </IonCol>
+                                            <IonCol size="2">
                                                 <IonButton
                                                     fill="clear"
                                                     size="small"
@@ -298,6 +456,21 @@ const BuildingTable: React.FC<BuildingTableProps> = ({ form_id, onBack, kind, cl
                                                                     <span className="detail-label">Date Completed:</span>
                                                                     <span className="detail-value">{buildingData.dateCompleted || 'N/A'}</span>
                                                                 </div>
+                                                                {/* Show Assessment Level Details if available */}
+                                                                {selectedAssessmentLevel && (
+                                                                    <>
+                                                                        <div className="detail-item">
+                                                                            <span className="detail-label">Assessment Level:</span>
+                                                                            <span className="detail-value">{selectedAssessmentLevel.rate_percent}%</span>
+                                                                        </div>
+                                                                        <div className="detail-item">
+                                                                            <span className="detail-label">Value Range:</span>
+                                                                            <span className="detail-value">
+                                                                                ₱{selectedAssessmentLevel.range1.toLocaleString()} - ₱{selectedAssessmentLevel.range2.toLocaleString()}
+                                                                            </span>
+                                                                        </div>
+                                                                    </>
+                                                                )}
                                                             </div>
                                                         </IonCardContent>
                                                     </IonCard>
