@@ -15,9 +15,10 @@ import {
     IonCol,
     IonCard,
     IonCardContent,
-    IonSpinner
+    IonSpinner,
+    IonPopover
 } from "@ionic/react";
-import { arrowBack, informationCircle } from "ionicons/icons";
+import { arrowBack, informationCircle, createOutline } from "ionicons/icons";
 import { ValueInfoLocalStorage } from '../../utils/tablestorages/ValueInfoLocalStorage';
 import { BuildingDataLocalStorage } from '../../utils/tablestorages/BuildingDataLocalStorage';
 import { getBuildingCodeByCode } from '../../utils/buildingCodeLocalStorage';
@@ -51,6 +52,8 @@ const BuildingTable: React.FC<BuildingTableProps> = ({ form_id, onBack, kind, cl
     const [searchTerm, setSearchTerm] = useState('');
     const [loading, setLoading] = useState(true);
     const [kindId, setKindId] = useState<number>(2);
+    const [showCreatePopover, setShowCreatePopover] = useState(false);
+    const [createPopoverEvent, setCreatePopoverEvent] = useState<any>(null);
 
     useEffect(() => {
         console.log('BuildingTable props:', { form_id, kind, classification, area });
@@ -154,6 +157,11 @@ const BuildingTable: React.FC<BuildingTableProps> = ({ form_id, onBack, kind, cl
         setSelectedBuildingId(buildingId === selectedBuildingId ? null : buildingId);
     };
 
+    const handleCreateClick = (e: any) => {
+        setCreatePopoverEvent(e.nativeEvent);
+        setShowCreatePopover(true);
+    };
+
     const filteredBuildingIds = buildingInfoIds.filter(id => {
         if (!searchTerm) return true;
         const buildingData = buildingDataList.get(id);
@@ -184,11 +192,7 @@ const BuildingTable: React.FC<BuildingTableProps> = ({ form_id, onBack, kind, cl
         { label: "Depreciation Rate", value: selectedBuildingData.depreciationRate !== null ? `${selectedBuildingData.depreciationRate}%` : 'N/A' },
         { label: "Date Constructed", value: selectedBuildingData.dateConstructed || 'N/A' },
         { label: "Date Occupied", value: selectedBuildingData.dateOccupied || 'N/A' },
-        { label: "Date Completed", value: selectedBuildingData.dateCompleted || 'N/A' },
-        ...(selectedAssessmentLevel ? [
-            { label: "Assessment Level", value: `${selectedAssessmentLevel.rate_percent}%` },
-            { label: "Value Range", value: `₱${selectedAssessmentLevel.range1.toLocaleString()} - ₱${selectedAssessmentLevel.range2.toLocaleString()}` }
-        ] : [])
+        { label: "Date Completed", value: selectedBuildingData.dateCompleted || 'N/A' }
     ] : [];
 
     return (
@@ -227,12 +231,11 @@ const BuildingTable: React.FC<BuildingTableProps> = ({ form_id, onBack, kind, cl
                     <>
                         <IonGrid>
                             <IonRow className="table-header">
-                                <IonCol size="2">Building ID</IonCol>
-                                <IonCol size="2">Structure Type</IonCol>
+                                <IonCol size="3">Building ID</IonCol>
+                                <IonCol size="3">Structure Type</IonCol>
                                 <IonCol size="2">Base Market Value</IonCol>
                                 <IonCol size="2">Adjusted Market Value</IonCol>
                                 <IonCol size="2">Assessment Level</IonCol>
-                                <IonCol size="2">Actions</IonCol>
                             </IonRow>
                             
                             {filteredBuildingIds.map((id) => {
@@ -244,9 +247,13 @@ const BuildingTable: React.FC<BuildingTableProps> = ({ form_id, onBack, kind, cl
                                 
                                 return (
                                     <React.Fragment key={id}>
-                                        <IonRow className={`table-row ${isSelected ? 'selected' : ''}`}>
-                                            <IonCol size="2">{id}</IonCol>
-                                            <IonCol size="2">{buildingData?.structureType || 'N/A'}</IonCol>
+                                        <IonRow 
+                                            className={`table-row ${isSelected ? 'selected' : ''}`}
+                                            onClick={() => handleViewDetails(id)}
+                                            style={{ cursor: 'pointer' }}
+                                        >
+                                            <IonCol size="3">{id}</IonCol>
+                                            <IonCol size="3">{buildingData?.structureType || 'N/A'}</IonCol>
                                             <IonCol size="2">
                                                 {baseMarketValue !== undefined 
                                                     ? `₱${baseMarketValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` 
@@ -260,13 +267,7 @@ const BuildingTable: React.FC<BuildingTableProps> = ({ form_id, onBack, kind, cl
                                                 }
                                             </IonCol>
                                             <IonCol size="2">
-                                                {assessmentLevel ? `${assessmentLevel.rate_percent}%` : 'N/A'}
-                                            </IonCol>
-                                            <IonCol size="2">
-                                                <IonButton fill="clear" size="small" onClick={() => handleViewDetails(id)} title="View Details">
-                                                    <IonIcon icon={informationCircle} className={isSelected ? "icon-blue" : "icon-blue icon-disabled"} />
-                                                    View Details
-                                                </IonButton>
+                                                {assessmentLevel ? `${assessmentLevel.rate_percent}` : 'N/A'}
                                             </IonCol>
                                         </IonRow>
                                         
@@ -293,13 +294,51 @@ const BuildingTable: React.FC<BuildingTableProps> = ({ form_id, onBack, kind, cl
                             })}
                         </IonGrid>
 
-                        <div className="search-container">
+                        <div className="search-container" style={{ display: 'flex', alignItems: 'center', padding: '0 16px', gap: '10px', marginTop: '16px' }}>
                             <IonSearchbar
                                 placeholder="Search adjustments"
                                 value={searchTerm}
                                 onIonInput={handleSearch}
                                 className="forms-searchbar"
                             />
+                            <IonButton 
+                                fill="clear" 
+                                className="create-button"
+                                onClick={handleCreateClick}
+                                style={{ margin: 0 }}
+                                title="Add Adjustment"
+                            >
+                                <IonIcon icon={createOutline} slot="icon-only" />
+                            </IonButton>
+                            <IonButton 
+                                fill="clear" 
+                                className="info-button"
+                                onClick={() => {
+                                    if (filteredBuildingIds.length > 0) {
+                                        handleViewDetails(filteredBuildingIds[0]);
+                                    }
+                                }}
+                                style={{ margin: 0 }}
+                                title="View Building Details"
+                            >
+                                <IonIcon icon={informationCircle} slot="icon-only" />
+                            </IonButton>
+                            
+                            <IonPopover
+                                isOpen={showCreatePopover}
+                                event={createPopoverEvent}
+                                onDidDismiss={() => setShowCreatePopover(false)}
+                            >
+                                <IonContent>
+                                    <div style={{ padding: '16px' }}>
+                                        <h3>Create Adjustment</h3>
+                                        <p>This would open a form to create a new adjustment.</p>
+                                        <IonButton expand="block" onClick={() => setShowCreatePopover(false)}>
+                                            Close
+                                        </IonButton>
+                                    </div>
+                                </IonContent>
+                            </IonPopover>
                         </div>
 
                         {filteredBuildingIds.length === 0 && (
