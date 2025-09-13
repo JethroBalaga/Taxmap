@@ -13,12 +13,11 @@ import {
   IonLabel,
   IonInput,
   IonTextarea,
-  IonSelect,
-  IonSelectOption,
   IonAlert,
   IonText
 } from '@ionic/react';
 import { BuildingAdjustmentLocalStorage, BuildingAdjustmentData } from '../../utils/tablestorages/BuildingAdjustmentLocalStorage';
+import './../../CSS/modal.css'; // Import the general modal CSS
 
 interface BuildingAdjustmentModalProps {
   isOpen: boolean;
@@ -150,30 +149,30 @@ const BuildingAdjustmentModal: React.FC<BuildingAdjustmentModalProps> = ({
 
   return (
     <>
-      <IonModal isOpen={isOpen} onDidDismiss={handleClose}>
+      <IonModal 
+        isOpen={isOpen} 
+        onDidDismiss={handleClose}
+        className="custom-wide-modal"
+      >
         <IonHeader>
-          <IonToolbar>
-            <IonTitle>
+          <IonToolbar className="fancy-header">
+            <IonTitle className="fancy-title">
               {existingData ? 'Edit Building Adjustment' : 'Add Building Adjustment'}
             </IonTitle>
-            <IonButton slot="end" fill="clear" onClick={handleClose}>
-              Close
-            </IonButton>
           </IonToolbar>
         </IonHeader>
 
-        <IonContent>
-          <IonGrid>
+        <IonContent className="modal-content">
+          <IonGrid className="custom-grid">
             {/* Display Building ID at the top */}
             <IonRow>
-              <IonCol size="12">
-                <IonItem>
+              <IonCol size="12" className="custom-col">
+                <IonItem className="custom-input">
                   <IonLabel position="stacked">Building ID</IonLabel>
                   <IonInput
                     value={valueInfoId}
                     readonly
                     disabled
-                    className="building-id-display"
                   />
                 </IonItem>
                 <IonText color="medium" style={{ padding: '0 16px', fontSize: '0.8rem' }}>
@@ -183,8 +182,8 @@ const BuildingAdjustmentModal: React.FC<BuildingAdjustmentModalProps> = ({
             </IonRow>
 
             <IonRow>
-              <IonCol size="12">
-                <IonItem>
+              <IonCol size="12" className="custom-col">
+                <IonItem className="custom-input">
                   <IonLabel position="stacked">Main Component *</IonLabel>
                   <IonInput
                     value={formData.Maincomponent}
@@ -196,8 +195,8 @@ const BuildingAdjustmentModal: React.FC<BuildingAdjustmentModalProps> = ({
             </IonRow>
 
             <IonRow>
-              <IonCol size="12">
-                <IonItem>
+              <IonCol size="12" className="custom-col">
+                <IonItem className="custom-input">
                   <IonLabel position="stacked">Building Subcomponent *</IonLabel>
                   <IonInput
                     value={formData.buidlingsubcomponent}
@@ -209,8 +208,8 @@ const BuildingAdjustmentModal: React.FC<BuildingAdjustmentModalProps> = ({
             </IonRow>
 
             <IonRow>
-              <IonCol size="12">
-                <IonItem>
+              <IonCol size="12" className="custom-col">
+                <IonItem className="custom-input">
                   <IonLabel position="stacked">Description</IonLabel>
                   <IonTextarea
                     value={formData.description}
@@ -223,8 +222,8 @@ const BuildingAdjustmentModal: React.FC<BuildingAdjustmentModalProps> = ({
             </IonRow>
 
             <IonRow>
-              <IonCol size="6">
-                <IonItem>
+              <IonCol size="6" className="custom-col">
+                <IonItem className="custom-input">
                   <IonLabel position="stacked">Completion Percent (%)</IonLabel>
                   <IonInput
                     type="number"
@@ -235,8 +234,8 @@ const BuildingAdjustmentModal: React.FC<BuildingAdjustmentModalProps> = ({
                 </IonItem>
               </IonCol>
 
-              <IonCol size="6">
-                <IonItem>
+              <IonCol size="6" className="custom-col">
+                <IonItem className="custom-input">
                   <IonLabel position="stacked">Depreciation (%)</IonLabel>
                   <IonInput
                     type="number"
@@ -249,12 +248,19 @@ const BuildingAdjustmentModal: React.FC<BuildingAdjustmentModalProps> = ({
             </IonRow>
 
             <IonRow>
-              <IonCol size="12">
-                <div style={{ padding: '16px', textAlign: 'center' }}>
-                  <IonButton onClick={handleSave} style={{ marginRight: '8px' }}>
+              <IonCol size="12" className="custom-col">
+                <div className="next-btn-container">
+                  <IonButton 
+                    onClick={handleSave} 
+                    className="next-button"
+                    style={{ marginRight: '8px' }}
+                  >
                     {existingData ? 'Update' : 'Save'} Adjustment
                   </IonButton>
-                  <IonButton onClick={handleClose} fill="outline">
+                  <IonButton 
+                    onClick={handleClose} 
+                    fill="outline"
+                  >
                     Cancel
                   </IonButton>
                 </div>
