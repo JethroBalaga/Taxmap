@@ -14,9 +14,12 @@ import {
   IonInput,
   IonTextarea,
   IonAlert,
-  IonText
+  IonText,
+  IonSelect,
+  IonSelectOption
 } from '@ionic/react';
 import { BuildingAdjustmentLocalStorage, BuildingAdjustmentData } from '../../utils/tablestorages/BuildingAdjustmentLocalStorage';
+import { getBuildingComponentData, BuildingComponentData } from '../../utils/buildingComponentLocalStorage';
 import './../../CSS/modal.css'; // Import the general modal CSS
 
 interface BuildingAdjustmentModalProps {
@@ -44,6 +47,14 @@ const BuildingAdjustmentModal: React.FC<BuildingAdjustmentModalProps> = ({
 
   const [showAlert, setShowAlert] = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
+  const [buildingComponents, setBuildingComponents] = useState<BuildingComponentData[]>([]);
+  const [isLoadingComponents, setIsLoadingComponents] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      loadBuildingComponents();
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (existingData) {
@@ -64,6 +75,22 @@ const BuildingAdjustmentModal: React.FC<BuildingAdjustmentModalProps> = ({
       });
     }
   }, [existingData, isOpen]);
+
+  const loadBuildingComponents = async () => {
+    setIsLoadingComponents(true);
+    try {
+      const components = await getBuildingComponentData();
+      if (components) {
+        setBuildingComponents(components);
+      }
+    } catch (error) {
+      console.error('Error loading building components:', error);
+      setAlertMessage('Error loading building components. Please try again.');
+      setShowAlert(true);
+    } finally {
+      setIsLoadingComponents(false);
+    }
+  };
 
   const handleInputChange = (field: keyof typeof formData, value: string) => {
     setFormData(prev => ({
@@ -185,11 +212,32 @@ const BuildingAdjustmentModal: React.FC<BuildingAdjustmentModalProps> = ({
               <IonCol size="12" className="custom-col">
                 <IonItem className="custom-input">
                   <IonLabel position="stacked">Main Component *</IonLabel>
-                  <IonInput
+                  <IonSelect
                     value={formData.Maincomponent}
-                    placeholder="Enter main component"
-                    onIonInput={(e) => handleInputChange('Maincomponent', e.detail.value!)}
-                  />
+                    placeholder="Select main component"
+                    onIonChange={(e) => handleInputChange('Maincomponent', e.detail.value!)}
+                    interface="popover"
+                  >
+                    {isLoadingComponents ? (
+                      <IonSelectOption value="" disabled>
+                        Loading components...
+                      </IonSelectOption>
+                    ) : (
+                      buildingComponents.map((component) => (
+                        <IonSelectOption 
+                          key={component.building_com_id} 
+                          value={component.building_com_id}
+                        >
+                          {component.building_com_id} - {component.description}
+                        </IonSelectOption>
+                      ))
+                    )}
+                    {buildingComponents.length === 0 && !isLoadingComponents && (
+                      <IonSelectOption value="" disabled>
+                        No components available
+                      </IonSelectOption>
+                    )}
+                  </IonSelect>
                 </IonItem>
               </IonCol>
             </IonRow>
