@@ -225,7 +225,6 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
                             Back
                         </IonButton>
                     </IonButtons>
-                    <IonTitle>Building Information - Form ID: {form_id}</IonTitle>
                 </IonToolbar>
             </IonHeader>
 
