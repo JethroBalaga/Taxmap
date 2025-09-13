@@ -185,6 +185,12 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
         );
     });
 
+    // Button actions array - Moved inside component to access filteredBuildingIds
+    const buttonActions = [
+        { icon: createOutline, className: "create-button", onClick: handleCreateClick, title: "Add Building adjustment", enabled: true },
+        { icon: informationCircle, className: "info-button", onClick: () => { if (filteredBuildingIds.length > 0) handleViewDetails(filteredBuildingIds[0]); }, title: "View Building Details", enabled: filteredBuildingIds.length > 0 }
+    ];
+
     const selectedBuildingData = selectedBuildingId ? buildingDataList.get(selectedBuildingId) : null;
     const selectedBuildingRate = selectedBuildingId ? buildingCodeRates.get(selectedBuildingId) : null;
     const selectedBaseMarketValue = selectedBuildingId ? baseMarketValues.get(selectedBuildingId) : null;
@@ -195,9 +201,7 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
     const buildingDetailItems = selectedBuildingData ? [
         { label: "Structure Type", value: selectedBuildingData.structureType || 'N/A' },
         { label: "Building Code", value: selectedBuildingData.buildingCode || 'N/A' },
-        ...(selectedBuildingRate !== undefined && selectedBuildingRate !== null ? [
-            { label: "Building Code Rate", value: `₱${selectedBuildingRate.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` }
-        ] : []),
+        ...(selectedBuildingRate !== undefined && selectedBuildingRate !== null ? [{ label: "Building Code Rate", value: `₱${selectedBuildingRate.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` }] : []),
         { label: "Storey", value: selectedBuildingData.storey || 'N/A' },
         { label: "Floor Order", value: selectedBuildingData.floorOrder || 'N/A' },
         { label: "Building Age", value: selectedBuildingData.buildingAge || 'N/A' },
@@ -229,32 +233,16 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
                     <IonCardContent>
                         <IonGrid style={{ margin: '0', padding: '0' }}>
                             <IonRow style={{ marginBottom: '4px' }}>
-                                <IonCol size="3" style={{ padding: '4px' }}>
-                                    <IonText><strong>Form ID:</strong> {form_id}</IonText>
-                                </IonCol>
-                                <IonCol size="3" style={{ padding: '4px' }}>
-                                    <IonText><strong>District:</strong> {district || 'N/A'}</IonText>
-                                </IonCol>
-                                <IonCol size="3" style={{ padding: '4px' }}>
-                                    <IonText><strong>Declarant ID:</strong> {declarant || 'N/A'}</IonText>
-                                </IonCol>
-                                <IonCol size="3" style={{ padding: '4px' }}>
-                                    <IonText><strong>Kind:</strong> {kind || 'N/A'}</IonText>
-                                </IonCol>
+                                <IonCol size="3" style={{ padding: '4px' }}><IonText><strong>Form ID:</strong> {form_id}</IonText></IonCol>
+                                <IonCol size="3" style={{ padding: '4px' }}><IonText><strong>District:</strong> {district || 'N/A'}</IonText></IonCol>
+                                <IonCol size="3" style={{ padding: '4px' }}><IonText><strong>Declarant ID:</strong> {declarant || 'N/A'}</IonText></IonCol>
+                                <IonCol size="3" style={{ padding: '4px' }}><IonText><strong>Kind:</strong> {kind || 'N/A'}</IonText></IonCol>
                             </IonRow>
                             <IonRow style={{ marginBottom: '4px' }}>
-                                <IonCol size="3" style={{ padding: '4px' }}>
-                                    <IonText><strong>Classification:</strong> {classification || 'N/A'}</IonText>
-                                </IonCol>
-                                <IonCol size="3" style={{ padding: '4px' }}>
-                                    <IonText><strong>Subclass:</strong> {subclass || 'N/A'}</IonText>
-                                </IonCol>
-                                <IonCol size="3" style={{ padding: '4px' }}>
-                                    <IonText><strong>Actual Use:</strong> {actual_use || 'N/A'}</IonText>
-                                </IonCol>
-                                <IonCol size="3" style={{ padding: '4px' }}>
-                                    <IonText><strong>Area:</strong> {area ? `${area.toLocaleString()} sq ft` : 'N/A'}</IonText>
-                                </IonCol>
+                                <IonCol size="3" style={{ padding: '4px' }}><IonText><strong>Classification:</strong> {classification || 'N/A'}</IonText></IonCol>
+                                <IonCol size="3" style={{ padding: '4px' }}><IonText><strong>Subclass:</strong> {subclass || 'N/A'}</IonText></IonCol>
+                                <IonCol size="3" style={{ padding: '4px' }}><IonText><strong>Actual Use:</strong> {actual_use || 'N/A'}</IonText></IonCol>
+                                <IonCol size="3" style={{ padding: '4px' }}><IonText><strong>Area:</strong> {area ? `${area.toLocaleString()} sq ft` : 'N/A'}</IonText></IonCol>
                             </IonRow>
                         </IonGrid>
                     </IonCardContent>
@@ -287,28 +275,12 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
                                 
                                 return (
                                     <React.Fragment key={id}>
-                                        <IonRow 
-                                            className={`table-row ${isSelected ? 'selected' : ''}`}
-                                            onClick={() => handleViewDetails(id)}
-                                            style={{ cursor: 'pointer' }}
-                                        >
+                                        <IonRow className={`table-row ${isSelected ? 'selected' : ''}`} onClick={() => handleViewDetails(id)} style={{ cursor: 'pointer' }}>
                                             <IonCol size="3">{id}</IonCol>
                                             <IonCol size="3">{buildingData?.structureType || 'N/A'}</IonCol>
-                                            <IonCol size="2">
-                                                {baseMarketValue !== undefined 
-                                                    ? `₱${baseMarketValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` 
-                                                    : 'N/A'
-                                                }
-                                            </IonCol>
-                                            <IonCol size="2">
-                                                {adjustedMarketValue !== undefined 
-                                                    ? `₱${adjustedMarketValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` 
-                                                    : 'N/A'
-                                                }
-                                            </IonCol>
-                                            <IonCol size="2">
-                                                {assessmentLevel ? `${assessmentLevel.rate_percent}` : 'N/A'}
-                                            </IonCol>
+                                            <IonCol size="2">{baseMarketValue !== undefined ? `₱${baseMarketValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'N/A'}</IonCol>
+                                            <IonCol size="2">{adjustedMarketValue !== undefined ? `₱${adjustedMarketValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'N/A'}</IonCol>
+                                            <IonCol size="2">{assessmentLevel ? `${assessmentLevel.rate_percent}` : 'N/A'}</IonCol>
                                         </IonRow>
                                         
                                         {/* Expanded Details */}
@@ -337,47 +309,21 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
 
                         {/* Search and Actions Section */}
                         <div className="search-container" style={{ display: 'flex', alignItems: 'center', padding: '0 16px', gap: '10px', marginTop: '16px' }}>
-                            <IonSearchbar
-                                placeholder="Search buildings..."
-                                value={searchTerm}
-                                onIonInput={handleSearch}
-                                className="forms-searchbar"
-                            />
-                            <IonButton 
-                                fill="clear" 
-                                className="create-button"
-                                onClick={handleCreateClick}
-                                style={{ margin: 0 }}
-                                title="Add Building"
-                            >
-                                <IonIcon icon={createOutline} slot="icon-only" />
-                            </IonButton>
-                            <IonButton 
-                                fill="clear" 
-                                className="info-button"
-                                onClick={() => {
-                                    if (filteredBuildingIds.length > 0) {
-                                        handleViewDetails(filteredBuildingIds[0]);
-                                    }
-                                }}
-                                style={{ margin: 0 }}
-                                title="View Building Details"
-                            >
-                                <IonIcon icon={informationCircle} slot="icon-only" />
-                            </IonButton>
+                            <IonSearchbar placeholder="Search buildings..." value={searchTerm} onIonInput={handleSearch} className="forms-searchbar" />
                             
-                            <IonPopover
-                                isOpen={showCreatePopover}
-                                event={createPopoverEvent}
-                                onDidDismiss={() => setShowCreatePopover(false)}
-                            >
+                            {/* Button actions from array */}
+                            {buttonActions.map((action, index) => (
+                                <IonButton key={index} fill="clear" className={action.className} onClick={action.onClick} style={{ margin: 0, opacity: action.enabled ? 1 : 0.5 }} title={action.title} disabled={!action.enabled}>
+                                    <IonIcon icon={action.icon} slot="icon-only" />
+                                </IonButton>
+                            ))}
+                            
+                            <IonPopover isOpen={showCreatePopover} event={createPopoverEvent} onDidDismiss={() => setShowCreatePopover(false)}>
                                 <IonContent>
                                     <div style={{ padding: '16px' }}>
                                         <h3>Create New Building</h3>
                                         <p>This would open a form to create a new building entry.</p>
-                                        <IonButton expand="block" onClick={() => setShowCreatePopover(false)}>
-                                            Close
-                                        </IonButton>
+                                        <IonButton expand="block" onClick={() => setShowCreatePopover(false)}>Close</IonButton>
                                     </div>
                                 </IonContent>
                             </IonPopover>
