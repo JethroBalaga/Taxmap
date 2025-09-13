@@ -33,6 +33,10 @@ interface BuildingTableProps {
     kind: string | number;
     classification: string;
     area: number;
+    declarant: string;
+    actual_use: string;
+    district?: number | null;
+    subclass?: string;
 }
 
 interface AssessmentLevelInfo {
@@ -41,7 +45,17 @@ interface AssessmentLevelInfo {
   range2: number;
 }
 
-const BuildingTable: React.FC<BuildingTableProps> = ({ form_id, onBack, kind, classification, area }) => {
+const BuildingTable: React.FC<BuildingTableProps> = ({ 
+  form_id, 
+  onBack, 
+  kind, 
+  classification, 
+  area, 
+  declarant, 
+  actual_use,
+  district,
+  subclass 
+}) => {
     const [buildingInfoIds, setBuildingInfoIds] = useState<string[]>([]);
     const [buildingDataList, setBuildingDataList] = useState<Map<string, any>>(new Map());
     const [buildingCodeRates, setBuildingCodeRates] = useState<Map<string, number>>(new Map());
@@ -56,10 +70,10 @@ const BuildingTable: React.FC<BuildingTableProps> = ({ form_id, onBack, kind, cl
     const [createPopoverEvent, setCreatePopoverEvent] = useState<any>(null);
 
     useEffect(() => {
-        console.log('BuildingTable props:', { form_id, kind, classification, area });
+        console.log('BuildingTable props:', { form_id, kind, classification, area, declarant, actual_use, district, subclass });
         setKindId(2);
         loadBuildingData();
-    }, [form_id, kind, classification]);
+    }, [form_id, kind, classification, area, declarant, actual_use, district, subclass]);
 
     const calculateMarketValues = (buildingCodeRate: number, depreciationRate: number | null, area: number): { base: number, adjusted: number } => {
         const baseMarketValue = buildingCodeRate * area;
@@ -210,18 +224,43 @@ const BuildingTable: React.FC<BuildingTableProps> = ({ form_id, onBack, kind, cl
             </IonHeader>
 
             <IonContent className="building-content">
+                {/* Form Summary Section - ORIGINAL STYLE WITH NEW SEQUENCE AND SMALLER GAPS */}
                 <IonCard className="form-summary-card">
                     <IonCardContent>
-                        <IonGrid>
-                            <IonRow>
-                                <IonCol size="4"><strong>Kind:</strong> {kind}</IonCol>
-                                <IonCol size="4"><strong>Classification:</strong> {classification}</IonCol>
-                                <IonCol size="4"><strong>Area:</strong> {area ? `${area.toLocaleString()} sq ft` : 'N/A'}</IonCol>
+                        <IonGrid style={{ margin: '0', padding: '0' }}>
+                            <IonRow style={{ marginBottom: '4px' }}>
+                                <IonCol size="3" style={{ padding: '4px' }}>
+                                    <IonText><strong>Form ID:</strong> {form_id}</IonText>
+                                </IonCol>
+                                <IonCol size="3" style={{ padding: '4px' }}>
+                                    <IonText><strong>District:</strong> {district || 'N/A'}</IonText>
+                                </IonCol>
+                                <IonCol size="3" style={{ padding: '4px' }}>
+                                    <IonText><strong>Declarant ID:</strong> {declarant || 'N/A'}</IonText>
+                                </IonCol>
+                                <IonCol size="3" style={{ padding: '4px' }}>
+                                    <IonText><strong>Kind:</strong> {kind || 'N/A'}</IonText>
+                                </IonCol>
+                            </IonRow>
+                            <IonRow style={{ marginBottom: '4px' }}>
+                                <IonCol size="3" style={{ padding: '4px' }}>
+                                    <IonText><strong>Classification:</strong> {classification || 'N/A'}</IonText>
+                                </IonCol>
+                                <IonCol size="3" style={{ padding: '4px' }}>
+                                    <IonText><strong>Subclass:</strong> {subclass || 'N/A'}</IonText>
+                                </IonCol>
+                                <IonCol size="3" style={{ padding: '4px' }}>
+                                    <IonText><strong>Actual Use:</strong> {actual_use || 'N/A'}</IonText>
+                                </IonCol>
+                                <IonCol size="3" style={{ padding: '4px' }}>
+                                    <IonText><strong>Area:</strong> {area ? `${area.toLocaleString()} sq ft` : 'N/A'}</IonText>
+                                </IonCol>
                             </IonRow>
                         </IonGrid>
                     </IonCardContent>
                 </IonCard>
 
+                {/* Loading State */}
                 {loading ? (
                     <div className="loading-container">
                         <IonSpinner name="crescent" />
@@ -229,6 +268,7 @@ const BuildingTable: React.FC<BuildingTableProps> = ({ form_id, onBack, kind, cl
                     </div>
                 ) : buildingInfoIds.length > 0 ? (
                     <>
+                        {/* Building Table */}
                         <IonGrid>
                             <IonRow className="table-header">
                                 <IonCol size="3">Building ID</IonCol>
@@ -271,6 +311,7 @@ const BuildingTable: React.FC<BuildingTableProps> = ({ form_id, onBack, kind, cl
                                             </IonCol>
                                         </IonRow>
                                         
+                                        {/* Expanded Details */}
                                         {isSelected && buildingData && (
                                             <IonRow>
                                                 <IonCol size="12">
@@ -294,9 +335,10 @@ const BuildingTable: React.FC<BuildingTableProps> = ({ form_id, onBack, kind, cl
                             })}
                         </IonGrid>
 
+                        {/* Search and Actions Section */}
                         <div className="search-container" style={{ display: 'flex', alignItems: 'center', padding: '0 16px', gap: '10px', marginTop: '16px' }}>
                             <IonSearchbar
-                                placeholder="Search adjustments"
+                                placeholder="Search buildings..."
                                 value={searchTerm}
                                 onIonInput={handleSearch}
                                 className="forms-searchbar"
@@ -306,7 +348,7 @@ const BuildingTable: React.FC<BuildingTableProps> = ({ form_id, onBack, kind, cl
                                 className="create-button"
                                 onClick={handleCreateClick}
                                 style={{ margin: 0 }}
-                                title="Add Adjustment"
+                                title="Add Building"
                             >
                                 <IonIcon icon={createOutline} slot="icon-only" />
                             </IonButton>
@@ -331,8 +373,8 @@ const BuildingTable: React.FC<BuildingTableProps> = ({ form_id, onBack, kind, cl
                             >
                                 <IonContent>
                                     <div style={{ padding: '16px' }}>
-                                        <h3>Create Adjustment</h3>
-                                        <p>This would open a form to create a new adjustment.</p>
+                                        <h3>Create New Building</h3>
+                                        <p>This would open a form to create a new building entry.</p>
                                         <IonButton expand="block" onClick={() => setShowCreatePopover(false)}>
                                             Close
                                         </IonButton>
@@ -341,13 +383,15 @@ const BuildingTable: React.FC<BuildingTableProps> = ({ form_id, onBack, kind, cl
                             </IonPopover>
                         </div>
 
-                        {filteredBuildingIds.length === 0 && (
+                        {/* No Search Results */}
+                        {filteredBuildingIds.length === 0 && searchTerm && (
                             <div className="no-results">
                                 <IonText>No building information found matching your search.</IonText>
                             </div>
                         )}
                     </>
                 ) : (
+                    /* No Data State */
                     <div className="no-data">
                         <IonText>No building information available for this form.</IonText>
                     </div>

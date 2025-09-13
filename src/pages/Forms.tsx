@@ -69,12 +69,12 @@ const Forms: React.FC = () => {
   useEffect(() => {
     // Load data immediately when component mounts
     loadFormData();
-    
+
     // Set up an interval to refresh data periodically (every 30 seconds)
     const refreshInterval = setInterval(() => {
       loadFormData();
     }, 30000);
-    
+
     // Clean up interval on component unmount
     return () => clearInterval(refreshInterval);
   }, [loadFormData]);
@@ -107,10 +107,10 @@ const Forms: React.FC = () => {
   const handleInfoClick = () => {
     if (selectedForm) {
       // Convert kind to number for comparison if it's stored as string
-      const kind = typeof selectedForm.kind === 'string' 
-        ? parseInt(selectedForm.kind) 
+      const kind = typeof selectedForm.kind === 'string'
+        ? parseInt(selectedForm.kind)
         : selectedForm.kind;
-      
+
       if (kind === 2) {
         setShowBuildingTable(true);
       } else {
@@ -164,13 +164,13 @@ const Forms: React.FC = () => {
             </IonButton>
           </IonToolbar>
         </IonHeader>
-        <BuildingTable 
-          form_id={selectedForm.id} 
+        <BuildingTable
+          form_id={selectedForm.id}
+          declarant={selectedForm.declarantId?.toString() || ''}
           onBack={handleBackToForms}
           kind={selectedForm.kind || ''}
           classification={selectedForm.classification || ''}
           area={selectedForm.area || 0}
-          declarant={selectedForm.declarantId?.toString() || ''}
           actual_use={selectedForm.actualUse || ''}
         />
       </IonPage>
@@ -189,7 +189,7 @@ const Forms: React.FC = () => {
         <IonRefresher slot="fixed" onIonRefresh={handleRefresh}>
           <IonRefresherContent></IonRefresherContent>
         </IonRefresher>
-        
+
         <div className="forms-container">
           <IonGrid>
             <IonRow>
