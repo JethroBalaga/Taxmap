@@ -16,7 +16,6 @@ import {
   IonRefresher,
   IonRefresherContent,
   useIonViewWillEnter,
-  useIonViewDidEnter,
   IonSpinner
 } from '@ionic/react';
 import { arrowUpCircle, trash, informationCircleOutline } from 'ionicons/icons';
@@ -168,11 +167,11 @@ const Forms: React.FC = () => {
         <BuildingTable 
           form_id={selectedForm.id} 
           onBack={handleBackToForms}
-          kind={selectedForm.kind}
-          classification={selectedForm.classification}
-          area={selectedForm.area}
-          declarant={selectedForm.declarant}
-          actual_use={selectedForm.actual_use}
+          kind={selectedForm.kind || ''}
+          classification={selectedForm.classification || ''}
+          area={selectedForm.area || 0}
+          declarant={selectedForm.declarantId?.toString() || ''}
+          actual_use={selectedForm.actualUse || ''}
         />
       </IonPage>
     );
