@@ -18,7 +18,7 @@ import {
     IonSpinner,
     IonPopover
 } from "@ionic/react";
-import { arrowBack, informationCircle, createOutline } from "ionicons/icons";
+import { arrowBack, informationCircle, createOutline, arrowUpCircleOutline, trashOutline } from "ionicons/icons";
 import { ValueInfoLocalStorage } from '../../utils/tablestorages/ValueInfoLocalStorage';
 import { BuildingDataLocalStorage } from '../../utils/tablestorages/BuildingDataLocalStorage';
 import { getBuildingCodeByCode } from '../../utils/buildingCodeLocalStorage';
@@ -188,6 +188,8 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
     // Button actions array - Moved inside component to access filteredBuildingIds
     const buttonActions = [
         { icon: createOutline, className: "create-button", onClick: handleCreateClick, title: "Add Building adjustment", enabled: true },
+        { icon: arrowUpCircleOutline, className: "update-button", onClick: handleCreateClick, title: "Update Building adjustment", enabled: true },
+        { icon: trashOutline, className: "delete-button", onClick: handleCreateClick, title: "Delete Building adjustment", enabled: true },
         { icon: informationCircle, className: "info-button", onClick: () => { if (filteredBuildingIds.length > 0) handleViewDetails(filteredBuildingIds[0]); }, title: "View Building Details", enabled: filteredBuildingIds.length > 0 }
     ];
 
