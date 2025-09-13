@@ -67,11 +67,6 @@ const Forms: React.FC = () => {
     loadFormData();
   });
 
-  // This will run when the component has fully entered
-  useIonViewDidEnter(() => {
-    loadFormData();
-  });
-
   useEffect(() => {
     // Load data immediately when component mounts
     loadFormData();
@@ -176,6 +171,8 @@ const Forms: React.FC = () => {
           kind={selectedForm.kind}
           classification={selectedForm.classification}
           area={selectedForm.area}
+          declarant={selectedForm.declarant}
+          actual_use={selectedForm.actual_use}
         />
       </IonPage>
     );
