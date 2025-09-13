@@ -15,7 +15,8 @@ import {
   IonTextarea,
   IonSelect,
   IonSelectOption,
-  IonAlert
+  IonAlert,
+  IonText
 } from '@ionic/react';
 import { BuildingAdjustmentLocalStorage, BuildingAdjustmentData } from '../../utils/tablestorages/BuildingAdjustmentLocalStorage';
 
@@ -163,6 +164,24 @@ const BuildingAdjustmentModal: React.FC<BuildingAdjustmentModalProps> = ({
 
         <IonContent>
           <IonGrid>
+            {/* Display Building ID at the top */}
+            <IonRow>
+              <IonCol size="12">
+                <IonItem>
+                  <IonLabel position="stacked">Building ID</IonLabel>
+                  <IonInput
+                    value={valueInfoId}
+                    readonly
+                    disabled
+                    className="building-id-display"
+                  />
+                </IonItem>
+                <IonText color="medium" style={{ padding: '0 16px', fontSize: '0.8rem' }}>
+                  This adjustment will be linked to the selected building.
+                </IonText>
+              </IonCol>
+            </IonRow>
+
             <IonRow>
               <IonCol size="12">
                 <IonItem>
