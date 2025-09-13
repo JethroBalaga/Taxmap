@@ -20,6 +20,7 @@ import {
 } from '@ionic/react';
 import { BuildingAdjustmentLocalStorage, BuildingAdjustmentData } from '../../utils/tablestorages/BuildingAdjustmentLocalStorage';
 import { getBuildingComponentData, BuildingComponentData } from '../../utils/buildingComponentLocalStorage';
+import { getBuildingSubcomponentByBuildingComId, BuildingSubcomponentData } from '../../utils/BuildingSubcomponentLocalStorage';
 import './../../CSS/modal.css'; // Import the general modal CSS
 
 interface BuildingAdjustmentModalProps {
@@ -48,7 +49,10 @@ const BuildingAdjustmentModal: React.FC<BuildingAdjustmentModalProps> = ({
   const [showAlert, setShowAlert] = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
   const [buildingComponents, setBuildingComponents] = useState<BuildingComponentData[]>([]);
+  const [buildingSubcomponents, setBuildingSubcomponents] = useState<BuildingSubcomponentData[]>([]);
   const [isLoadingComponents, setIsLoadingComponents] = useState(false);
+  const [isLoadingSubcomponents, setIsLoadingSubcomponents] = useState(false);
+  const [selectedSubcomponentRate, setSelectedSubcomponentRate] = useState<number | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -65,6 +69,16 @@ const BuildingAdjustmentModal: React.FC<BuildingAdjustmentModalProps> = ({
         completion_percent: existingData.completion_percent || '',
         depraciation: existingData.depraciation || ''
       });
+      
+      // If there's existing data with a main component, load its subcomponents
+      if (existingData.Maincomponent) {
+        loadBuildingSubcomponents(existingData.Maincomponent);
+        
+        // If there's an existing subcomponent, find and display its rate
+        if (existingData.buidlingsubcomponent) {
+          findAndDisplayRate(existingData.buidlingsubcomponent);
+        }
+      }
     } else {
       setFormData({
         Maincomponent: '',
@@ -90,6 +104,58 @@ const BuildingAdjustmentModal: React.FC<BuildingAdjustmentModalProps> = ({
     } finally {
       setIsLoadingComponents(false);
     }
+  };
+
+  const loadBuildingSubcomponents = async (buildingComId: string) => {
+    setIsLoadingSubcomponents(true);
+    try {
+      const subcomponents = await getBuildingSubcomponentByBuildingComId(buildingComId);
+      if (subcomponents) {
+        setBuildingSubcomponents(subcomponents);
+      } else {
+        setBuildingSubcomponents([]);
+      }
+    } catch (error) {
+      console.error('Error loading building subcomponents:', error);
+      setBuildingSubcomponents([]);
+    } finally {
+      setIsLoadingSubcomponents(false);
+    }
+  };
+
+  const findAndDisplayRate = (subcomponentId: string) => {
+    const subcomponent = buildingSubcomponents.find(sub => sub.building_subcom_id === subcomponentId);
+    if (subcomponent) {
+      setSelectedSubcomponentRate(subcomponent.rate);
+    } else {
+      setSelectedSubcomponentRate(null);
+    }
+  };
+
+  const handleMainComponentChange = (value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      Maincomponent: value,
+      buidlingsubcomponent: '' // Reset subcomponent when main component changes
+    }));
+    
+    setSelectedSubcomponentRate(null); // Reset rate display
+    
+    if (value) {
+      loadBuildingSubcomponents(value);
+    } else {
+      setBuildingSubcomponents([]);
+    }
+  };
+
+  const handleSubcomponentChange = (value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      buidlingsubcomponent: value
+    }));
+    
+    // Find and display the rate for the selected subcomponent
+    findAndDisplayRate(value);
   };
 
   const handleInputChange = (field: keyof typeof formData, value: string) => {
@@ -171,6 +237,7 @@ const BuildingAdjustmentModal: React.FC<BuildingAdjustmentModalProps> = ({
       completion_percent: '',
       depraciation: ''
     });
+    setSelectedSubcomponentRate(null);
     onClose();
   };
 
@@ -215,7 +282,7 @@ const BuildingAdjustmentModal: React.FC<BuildingAdjustmentModalProps> = ({
                   <IonSelect
                     value={formData.Maincomponent}
                     placeholder="Select main component"
-                    onIonChange={(e) => handleInputChange('Maincomponent', e.detail.value!)}
+                    onIonChange={(e) => handleMainComponentChange(e.detail.value!)}
                     interface="popover"
                   >
                     {isLoadingComponents ? (
@@ -246,12 +313,58 @@ const BuildingAdjustmentModal: React.FC<BuildingAdjustmentModalProps> = ({
               <IonCol size="12" className="custom-col">
                 <IonItem className="custom-input">
                   <IonLabel position="stacked">Building Subcomponent *</IonLabel>
-                  <IonInput
+                  <IonSelect
                     value={formData.buidlingsubcomponent}
-                    placeholder="Enter building subcomponent"
-                    onIonInput={(e) => handleInputChange('buidlingsubcomponent', e.detail.value!)}
-                  />
+                    placeholder="Select building subcomponent"
+                    onIonChange={(e) => handleSubcomponentChange(e.detail.value!)}
+                    interface="popover"
+                    disabled={!formData.Maincomponent || isLoadingSubcomponents}
+                  >
+                    {isLoadingSubcomponents ? (
+                      <IonSelectOption value="" disabled>
+                        Loading subcomponents...
+                      </IonSelectOption>
+                    ) : (
+                      buildingSubcomponents.map((subcomponent) => (
+                        <IonSelectOption 
+                          key={subcomponent.building_subcom_id} 
+                          value={subcomponent.building_subcom_id}
+                        >
+                          {subcomponent.building_subcom_id} - {subcomponent.description}
+                        </IonSelectOption>
+                      ))
+                    )}
+                    {buildingSubcomponents.length === 0 && !isLoadingSubcomponents && formData.Maincomponent && (
+                      <IonSelectOption value="" disabled>
+                        No subcomponents available for this component
+                      </IonSelectOption>
+                    )}
+                    {!formData.Maincomponent && (
+                      <IonSelectOption value="" disabled>
+                        Please select a main component first
+                      </IonSelectOption>
+                    )}
+                  </IonSelect>
                 </IonItem>
+                
+                {/* Display the rate below the subcomponent dropdown with better styling */}
+                {selectedSubcomponentRate !== null && (
+                  <div style={{ 
+                    padding: '12px 16px', 
+                    margin: '8px 0',
+                    backgroundColor: '#f8f9fa',
+                    borderRadius: '8px',
+                    border: '1px solid #e9ecef'
+                  }}>
+                    <IonText style={{ 
+                      fontSize: '0.95rem', 
+                      fontWeight: '500',
+                      color: '#2d3748' // Dark gray for better visibility
+                    }}>
+                      Rate: <span style={{ color: '#2d7d32', fontWeight: '600' }}>₱{selectedSubcomponentRate.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    </IonText>
+                  </div>
+                )}
               </IonCol>
             </IonRow>
 
