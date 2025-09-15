@@ -27,10 +27,11 @@ import { getBuildingCodeByCode } from '../../utils/buildingCodeLocalStorage';
 import { 
     getAssessmentLevelData
 } from '../../utils/assessmentLevelLocalStorage';
-import { BuildingAdjustmentData } from '../../utils/tablestorages/BuildingAdjustmentLocalStorage';
+import { BuildingAdjustmentData, BuildingAdjustmentLocalStorage } from '../../utils/tablestorages/BuildingAdjustmentLocalStorage';
 import '../../CSS/BuildingTable.css';
 import '../../CSS/Forms.css'; // Add this import statement
 import BuildingAdjustmentModal from "../../components/Modals/BuildingAdjustmentModal";
+import DynamicTable from "../../components/GlobalComponent/DynamicTable";
 
 interface BuildingTableProps {
     form_id: string;
@@ -67,6 +68,7 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
     const [baseMarketValues, setBaseMarketValues] = useState<Map<string, number>>(new Map());
     const [adjustedMarketValues, setAdjustedMarketValues] = useState<Map<string, number>>(new Map());
     const [assessmentLevels, setAssessmentLevels] = useState<Map<string, AssessmentLevelInfo>>(new Map());
+    const [buildingAdjustments, setBuildingAdjustments] = useState<BuildingAdjustmentData[]>([]);
     const [selectedBuildingId, setSelectedBuildingId] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [loading, setLoading] = useState(true);
@@ -83,6 +85,7 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
         console.log('BuildingTable props:', { form_id, kind, classification, area, declarant, actual_use, district, subclass });
         setKindId(2);
         loadBuildingData();
+        loadBuildingAdjustments();
     }, [form_id, kind, classification, area, declarant, actual_use, district, subclass]);
 
     const calculateMarketValues = (buildingCodeRate: number, depreciationRate: number | null, area: number): { base: number, adjusted: number } => {
@@ -173,6 +176,20 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
         }
     };
 
+    const loadBuildingAdjustments = () => {
+        try {
+            const allAdjustments = BuildingAdjustmentLocalStorage.getAllBuildingAdjustmentData();
+            // Filter adjustments to only show those related to buildings in this form
+            const formBuildingIds = ValueInfoLocalStorage.getAllValueInfo()
+                .filter(info => info.formDataId === form_id)
+                .map(info => info.id);
+            const filteredAdjustments = allAdjustments.filter(adj => formBuildingIds.includes(adj.value_info_id));
+            setBuildingAdjustments(filteredAdjustments);
+        } catch (error) {
+            console.error('Error loading building adjustments:', error);
+        }
+    };
+
     const handleSearch = (e: any) => {
         setSearchTerm(e.detail.value || '');
     };
@@ -186,11 +203,12 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
         setShowCreatePopover(true);
     };
 
-    // New function to handle creating adjustments
-    const handleCreateAdjustment = (buildingId: string) => {
-        setSelectedValueInfoId(buildingId);
-        setExistingAdjustmentData(null); // Reset existing data for new creation
-        setShowAdjustmentModal(true);
+    const handleCreateAdjustment = () => {
+        if (buildingInfoIds.length > 0) {
+            setSelectedValueInfoId(buildingInfoIds[0]); // Use the first building ID for a new adjustment
+            setExistingAdjustmentData(null); // Reset existing data for new creation
+            setShowAdjustmentModal(true);
+        }
     };
 
     const filteredBuildingIds = buildingInfoIds.filter(id => {
@@ -202,14 +220,20 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
         );
     });
 
-    // Button actions array - Updated to use handleCreateAdjustment
+    const filteredAdjustments = buildingAdjustments.filter(adjustment => {
+        if (!searchTerm) return true;
+        return Object.values(adjustment).some((value: any) =>
+            value && value.toString().toLowerCase().includes(searchTerm.toLowerCase())
+        );
+    });
+
     const buttonActions = [
         { 
             icon: createOutline, 
             className: "create-button", 
-            onClick: () => filteredBuildingIds.length > 0 && handleCreateAdjustment(filteredBuildingIds[0]), 
+            onClick: handleCreateAdjustment, 
             title: "Add Building adjustment", 
-            enabled: filteredBuildingIds.length > 0 
+            enabled: buildingInfoIds.length > 0 
         },
         { 
             icon: arrowUpCircleOutline, 
@@ -236,10 +260,7 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
 
     const selectedBuildingData = selectedBuildingId ? buildingDataList.get(selectedBuildingId) : null;
     const selectedBuildingRate = selectedBuildingId ? buildingCodeRates.get(selectedBuildingId) : null;
-    const selectedBaseMarketValue = selectedBuildingId ? baseMarketValues.get(selectedBuildingId) : null;
-    const selectedAdjustedMarketValue = selectedBuildingId ? adjustedMarketValues.get(selectedBuildingId) : null;
-    const selectedAssessmentLevel = selectedBuildingId ? assessmentLevels.get(selectedBuildingId) : null;
-
+    
     // Array of building detail items to display - with proper null checks
     const buildingDetailItems = selectedBuildingData ? [
         { label: "Structure Type", value: selectedBuildingData.structureType || 'N/A' },
@@ -270,7 +291,7 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
             </IonHeader>
 
             <IonContent className="building-content">
-                {/* Form Summary Section - ORIGINAL STYLE WITH NEW SEQUENCE AND SMALLER GAPS */}
+                {/* Form Summary Section */}
                 <IonCard className="form-summary-card">
                     <IonCardContent>
                         <IonGrid style={{ margin: '0', padding: '0' }}>
@@ -296,62 +317,69 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
                         <IonSpinner name="crescent" />
                         <IonText>Loading building information...</IonText>
                     </div>
-                ) : buildingInfoIds.length > 0 ? (
+                ) : (
                     <>
                         {/* Building Table */}
-                        <IonGrid>
-                            <IonRow className="table-header">
-                                <IonCol size="3">Building ID</IonCol>
-                                <IonCol size="3">Structure Type</IonCol>
-                                <IonCol size="2">Base Market Value</IonCol>
-                                <IonCol size="2">Adjusted Market Value</IonCol>
-                                <IonCol size="2">Assessment Level</IonCol>
-                            </IonRow>
-                            
-                            {filteredBuildingIds.map((id) => {
-                                const buildingData = buildingDataList.get(id);
-                                const baseMarketValue = baseMarketValues.get(id);
-                                const adjustedMarketValue = adjustedMarketValues.get(id);
-                                const assessmentLevel = assessmentLevels.get(id);
-                                const isSelected = id === selectedBuildingId;
+                        {buildingInfoIds.length > 0 ? (
+                            <IonGrid>
+                                <IonRow className="table-header">
+                                    <IonCol size="3">Building ID</IonCol>
+                                    <IonCol size="3">Structure Type</IonCol>
+                                    <IonCol size="2">Base Market Value</IonCol>
+                                    <IonCol size="2">Adjusted Market Value</IonCol>
+                                    <IonCol size="2">Assessment Level</IonCol>
+                                </IonRow>
                                 
-                                return (
-                                    <React.Fragment key={id}>
-                                        <IonRow className={`table-row ${isSelected ? 'selected' : ''}`} onClick={() => handleViewDetails(id)} style={{ cursor: 'pointer' }}>
-                                            <IonCol size="3">{id}</IonCol>
-                                            <IonCol size="3">{buildingData?.structureType || 'N/A'}</IonCol>
-                                            <IonCol size="2">{baseMarketValue !== undefined ? `₱${baseMarketValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'N/A'}</IonCol>
-                                            <IonCol size="2">{adjustedMarketValue !== undefined ? `₱${adjustedMarketValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'N/A'}</IonCol>
-                                            <IonCol size="2">{assessmentLevel ? `${assessmentLevel.rate_percent}` : 'N/A'}</IonCol>
-                                        </IonRow>
-                                        
-                                        {/* Expanded Details */}
-                                        {isSelected && buildingData && (
-                                            <IonRow>
-                                                <IonCol size="12">
-                                                    <IonCard className="details-card">
-                                                        <IonCardContent>
-                                                            <div className="building-details-grid">
-                                                                {buildingDetailItems.map((item, index) => (
-                                                                    <div key={index} className="detail-item">
-                                                                        <span className="detail-label">{item.label}:</span>
-                                                                        <span className="detail-value">{item.value}</span>
-                                                                    </div>
-                                                                ))}
-                                                            </div>
-                                                        </IonCardContent>
-                                                    </IonCard>
-                                                </IonCol>
+                                {filteredBuildingIds.map((id) => {
+                                    const buildingData = buildingDataList.get(id);
+                                    const baseMarketValue = baseMarketValues.get(id);
+                                    const adjustedMarketValue = adjustedMarketValues.get(id);
+                                    const assessmentLevel = assessmentLevels.get(id);
+                                    const isSelected = id === selectedBuildingId;
+                                    
+                                    return (
+                                        <React.Fragment key={id}>
+                                            <IonRow className={`table-row ${isSelected ? 'selected' : ''}`} onClick={() => handleViewDetails(id)} style={{ cursor: 'pointer' }}>
+                                                <IonCol size="3">{id}</IonCol>
+                                                <IonCol size="3">{buildingData?.structureType || 'N/A'}</IonCol>
+                                                <IonCol size="2">{baseMarketValue !== undefined ? `₱${baseMarketValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'N/A'}</IonCol>
+                                                <IonCol size="2">{adjustedMarketValue !== undefined ? `₱${adjustedMarketValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'N/A'}</IonCol>
+                                                <IonCol size="2">{assessmentLevel ? `${assessmentLevel.rate_percent}` : 'N/A'}</IonCol>
                                             </IonRow>
-                                        )}
-                                    </React.Fragment>
-                                );
-                            })}
-                        </IonGrid>
+                                            
+                                            {/* Expanded Details */}
+                                            {isSelected && buildingData && (
+                                                <IonRow>
+                                                    <IonCol size="12">
+                                                        <IonCard className="details-card">
+                                                            <IonCardContent>
+                                                                <div className="building-details-grid">
+                                                                    {buildingDetailItems.map((item, index) => (
+                                                                        <div key={index} className="detail-item">
+                                                                            <span className="detail-label">{item.label}:</span>
+                                                                            <span className="detail-value">{item.value}</span>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </IonCardContent>
+                                                        </IonCard>
+                                                    </IonCol>
+                                                </IonRow>
+                                            )}
+                                        </React.Fragment>
+                                    );
+                                })}
+                            </IonGrid>
+                        ) : (
+                            /* No Data State */
+                            <div className="no-data">
+                                <IonText>No building information available for this form.</IonText>
+                            </div>
+                        )}
 
                         {/* Search and Actions Section */}
                         <div className="search-container">
-                            <IonSearchbar placeholder="Search buildings..." value={searchTerm} onIonInput={handleSearch} className="forms-searchbar" />
+                            <IonSearchbar placeholder="Search adjustments..." value={searchTerm} onIonInput={handleSearch} className="forms-searchbar" />
                             
                             {/* Button actions from array */}
                             <div className="icon-group">
@@ -372,32 +400,39 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
                                 </IonContent>
                             </IonPopover>
                         </div>
-
-                        {/* No Search Results */}
-                        {filteredBuildingIds.length === 0 && searchTerm && (
-                            <div className="no-results">
-                                <IonText>No building information found matching your search.</IonText>
+                        
+                        {/* Building Adjustments Table */}
+                        {filteredAdjustments.length > 0 ? (
+                            <div style={{ padding: '0 16px' }}>
+                                <DynamicTable
+                                    data={filteredAdjustments}
+                                    title="Building Adjustments"
+                                    keyField="bldg_adjustment_id"
+                                />
+                            </div>
+                        ) : (
+                            <div className="no-data">
+                                <IonText>No building adjustments found.</IonText>
                             </div>
                         )}
                     </>
-                ) : (
-                    /* No Data State */
-                    <div className="no-data">
-                        <IonText>No building information available for this form.</IonText>
-                    </div>
                 )}
                 
                 {/* Building Adjustment Modal */}
                 {showAdjustmentModal && selectedValueInfoId && (
                     <BuildingAdjustmentModal
                         isOpen={showAdjustmentModal}
-                        onClose={() => setShowAdjustmentModal(false)}
+                        onClose={() => {
+                            setShowAdjustmentModal(false);
+                            loadBuildingAdjustments(); // Refresh the adjustments after the modal closes
+                        }}
                         valueInfoId={selectedValueInfoId}
                         existingData={existingAdjustmentData}
-                        initialArea={area} // Pass the 'area' prop here
+                        initialArea={area}
                         onSaveSuccess={() => {
                             // Refresh data after successful save
                             loadBuildingData();
+                            loadBuildingAdjustments();
                         }}
                     />
                 )}
