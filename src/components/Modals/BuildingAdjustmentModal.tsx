@@ -19,17 +19,11 @@ import BuildingAdjustmentForm from './BuildingAdjustmentForm';
 import BuildingAdjustmentCalculations from './BuildingAdjustmentCalculations';
 import './../../CSS/modal.css';
 
-// Extend the BuildingAdjustmentData interface to include area
-// Note: Market value and adjusted value are not stored, but calculated and displayed
-interface ExtendedBuildingAdjustmentData extends BuildingAdjustmentData {
-    area?: number;
-}
-
 interface BuildingAdjustmentModalProps {
     isOpen: boolean;
     onClose: () => void;
     valueInfoId: string;
-    existingData?: ExtendedBuildingAdjustmentData | null;
+    existingData?: BuildingAdjustmentData | null;
     onSaveSuccess?: () => void;
     initialArea?: number;
 }
@@ -62,7 +56,6 @@ const BuildingAdjustmentModal: React.FC<BuildingAdjustmentModalProps> = ({
     const [adjustedValue, setAdjustedValue] = useState<number | null>(null);
     const [isSaveEnabled, setIsSaveEnabled] = useState(false);
 
-    // Initial data loading and form population
     useEffect(() => {
         if (isOpen) {
             loadBuildingComponents();
@@ -71,14 +64,13 @@ const BuildingAdjustmentModal: React.FC<BuildingAdjustmentModalProps> = ({
 
     useEffect(() => {
         if (existingData) {
-            const existingArea = existingData.area !== undefined ? existingData.area : initialArea;
             setFormData({
                 Maincomponent: existingData.Maincomponent || '',
                 buidlingsubcomponent: existingData.buidlingsubcomponent || '',
                 description: existingData.description || '',
                 completion_percent: existingData.completion_percent || '',
                 depraciation: existingData.depraciation || '',
-                area: existingArea.toString()
+                area: existingData.area.toString()
             });
             if (existingData.Maincomponent) {
                 loadBuildingSubcomponents(existingData.Maincomponent);
@@ -98,7 +90,6 @@ const BuildingAdjustmentModal: React.FC<BuildingAdjustmentModalProps> = ({
         }
     }, [existingData, isOpen, initialArea]);
 
-    // Validation and Calculation Effects
     useEffect(() => {
         const requiredFieldsFilled =
             formData.Maincomponent.trim() !== '' &&
@@ -116,7 +107,32 @@ const BuildingAdjustmentModal: React.FC<BuildingAdjustmentModalProps> = ({
         calculateValues();
     }, [selectedSubcomponentRate, formData.area, formData.completion_percent, formData.depraciation]);
 
-    // Data Loading Functions
+    const calculateValues = () => {
+        const areaValue = parseFloat(formData.area) || 0;
+        const completionDecimal = parseFloat(formData.completion_percent) / 100;
+        const depreciationDecimal = parseFloat(formData.depraciation) / 100;
+
+        let calculatedMarketValue: number | null = null;
+        let calculatedAdjustedValue: number | null = null;
+
+        if (selectedSubcomponentRate !== null && areaValue > 0) {
+            calculatedMarketValue = selectedSubcomponentRate * areaValue;
+            if (completionDecimal >= 0) {
+                calculatedMarketValue *= completionDecimal;
+            }
+        }
+
+        if (calculatedMarketValue !== null) {
+            calculatedAdjustedValue = calculatedMarketValue;
+            if (depreciationDecimal >= 0) {
+                calculatedAdjustedValue = calculatedMarketValue * (1 - depreciationDecimal);
+            }
+        }
+
+        setMarketValue(calculatedMarketValue);
+        setAdjustedValue(calculatedAdjustedValue);
+    };
+
     const loadBuildingComponents = async () => {
         setIsLoadingComponents(true);
         try {
@@ -149,34 +165,34 @@ const BuildingAdjustmentModal: React.FC<BuildingAdjustmentModalProps> = ({
         setSelectedSubcomponentRate(subcomponent ? subcomponent.rate : null);
     };
 
-    // Calculation Function
-    const calculateValues = () => {
-        const areaValue = parseFloat(formData.area) || 0;
-        const completionDecimal = parseFloat(formData.completion_percent) / 100;
-        const depreciationDecimal = parseFloat(formData.depraciation) / 100;
-
-        let calculatedMarketValue: number | null = null;
-        let calculatedAdjustedValue: number | null = null;
-
-        if (selectedSubcomponentRate !== null && areaValue > 0) {
-            calculatedMarketValue = selectedSubcomponentRate * areaValue;
-            if (completionDecimal >= 0) {
-                calculatedMarketValue *= completionDecimal;
-            }
-        }
-
-        if (calculatedMarketValue !== null) {
-            calculatedAdjustedValue = calculatedMarketValue;
-            if (depreciationDecimal >= 0) {
-                calculatedAdjustedValue = calculatedMarketValue * (1 - depreciationDecimal);
-            }
-        }
-
-        setMarketValue(calculatedMarketValue);
-        setAdjustedValue(calculatedAdjustedValue);
+    const handleFormChange = (field: keyof typeof formData, value: string) => {
+        setFormData(prev => ({ ...prev, [field]: value }));
     };
 
-    // Handlers
+    const handleMainComponentChange = (value: string) => {
+        setFormData(prev => ({
+            ...prev,
+            Maincomponent: value,
+            buidlingsubcomponent: '' // Reset subcomponent
+        }));
+        setSelectedSubcomponentRate(null);
+        setMarketValue(null);
+        setAdjustedValue(null);
+        if (value) {
+            loadBuildingSubcomponents(value);
+        } else {
+            setBuildingSubcomponents([]);
+        }
+    };
+
+    const handleSubcomponentChange = (value: string) => {
+        setFormData(prev => ({
+            ...prev,
+            buidlingsubcomponent: value
+        }));
+        findAndDisplayRate(value);
+    };
+
     const handleSave = () => {
         if (!isSaveEnabled) {
             setAlertMessage('Please fill out all required fields and ensure values are valid.');
@@ -212,7 +228,6 @@ const BuildingAdjustmentModal: React.FC<BuildingAdjustmentModalProps> = ({
     };
 
     const handleClose = () => {
-        // Reset form data and calculated values
         setFormData({
             Maincomponent: '',
             buidlingsubcomponent: '',
@@ -245,7 +260,7 @@ const BuildingAdjustmentModal: React.FC<BuildingAdjustmentModalProps> = ({
                 <IonContent className="modal-content">
                     <BuildingAdjustmentForm
                         formData={formData}
-                        handleInputChange={setFormData}
+                        handleFormChange={handleFormChange}
                         handleMainComponentChange={handleMainComponentChange}
                         handleSubcomponentChange={handleSubcomponentChange}
                         buildingComponents={buildingComponents}

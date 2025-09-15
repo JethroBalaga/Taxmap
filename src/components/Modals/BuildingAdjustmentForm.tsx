@@ -24,14 +24,7 @@ interface BuildingAdjustmentFormProps {
         depraciation: string;
         area: string;
     };
-    handleInputChange: React.Dispatch<React.SetStateAction<{
-        Maincomponent: string;
-        buidlingsubcomponent: string;
-        description: string;
-        completion_percent: string;
-        depraciation: string;
-        area: string;
-    }>>;
+    handleFormChange: (field: keyof BuildingAdjustmentFormProps['formData'], value: string) => void;
     handleMainComponentChange: (value: string) => void;
     handleSubcomponentChange: (value: string) => void;
     buildingComponents: BuildingComponentData[];
@@ -44,7 +37,7 @@ interface BuildingAdjustmentFormProps {
 
 const BuildingAdjustmentForm: React.FC<BuildingAdjustmentFormProps> = ({
     formData,
-    handleInputChange,
+    handleFormChange,
     handleMainComponentChange,
     handleSubcomponentChange,
     buildingComponents,
@@ -141,7 +134,7 @@ const BuildingAdjustmentForm: React.FC<BuildingAdjustmentFormProps> = ({
                             value={formData.description}
                             placeholder="Enter description"
                             rows={3}
-                            onIonInput={(e) => handleInputChange(prev => ({ ...prev, description: e.detail.value! }))}
+                            onIonInput={(e) => handleFormChange('description', e.detail.value!)}
                         />
                     </IonItem>
                 </IonCol>
@@ -155,7 +148,7 @@ const BuildingAdjustmentForm: React.FC<BuildingAdjustmentFormProps> = ({
                             type="number"
                             value={formData.area}
                             placeholder="Enter area"
-                            onIonInput={(e) => handleInputChange(prev => ({ ...prev, area: e.detail.value! }))}
+                            onIonInput={(e) => handleFormChange('area', e.detail.value!)}
                         />
                     </IonItem>
                 </IonCol>
@@ -168,7 +161,7 @@ const BuildingAdjustmentForm: React.FC<BuildingAdjustmentFormProps> = ({
                             placeholder="0-100"
                             min="0"
                             max="100"
-                            onIonInput={(e) => handleInputChange(prev => ({ ...prev, completion_percent: e.detail.value! }))}
+                            onIonInput={(e) => handleFormChange('completion_percent', e.detail.value!)}
                         />
                     </IonItem>
                 </IonCol>
@@ -179,7 +172,7 @@ const BuildingAdjustmentForm: React.FC<BuildingAdjustmentFormProps> = ({
                             type="number"
                             value={formData.depraciation}
                             placeholder="Enter depreciation"
-                            onIonInput={(e) => handleInputChange(prev => ({ ...prev, depraciation: e.detail.value! }))}
+                            onIonInput={(e) => handleFormChange('depraciation', e.detail.value!)}
                             disabled={!formData.completion_percent || !formData.area || !formData.Maincomponent || !formData.buidlingsubcomponent}
                         />
                     </IonItem>
