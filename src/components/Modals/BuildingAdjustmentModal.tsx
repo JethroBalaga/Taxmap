@@ -118,10 +118,14 @@ const BuildingAdjustmentModal: React.FC<BuildingAdjustmentModalProps> = ({
             formData.Maincomponent.trim() !== '' &&
             formData.buidlingsubcomponent.trim() !== '' &&
             formData.area.trim() !== '' && 
-            parseFloat(formData.area) > 0;
+            parseFloat(formData.area) > 0 &&
+            formData.completion_percent.trim() !== '' &&
+            !isNaN(parseFloat(formData.completion_percent)) &&
+            parseFloat(formData.completion_percent) >= 0 &&
+            parseFloat(formData.completion_percent) <= 100;
             
         setIsSaveEnabled(requiredFieldsFilled);
-    }, [formData.Maincomponent, formData.buidlingsubcomponent, formData.area]);
+    }, [formData.Maincomponent, formData.buidlingsubcomponent, formData.area, formData.completion_percent]);
 
     // Check if all other fields are filled to enable depreciation
     useEffect(() => {
@@ -130,7 +134,10 @@ const BuildingAdjustmentModal: React.FC<BuildingAdjustmentModalProps> = ({
             formData.buidlingsubcomponent.trim() !== '' &&
             formData.area.trim() !== '' && 
             parseFloat(formData.area) > 0 &&
-            formData.completion_percent.trim() !== '';
+            formData.completion_percent.trim() !== '' &&
+            !isNaN(parseFloat(formData.completion_percent)) &&
+            parseFloat(formData.completion_percent) >= 0 &&
+            parseFloat(formData.completion_percent) <= 100;
             
         setIsDepreciationEnabled(otherFieldsFilled);
     }, [formData.Maincomponent, formData.buidlingsubcomponent, formData.area, formData.completion_percent]);
@@ -272,8 +279,9 @@ const BuildingAdjustmentModal: React.FC<BuildingAdjustmentModalProps> = ({
             return false;
         }
 
-        if (formData.completion_percent && isNaN(parseFloat(formData.completion_percent))) {
-            setAlertMessage('Completion percent must be a valid number');
+        if (!formData.completion_percent || isNaN(parseFloat(formData.completion_percent)) || 
+            parseFloat(formData.completion_percent) < 0 || parseFloat(formData.completion_percent) > 100) {
+            setAlertMessage('Completion percent must be a valid number between 0 and 100');
             setShowAlert(true);
             return false;
         }
@@ -502,11 +510,13 @@ const BuildingAdjustmentModal: React.FC<BuildingAdjustmentModalProps> = ({
 
                             <IonCol size="4" className="custom-col">
                                 <IonItem className="custom-input">
-                                    <IonLabel position="stacked">Completion Percent (%)</IonLabel>
+                                    <IonLabel position="stacked">Completion Percent (%) *</IonLabel>
                                     <IonInput
                                         type="number"
                                         value={formData.completion_percent}
                                         placeholder="0-100"
+                                        min="0"
+                                        max="100"
                                         onIonInput={(e) => handleInputChange('completion_percent', e.detail.value!)}
                                     />
                                 </IonItem>
