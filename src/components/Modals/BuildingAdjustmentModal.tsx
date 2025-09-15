@@ -68,6 +68,8 @@ const BuildingAdjustmentModal: React.FC<BuildingAdjustmentModalProps> = ({
     const [selectedSubcomponentRate, setSelectedSubcomponentRate] = useState<number | null>(null);
     const [marketValue, setMarketValue] = useState<number | null>(null);
     const [adjustedValue, setAdjustedValue] = useState<number | null>(null); // Add state for adjusted value
+    const [isDepreciationEnabled, setIsDepreciationEnabled] = useState(false);
+    const [isSaveEnabled, setIsSaveEnabled] = useState(false);
 
     useEffect(() => {
         if (isOpen) {
@@ -109,6 +111,29 @@ const BuildingAdjustmentModal: React.FC<BuildingAdjustmentModalProps> = ({
             });
         }
     }, [existingData, isOpen, initialArea]);
+
+    // Check if all required fields are filled to enable save button
+    useEffect(() => {
+        const requiredFieldsFilled = 
+            formData.Maincomponent.trim() !== '' &&
+            formData.buidlingsubcomponent.trim() !== '' &&
+            formData.area.trim() !== '' && 
+            parseFloat(formData.area) > 0;
+            
+        setIsSaveEnabled(requiredFieldsFilled);
+    }, [formData.Maincomponent, formData.buidlingsubcomponent, formData.area]);
+
+    // Check if all other fields are filled to enable depreciation
+    useEffect(() => {
+        const otherFieldsFilled = 
+            formData.Maincomponent.trim() !== '' &&
+            formData.buidlingsubcomponent.trim() !== '' &&
+            formData.area.trim() !== '' && 
+            parseFloat(formData.area) > 0 &&
+            formData.completion_percent.trim() !== '';
+            
+        setIsDepreciationEnabled(otherFieldsFilled);
+    }, [formData.Maincomponent, formData.buidlingsubcomponent, formData.area, formData.completion_percent]);
 
     // Calculate market value and adjusted value when rate, area, completion percent, or depreciation changes
     useEffect(() => {
@@ -495,6 +520,7 @@ const BuildingAdjustmentModal: React.FC<BuildingAdjustmentModalProps> = ({
                                         value={formData.depraciation}
                                         placeholder="Enter depreciation"
                                         onIonInput={(e) => handleInputChange('depraciation', e.detail.value!)}
+                                        disabled={!isDepreciationEnabled}
                                     />
                                 </IonItem>
                             </IonCol>
@@ -546,6 +572,7 @@ const BuildingAdjustmentModal: React.FC<BuildingAdjustmentModalProps> = ({
                                         onClick={handleSave}
                                         className="next-button"
                                         expand="block"
+                                        disabled={!isSaveEnabled}
                                     >
                                         {existingData ? 'Update' : 'Save'} Adjustment
                                     </IonButton>
