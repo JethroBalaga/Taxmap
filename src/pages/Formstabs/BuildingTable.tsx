@@ -69,10 +69,9 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
     // Subcomponent modal states
     const [showSubcomponentModal, setShowSubcomponentModal] = useState(false);
     const [selectedSubcomponentData, setSelectedSubcomponentData] = useState<BuildingSubcomponentData | null>(null);
-    // Add new state to hold the area and completion percent from the clicked adjustment row
     const [selectedAdjustmentArea, setSelectedAdjustmentArea] = useState<number>(0);
     const [selectedAdjustmentCompletion, setSelectedAdjustmentCompletion] = useState<string>('');
-
+    const [selectedAdjustmentDepreciation, setSelectedAdjustmentDepreciation] = useState<string>(''); // New state for depreciation
 
     // Toast states
     const [showToast, setShowToast] = useState(false);
@@ -198,9 +197,10 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
             const subcomponentData = await getBuildingSubcomponentById(rowData.buidlingsubcomponent);
             if (subcomponentData) {
                 setSelectedSubcomponentData(subcomponentData);
-                // Set the area and completion percent from the clicked row
+                // Set the area, completion percent, and depreciation from the clicked row
                 setSelectedAdjustmentArea(rowData.area);
                 setSelectedAdjustmentCompletion(rowData.completion_percent);
+                setSelectedAdjustmentDepreciation(rowData.depreciation);
                 setShowSubcomponentModal(true);
             } else {
                 showToastMessage(`No subcomponent data found for ID: ${rowData.buidlingsubcomponent}`, 'warning');
@@ -282,9 +282,10 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
                     isOpen={showSubcomponentModal}
                     onClose={() => setShowSubcomponentModal(false)}
                     subcomponentData={selectedSubcomponentData}
-                    // Pass the newly stored area and completion percent to the modal
+                    // Pass the newly stored area, completion percent, and depreciation to the modal
                     area={selectedAdjustmentArea}
                     completionPercent={selectedAdjustmentCompletion}
+                    depreciation={selectedAdjustmentDepreciation}
                 />
 
                 <IonToast

@@ -5,7 +5,7 @@ export interface BuildingAdjustmentData {
   buidlingsubcomponent: string;
   description: string;
   completion_percent: string;
-  depraciation: string;
+  depreciation: string;
   value_info_id: string;
   area: number; // Added area field as number
 }
