@@ -257,7 +257,6 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
                     onAdjustmentsUpdate={loadBuildingAdjustments}
                     showToastMessage={showToastMessage}
                     onSubcomponentClick={handleSubcomponentRowClick}
-                    area={area}
                 />
 
                 {/* Building Adjustment Modal */}
