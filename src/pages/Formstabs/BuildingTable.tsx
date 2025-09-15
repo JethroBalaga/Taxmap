@@ -69,6 +69,10 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
     // Subcomponent modal states
     const [showSubcomponentModal, setShowSubcomponentModal] = useState(false);
     const [selectedSubcomponentData, setSelectedSubcomponentData] = useState<BuildingSubcomponentData | null>(null);
+    // Add new state to hold the area and completion percent from the clicked adjustment row
+    const [selectedAdjustmentArea, setSelectedAdjustmentArea] = useState<number>(0);
+    const [selectedAdjustmentCompletion, setSelectedAdjustmentCompletion] = useState<string>('');
+
 
     // Toast states
     const [showToast, setShowToast] = useState(false);
@@ -187,15 +191,19 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
             setShowAdjustmentModal(true);
         }
     };
-
-    const handleSubcomponentRowClick = async (subcomponentId: string) => {
+    
+    // The key change is here: accept the full row data
+    const handleSubcomponentRowClick = async (rowData: BuildingAdjustmentData) => {
         try {
-            const subcomponentData = await getBuildingSubcomponentById(subcomponentId);
+            const subcomponentData = await getBuildingSubcomponentById(rowData.buidlingsubcomponent);
             if (subcomponentData) {
                 setSelectedSubcomponentData(subcomponentData);
+                // Set the area and completion percent from the clicked row
+                setSelectedAdjustmentArea(rowData.area);
+                setSelectedAdjustmentCompletion(rowData.completion_percent);
                 setShowSubcomponentModal(true);
             } else {
-                showToastMessage(`No subcomponent data found for ID: ${subcomponentId}`, 'warning');
+                showToastMessage(`No subcomponent data found for ID: ${rowData.buidlingsubcomponent}`, 'warning');
             }
         } catch (error) {
             console.error('Error fetching subcomponent data:', error);
@@ -249,7 +257,7 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
                     onAdjustmentsUpdate={loadBuildingAdjustments}
                     showToastMessage={showToastMessage}
                     onSubcomponentClick={handleSubcomponentRowClick}
-                    area={area} 
+                    area={area}
                 />
 
                 {/* Building Adjustment Modal */}
@@ -275,7 +283,9 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
                     isOpen={showSubcomponentModal}
                     onClose={() => setShowSubcomponentModal(false)}
                     subcomponentData={selectedSubcomponentData}
-                    area={area}
+                    // Pass the newly stored area and completion percent to the modal
+                    area={selectedAdjustmentArea}
+                    completionPercent={selectedAdjustmentCompletion}
                 />
 
                 <IonToast
