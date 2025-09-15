@@ -7,6 +7,7 @@ export interface BuildingAdjustmentData {
   completion_percent: string;
   depraciation: string;
   value_info_id: string;
+  area: number; // Added area field as number
 }
 
 const BUILDING_ADJUSTMENT_KEY = 'buildingAdjustmentData';
