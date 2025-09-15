@@ -275,6 +275,7 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
                     isOpen={showSubcomponentModal}
                     onClose={() => setShowSubcomponentModal(false)}
                     subcomponentData={selectedSubcomponentData}
+                    area={area}
                 />
 
                 <IonToast

@@ -18,7 +18,9 @@ interface BuildingAdjustmentsTableProps {
     onAdjustmentCreate: () => void;
     onAdjustmentsUpdate: () => void;
     showToastMessage: (message: string, color?: 'success' | 'danger' | 'warning') => void;
-    onSubcomponentClick: (subcomponentId: string) => void;
+    // This is the key change: onSubcomponentClick should receive the full row data.
+    onSubcomponentClick: (rowData: BuildingAdjustmentData) => void;
+    area: number; 
 }
 
 const BuildingAdjustmentsTable: React.FC<BuildingAdjustmentsTableProps> = ({
@@ -42,9 +44,10 @@ const BuildingAdjustmentsTable: React.FC<BuildingAdjustmentsTableProps> = ({
         setSelectedAdjustmentId(newSelectedId);
     };
 
-    const handleAdjustmentRowClick = async (rowData: any) => {
+    const handleAdjustmentRowClick = async (rowData: BuildingAdjustmentData) => {
         if (rowData && rowData.buidlingsubcomponent) {
-            onSubcomponentClick(rowData.buidlingsubcomponent);
+            // Pass the entire rowData object here
+            onSubcomponentClick(rowData);
         } else {
             handleSelectAdjustmentRow(rowData);
         }
@@ -101,7 +104,6 @@ const BuildingAdjustmentsTable: React.FC<BuildingAdjustmentsTableProps> = ({
             className: "update-button",
             onClick: () => {
                 if (selectedAdjustmentId) {
-                    // Here you would typically open an update modal
                     showToastMessage('Update functionality would be implemented here');
                 } else {
                     showToastMessage('Please select an adjustment to update', 'warning');
@@ -135,7 +137,6 @@ const BuildingAdjustmentsTable: React.FC<BuildingAdjustmentsTableProps> = ({
                     onIonInput={handleSearch} 
                     className="forms-searchbar" 
                 />
-
                 <div className="icon-group">
                     {buttonActions.map((action, index) => (
                         <IonButton 
@@ -152,7 +153,6 @@ const BuildingAdjustmentsTable: React.FC<BuildingAdjustmentsTableProps> = ({
                     ))}
                 </div>
             </div>
-
             {filteredAdjustments.length > 0 ? (
                 <div style={{ padding: '0 16px' }}>
                     <DynamicTable
@@ -167,7 +167,6 @@ const BuildingAdjustmentsTable: React.FC<BuildingAdjustmentsTableProps> = ({
                     <IonText>No building adjustments found.</IonText>
                 </div>
             )}
-
             <IonToast
                 isOpen={showDeleteToast}
                 onDidDismiss={() => setShowDeleteToast(false)}
