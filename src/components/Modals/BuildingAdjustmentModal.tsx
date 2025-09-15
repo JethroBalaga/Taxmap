@@ -94,6 +94,7 @@ const BuildingAdjustmentModal: React.FC<BuildingAdjustmentModalProps> = ({
         const requiredFieldsFilled =
             formData.Maincomponent.trim() !== '' &&
             formData.buidlingsubcomponent.trim() !== '' &&
+            formData.description.trim() !== '' && // NEW: Add this check for the description field
             formData.area.trim() !== '' &&
             parseFloat(formData.area) > 0 &&
             formData.completion_percent.trim() !== '' &&
