@@ -132,9 +132,10 @@ const BuildingAdjustmentForm: React.FC<BuildingAdjustmentFormProps> = ({
                         <IonLabel position="stacked">Description</IonLabel>
                         <IonTextarea
                             value={formData.description}
-                            placeholder="Enter description"
+                            placeholder="Description will be generated automatically"
                             rows={3}
-                            onIonInput={(e) => handleFormChange('description', e.detail.value!)}
+                            readonly
+                            disabled
                         />
                     </IonItem>
                 </IonCol>
