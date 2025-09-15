@@ -56,12 +56,12 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
     form_id, 
     onBack, 
     kind, 
-    classification, 
     area, 
     declarant, 
     actual_use,
     district,
-    subclass 
+    classification,
+    subclass
 }) => {
     const [buildingInfoIds, setBuildingInfoIds] = useState<string[]>([]);
     const [buildingDataList, setBuildingDataList] = useState<Map<string, any>>(new Map());
@@ -265,6 +265,11 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
         );
     });
 
+    const filteredAdjustmentsForTable = filteredAdjustments.map(adj => {
+        const { Maincomponent, ...rest } = adj;
+        return rest;
+    });
+
     const buttonActions = [
         { 
             icon: createOutline, 
@@ -442,7 +447,7 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
                         {filteredAdjustments.length > 0 ? (
                             <div style={{ padding: '0 16px' }}>
                                 <DynamicTable
-                                    data={filteredAdjustments}
+                                    data={filteredAdjustmentsForTable}
                                     title="Building Adjustments"
                                     keyField="bldg_adjustment_id"
                                     onRowClick={handleSelectAdjustmentRow}
