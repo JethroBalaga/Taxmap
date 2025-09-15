@@ -25,7 +25,7 @@ import { getBuildingCodeByCode } from '../../utils/buildingCodeLocalStorage';
 import { 
   getAssessmentLevelData
 } from '../../utils/assessmentLevelLocalStorage';
-import { BuildingAdjustmentData } from '../../utils/tablestorages/BuildingAdjustmentLocalStorage';
+import { BuildingAdjustmentData, getBuildingAdjustmentData } from '../../utils/tablestorages/BuildingAdjustmentLocalStorage';
 import '../../CSS/BuildingTable.css';
 import BuildingAdjustmentModal from "../../components/Modals/BuildingAdjustmentModal";
 
@@ -71,10 +71,11 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
     const [showCreatePopover, setShowCreatePopover] = useState(false);
     const [createPopoverEvent, setCreatePopoverEvent] = useState<any>(null);
     
-    // New states for the adjustment modal
+    // States for the adjustment modal
     const [showAdjustmentModal, setShowAdjustmentModal] = useState(false);
     const [selectedValueInfoId, setSelectedValueInfoId] = useState<string | null>(null);
     const [existingAdjustmentData, setExistingAdjustmentData] = useState<BuildingAdjustmentData | null>(null);
+    const [initialAreaForModal, setInitialAreaForModal] = useState<number>(area);
 
     useEffect(() => {
         console.log('BuildingTable props:', { form_id, kind, classification, area, declarant, actual_use, district, subclass });
@@ -183,10 +184,31 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
         setShowCreatePopover(true);
     };
 
-    // New function to handle creating adjustments
     const handleCreateAdjustment = (buildingId: string) => {
         setSelectedValueInfoId(buildingId);
-        setExistingAdjustmentData(null); // Reset existing data for new creation
+        
+        // Get the building data to extract the area
+        const buildingData = buildingDataList.get(buildingId);
+        const buildingArea = buildingData?.area || area;
+        
+        setInitialAreaForModal(buildingArea);
+        setExistingAdjustmentData(null);
+        setShowAdjustmentModal(true);
+    };
+
+    const handleUpdateAdjustment = (buildingId: string) => {
+        setSelectedValueInfoId(buildingId);
+        
+        // Get the building data to extract the area
+        const buildingData = buildingDataList.get(buildingId);
+        const buildingArea = buildingData?.area || area;
+        
+        setInitialAreaForModal(buildingArea);
+        
+        // Fetch existing adjustment data
+        const existingData = getBuildingAdjustmentData(buildingId);
+        setExistingAdjustmentData(existingData || null);
+        
         setShowAdjustmentModal(true);
     };
 
@@ -199,7 +221,7 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
         );
     });
 
-    // Button actions array - Updated to use handleCreateAdjustment
+    // Button actions array - Updated with proper handlers
     const buttonActions = [
         { 
             icon: createOutline, 
@@ -211,9 +233,9 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
         { 
             icon: arrowUpCircleOutline, 
             className: "update-button", 
-            onClick: handleCreateClick, 
+            onClick: () => filteredBuildingIds.length > 0 && handleUpdateAdjustment(filteredBuildingIds[0]), 
             title: "Update Building adjustment", 
-            enabled: true 
+            enabled: filteredBuildingIds.length > 0 
         },
         { 
             icon: trashOutline, 
@@ -267,7 +289,7 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
             </IonHeader>
 
             <IonContent className="building-content">
-                {/* Form Summary Section - ORIGINAL STYLE WITH NEW SEQUENCE AND SMALLER GAPS */}
+                {/* Form Summary Section */}
                 <IonCard className="form-summary-card">
                     <IonCardContent>
                         <IonGrid style={{ margin: '0', padding: '0' }}>
@@ -389,6 +411,7 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
                         onClose={() => setShowAdjustmentModal(false)}
                         valueInfoId={selectedValueInfoId}
                         existingData={existingAdjustmentData}
+                        initialArea={initialAreaForModal}
                         onSaveSuccess={() => {
                             // Refresh data after successful save
                             loadBuildingData();
