@@ -8,8 +8,11 @@ import {
     IonCol,
     IonText,
     IonSpinner,
-    IonSearchbar
+    IonSearchbar,
+    IonIcon,
+    IonButton,
 } from "@ionic/react";
+import { informationCircle } from "ionicons/icons";
 import BuildingDetailsCard from "./BuildingDetailsCard";
 
 interface BuildingListProps {
@@ -28,7 +31,7 @@ interface BuildingListProps {
     adjustedMarketValues: Map<string, number>;
     assessmentLevels: Map<string, any>;
     buildingCodeRates: Map<string, number>;
-    onViewDetails: (buildingId: string) => void; // New prop for handling details view
+    onViewDetails: (buildingId: string) => void;
 }
 
 const BuildingList: React.FC<BuildingListProps> = ({
@@ -56,8 +59,16 @@ const BuildingList: React.FC<BuildingListProps> = ({
         setSearchTerm(e.detail.value || '');
     };
 
-    const handleViewDetails = (buildingId: string) => {
+    const handleRowClick = (buildingId: string) => {
         setSelectedBuildingId(buildingId === selectedBuildingId ? null : buildingId);
+    };
+
+    const handleOpenFirstBuildingDetails = () => {
+        if (buildingInfoIds.length > 0) {
+            const firstBuildingId = buildingInfoIds[0];
+            setSelectedBuildingId(firstBuildingId === selectedBuildingId ? null : firstBuildingId);
+            onViewDetails(firstBuildingId);
+        }
     };
 
     const filteredBuildingIds = buildingInfoIds.filter(id => {
@@ -102,51 +113,61 @@ const BuildingList: React.FC<BuildingListProps> = ({
 
             {/* Building Table */}
             {buildingInfoIds.length > 0 ? (
-                <IonGrid>
-                    <IonRow className="table-header">
-                        <IonCol size="3">Building ID</IonCol>
-                        <IonCol size="3">Structure Type</IonCol>
-                        <IonCol size="2">Base Market Value</IonCol>
-                        <IonCol size="2">Adjusted Market Value</IonCol>
-                        <IonCol size="2">Assessment Level</IonCol>
-                    </IonRow>
+                <>
+                    <div className="search-and-icon-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '10px 0' }}>
+                        <IonButton
+                            fill="clear"
+                            onClick={handleOpenFirstBuildingDetails}
+                            title="Click to open details for the first building"
+                        >
+                            <IonIcon icon={informationCircle} color="primary" size="small" />
+                        </IonButton>
+                    </div>
+                    <IonGrid>
+                        <IonRow className="table-header">
+                            <IonCol size="3">Building ID</IonCol>
+                            <IonCol size="3">Structure Type</IonCol>
+                            <IonCol size="2">Base Market Value</IonCol>
+                            <IonCol size="2">Adjusted Market Value</IonCol>
+                            <IonCol size="2">Assessment Level</IonCol>
+                        </IonRow>
 
-                    {filteredBuildingIds.map((id) => {
-                        const buildingData = buildingDataList.get(id);
-                        const baseMarketValue = baseMarketValues.get(id);
-                        const adjustedMarketValue = adjustedMarketValues.get(id);
-                        const assessmentLevel = assessmentLevels.get(id);
-                        const isSelected = id === selectedBuildingId;
+                        {filteredBuildingIds.map((id) => {
+                            const buildingData = buildingDataList.get(id);
+                            const baseMarketValue = baseMarketValues.get(id);
+                            const adjustedMarketValue = adjustedMarketValues.get(id);
+                            const assessmentLevel = assessmentLevels.get(id);
+                            const isSelected = id === selectedBuildingId;
 
-                        return (
-                            <React.Fragment key={id}>
-                                <IonRow
-                                    className={`table-row ${isSelected ? 'selected' : ''}`}
-                                    onClick={() => handleViewDetails(id)}
-                                    style={{ cursor: 'pointer' }}
-                                >
-                                    <IonCol size="3">{id}</IonCol>
-                                    <IonCol size="3">{buildingData?.structureType || 'N/A'}</IonCol>
-                                    <IonCol size="2">{baseMarketValue !== undefined ? `₱${baseMarketValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'N/A'}</IonCol>
-                                    <IonCol size="2">{adjustedMarketValue !== undefined ? `₱${adjustedMarketValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'N/A'}</IonCol>
-                                    <IonCol size="2">{assessmentLevel ? `${assessmentLevel.rate_percent}` : 'N/A'}</IonCol>
-                                </IonRow>
-
-                                {/* Expanded Details */}
-                                {isSelected && buildingData && (
-                                    <IonRow>
-                                        <IonCol size="12">
-                                            <BuildingDetailsCard
-                                                buildingData={buildingData}
-                                                buildingRate={buildingCodeRates.get(id)}
-                                            />
-                                        </IonCol>
+                            return (
+                                <React.Fragment key={id}>
+                                    <IonRow
+                                        className={`table-row ${isSelected ? 'selected' : ''}`}
+                                        onClick={() => handleRowClick(id)}
+                                        style={{ cursor: 'pointer' }}
+                                    >
+                                        <IonCol size="3">{id}</IonCol>
+                                        <IonCol size="3">{buildingData?.structureType || 'N/A'}</IonCol>
+                                        <IonCol size="2">{baseMarketValue !== undefined ? `₱${baseMarketValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'N/A'}</IonCol>
+                                        <IonCol size="2">{adjustedMarketValue !== undefined ? `₱${adjustedMarketValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'N/A'}</IonCol>
+                                        <IonCol size="2">{assessmentLevel ? `${assessmentLevel.rate_percent}` : 'N/A'}</IonCol>
                                     </IonRow>
-                                )}
-                            </React.Fragment>
-                        );
-                    })}
-                </IonGrid>
+
+                                    {isSelected && buildingData && (
+                                        <IonRow>
+                                            <IonCol size="12">
+                                                <BuildingDetailsCard
+                                                    buildingData={buildingData}
+                                                    buildingRate={buildingCodeRates.get(id)}
+                                                />
+                                            </IonCol>
+                                        </IonRow>
+                                    )}
+                                </React.Fragment>
+                            );
+                        })}
+                    </IonGrid>
+                </>
             ) : (
                 <div className="no-data">
                     <IonText>No building information available for this form.</IonText>
