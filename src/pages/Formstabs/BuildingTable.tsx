@@ -323,6 +323,31 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
         { label: "Date Completed", value: selectedBuildingData.dateCompleted || 'N/A' }
     ] : [];
 
+    const handleAdjustmentRowClick = async (rowData: any) => {
+        // Check if this row has a building_subcom_id
+        if (rowData.building_subcom_id) {
+            try {
+                const subcomponentData = await getBuildingSubcomponentById(rowData.building_subcom_id);
+                if (subcomponentData) {
+                    setSelectedSubcomponentData(subcomponentData);
+                    setShowSubcomponentModal(true);
+                } else {
+                    setToastMessage('No subcomponent data found for this ID');
+                    setToastColor('warning');
+                    setShowToast(true);
+                }
+            } catch (error) {
+                console.error('Error fetching subcomponent data:', error);
+                setToastMessage('Error loading subcomponent details');
+                setToastColor('danger');
+                setShowToast(true);
+            }
+        } else {
+            // If no building_subcom_id, just select the row for other operations
+            handleSelectAdjustmentRow(rowData);
+        }
+    };
+
     return (
         <IonPage>
             <IonHeader>
@@ -453,7 +478,7 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
                                     data={filteredAdjustmentsForTable}
                                     title="Building Adjustments"
                                     keyField="bldg_adjustment_id"
-                                    onRowClick={handleSelectAdjustmentRow}
+                                    onRowClick={handleAdjustmentRowClick}
                                 />
                             </div>
                         ) : (
