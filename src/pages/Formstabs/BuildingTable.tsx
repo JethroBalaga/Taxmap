@@ -25,7 +25,7 @@ import { arrowBack, informationCircle, createOutline, arrowUpCircleOutline, tras
 import { ValueInfoLocalStorage } from '../../utils/tablestorages/ValueInfoLocalStorage';
 import { BuildingDataLocalStorage } from '../../utils/tablestorages/BuildingDataLocalStorage';
 import { getBuildingCodeByCode } from '../../utils/buildingCodeLocalStorage';
-import { 
+import {
     getAssessmentLevelData
 } from '../../utils/assessmentLevelLocalStorage';
 import { BuildingAdjustmentData, BuildingAdjustmentLocalStorage } from '../../utils/tablestorages/BuildingAdjustmentLocalStorage';
@@ -52,12 +52,12 @@ interface AssessmentLevelInfo {
     range2: number;
 }
 
-const BuildingTable: React.FC<BuildingTableProps> = ({ 
-    form_id, 
-    onBack, 
-    kind, 
-    area, 
-    declarant, 
+const BuildingTable: React.FC<BuildingTableProps> = ({
+    form_id,
+    onBack,
+    kind,
+    area,
+    declarant,
     actual_use,
     district,
     classification,
@@ -77,7 +77,9 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
     const [kindId, setKindId] = useState<number>(2);
     const [showCreatePopover, setShowCreatePopover] = useState(false);
     const [createPopoverEvent, setCreatePopoverEvent] = useState<any>(null);
-    
+    const [showSubcomponentModal, setShowSubcomponentModal] = useState(false);
+    const [selectedSubcomponentData, setSelectedSubcomponentData] = useState<BuildingSubcomponentData | null>(null);
+
     // States for the adjustment modal
     const [showAdjustmentModal, setShowAdjustmentModal] = useState(false);
     const [selectedValueInfoId, setSelectedValueInfoId] = useState<string | null>(null);
@@ -98,21 +100,21 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
     const calculateMarketValues = (buildingCodeRate: number, depreciationRate: number | null, area: number): { base: number, adjusted: number } => {
         const baseMarketValue = buildingCodeRate * area;
         let adjustedMarketValue = baseMarketValue;
-        
+
         if (depreciationRate !== null && depreciationRate !== undefined) {
             const depreciationDecimal = depreciationRate / 100;
             adjustedMarketValue = baseMarketValue * (1 - depreciationDecimal);
         }
-        
+
         return { base: baseMarketValue, adjusted: adjustedMarketValue };
     };
 
     const getAssessmentLevelForBuilding = async (adjustedValue: number): Promise<AssessmentLevelInfo | null> => {
         try {
             const numericValue = Math.floor(adjustedValue);
-            
+
             const allAssessmentLevels = await getAssessmentLevelData();
-            
+
             if (allAssessmentLevels && allAssessmentLevels.length > 0) {
                 const matchingLevel = allAssessmentLevels.find(level => {
                     const matchesKind = level.kind_id === kindId;
@@ -120,7 +122,7 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
                     const inRange = numericValue >= level.range1 && numericValue <= level.range2;
                     return matchesKind && matchesClass && inRange;
                 });
-                
+
                 if (matchingLevel) {
                     return {
                         rate_percent: matchingLevel.rate_percent,
@@ -143,18 +145,18 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
             const infos = allInfos.filter((info: any) => info.formDataId === form_id);
             const ids = infos.map((info: any) => info.id);
             setBuildingInfoIds(ids);
-            
+
             const buildingDataMap = new Map<string, any>();
             const ratesMap = new Map<string, number>();
             const baseMarketValuesMap = new Map<string, number>();
             const adjustedMarketValuesMap = new Map<string, number>();
             const assessmentLevelsMap = new Map<string, AssessmentLevelInfo>();
-            
+
             for (const id of ids) {
                 const data = BuildingDataLocalStorage.getBuildingData(id);
                 if (data) {
                     buildingDataMap.set(id, data);
-                    
+
                     if (data.buildingCode) {
                         const buildingCodeData = await getBuildingCodeByCode(data.buildingCode);
                         if (buildingCodeData) {
@@ -170,7 +172,7 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
                     }
                 }
             }
-            
+
             setBuildingDataList(buildingDataMap);
             setBuildingCodeRates(ratesMap);
             setBaseMarketValues(baseMarketValuesMap);
@@ -253,7 +255,7 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
         if (!searchTerm) return true;
         const buildingData = buildingDataList.get(id);
         if (!buildingData) return false;
-        return Object.values(buildingData).some((value: any) => 
+        return Object.values(buildingData).some((value: any) =>
             value && value.toString().toLowerCase().includes(searchTerm.toLowerCase())
         );
     });
@@ -271,39 +273,39 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
     });
 
     const buttonActions = [
-        { 
-            icon: createOutline, 
-            className: "create-button", 
-            onClick: handleCreateAdjustment, 
-            title: "Add Building adjustment", 
-            enabled: buildingInfoIds.length > 0 
+        {
+            icon: createOutline,
+            className: "create-button",
+            onClick: handleCreateAdjustment,
+            title: "Add Building adjustment",
+            enabled: buildingInfoIds.length > 0
         },
-        { 
-            icon: arrowUpCircleOutline, 
-            className: "update-button", 
-            onClick: handleCreateClick, 
-            title: "Update Building adjustment", 
-            enabled: true 
+        {
+            icon: arrowUpCircleOutline,
+            className: "update-button",
+            onClick: handleCreateClick,
+            title: "Update Building adjustment",
+            enabled: true
         },
-        { 
-            icon: trashOutline, 
-            className: "delete-button", 
+        {
+            icon: trashOutline,
+            className: "delete-button",
             onClick: handleDeleteAdjustment,
-            title: "Delete Building adjustment", 
+            title: "Delete Building adjustment",
             enabled: !!selectedAdjustmentId
         },
-        { 
-            icon: informationCircle, 
-            className: "info-button", 
-            onClick: () => { if (filteredBuildingIds.length > 0) handleViewDetails(filteredBuildingIds[0]); }, 
-            title: "View Building Details", 
-            enabled: filteredBuildingIds.length > 0 
+        {
+            icon: informationCircle,
+            className: "info-button",
+            onClick: () => { if (filteredBuildingIds.length > 0) handleViewDetails(filteredBuildingIds[0]); },
+            title: "View Building Details",
+            enabled: filteredBuildingIds.length > 0
         }
     ];
 
     const selectedBuildingData = selectedBuildingId ? buildingDataList.get(selectedBuildingId) : null;
     const selectedBuildingRate = selectedBuildingId ? buildingCodeRates.get(selectedBuildingId) : null;
-    
+
     // Array of building detail items to display
     const buildingDetailItems = selectedBuildingData ? [
         { label: "Structure Type", value: selectedBuildingData.structureType || 'N/A' },
@@ -372,14 +374,14 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
                                     <IonCol size="2">Adjusted Market Value</IonCol>
                                     <IonCol size="2">Assessment Level</IonCol>
                                 </IonRow>
-                                
+
                                 {filteredBuildingIds.map((id) => {
                                     const buildingData = buildingDataList.get(id);
                                     const baseMarketValue = baseMarketValues.get(id);
                                     const adjustedMarketValue = adjustedMarketValues.get(id);
                                     const assessmentLevel = assessmentLevels.get(id);
                                     const isSelected = id === selectedBuildingId;
-                                    
+
                                     return (
                                         <React.Fragment key={id}>
                                             <IonRow className={`table-row ${isSelected ? 'selected' : ''}`} onClick={() => handleViewDetails(id)} style={{ cursor: 'pointer' }}>
@@ -389,7 +391,7 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
                                                 <IonCol size="2">{adjustedMarketValue !== undefined ? `₱${adjustedMarketValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'N/A'}</IonCol>
                                                 <IonCol size="2">{assessmentLevel ? `${assessmentLevel.rate_percent}` : 'N/A'}</IonCol>
                                             </IonRow>
-                                            
+
                                             {/* Expanded Details */}
                                             {isSelected && buildingData && (
                                                 <IonRow>
@@ -423,7 +425,7 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
                         {/* Search and Actions Section */}
                         <div className="search-container">
                             <IonSearchbar placeholder="Search adjustments..." value={searchTerm} onIonInput={handleSearch} className="forms-searchbar" />
-                            
+
                             <div className="icon-group">
                                 {buttonActions.map((action, index) => (
                                     <IonButton key={index} fill="clear" className={action.className} onClick={action.onClick} style={{ opacity: action.enabled ? 1 : 0.5 }} title={action.title} disabled={!action.enabled}>
@@ -431,7 +433,7 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
                                     </IonButton>
                                 ))}
                             </div>
-                            
+
                             <IonPopover isOpen={showCreatePopover} event={createPopoverEvent} onDidDismiss={() => setShowCreatePopover(false)}>
                                 <IonContent>
                                     <div style={{ padding: '16px' }}>
@@ -442,7 +444,7 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
                                 </IonContent>
                             </IonPopover>
                         </div>
-                        
+
                         {/* Building Adjustments Table */}
                         {filteredAdjustments.length > 0 ? (
                             <div style={{ padding: '0 16px' }}>
@@ -460,7 +462,7 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
                         )}
                     </>
                 )}
-                
+
                 {/* Building Adjustment Modal */}
                 {showAdjustmentModal && selectedValueInfoId && (
                     <BuildingAdjustmentModal

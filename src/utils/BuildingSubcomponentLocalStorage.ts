@@ -1,4 +1,4 @@
-// utils/buildingSubcomponentLocalStorage.ts
+// utils/BuildingSubcomponentLocalStorage.ts
 import localForage from 'localforage';
 
 export interface BuildingSubcomponentData {
