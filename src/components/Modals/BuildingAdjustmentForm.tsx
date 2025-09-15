@@ -1,4 +1,3 @@
-// src/components/BuildingAdjustmentForm.tsx
 import React from 'react';
 import {
     IonGrid,
@@ -21,7 +20,7 @@ interface BuildingAdjustmentFormProps {
         buidlingsubcomponent: string;
         description: string;
         completion_percent: string;
-        depraciation: string;
+        depreciation: string;
         area: string;
     };
     handleFormChange: (field: keyof BuildingAdjustmentFormProps['formData'], value: string) => void;
@@ -171,9 +170,9 @@ const BuildingAdjustmentForm: React.FC<BuildingAdjustmentFormProps> = ({
                         <IonLabel position="stacked">Depreciation (%)</IonLabel>
                         <IonInput
                             type="number"
-                            value={formData.depraciation}
+                            value={formData.depreciation}
                             placeholder="Enter depreciation"
-                            onIonInput={(e) => handleFormChange('depraciation', e.detail.value!)}
+                            onIonInput={(e) => handleFormChange('depreciation', e.detail.value!)}
                             disabled={!formData.completion_percent || !formData.area || !formData.Maincomponent || !formData.buidlingsubcomponent}
                         />
                     </IonItem>

@@ -1,4 +1,3 @@
-// src/components/BuildingAdjustmentCalculations.tsx
 import React from 'react';
 import { IonRow, IonCol, IonText } from '@ionic/react';
 
@@ -9,7 +8,7 @@ interface BuildingAdjustmentCalculationsProps {
     formData: {
         area: string;
         completion_percent: string;
-        depraciation: string;
+        depreciation: string;
     };
 }
 
@@ -43,8 +42,8 @@ const BuildingAdjustmentCalculations: React.FC<BuildingAdjustmentCalculationsPro
                         <IonText className="calculation-title">Adjusted Value Calculation:</IonText>
                         <div className="calculation-details">
                             <div>Market Value: ₱{marketValue?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-                            {formData.depraciation && (
-                                <div>- Depreciation: {formData.depraciation}%</div>
+                            {formData.depreciation && (
+                                <div>- Depreciation: {formData.depreciation}%</div>
                             )}
                             <div className="calculation-result">
                                 = ₱{adjustedValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}

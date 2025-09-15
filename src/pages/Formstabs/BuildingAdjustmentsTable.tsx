@@ -84,14 +84,14 @@ const BuildingAdjustmentsTable: React.FC<BuildingAdjustmentsTableProps> = ({
     const filteredAdjustmentsForTable = filteredAdjustments.map(adj => {
         const { Maincomponent, ...rest } = adj;
 
-        const depreciationValue = (rest as any).depraciation;
+        const depreciationValue = (rest as any).depreciation;
         const formattedDepreciation = depreciationValue && depreciationValue.toString().trim() !== ''
             ? `${depreciationValue}%`
             : 'N/A';
 
         return {
             ...rest,
-            depraciation: formattedDepreciation
+            depreciation: formattedDepreciation
         };
     });
 

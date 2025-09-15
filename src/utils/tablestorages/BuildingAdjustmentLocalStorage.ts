@@ -53,12 +53,12 @@ export const BuildingAdjustmentLocalStorage = {
   saveBuildingAdjustmentData: (adjustmentData: BuildingAdjustmentData): void => {
     try {
       const allAdjustmentData = BuildingAdjustmentLocalStorage.getAllBuildingAdjustmentData();
-      
+
       // Check if data already exists for this bldg_adjustment_id
       const existingIndex = allAdjustmentData.findIndex(
         adjustment => adjustment.bldg_adjustment_id === adjustmentData.bldg_adjustment_id
       );
-      
+
       let updatedAdjustmentData;
       if (existingIndex >= 0) {
         // Update existing entry
@@ -68,7 +68,7 @@ export const BuildingAdjustmentLocalStorage = {
         // Add new entry
         updatedAdjustmentData = [...allAdjustmentData, adjustmentData];
       }
-      
+
       localStorage.setItem(BUILDING_ADJUSTMENT_KEY, JSON.stringify(updatedAdjustmentData));
     } catch (error) {
       console.error('Error saving building adjustment data to localStorage:', error);
@@ -83,16 +83,16 @@ export const BuildingAdjustmentLocalStorage = {
       const adjustmentIndex = allAdjustmentData.findIndex(
         adjustment => adjustment.bldg_adjustment_id === bldg_adjustment_id
       );
-      
+
       if (adjustmentIndex === -1) {
         return null;
       }
-      
-      const updatedAdjustment = { 
-        ...allAdjustmentData[adjustmentIndex], 
+
+      const updatedAdjustment = {
+        ...allAdjustmentData[adjustmentIndex],
         ...updates
       };
-      
+
       allAdjustmentData[adjustmentIndex] = updatedAdjustment;
       localStorage.setItem(BUILDING_ADJUSTMENT_KEY, JSON.stringify(allAdjustmentData));
       return updatedAdjustment;

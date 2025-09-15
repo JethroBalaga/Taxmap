@@ -1,3 +1,4 @@
+// src/pages/BuildingTable.tsx
 import React, { useState, useEffect } from "react";
 import {
     IonPage,
@@ -87,6 +88,7 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
         let adjustedMarketValue = baseMarketValue;
 
         if (depreciationRate !== null && depreciationRate !== undefined) {
+            // Corrected spelling here
             const depreciationDecimal = depreciationRate / 100;
             adjustedMarketValue = baseMarketValue * (1 - depreciationDecimal);
         }
