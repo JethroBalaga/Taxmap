@@ -14,8 +14,8 @@ const BuildingDetailsCard: React.FC<BuildingDetailsCardProps> = ({
     const buildingDetailItems = [
         { label: "Structure Type", value: buildingData.structureType || 'N/A' },
         { label: "Building Code", value: buildingData.buildingCode || 'N/A' },
-        ...(buildingRate !== undefined && buildingRate !== null ? 
-            [{ label: "Building Code Rate", value: `₱${buildingRate.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` }] : 
+        ...(buildingRate !== undefined && buildingRate !== null ?
+            [{ label: "Building Code Rate", value: `₱${buildingRate.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` }] :
             []
         ),
         { label: "Storey", value: buildingData.storey || 'N/A' },

@@ -60,6 +60,7 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
     const [buildingAdjustments, setBuildingAdjustments] = useState<BuildingAdjustmentData[]>([]);
     const [loading, setLoading] = useState(true);
     const [kindId] = useState<number>(2);
+    const [selectedBuildingId, setSelectedBuildingId] = useState<string | null>(null);
 
     // Modal states
     const [showAdjustmentModal, setShowAdjustmentModal] = useState(false);
@@ -88,7 +89,6 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
         let adjustedMarketValue = baseMarketValue;
 
         if (depreciationRate !== null && depreciationRate !== undefined) {
-            // Corrected spelling here
             const depreciationDecimal = depreciationRate / 100;
             adjustedMarketValue = baseMarketValue * (1 - depreciationDecimal);
         }
@@ -192,6 +192,10 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
         }
     };
 
+    const handleViewDetails = (buildingId: string) => {
+        setSelectedBuildingId(buildingId === selectedBuildingId ? null : buildingId);
+    };
+
     const handleSubcomponentRowClick = async (rowData: BuildingAdjustmentData) => {
         try {
             const subcomponentData = await getBuildingSubcomponentById(rowData.buidlingsubcomponent);
@@ -246,7 +250,7 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
                     adjustedMarketValues={adjustedMarketValues}
                     assessmentLevels={assessmentLevels}
                     buildingCodeRates={buildingCodeRates}
-                    onAdjustmentCreate={handleCreateAdjustment}
+                    onViewDetails={handleViewDetails}
                 />
 
                 <BuildingAdjustmentsTable
@@ -255,10 +259,9 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
                     onAdjustmentCreate={handleCreateAdjustment}
                     onAdjustmentsUpdate={loadBuildingAdjustments}
                     showToastMessage={showToastMessage}
-                    onSubcomponentClick={handleSubcomponentRowClick}
+                    onViewBuildingDetails={handleViewDetails}
                 />
 
-                {/* Building Adjustment Modal */}
                 {showAdjustmentModal && selectedValueInfoId && (
                     <BuildingAdjustmentModal
                         isOpen={showAdjustmentModal}
@@ -276,7 +279,6 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
                     />
                 )}
 
-                {/* Building Subcomponent Modal */}
                 <BuildingSubcomponentModal
                     isOpen={showSubcomponentModal}
                     onClose={() => setShowSubcomponentModal(false)}

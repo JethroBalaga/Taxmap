@@ -1,3 +1,4 @@
+// src/components/Building/BuildingAdjustmentsTable.tsx
 import React, { useState } from "react";
 import {
     IonButton,
@@ -6,7 +7,7 @@ import {
     IonText,
     IonToast
 } from "@ionic/react";
-import { createOutline, arrowUpCircleOutline, trashOutline, informationCircle } from "ionicons/icons";
+import { createOutline, arrowUpCircleOutline, trashOutline } from "ionicons/icons";
 import DynamicTable from "../../components/GlobalComponent/DynamicTable";
 import { BuildingAdjustmentData } from "../../utils/tablestorages/BuildingAdjustmentLocalStorage";
 import { BuildingAdjustmentLocalStorage } from "../../utils/tablestorages/BuildingAdjustmentLocalStorage";
@@ -17,7 +18,7 @@ interface BuildingAdjustmentsTableProps {
     onAdjustmentCreate: () => void;
     onAdjustmentsUpdate: () => void;
     showToastMessage: (message: string, color?: 'success' | 'danger' | 'warning') => void;
-    onSubcomponentClick: (rowData: BuildingAdjustmentData) => void;
+    onViewBuildingDetails: (buildingId: string) => void;
 }
 
 const BuildingAdjustmentsTable: React.FC<BuildingAdjustmentsTableProps> = ({
@@ -26,7 +27,7 @@ const BuildingAdjustmentsTable: React.FC<BuildingAdjustmentsTableProps> = ({
     onAdjustmentCreate,
     onAdjustmentsUpdate,
     showToastMessage,
-    onSubcomponentClick
+    onViewBuildingDetails
 }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedAdjustmentId, setSelectedAdjustmentId] = useState<string | null>(null);
@@ -39,13 +40,6 @@ const BuildingAdjustmentsTable: React.FC<BuildingAdjustmentsTableProps> = ({
     const handleSelectAdjustmentRow = (rowData: BuildingAdjustmentData) => {
         const newSelectedId = rowData.bldg_adjustment_id === selectedAdjustmentId ? null : rowData.bldg_adjustment_id;
         setSelectedAdjustmentId(newSelectedId);
-    };
-
-    const handleAdjustmentRowClick = async (rowData: BuildingAdjustmentData) => {
-        handleSelectAdjustmentRow(rowData);
-        if (rowData && rowData.buidlingsubcomponent) {
-            onSubcomponentClick(rowData);
-        }
     };
 
     const handleDeleteAdjustment = () => {
@@ -122,13 +116,6 @@ const BuildingAdjustmentsTable: React.FC<BuildingAdjustmentsTableProps> = ({
             onClick: handleDeleteAdjustment,
             title: "Delete Building adjustment",
             enabled: !!selectedAdjustmentId
-        },
-        {
-            icon: informationCircle,
-            className: "info-button",
-            onClick: () => showToastMessage('Info functionality would be implemented here'),
-            title: "View Building Details",
-            enabled: filteredAdjustments.length > 0
         }
     ];
 
@@ -163,7 +150,7 @@ const BuildingAdjustmentsTable: React.FC<BuildingAdjustmentsTableProps> = ({
                         data={filteredAdjustmentsForTable}
                         title="Building Adjustments"
                         keyField="bldg_adjustment_id"
-                        onRowClick={handleAdjustmentRowClick}
+                        onRowClick={handleSelectAdjustmentRow}
                     />
                 </div>
             ) : (

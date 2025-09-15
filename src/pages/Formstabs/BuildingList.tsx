@@ -28,7 +28,7 @@ interface BuildingListProps {
     adjustedMarketValues: Map<string, number>;
     assessmentLevels: Map<string, any>;
     buildingCodeRates: Map<string, number>;
-    onAdjustmentCreate: () => void;
+    onViewDetails: (buildingId: string) => void; // New prop for handling details view
 }
 
 const BuildingList: React.FC<BuildingListProps> = ({
@@ -47,7 +47,7 @@ const BuildingList: React.FC<BuildingListProps> = ({
     adjustedMarketValues,
     assessmentLevels,
     buildingCodeRates,
-    onAdjustmentCreate
+    onViewDetails
 }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedBuildingId, setSelectedBuildingId] = useState<string | null>(null);
@@ -120,9 +120,9 @@ const BuildingList: React.FC<BuildingListProps> = ({
 
                         return (
                             <React.Fragment key={id}>
-                                <IonRow 
-                                    className={`table-row ${isSelected ? 'selected' : ''}`} 
-                                    onClick={() => handleViewDetails(id)} 
+                                <IonRow
+                                    className={`table-row ${isSelected ? 'selected' : ''}`}
+                                    onClick={() => handleViewDetails(id)}
                                     style={{ cursor: 'pointer' }}
                                 >
                                     <IonCol size="3">{id}</IonCol>
@@ -136,7 +136,7 @@ const BuildingList: React.FC<BuildingListProps> = ({
                                 {isSelected && buildingData && (
                                     <IonRow>
                                         <IonCol size="12">
-                                            <BuildingDetailsCard 
+                                            <BuildingDetailsCard
                                                 buildingData={buildingData}
                                                 buildingRate={buildingCodeRates.get(id)}
                                             />
