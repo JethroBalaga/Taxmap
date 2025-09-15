@@ -13,8 +13,8 @@ import {
 } from '@ionic/react';
 import { close } from 'ionicons/icons';
 import { BuildingAdjustmentLocalStorage, BuildingAdjustmentData } from '../../utils/tablestorages/BuildingAdjustmentLocalStorage';
-import { getBuildingComponentData, BuildingComponentData } from '../../utils/buildingComponentLocalStorage';
-import { getBuildingSubcomponentByBuildingComId, BuildingSubcomponentData } from '../../utils/BuildingSubcomponentLocalStorage';
+import { getBuildingComponentData, BuildingComponentData, getBuildingComponentById } from '../../utils/buildingComponentLocalStorage';
+import { getBuildingSubcomponentByBuildingComId, BuildingSubcomponentData, getBuildingSubcomponentById } from '../../utils/BuildingSubcomponentLocalStorage';
 import BuildingAdjustmentForm from './BuildingAdjustmentForm';
 import BuildingAdjustmentCalculations from './BuildingAdjustmentCalculations';
 import './../../CSS/modal.css';
@@ -59,42 +59,28 @@ const BuildingAdjustmentModal: React.FC<BuildingAdjustmentModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       loadBuildingComponents();
-    }
-  }, [isOpen]);
-
-  useEffect(() => {
-    if (existingData) {
-      setFormData({
-        Maincomponent: existingData.Maincomponent || '',
-        buidlingsubcomponent: existingData.buidlingsubcomponent || '',
-        description: existingData.description || '',
-        completion_percent: existingData.completion_percent || '',
-        depraciation: existingData.depraciation || '',
-        area: existingData.area.toString()
-      });
-      if (existingData.Maincomponent) {
-        loadBuildingSubcomponents(existingData.Maincomponent);
-        if (existingData.buidlingsubcomponent) {
-          findAndDisplayRate(existingData.buidlingsubcomponent);
-        }
+      // If editing, load all data including descriptions
+      if (existingData) {
+        loadExistingData(existingData);
+      } else {
+        // Reset form for new entry
+        setFormData({
+          Maincomponent: '',
+          buidlingsubcomponent: '',
+          description: '',
+          completion_percent: '',
+          depraciation: '',
+          area: initialArea.toString()
+        });
       }
-    } else {
-      setFormData({
-        Maincomponent: '',
-        buidlingsubcomponent: '',
-        description: '',
-        completion_percent: '',
-        depraciation: '',
-        area: initialArea.toString()
-      });
     }
-  }, [existingData, isOpen, initialArea]);
+  }, [isOpen, existingData, initialArea]);
 
   useEffect(() => {
     const requiredFieldsFilled =
       formData.Maincomponent.trim() !== '' &&
       formData.buidlingsubcomponent.trim() !== '' &&
-      formData.description.trim() !== '' && // NEW: Add this check for the description field
+      formData.description.trim() !== '' &&
       formData.area.trim() !== '' &&
       parseFloat(formData.area) > 0 &&
       formData.completion_percent.trim() !== '' &&
@@ -107,6 +93,20 @@ const BuildingAdjustmentModal: React.FC<BuildingAdjustmentModalProps> = ({
   useEffect(() => {
     calculateValues();
   }, [selectedSubcomponentRate, formData.area, formData.completion_percent, formData.depraciation]);
+
+  const loadExistingData = async (data: BuildingAdjustmentData) => {
+    setFormData({
+      ...data,
+      area: data.area.toString()
+    });
+
+    if (data.Maincomponent) {
+      await loadBuildingSubcomponents(data.Maincomponent);
+      if (data.buidlingsubcomponent) {
+        findAndDisplayRate(data.buidlingsubcomponent);
+      }
+    }
+  };
 
   const calculateValues = () => {
     const areaValue = parseFloat(formData.area) || 0;
@@ -170,11 +170,12 @@ const BuildingAdjustmentModal: React.FC<BuildingAdjustmentModalProps> = ({
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleMainComponentChange = (value: string) => {
+  const handleMainComponentChange = async (value: string) => {
     setFormData(prev => ({
       ...prev,
       Maincomponent: value,
-      buidlingsubcomponent: '' // Reset subcomponent
+      buidlingsubcomponent: '', // Reset subcomponent
+      description: '' // Reset description
     }));
     setSelectedSubcomponentRate(null);
     setMarketValue(null);
@@ -186,10 +187,20 @@ const BuildingAdjustmentModal: React.FC<BuildingAdjustmentModalProps> = ({
     }
   };
 
-  const handleSubcomponentChange = (value: string) => {
+  const handleSubcomponentChange = async (value: string) => {
+    // Fetch the main and subcomponent descriptions
+    const mainCom = await getBuildingComponentById(formData.Maincomponent);
+    const subCom = await getBuildingSubcomponentById(value);
+    let combinedDescription = '';
+
+    if (mainCom && subCom) {
+      combinedDescription = `${mainCom.description} (${subCom.description})`;
+    }
+
     setFormData(prev => ({
       ...prev,
-      buidlingsubcomponent: value
+      buidlingsubcomponent: value,
+      description: combinedDescription // Set the auto-filled description
     }));
     findAndDisplayRate(value);
   };
@@ -215,14 +226,11 @@ const BuildingAdjustmentModal: React.FC<BuildingAdjustmentModalProps> = ({
 
       BuildingAdjustmentLocalStorage.saveBuildingAdjustmentData(adjustmentData);
 
-      // Show the success alert first
       setAlertMessage(existingData ? 'Building adjustment updated successfully!' : 'Building adjustment added successfully!');
       setShowAlert(true);
 
-      // Then, close the modal
-      onClose(); // NEW: Close the modal after a successful save
+      onClose();
 
-      // If a success callback is provided, run it
       if (onSaveSuccess) {
         onSaveSuccess();
       }
