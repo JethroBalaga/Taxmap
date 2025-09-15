@@ -16,6 +16,7 @@ import { BuildingDataLocalStorage } from '../../utils/tablestorages/BuildingData
 import { getBuildingCodeByCode } from '../../utils/buildingCodeLocalStorage';
 import { getAssessmentLevelData } from '../../utils/assessmentLevelLocalStorage';
 import { BuildingAdjustmentData, BuildingAdjustmentLocalStorage } from '../../utils/tablestorages/BuildingAdjustmentLocalStorage';
+import { BuildingSubcomponentData, getBuildingSubcomponentById } from "../../utils/BuildingSubcomponentLocalStorage";
 import BuildingList from './BuildingList';
 import BuildingAdjustmentsTable from './BuildingAdjustmentsTable';
 import BuildingAdjustmentModal from "../../components/Modals/BuildingAdjustmentModal";
@@ -64,6 +65,10 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
     const [showAdjustmentModal, setShowAdjustmentModal] = useState(false);
     const [selectedValueInfoId, setSelectedValueInfoId] = useState<string | null>(null);
     const [existingAdjustmentData, setExistingAdjustmentData] = useState<BuildingAdjustmentData | null>(null);
+
+    // Subcomponent modal states
+    const [showSubcomponentModal, setShowSubcomponentModal] = useState(false);
+    const [selectedSubcomponentData, setSelectedSubcomponentData] = useState<BuildingSubcomponentData | null>(null);
 
     // Toast states
     const [showToast, setShowToast] = useState(false);
@@ -183,6 +188,21 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
         }
     };
 
+    const handleSubcomponentRowClick = async (subcomponentId: string) => {
+        try {
+            const subcomponentData = await getBuildingSubcomponentById(subcomponentId);
+            if (subcomponentData) {
+                setSelectedSubcomponentData(subcomponentData);
+                setShowSubcomponentModal(true);
+            } else {
+                showToastMessage(`No subcomponent data found for ID: ${subcomponentId}`, 'warning');
+            }
+        } catch (error) {
+            console.error('Error fetching subcomponent data:', error);
+            showToastMessage('Error loading subcomponent details', 'danger');
+        }
+    };
+
     const showToastMessage = (message: string, color: 'success' | 'danger' | 'warning' = 'success') => {
         setToastMessage(message);
         setToastColor(color);
@@ -228,6 +248,7 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
                     onAdjustmentCreate={handleCreateAdjustment}
                     onAdjustmentsUpdate={loadBuildingAdjustments}
                     showToastMessage={showToastMessage}
+                    onSubcomponentClick={handleSubcomponentRowClick}
                 />
 
                 {/* Building Adjustment Modal */}
@@ -247,6 +268,13 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
                         }}
                     />
                 )}
+
+                {/* Building Subcomponent Modal */}
+                <BuildingSubcomponentModal
+                    isOpen={showSubcomponentModal}
+                    onClose={() => setShowSubcomponentModal(false)}
+                    subcomponentData={selectedSubcomponentData}
+                />
 
                 <IonToast
                     isOpen={showToast}

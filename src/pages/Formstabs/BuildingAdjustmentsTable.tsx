@@ -10,7 +10,7 @@ import {
 import { createOutline, arrowUpCircleOutline, trashOutline, informationCircle } from "ionicons/icons";
 import DynamicTable from "../../components/GlobalComponent/DynamicTable";
 import { BuildingAdjustmentData } from "../../utils/tablestorages/BuildingAdjustmentLocalStorage";
-import { getBuildingSubcomponentById } from "../../utils/BuildingSubcomponentLocalStorage";
+import { BuildingAdjustmentLocalStorage } from "../../utils/tablestorages/BuildingAdjustmentLocalStorage";
 
 interface BuildingAdjustmentsTableProps {
     buildingAdjustments: BuildingAdjustmentData[];
@@ -18,6 +18,7 @@ interface BuildingAdjustmentsTableProps {
     onAdjustmentCreate: () => void;
     onAdjustmentsUpdate: () => void;
     showToastMessage: (message: string, color?: 'success' | 'danger' | 'warning') => void;
+    onSubcomponentClick: (subcomponentId: string) => void;
 }
 
 const BuildingAdjustmentsTable: React.FC<BuildingAdjustmentsTableProps> = ({
@@ -25,7 +26,8 @@ const BuildingAdjustmentsTable: React.FC<BuildingAdjustmentsTableProps> = ({
     buildingInfoIds,
     onAdjustmentCreate,
     onAdjustmentsUpdate,
-    showToastMessage
+    showToastMessage,
+    onSubcomponentClick
 }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedAdjustmentId, setSelectedAdjustmentId] = useState<string | null>(null);
@@ -42,18 +44,7 @@ const BuildingAdjustmentsTable: React.FC<BuildingAdjustmentsTableProps> = ({
 
     const handleAdjustmentRowClick = async (rowData: any) => {
         if (rowData && rowData.buidlingsubcomponent) {
-            try {
-                const subcomponentData = await getBuildingSubcomponentById(rowData.buidlingsubcomponent);
-                if (subcomponentData) {
-                    // Show subcomponent details modal
-                    showToastMessage(`Subcomponent: ${subcomponentData.description}`, 'success');
-                } else {
-                    showToastMessage(`No subcomponent data found for ID: ${rowData.buidlingsubcomponent}`, 'warning');
-                }
-            } catch (error) {
-                console.error('Error fetching subcomponent data:', error);
-                showToastMessage('Error loading subcomponent details', 'danger');
-            }
+            onSubcomponentClick(rowData.buidlingsubcomponent);
         } else {
             handleSelectAdjustmentRow(rowData);
         }
@@ -68,9 +59,21 @@ const BuildingAdjustmentsTable: React.FC<BuildingAdjustmentsTableProps> = ({
     };
 
     const performDeletion = () => {
-        // Implementation would go here
-        showToastMessage('Delete functionality would be implemented here', 'success');
-        setShowDeleteToast(false);
+        try {
+            const success = BuildingAdjustmentLocalStorage.deleteBuildingAdjustmentData(selectedAdjustmentId!);
+            if (success) {
+                onAdjustmentsUpdate();
+                setSelectedAdjustmentId(null);
+                showToastMessage('Building adjustment deleted successfully!', 'success');
+            } else {
+                showToastMessage('Failed to delete building adjustment.', 'danger');
+            }
+        } catch (error) {
+            console.error('Error deleting building adjustment:', error);
+            showToastMessage('Error deleting building adjustment', 'danger');
+        } finally {
+            setShowDeleteToast(false);
+        }
     };
 
     const filteredAdjustments = buildingAdjustments.filter(adjustment => {
@@ -96,9 +99,16 @@ const BuildingAdjustmentsTable: React.FC<BuildingAdjustmentsTableProps> = ({
         {
             icon: arrowUpCircleOutline,
             className: "update-button",
-            onClick: () => showToastMessage('Update functionality would be implemented here'),
+            onClick: () => {
+                if (selectedAdjustmentId) {
+                    // Here you would typically open an update modal
+                    showToastMessage('Update functionality would be implemented here');
+                } else {
+                    showToastMessage('Please select an adjustment to update', 'warning');
+                }
+            },
             title: "Update Building adjustment",
-            enabled: true
+            enabled: !!selectedAdjustmentId
         },
         {
             icon: trashOutline,

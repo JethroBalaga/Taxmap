@@ -30,6 +30,13 @@ const BuildingSubcomponentModal: React.FC<BuildingSubcomponentModalProps> = ({
     onClose,
     subcomponentData
 }) => {
+    const formattedRate = subcomponentData && typeof subcomponentData.rate === 'number'
+        ? `₱${subcomponentData.rate.toLocaleString(undefined, {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        })}`
+        : 'N/A';
+
     return (
         <IonModal isOpen={isOpen} onDidDismiss={onClose}>
             <IonHeader>
@@ -42,7 +49,7 @@ const BuildingSubcomponentModal: React.FC<BuildingSubcomponentModalProps> = ({
                     </IonButtons>
                 </IonToolbar>
             </IonHeader>
-            
+
             <IonContent className="ion-padding">
                 {subcomponentData ? (
                     <IonCard>
@@ -58,29 +65,12 @@ const BuildingSubcomponentModal: React.FC<BuildingSubcomponentModalProps> = ({
                                 </IonRow>
                                 <IonRow>
                                     <IonCol size="4"><strong>Rate:</strong></IonCol>
-                                    <IonCol>
-                                        ₱{subcomponentData.rate.toLocaleString(undefined, {
-                                            minimumFractionDigits: 2,
-                                            maximumFractionDigits: 2
-                                        })}
-                                    </IonCol>
+                                    <IonCol>{formattedRate}</IonCol>
                                 </IonRow>
                                 <IonRow>
                                     <IonCol size="4"><strong>Component ID:</strong></IonCol>
                                     <IonCol>{subcomponentData.building_com_id}</IonCol>
                                 </IonRow>
-                                {subcomponentData.unit && (
-                                    <IonRow>
-                                        <IonCol size="4"><strong>Unit:</strong></IonCol>
-                                        <IonCol>{subcomponentData.unit}</IonCol>
-                                    </IonRow>
-                                )}
-                                {subcomponentData.remarks && (
-                                    <IonRow>
-                                        <IonCol size="4"><strong>Remarks:</strong></IonCol>
-                                        <IonCol>{subcomponentData.remarks}</IonCol>
-                                    </IonRow>
-                                )}
                             </IonGrid>
                         </IonCardContent>
                     </IonCard>
