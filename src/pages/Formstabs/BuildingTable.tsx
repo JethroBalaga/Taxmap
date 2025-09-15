@@ -33,6 +33,7 @@ import '../../CSS/BuildingTable.css';
 import '../../CSS/Forms.css';
 import BuildingAdjustmentModal from "../../components/Modals/BuildingAdjustmentModal";
 import DynamicTable from "../../components/GlobalComponent/DynamicTable";
+import { getBuildingSubcomponentById } from '../../utils/BuildingSubcomponentLocalStorage';
 
 interface BuildingTableProps {
     form_id: string;
