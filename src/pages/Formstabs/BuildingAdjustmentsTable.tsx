@@ -96,7 +96,7 @@ const BuildingAdjustmentsTable: React.FC<BuildingAdjustmentsTableProps> = ({
         {
             icon: arrowUpCircleOutline,
             className: "update-button",
-            onClick: () => showToastMessage('Update functionality would be implemented here', 'info'),
+            onClick: () => showToastMessage('Update functionality would be implemented here'),
             title: "Update Building adjustment",
             enabled: true
         },
@@ -110,7 +110,7 @@ const BuildingAdjustmentsTable: React.FC<BuildingAdjustmentsTableProps> = ({
         {
             icon: informationCircle,
             className: "info-button",
-            onClick: () => showToastMessage('Info functionality would be implemented here', 'info'),
+            onClick: () => showToastMessage('Info functionality would be implemented here'),
             title: "View Building Details",
             enabled: filteredAdjustments.length > 0
         }
