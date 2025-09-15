@@ -27,6 +27,7 @@ import './../../CSS/modal.css'; // Import the general modal CSS
 interface ExtendedBuildingAdjustmentData extends BuildingAdjustmentData {
     area?: number;
     market_value?: number;
+    adjusted_value?: number; // Add adjusted_value to the interface
 }
 
 interface BuildingAdjustmentModalProps {
@@ -63,6 +64,7 @@ const BuildingAdjustmentModal: React.FC<BuildingAdjustmentModalProps> = ({
     const [isLoadingSubcomponents, setIsLoadingSubcomponents] = useState(false);
     const [selectedSubcomponentRate, setSelectedSubcomponentRate] = useState<number | null>(null);
     const [marketValue, setMarketValue] = useState<number | null>(null);
+    const [adjustedValue, setAdjustedValue] = useState<number | null>(null); // Add state for adjusted value
 
     useEffect(() => {
         if (isOpen) {
@@ -105,10 +107,11 @@ const BuildingAdjustmentModal: React.FC<BuildingAdjustmentModalProps> = ({
         }
     }, [existingData, isOpen, initialArea]);
 
-    // Calculate market value when rate, area, or completion percent changes
+    // Calculate market value and adjusted value when rate, area, completion percent, or depreciation changes
     useEffect(() => {
         calculateMarketValue();
-    }, [selectedSubcomponentRate, formData.area, formData.completion_percent]);
+        calculateAdjustedValue();
+    }, [selectedSubcomponentRate, formData.area, formData.completion_percent, formData.depraciation]);
 
     const calculateMarketValue = () => {
         const areaValue = parseFloat(formData.area) || 0;
@@ -126,6 +129,22 @@ const BuildingAdjustmentModal: React.FC<BuildingAdjustmentModalProps> = ({
             setMarketValue(finalMarketValue);
         } else {
             setMarketValue(null);
+        }
+    };
+
+    const calculateAdjustedValue = () => {
+        if (marketValue !== null) {
+            let finalAdjustedValue = marketValue;
+            
+            // Apply depreciation if provided
+            if (formData.depraciation) {
+                const depreciationDecimal = parseFloat(formData.depraciation) / 100;
+                finalAdjustedValue = marketValue * (1 - depreciationDecimal);
+            }
+            
+            setAdjustedValue(finalAdjustedValue);
+        } else {
+            setAdjustedValue(null);
         }
     };
 
@@ -180,6 +199,7 @@ const BuildingAdjustmentModal: React.FC<BuildingAdjustmentModalProps> = ({
 
         setSelectedSubcomponentRate(null); // Reset rate display
         setMarketValue(null); // Reset market value
+        setAdjustedValue(null); // Reset adjusted value
 
         if (value) {
             loadBuildingSubcomponents(value);
@@ -257,9 +277,13 @@ const BuildingAdjustmentModal: React.FC<BuildingAdjustmentModalProps> = ({
                 value_info_id: valueInfoId
             };
 
-            // Add market_value only if it's defined in the interface
+            // Add market_value and adjusted_value only if they're defined in the interface
             if (marketValue !== null) {
                 adjustmentData.market_value = marketValue;
+            }
+            
+            if (adjustedValue !== null) {
+                adjustmentData.adjusted_value = adjustedValue;
             }
 
             BuildingAdjustmentLocalStorage.saveBuildingAdjustmentData(adjustmentData);
@@ -293,6 +317,7 @@ const BuildingAdjustmentModal: React.FC<BuildingAdjustmentModalProps> = ({
         });
         setSelectedSubcomponentRate(null);
         setMarketValue(null);
+        setAdjustedValue(null);
         onClose();
     };
 
@@ -503,6 +528,34 @@ const BuildingAdjustmentModal: React.FC<BuildingAdjustmentModalProps> = ({
                                         onIonInput={(e) => handleInputChange('depraciation', e.detail.value!)}
                                     />
                                 </IonItem>
+                                
+                                {/* Adjusted Value Calculation Display */}
+                                {adjustedValue !== null && (
+                                    <div style={{
+                                        padding: '12px 16px',
+                                        margin: '8px 0',
+                                        backgroundColor: '#e3f2fd',
+                                        borderRadius: '8px',
+                                        border: '1px solid #bbdefb'
+                                    }}>
+                                        <IonText style={{
+                                            fontSize: '0.95rem',
+                                            fontWeight: '500',
+                                            color: '#2d3748'
+                                        }}>
+                                            Adjusted Value Calculation:
+                                        </IonText>
+                                        <div style={{ fontSize: '0.85rem', color: '#1565c0', marginTop: '4px' }}>
+                                            <div>Market Value: ₱{marketValue?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                                            {formData.depraciation && (
+                                                <div>- Depreciation: {formData.depraciation}%</div>
+                                            )}
+                                            <div style={{ fontWeight: '600', marginTop: '4px', borderTop: '1px solid #bbdefb', paddingTop: '4px' }}>
+                                                = ₱{adjustedValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </IonCol>
                         </IonRow>
 
