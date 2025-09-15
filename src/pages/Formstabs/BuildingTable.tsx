@@ -18,7 +18,8 @@ import {
     IonCard,
     IonCardContent,
     IonSpinner,
-    IonPopover
+    IonPopover,
+    IonToast
 } from "@ionic/react";
 import { arrowBack, informationCircle, createOutline, arrowUpCircleOutline, trashOutline } from "ionicons/icons";
 import { ValueInfoLocalStorage } from '../../utils/tablestorages/ValueInfoLocalStorage';
@@ -29,7 +30,7 @@ import {
 } from '../../utils/assessmentLevelLocalStorage';
 import { BuildingAdjustmentData, BuildingAdjustmentLocalStorage } from '../../utils/tablestorages/BuildingAdjustmentLocalStorage';
 import '../../CSS/BuildingTable.css';
-import '../../CSS/Forms.css'; // Add this import statement
+import '../../CSS/Forms.css';
 import BuildingAdjustmentModal from "../../components/Modals/BuildingAdjustmentModal";
 import DynamicTable from "../../components/GlobalComponent/DynamicTable";
 
@@ -70,16 +71,22 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
     const [assessmentLevels, setAssessmentLevels] = useState<Map<string, AssessmentLevelInfo>>(new Map());
     const [buildingAdjustments, setBuildingAdjustments] = useState<BuildingAdjustmentData[]>([]);
     const [selectedBuildingId, setSelectedBuildingId] = useState<string | null>(null);
+    const [selectedAdjustmentId, setSelectedAdjustmentId] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [loading, setLoading] = useState(true);
     const [kindId, setKindId] = useState<number>(2);
     const [showCreatePopover, setShowCreatePopover] = useState(false);
     const [createPopoverEvent, setCreatePopoverEvent] = useState<any>(null);
     
-    // New states for the adjustment modal
+    // States for the adjustment modal
     const [showAdjustmentModal, setShowAdjustmentModal] = useState(false);
     const [selectedValueInfoId, setSelectedValueInfoId] = useState<string | null>(null);
     const [existingAdjustmentData, setExistingAdjustmentData] = useState<BuildingAdjustmentData | null>(null);
+
+    // States for the IonToast
+    const [showToast, setShowToast] = useState(false);
+    const [toastMessage, setToastMessage] = useState('');
+    const [toastColor, setToastColor] = useState<'success' | 'danger' | 'warning' | undefined>(undefined);
 
     useEffect(() => {
         console.log('BuildingTable props:', { form_id, kind, classification, area, declarant, actual_use, district, subclass });
@@ -179,7 +186,6 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
     const loadBuildingAdjustments = () => {
         try {
             const allAdjustments = BuildingAdjustmentLocalStorage.getAllBuildingAdjustmentData();
-            // Filter adjustments to only show those related to buildings in this form
             const formBuildingIds = ValueInfoLocalStorage.getAllValueInfo()
                 .filter(info => info.formDataId === form_id)
                 .map(info => info.id);
@@ -205,10 +211,42 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
 
     const handleCreateAdjustment = () => {
         if (buildingInfoIds.length > 0) {
-            setSelectedValueInfoId(buildingInfoIds[0]); // Use the first building ID for a new adjustment
-            setExistingAdjustmentData(null); // Reset existing data for new creation
+            setSelectedValueInfoId(buildingInfoIds[0]);
+            setExistingAdjustmentData(null);
             setShowAdjustmentModal(true);
         }
+    };
+
+    const handleSelectAdjustmentRow = (rowData: BuildingAdjustmentData) => {
+        const newSelectedId = rowData.bldg_adjustment_id === selectedAdjustmentId ? null : rowData.bldg_adjustment_id;
+        setSelectedAdjustmentId(newSelectedId);
+    };
+
+    const handleDeleteAdjustment = () => {
+        if (!selectedAdjustmentId) {
+            setToastMessage('No adjustment selected to delete.');
+            setToastColor('warning');
+            setShowToast(true);
+            return;
+        }
+
+        setToastMessage('Are you sure you want to delete this building adjustment?');
+        setToastColor('warning');
+        setShowToast(true);
+    };
+
+    const performDeletion = () => {
+        const success = BuildingAdjustmentLocalStorage.deleteBuildingAdjustmentData(selectedAdjustmentId!);
+        if (success) {
+            loadBuildingAdjustments();
+            setSelectedAdjustmentId(null);
+            setToastMessage('Building adjustment deleted successfully!');
+            setToastColor('success');
+        } else {
+            setToastMessage('Failed to delete building adjustment.');
+            setToastColor('danger');
+        }
+        setShowToast(true);
     };
 
     const filteredBuildingIds = buildingInfoIds.filter(id => {
@@ -245,9 +283,9 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
         { 
             icon: trashOutline, 
             className: "delete-button", 
-            onClick: handleCreateClick, 
+            onClick: handleDeleteAdjustment,
             title: "Delete Building adjustment", 
-            enabled: true 
+            enabled: !!selectedAdjustmentId
         },
         { 
             icon: informationCircle, 
@@ -261,7 +299,7 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
     const selectedBuildingData = selectedBuildingId ? buildingDataList.get(selectedBuildingId) : null;
     const selectedBuildingRate = selectedBuildingId ? buildingCodeRates.get(selectedBuildingId) : null;
     
-    // Array of building detail items to display - with proper null checks
+    // Array of building detail items to display
     const buildingDetailItems = selectedBuildingData ? [
         { label: "Structure Type", value: selectedBuildingData.structureType || 'N/A' },
         { label: "Building Code", value: selectedBuildingData.buildingCode || 'N/A' },
@@ -381,7 +419,6 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
                         <div className="search-container">
                             <IonSearchbar placeholder="Search adjustments..." value={searchTerm} onIonInput={handleSearch} className="forms-searchbar" />
                             
-                            {/* Button actions from array */}
                             <div className="icon-group">
                                 {buttonActions.map((action, index) => (
                                     <IonButton key={index} fill="clear" className={action.className} onClick={action.onClick} style={{ opacity: action.enabled ? 1 : 0.5 }} title={action.title} disabled={!action.enabled}>
@@ -408,6 +445,7 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
                                     data={filteredAdjustments}
                                     title="Building Adjustments"
                                     keyField="bldg_adjustment_id"
+                                    onRowClick={handleSelectAdjustmentRow}
                                 />
                             </div>
                         ) : (
@@ -424,18 +462,60 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
                         isOpen={showAdjustmentModal}
                         onClose={() => {
                             setShowAdjustmentModal(false);
-                            loadBuildingAdjustments(); // Refresh the adjustments after the modal closes
+                            loadBuildingAdjustments();
                         }}
                         valueInfoId={selectedValueInfoId}
                         existingData={existingAdjustmentData}
                         initialArea={area}
                         onSaveSuccess={() => {
-                            // Refresh data after successful save
                             loadBuildingData();
                             loadBuildingAdjustments();
                         }}
                     />
                 )}
+
+                {/* IonToast for Delete Confirmation and Status */}
+                <IonToast
+                    isOpen={showToast}
+                    onDidDismiss={() => {
+                        setShowToast(false);
+                        setToastMessage('');
+                    }}
+                    message={toastMessage}
+                    position="middle"
+                    color={toastColor}
+                    buttons={
+                        toastColor === 'warning'
+                            ? [
+                                {
+                                    side: 'end',
+                                    text: 'Yes',
+                                    handler: () => {
+                                        performDeletion();
+                                    }
+                                },
+                                {
+                                    text: 'No',
+                                    role: 'cancel',
+                                    handler: () => {
+                                        setToastMessage('Deletion cancelled.');
+                                        setToastColor('warning');
+                                        setShowToast(true);
+                                    }
+                                }
+                            ]
+                            : [
+                                {
+                                    text: 'Close',
+                                    role: 'cancel',
+                                    handler: () => {
+                                        setShowToast(false);
+                                    }
+                                }
+                            ]
+                    }
+                    duration={toastColor !== 'warning' ? 3000 : undefined}
+                />
             </IonContent>
         </IonPage>
     );
