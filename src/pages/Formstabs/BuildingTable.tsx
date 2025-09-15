@@ -60,7 +60,6 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
     const [buildingAdjustments, setBuildingAdjustments] = useState<BuildingAdjustmentData[]>([]);
     const [loading, setLoading] = useState(true);
     const [kindId] = useState<number>(2);
-    const [selectedBuildingId, setSelectedBuildingId] = useState<string | null>(null);
 
     // Modal states
     const [showAdjustmentModal, setShowAdjustmentModal] = useState(false);
@@ -184,16 +183,17 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
         }
     };
 
+    const handleViewDetails = (buildingId: string) => {
+        // Handle viewing building details if needed
+        console.log('View details for building:', buildingId);
+    };
+
     const handleCreateAdjustment = () => {
         if (buildingInfoIds.length > 0) {
             setSelectedValueInfoId(buildingInfoIds[0]);
             setExistingAdjustmentData(null);
             setShowAdjustmentModal(true);
         }
-    };
-
-    const handleViewDetails = (buildingId: string) => {
-        setSelectedBuildingId(buildingId === selectedBuildingId ? null : buildingId);
     };
 
     const handleSubcomponentRowClick = async (rowData: BuildingAdjustmentData) => {
@@ -259,9 +259,10 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
                     onAdjustmentCreate={handleCreateAdjustment}
                     onAdjustmentsUpdate={loadBuildingAdjustments}
                     showToastMessage={showToastMessage}
-                    onViewBuildingDetails={handleViewDetails}
+                    onSubcomponentClick={handleSubcomponentRowClick}
                 />
 
+                {/* Building Adjustment Modal */}
                 {showAdjustmentModal && selectedValueInfoId && (
                     <BuildingAdjustmentModal
                         isOpen={showAdjustmentModal}
@@ -279,6 +280,7 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
                     />
                 )}
 
+                {/* Building Subcomponent Modal */}
                 <BuildingSubcomponentModal
                     isOpen={showSubcomponentModal}
                     onClose={() => setShowSubcomponentModal(false)}
