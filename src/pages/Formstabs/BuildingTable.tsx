@@ -1,3 +1,5 @@
+// src/pages/BuildingTable.tsx
+
 import React, { useState, useEffect } from "react";
 import {
     IonPage,
@@ -27,6 +29,7 @@ import {
 } from '../../utils/assessmentLevelLocalStorage';
 import { BuildingAdjustmentData } from '../../utils/tablestorages/BuildingAdjustmentLocalStorage';
 import '../../CSS/BuildingTable.css';
+import '../../CSS/Forms.css'; // Add this import statement
 import BuildingAdjustmentModal from "../../components/Modals/BuildingAdjustmentModal";
 
 interface BuildingTableProps {
@@ -347,15 +350,17 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
                         </IonGrid>
 
                         {/* Search and Actions Section */}
-                        <div className="search-container" style={{ display: 'flex', alignItems: 'center', padding: '0 16px', gap: '10px', marginTop: '16px' }}>
+                        <div className="search-container">
                             <IonSearchbar placeholder="Search buildings..." value={searchTerm} onIonInput={handleSearch} className="forms-searchbar" />
                             
                             {/* Button actions from array */}
-                            {buttonActions.map((action, index) => (
-                                <IonButton key={index} fill="clear" className={action.className} onClick={action.onClick} style={{ margin: 0, opacity: action.enabled ? 1 : 0.5 }} title={action.title} disabled={!action.enabled}>
-                                    <IonIcon icon={action.icon} slot="icon-only" />
-                                </IonButton>
-                            ))}
+                            <div className="icon-group">
+                                {buttonActions.map((action, index) => (
+                                    <IonButton key={index} fill="clear" className={action.className} onClick={action.onClick} style={{ opacity: action.enabled ? 1 : 0.5 }} title={action.title} disabled={!action.enabled}>
+                                        <IonIcon icon={action.icon} slot="icon-only" />
+                                    </IonButton>
+                                ))}
+                            </div>
                             
                             <IonPopover isOpen={showCreatePopover} event={createPopoverEvent} onDidDismiss={() => setShowCreatePopover(false)}>
                                 <IonContent>
