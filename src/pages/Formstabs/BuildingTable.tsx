@@ -19,9 +19,10 @@ import {
     IonCardContent,
     IonSpinner,
     IonPopover,
-    IonToast
+    IonToast,
+    IonModal
 } from "@ionic/react";
-import { arrowBack, informationCircle, createOutline, arrowUpCircleOutline, trashOutline } from "ionicons/icons";
+import { arrowBack, informationCircle, createOutline, arrowUpCircleOutline, trashOutline, closeCircleOutline } from "ionicons/icons";
 import { ValueInfoLocalStorage } from '../../utils/tablestorages/ValueInfoLocalStorage';
 import { BuildingDataLocalStorage } from '../../utils/tablestorages/BuildingDataLocalStorage';
 import { getBuildingCodeByCode } from '../../utils/buildingCodeLocalStorage';
@@ -33,8 +34,7 @@ import '../../CSS/BuildingTable.css';
 import '../../CSS/Forms.css';
 import BuildingAdjustmentModal from "../../components/Modals/BuildingAdjustmentModal";
 import DynamicTable from "../../components/GlobalComponent/DynamicTable";
-import { getBuildingSubcomponentById } from '../../utils/BuildingSubcomponentLocalStorage';
-
+import { BuildingSubcomponentData, getBuildingSubcomponentById } from "../../utils/BuildingSubcomponentLocalStorage";
 interface BuildingTableProps {
     form_id: string;
     onBack: () => void;
@@ -324,15 +324,20 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
     ] : [];
 
     const handleAdjustmentRowClick = async (rowData: any) => {
-        // Check if this row has a building_subcom_id
-        if (rowData.building_subcom_id) {
+        console.log('Row clicked:', rowData);
+
+        // Check if this row has a buidlingsubcomponent (note the spelling)
+        if (rowData && rowData.buidlingsubcomponent) {
+            console.log('Found buidlingsubcomponent:', rowData.buidlingsubcomponent);
             try {
-                const subcomponentData = await getBuildingSubcomponentById(rowData.building_subcom_id);
+                // Use the buidlingsubcomponent value (e.g., 'CE1') to fetch subcomponent data
+                const subcomponentData = await getBuildingSubcomponentById(rowData.buidlingsubcomponent);
                 if (subcomponentData) {
                     setSelectedSubcomponentData(subcomponentData);
                     setShowSubcomponentModal(true);
+                    console.log('Modal should be visible now');
                 } else {
-                    setToastMessage('No subcomponent data found for this ID');
+                    setToastMessage(`No subcomponent data found for ID: ${rowData.buidlingsubcomponent}`);
                     setToastColor('warning');
                     setShowToast(true);
                 }
@@ -343,7 +348,9 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
                 setShowToast(true);
             }
         } else {
-            // If no building_subcom_id, just select the row for other operations
+            console.log('No buidlingsubcomponent found, selecting row');
+            console.log('Available fields:', Object.keys(rowData || {}));
+            // If no buidlingsubcomponent, just select the row for other operations
             handleSelectAdjustmentRow(rowData);
         }
     };
@@ -549,6 +556,51 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
                     }
                     duration={toastColor !== 'warning' ? 3000 : undefined}
                 />
+
+                {/* Building Subcomponent Details Modal */}
+                <IonModal isOpen={showSubcomponentModal} onDidDismiss={() => setShowSubcomponentModal(false)}>
+                    <IonHeader>
+                        <IonToolbar>
+                            <IonTitle>Building Subcomponent Details</IonTitle>
+                            <IonButtons slot="end">
+                                <IonButton onClick={() => setShowSubcomponentModal(false)}>
+                                    <IonIcon icon={closeCircleOutline} />
+                                </IonButton>
+                            </IonButtons>
+                        </IonToolbar>
+                    </IonHeader>
+                    <IonContent className="ion-padding">
+                        {selectedSubcomponentData ? (
+                            <IonCard>
+                                <IonCardContent>
+                                    <IonGrid>
+                                        <IonRow>
+                                            <IonCol size="4"><strong>ID:</strong></IonCol>
+                                            <IonCol>{selectedSubcomponentData.building_subcom_id}</IonCol>
+                                        </IonRow>
+                                        <IonRow>
+                                            <IonCol size="4"><strong>Description:</strong></IonCol>
+                                            <IonCol>{selectedSubcomponentData.description}</IonCol>
+                                        </IonRow>
+                                        <IonRow>
+                                            <IonCol size="4"><strong>Rate:</strong></IonCol>
+                                            <IonCol>₱{selectedSubcomponentData.rate.toLocaleString(undefined, {
+                                                minimumFractionDigits: 2,
+                                                maximumFractionDigits: 2
+                                            })}</IonCol>
+                                        </IonRow>
+                                        <IonRow>
+                                            <IonCol size="4"><strong>Component ID:</strong></IonCol>
+                                            <IonCol>{selectedSubcomponentData.building_com_id}</IonCol>
+                                        </IonRow>
+                                    </IonGrid>
+                                </IonCardContent>
+                            </IonCard>
+                        ) : (
+                            <IonText>No subcomponent data available.</IonText>
+                        )}
+                    </IonContent>
+                </IonModal>
             </IonContent>
         </IonPage>
     );
