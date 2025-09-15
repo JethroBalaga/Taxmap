@@ -1,3 +1,4 @@
+// src/components/Modals/BuildingSubcomponentModal.tsx
 import React from 'react';
 import {
     IonModal,
@@ -22,25 +23,28 @@ interface BuildingSubcomponentModalProps {
     isOpen: boolean;
     onClose: () => void;
     subcomponentData: BuildingSubcomponentData | null;
-    area?: number; // Add area as optional prop
+    area: number;
+    // Add the new prop here
+    completionPercent: string;
 }
 
 const BuildingSubcomponentModal: React.FC<BuildingSubcomponentModalProps> = ({
     isOpen,
     onClose,
     subcomponentData,
-    area = 1 // Default to 1 if not provided
+    area,
+    completionPercent
 }) => {
+    // Parse completion_percent from string to number using the new prop
+    const completionPercentValue = parseFloat(completionPercent) || 0;
+
     // Calculate market value: area x rate
     const marketValue = subcomponentData && typeof subcomponentData.rate === 'number'
         ? area * subcomponentData.rate
         : 0;
     
     // Calculate adjusted market value: market value x completion percent
-    const adjustedMarketValue = subcomponentData && 
-                               typeof subcomponentData.completion_percent === 'number'
-        ? marketValue * (subcomponentData.completion_percent / 100)
-        : 0;
+    const adjustedMarketValue = marketValue * (completionPercentValue / 100);
 
     const formattedRate = subcomponentData && typeof subcomponentData.rate === 'number'
         ? `₱${subcomponentData.rate.toLocaleString(undefined, {
@@ -59,10 +63,7 @@ const BuildingSubcomponentModal: React.FC<BuildingSubcomponentModalProps> = ({
         maximumFractionDigits: 2
     })}`;
 
-    const completionPercent = subcomponentData && 
-                             typeof subcomponentData.completion_percent === 'number'
-        ? `${subcomponentData.completion_percent}%`
-        : 'N/A';
+    const completionPercentDisplay = completionPercent ? `${completionPercent}%` : 'N/A';
 
     return (
         <IonModal isOpen={isOpen} onDidDismiss={onClose}>
@@ -99,17 +100,8 @@ const BuildingSubcomponentModal: React.FC<BuildingSubcomponentModalProps> = ({
                                     <IonCol>{area.toLocaleString()} m²</IonCol>
                                 </IonRow>
                                 <IonRow>
-                                    <IonCol size="4"><strong>Market Value:</strong></IonCol>
-                                    <IonCol>
-                                        {formattedMarketValue}
-                                        <IonText color="medium">
-                                            <small> (Area × Rate)</small>
-                                        </IonText>
-                                    </IonCol>
-                                </IonRow>
-                                <IonRow>
                                     <IonCol size="4"><strong>Completion %:</strong></IonCol>
-                                    <IonCol>{completionPercent}</IonCol>
+                                    <IonCol>{completionPercentDisplay}</IonCol>
                                 </IonRow>
                                 <IonRow>
                                     <IonCol size="4"><strong>Adjusted Market Value:</strong></IonCol>
@@ -119,10 +111,6 @@ const BuildingSubcomponentModal: React.FC<BuildingSubcomponentModalProps> = ({
                                             <small> (Market Value × Completion %)</small>
                                         </IonText>
                                     </IonCol>
-                                </IonRow>
-                                <IonRow>
-                                    <IonCol size="4"><strong>Component ID:</strong></IonCol>
-                                    <IonCol>{subcomponentData.building_com_id}</IonCol>
                                 </IonRow>
                             </IonGrid>
                         </IonCardContent>
