@@ -497,3 +497,82 @@ ion-select:focus-within, ion-input:focus-within, ion-datetime:focus-within {
     height: 70px;
   }
 }
+/* Calculation displays */
+.calculation-display {
+    padding: 12px;
+    margin: 8px 0;
+    border-radius: 8px;
+    border: 1px solid;
+}
+
+.market-value {
+    background-color: #e8f5e8;
+    border-color: #c8e6c9;
+}
+
+.adjusted-value {
+    background-color: #e3f2fd;
+    border-color: #bbdefb;
+}
+
+.calculation-title {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: #2d3748;
+    display: block;
+    margin-bottom: 6px;
+}
+
+.calculation-details {
+    font-size: 0.85rem;
+    margin-top: 4px;
+}
+
+.calculation-result {
+    font-weight: 600;
+    margin-top: 4px;
+    padding-top: 4px;
+    border-top: 1px solid;
+}
+
+.market-value .calculation-details {
+    color: #388e3c;
+}
+
+.market-value .calculation-result {
+    border-top-color: #c8e6c9;
+    color: #2d7d32;
+}
+
+.adjusted-value .calculation-details {
+    color: #1565c0;
+}
+
+.adjusted-value .calculation-result {
+    border-top-color: #bbdefb;
+    color: #0d47a1;
+}
+
+/* Rate display */
+.rate-display {
+    padding: 8px 16px;
+    margin: 4px 0 12px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+    font-size: 0.95rem;
+}
+
+.rate-value {
+    color: #2d7d32;
+    font-weight: 600;
+}
+
+/* Adjust column spacing */
+.custom-col {
+    padding: 0 8px;
+}
+
+.custom-input {
+    margin-bottom: 12px;
+}

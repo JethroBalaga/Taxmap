@@ -16,8 +16,11 @@ import {
     IonAlert,
     IonText,
     IonSelect,
-    IonSelectOption
+    IonSelectOption,
+    IonIcon,
+    IonButtons
 } from '@ionic/react';
+import { close } from 'ionicons/icons'; // Import the close icon
 import { BuildingAdjustmentLocalStorage, BuildingAdjustmentData } from '../../utils/tablestorages/BuildingAdjustmentLocalStorage';
 import { getBuildingComponentData, BuildingComponentData } from '../../utils/buildingComponentLocalStorage';
 import { getBuildingSubcomponentByBuildingComId, BuildingSubcomponentData } from '../../utils/BuildingSubcomponentLocalStorage';
@@ -135,13 +138,13 @@ const BuildingAdjustmentModal: React.FC<BuildingAdjustmentModalProps> = ({
     const calculateAdjustedValue = () => {
         if (marketValue !== null) {
             let finalAdjustedValue = marketValue;
-            
+
             // Apply depreciation if provided
             if (formData.depraciation) {
                 const depreciationDecimal = parseFloat(formData.depraciation) / 100;
                 finalAdjustedValue = marketValue * (1 - depreciationDecimal);
             }
-            
+
             setAdjustedValue(finalAdjustedValue);
         } else {
             setAdjustedValue(null);
@@ -281,7 +284,7 @@ const BuildingAdjustmentModal: React.FC<BuildingAdjustmentModalProps> = ({
             if (marketValue !== null) {
                 adjustmentData.market_value = marketValue;
             }
-            
+
             if (adjustedValue !== null) {
                 adjustmentData.adjusted_value = adjustedValue;
             }
@@ -333,6 +336,11 @@ const BuildingAdjustmentModal: React.FC<BuildingAdjustmentModalProps> = ({
                         <IonTitle className="fancy-title">
                             {existingData ? 'Edit Building Adjustment' : 'Add Building Adjustment'}
                         </IonTitle>
+                        <IonButtons slot="end">
+                            <IonButton onClick={handleClose} fill="clear" className="fancy-close-btn">
+                                <IonIcon icon={close} slot="icon-only" />
+                            </IonButton>
+                        </IonButtons>
                     </IonToolbar>
                 </IonHeader>
 
@@ -427,28 +435,18 @@ const BuildingAdjustmentModal: React.FC<BuildingAdjustmentModalProps> = ({
                                     </IonSelect>
                                 </IonItem>
 
-                                {/* Display the rate below the subcomponent dropdown with better styling */}
+                                {/* Display the rate below the subcomponent dropdown */}
                                 {selectedSubcomponentRate !== null && (
-                                    <div style={{
-                                        padding: '12px 16px',
-                                        margin: '8px 0',
-                                        backgroundColor: '#f8f9fa',
-                                        borderRadius: '8px',
-                                        border: '1px solid #e9ecef'
-                                    }}>
-                                        <IonText style={{
-                                            fontSize: '0.95rem',
-                                            fontWeight: '500',
-                                            color: '#2d3748' // Dark gray for better visibility
-                                        }}>
-                                            Rate: <span style={{ color: '#2d7d32', fontWeight: '600' }}>₱{selectedSubcomponentRate.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                    <div className="rate-display">
+                                        <IonText>
+                                            Rate: <span className="rate-value">₱{selectedSubcomponentRate.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                         </IonText>
                                     </div>
                                 )}
                             </IonCol>
                         </IonRow>
 
-                        {/* Description field moved below the subcomponent */}
+                        {/* Description field */}
                         <IonRow>
                             <IonCol size="12" className="custom-col">
                                 <IonItem className="custom-input">
@@ -463,8 +461,9 @@ const BuildingAdjustmentModal: React.FC<BuildingAdjustmentModalProps> = ({
                             </IonCol>
                         </IonRow>
 
+                        {/* Input fields in a single row */}
                         <IonRow>
-                            <IonCol size="6" className="custom-col">
+                            <IonCol size="4" className="custom-col">
                                 <IonItem className="custom-input">
                                     <IonLabel position="stacked">Area (sq ft) *</IonLabel>
                                     <IonInput
@@ -476,7 +475,7 @@ const BuildingAdjustmentModal: React.FC<BuildingAdjustmentModalProps> = ({
                                 </IonItem>
                             </IonCol>
 
-                            <IonCol size="6" className="custom-col">
+                            <IonCol size="4" className="custom-col">
                                 <IonItem className="custom-input">
                                     <IonLabel position="stacked">Completion Percent (%)</IonLabel>
                                     <IonInput
@@ -486,39 +485,9 @@ const BuildingAdjustmentModal: React.FC<BuildingAdjustmentModalProps> = ({
                                         onIonInput={(e) => handleInputChange('completion_percent', e.detail.value!)}
                                     />
                                 </IonItem>
-
-                                {/* Market Value Calculation Display */}
-                                {marketValue !== null && (
-                                    <div style={{
-                                        padding: '12px 16px',
-                                        margin: '8px 0',
-                                        backgroundColor: '#e8f5e8',
-                                        borderRadius: '8px',
-                                        border: '1px solid #c8e6c9'
-                                    }}>
-                                        <IonText style={{
-                                            fontSize: '0.95rem',
-                                            fontWeight: '500',
-                                            color: '#2d3748'
-                                        }}>
-                                            Market Value Calculation:
-                                        </IonText>
-                                        <div style={{ fontSize: '0.85rem', color: '#388e3c', marginTop: '4px' }}>
-                                            <div>(Rate: ₱{selectedSubcomponentRate?.toLocaleString()} × Area: {parseFloat(formData.area).toLocaleString()} sq ft)</div>
-                                            {formData.completion_percent && (
-                                                <div>× Completion: {formData.completion_percent}%</div>
-                                            )}
-                                            <div style={{ fontWeight: '600', marginTop: '4px', borderTop: '1px solid #c8e6c9', paddingTop: '4px' }}>
-                                                = ₱{marketValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
                             </IonCol>
-                        </IonRow>
 
-                        <IonRow>
-                            <IonCol size="6" className="custom-col">
+                            <IonCol size="4" className="custom-col">
                                 <IonItem className="custom-input">
                                     <IonLabel position="stacked">Depreciation (%)</IonLabel>
                                     <IonInput
@@ -528,36 +497,47 @@ const BuildingAdjustmentModal: React.FC<BuildingAdjustmentModalProps> = ({
                                         onIonInput={(e) => handleInputChange('depraciation', e.detail.value!)}
                                     />
                                 </IonItem>
-                                
-                                {/* Adjusted Value Calculation Display */}
-                                {adjustedValue !== null && (
-                                    <div style={{
-                                        padding: '12px 16px',
-                                        margin: '8px 0',
-                                        backgroundColor: '#e3f2fd',
-                                        borderRadius: '8px',
-                                        border: '1px solid #bbdefb'
-                                    }}>
-                                        <IonText style={{
-                                            fontSize: '0.95rem',
-                                            fontWeight: '500',
-                                            color: '#2d3748'
-                                        }}>
-                                            Adjusted Value Calculation:
-                                        </IonText>
-                                        <div style={{ fontSize: '0.85rem', color: '#1565c0', marginTop: '4px' }}>
-                                            <div>Market Value: ₱{marketValue?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-                                            {formData.depraciation && (
-                                                <div>- Depreciation: {formData.depraciation}%</div>
-                                            )}
-                                            <div style={{ fontWeight: '600', marginTop: '4px', borderTop: '1px solid #bbdefb', paddingTop: '4px' }}>
-                                                = ₱{adjustedValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
                             </IonCol>
                         </IonRow>
+
+                        {/* Calculation displays in a single row */}
+                        {(marketValue !== null || adjustedValue !== null) && (
+                            <IonRow>
+                                {marketValue !== null && (
+                                    <IonCol size="6" className="custom-col">
+                                        <div className="calculation-display market-value">
+                                            <IonText className="calculation-title">Market Value Calculation:</IonText>
+                                            <div className="calculation-details">
+                                                <div>(Rate: ₱{selectedSubcomponentRate?.toLocaleString()} × Area: {parseFloat(formData.area).toLocaleString()} sq ft)</div>
+                                                {formData.completion_percent && (
+                                                    <div>× Completion: {formData.completion_percent}%</div>
+                                                )}
+                                                <div className="calculation-result">
+                                                    = ₱{marketValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </IonCol>
+                                )}
+                                
+                                {adjustedValue !== null && (
+                                    <IonCol size="6" className="custom-col">
+                                        <div className="calculation-display adjusted-value">
+                                            <IonText className="calculation-title">Adjusted Value Calculation:</IonText>
+                                            <div className="calculation-details">
+                                                <div>Market Value: ₱{marketValue?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                                                {formData.depraciation && (
+                                                    <div>- Depreciation: {formData.depraciation}%</div>
+                                                )}
+                                                <div className="calculation-result">
+                                                    = ₱{adjustedValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </IonCol>
+                                )}
+                            </IonRow>
+                        )}
 
                         <IonRow>
                             <IonCol size="12" className="custom-col">
@@ -565,15 +545,9 @@ const BuildingAdjustmentModal: React.FC<BuildingAdjustmentModalProps> = ({
                                     <IonButton
                                         onClick={handleSave}
                                         className="next-button"
-                                        style={{ marginRight: '8px' }}
+                                        expand="block"
                                     >
                                         {existingData ? 'Update' : 'Save'} Adjustment
-                                    </IonButton>
-                                    <IonButton
-                                        onClick={handleClose}
-                                        fill="outline"
-                                    >
-                                        Cancel
                                     </IonButton>
                                 </div>
                             </IonCol>
