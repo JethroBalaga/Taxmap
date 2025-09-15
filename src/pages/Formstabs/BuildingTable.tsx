@@ -1,4 +1,3 @@
-// src/pages/BuildingTable.tsx
 import React, { useState, useEffect } from "react";
 import {
     IonPage,
@@ -71,7 +70,7 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
     const [selectedSubcomponentData, setSelectedSubcomponentData] = useState<BuildingSubcomponentData | null>(null);
     const [selectedAdjustmentArea, setSelectedAdjustmentArea] = useState<number>(0);
     const [selectedAdjustmentCompletion, setSelectedAdjustmentCompletion] = useState<string>('');
-    const [selectedAdjustmentDepreciation, setSelectedAdjustmentDepreciation] = useState<string>(''); // New state for depreciation
+    const [selectedAdjustmentDepreciation, setSelectedAdjustmentDepreciation] = useState<string>('');
 
     // Toast states
     const [showToast, setShowToast] = useState(false);
@@ -190,14 +189,12 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
             setShowAdjustmentModal(true);
         }
     };
-    
-    // The key change is here: accept the full row data
+
     const handleSubcomponentRowClick = async (rowData: BuildingAdjustmentData) => {
         try {
             const subcomponentData = await getBuildingSubcomponentById(rowData.buidlingsubcomponent);
             if (subcomponentData) {
                 setSelectedSubcomponentData(subcomponentData);
-                // Set the area, completion percent, and depreciation from the clicked row
                 setSelectedAdjustmentArea(rowData.area);
                 setSelectedAdjustmentCompletion(rowData.completion_percent);
                 setSelectedAdjustmentDepreciation(rowData.depreciation);
@@ -282,7 +279,6 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
                     isOpen={showSubcomponentModal}
                     onClose={() => setShowSubcomponentModal(false)}
                     subcomponentData={selectedSubcomponentData}
-                    // Pass the newly stored area, completion percent, and depreciation to the modal
                     area={selectedAdjustmentArea}
                     completionPercent={selectedAdjustmentCompletion}
                     depreciation={selectedAdjustmentDepreciation}

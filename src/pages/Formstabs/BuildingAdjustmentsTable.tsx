@@ -1,4 +1,3 @@
-// src/components/Building/BuildingAdjustmentsTable.tsx
 import React, { useState } from "react";
 import {
     IonButton,
@@ -18,9 +17,7 @@ interface BuildingAdjustmentsTableProps {
     onAdjustmentCreate: () => void;
     onAdjustmentsUpdate: () => void;
     showToastMessage: (message: string, color?: 'success' | 'danger' | 'warning') => void;
-    // This is the key change: onSubcomponentClick should receive the full row data.
     onSubcomponentClick: (rowData: BuildingAdjustmentData) => void;
-    area: number; 
 }
 
 const BuildingAdjustmentsTable: React.FC<BuildingAdjustmentsTableProps> = ({
@@ -45,11 +42,9 @@ const BuildingAdjustmentsTable: React.FC<BuildingAdjustmentsTableProps> = ({
     };
 
     const handleAdjustmentRowClick = async (rowData: BuildingAdjustmentData) => {
+        handleSelectAdjustmentRow(rowData);
         if (rowData && rowData.buidlingsubcomponent) {
-            // Pass the entire rowData object here
             onSubcomponentClick(rowData);
-        } else {
-            handleSelectAdjustmentRow(rowData);
         }
     };
 
@@ -88,7 +83,16 @@ const BuildingAdjustmentsTable: React.FC<BuildingAdjustmentsTableProps> = ({
 
     const filteredAdjustmentsForTable = filteredAdjustments.map(adj => {
         const { Maincomponent, ...rest } = adj;
-        return rest;
+
+        const depreciationValue = (rest as any).depraciation;
+        const formattedDepreciation = depreciationValue && depreciationValue.toString().trim() !== ''
+            ? `${depreciationValue}%`
+            : 'N/A';
+
+        return {
+            ...rest,
+            depraciation: formattedDepreciation
+        };
     });
 
     const buttonActions = [
@@ -131,21 +135,21 @@ const BuildingAdjustmentsTable: React.FC<BuildingAdjustmentsTableProps> = ({
     return (
         <>
             <div className="search-container">
-                <IonSearchbar 
-                    placeholder="Search adjustments..." 
-                    value={searchTerm} 
-                    onIonInput={handleSearch} 
-                    className="forms-searchbar" 
+                <IonSearchbar
+                    placeholder="Search adjustments..."
+                    value={searchTerm}
+                    onIonInput={handleSearch}
+                    className="forms-searchbar"
                 />
                 <div className="icon-group">
                     {buttonActions.map((action, index) => (
-                        <IonButton 
-                            key={index} 
-                            fill="clear" 
-                            className={action.className} 
-                            onClick={action.onClick} 
-                            style={{ opacity: action.enabled ? 1 : 0.5 }} 
-                            title={action.title} 
+                        <IonButton
+                            key={index}
+                            fill="clear"
+                            className={action.className}
+                            onClick={action.onClick}
+                            style={{ opacity: action.enabled ? 1 : 0.5 }}
+                            title={action.title}
                             disabled={!action.enabled}
                         >
                             <IonIcon icon={action.icon} slot="icon-only" />
