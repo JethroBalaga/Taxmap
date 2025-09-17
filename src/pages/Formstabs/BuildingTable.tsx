@@ -8,7 +8,8 @@ import {
     IonButton,
     IonButtons,
     IonIcon,
-    IonToast
+    IonToast,
+    IonTitle
 } from "@ionic/react";
 import { arrowBack } from "ionicons/icons";
 import { ValueInfoLocalStorage } from '../../utils/tablestorages/ValueInfoLocalStorage';
@@ -260,6 +261,11 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
         setShowToast(true);
     };
 
+    const handleSubmit = () => {
+        // No functionality yet - just a placeholder
+        console.log('Submit button clicked (no functionality yet)');
+    };
+
     return (
         <IonPage>
             <IonHeader>
@@ -268,6 +274,21 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
                         <IonButton onClick={onBack}>
                             <IonIcon icon={arrowBack} />
                             Back
+                        </IonButton>
+                    </IonButtons>
+                    <IonButtons slot="end">
+                        <IonButton 
+                            onClick={handleSubmit}
+                            color="primary"
+                            fill="solid"
+                            style={{
+                                fontWeight: 'bold',
+                                borderRadius: '4px',
+                                padding: '0 16px',
+                                height: '36px'
+                            }}
+                        >
+                            Submit
                         </IonButton>
                     </IonButtons>
                 </IonToolbar>
