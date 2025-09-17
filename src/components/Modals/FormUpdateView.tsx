@@ -28,6 +28,7 @@ import { ClassificationData } from '../../utils/classificationLocalStorage';
 import { SubclassData } from '../../utils/subclassLocalStorage';
 import { ActualUsedData } from '../../utils/actualUsedLocalStorage';
 import { FormData } from '../../utils/tablestorages/FormDataLocalStorage';
+import SubmitButton from '../GlobalComponent/SubmitButton';
 import '../../CSS/modal.css';
 
 interface FormUpdateViewProps {
@@ -52,6 +53,7 @@ interface FormUpdateViewProps {
   onInputChange: (field: keyof FormData, value: any) => void;
   onSubmit: () => void;
   onAlertDismiss: () => void;
+  isUpdating?: boolean;
 }
 
 const FormUpdateView: React.FC<FormUpdateViewProps> = ({
@@ -75,7 +77,8 @@ const FormUpdateView: React.FC<FormUpdateViewProps> = ({
   isLoadingActualUses,
   onInputChange,
   onSubmit,
-  onAlertDismiss
+  onAlertDismiss,
+  isUpdating = false
 }) => {
   if (!isOpen) return null;
 
@@ -245,7 +248,7 @@ const FormUpdateView: React.FC<FormUpdateViewProps> = ({
                         ) : subclasses.length === 0 ? (
                           <IonSelectOption value="" disabled>
                             No subclasses available
-                          </IonSelectOption>
+                            </IonSelectOption>
                         ) : (
                           subclasses.map((subclassItem) => (
                             <IonSelectOption
@@ -313,15 +316,15 @@ const FormUpdateView: React.FC<FormUpdateViewProps> = ({
                 </IonRow>
 
                 <IonRow>
-                  <IonCol>
-                    <IonButton expand="block" onClick={onSubmit} className="submit-button">
-                      Update Form
-                    </IonButton>
-                  </IonCol>
-                  <IonCol>
-                    <IonButton expand="block" color="medium" onClick={onDismiss}>
-                      Cancel
-                    </IonButton>
+                  <IonCol className="ion-text-center">
+                    {/* Changed label to "Submit" and centered the button */}
+                    <SubmitButton 
+                      label="Submit" 
+                      onClick={onSubmit}
+                      loading={isUpdating}
+                      disabled={isLoading || isUpdating}
+                      className="centered-submit-button"
+                    />
                   </IonCol>
                 </IonRow>
               </IonGrid>
