@@ -31,6 +31,7 @@ interface BuildingListProps {
     adjustedMarketValues: Map<string, number>;
     assessmentLevels: Map<string, any>;
     buildingCodeRates: Map<string, number>;
+    totalAdjustments: Map<string, number>;
     onViewDetails: (buildingId: string) => void;
 }
 
@@ -50,6 +51,7 @@ const BuildingList: React.FC<BuildingListProps> = ({
     adjustedMarketValues,
     assessmentLevels,
     buildingCodeRates,
+    totalAdjustments,
     onViewDetails
 }) => {
     const [searchTerm, setSearchTerm] = useState('');
@@ -129,13 +131,16 @@ const BuildingList: React.FC<BuildingListProps> = ({
                             <IonCol size="3">Structure Type</IonCol>
                             <IonCol size="2">Base Market Value</IonCol>
                             <IonCol size="2">Adjusted Market Value</IonCol>
+                            <IonCol size="2">Total Adjustments</IonCol>
                             <IonCol size="2">Assessment Level</IonCol>
                         </IonRow>
 
                         {filteredBuildingIds.map((id) => {
                             const buildingData = buildingDataList.get(id);
-                            const baseMarketValue = baseMarketValues.get(id);
-                            const adjustedMarketValue = adjustedMarketValues.get(id);
+                            const baseMarketValue = baseMarketValues.get(id) || 0;
+                            const originalAdjustedValue = adjustedMarketValues.get(id) || 0;
+                            const adjustmentValue = totalAdjustments.get(id) || 0;
+                            const finalAdjustedValue = originalAdjustedValue + adjustmentValue;
                             const assessmentLevel = assessmentLevels.get(id);
                             const isSelected = id === selectedBuildingId;
 
@@ -149,7 +154,8 @@ const BuildingList: React.FC<BuildingListProps> = ({
                                         <IonCol size="3">{id}</IonCol>
                                         <IonCol size="3">{buildingData?.structureType || 'N/A'}</IonCol>
                                         <IonCol size="2">{baseMarketValue !== undefined ? `₱${baseMarketValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'N/A'}</IonCol>
-                                        <IonCol size="2">{adjustedMarketValue !== undefined ? `₱${adjustedMarketValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'N/A'}</IonCol>
+                                        <IonCol size="2">{finalAdjustedValue !== undefined ? `₱${finalAdjustedValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'N/A'}</IonCol>
+                                        <IonCol size="2">{adjustmentValue !== undefined ? `₱${adjustmentValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'N/A'}</IonCol>
                                         <IonCol size="2">{assessmentLevel ? `${assessmentLevel.rate_percent}` : 'N/A'}</IonCol>
                                     </IonRow>
 

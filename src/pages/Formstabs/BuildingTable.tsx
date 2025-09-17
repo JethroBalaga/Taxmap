@@ -58,6 +58,7 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
     const [adjustedMarketValues, setAdjustedMarketValues] = useState<Map<string, number>>(new Map());
     const [assessmentLevels, setAssessmentLevels] = useState<Map<string, AssessmentLevelInfo>>(new Map());
     const [buildingAdjustments, setBuildingAdjustments] = useState<BuildingAdjustmentData[]>([]);
+    const [totalAdjustments, setTotalAdjustments] = useState<Map<string, number>>(new Map());
     const [loading, setLoading] = useState(true);
     const [kindId] = useState<number>(2);
 
@@ -82,6 +83,45 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
         loadBuildingData();
         loadBuildingAdjustments();
     }, [form_id, kind, classification, area, declarant, actual_use, district, subclass]);
+
+    useEffect(() => {
+        calculateAllAdjustments();
+    }, [buildingAdjustments, buildingInfoIds]);
+
+    const calculateAllAdjustments = async () => {
+        const adjustmentsMap = new Map<string, number>();
+        
+        // Initialize with 0 for all buildings
+        buildingInfoIds.forEach(id => adjustmentsMap.set(id, 0));
+        
+        // Calculate adjustments for each building
+        for (const adj of buildingAdjustments) {
+            const buildingId = adj.value_info_id;
+            const area = adj.area || 0;
+            const completionPercent = parseFloat(adj.completion_percent) || 0;
+            const depreciation = parseFloat(adj.depreciation) || 0;
+            
+            // Get the rate from the building subcomponent
+            let rate = 0;
+            if (adj.buidlingsubcomponent) {
+                const subcomponentData = await getBuildingSubcomponentById(adj.buidlingsubcomponent);
+                if (subcomponentData) {
+                    rate = subcomponentData.rate;
+                }
+            }
+            
+            // Calculate adjustment value: (area * rate) * completion% * (1 - depreciation%)
+            const baseValue = area * rate;
+            const completedValue = baseValue * (completionPercent / 100);
+            const adjustedValue = completedValue * (1 - (depreciation / 100));
+            
+            // Add to the total for this building
+            const currentTotal = adjustmentsMap.get(buildingId) || 0;
+            adjustmentsMap.set(buildingId, currentTotal + adjustedValue);
+        }
+        
+        setTotalAdjustments(adjustmentsMap);
+    };
 
     const calculateMarketValues = (buildingCodeRate: number, depreciationRate: number | null, area: number): { base: number, adjusted: number } => {
         const baseMarketValue = buildingCodeRate * area;
@@ -250,6 +290,7 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
                     adjustedMarketValues={adjustedMarketValues}
                     assessmentLevels={assessmentLevels}
                     buildingCodeRates={buildingCodeRates}
+                    totalAdjustments={totalAdjustments}
                     onViewDetails={handleViewDetails}
                 />
 
@@ -257,7 +298,10 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
                     buildingAdjustments={buildingAdjustments}
                     buildingInfoIds={buildingInfoIds}
                     onAdjustmentCreate={handleCreateAdjustment}
-                    onAdjustmentsUpdate={loadBuildingAdjustments}
+                    onAdjustmentsUpdate={() => {
+                        loadBuildingAdjustments();
+                        loadBuildingData();
+                    }}
                     showToastMessage={showToastMessage}
                     onSubcomponentClick={handleSubcomponentRowClick}
                 />
