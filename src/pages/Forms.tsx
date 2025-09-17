@@ -213,6 +213,9 @@ const Forms: React.FC = () => {
                     ))}
                   </div>
                 </div>
+                <div className="last-refresh">
+                  Last refreshed: {lastRefresh.toLocaleTimeString()}
+                </div>
               </IonCol>
             </IonRow>
 

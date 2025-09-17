@@ -1,342 +1,275 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { DeclarantData, getDeclarantData } from '../../utils/DeclarantLocalStorage';
-import { DistrictData, getDistrictData } from '../../utils/districtLocalStorage';
-import { KindData, getKindData } from '../../utils/kindLocalStorage';
-import { ClassificationData, getClassificationData } from '../../utils/classificationLocalStorage';
-import { SubclassData, getSubclassesByClassId } from '../../utils/subclassLocalStorage';
-import { ActualUsedData, getActualUsedByClassId } from '../../utils/actualUsedLocalStorage';
-import FormView from './FormView';
-import BuildingModal from './BuildingModal';
-import { FormData, FormDataLocalStorage } from '../../utils/tablestorages/FormDataLocalStorage';
+// src/components/FormUpdateModal.tsx
+import React, { useState, useEffect } from 'react';
+import {
+  IonModal,
+  IonHeader,
+  IonToolbar,
+  IonTitle,
+  IonContent,
+  IonGrid,
+  IonRow,
+  IonCol,
+  IonButton,
+  IonItem,
+  IonLabel,
+  IonInput,
+  IonSelect,
+  IonSelectOption,
+  IonAlert,
+  IonSpinner
+} from '@ionic/react';
+import { FormDataLocalStorage, FormData } from '../../utils/tablestorages/FormDataLocalStorage';
 
-export interface FormUpdateModalProps {
-    isOpen: boolean;
-    onDismiss: () => void;
-    onSuccess: () => void;
-    formData: FormData | null;
+interface FormUpdateModalProps {
+  isOpen: boolean;
+  formId: string | null;
+  onDismiss: () => void;
+  onUpdate: (updatedData: FormData) => void;
 }
 
-const FormUpdateModal: React.FC<FormUpdateModalProps> = ({ isOpen, onDismiss, onSuccess, formData }) => {
-    // State declarations
-    const [district, setDistrict] = useState<number | null>(null);
-    const [declarantId, setDeclarantId] = useState<number | null>(null);
-    const [kind, setKind] = useState('');
-    const [classification, setClassification] = useState('');
-    const [subclass, setSubclass] = useState('');
-    const [actualUse, setActualUse] = useState('');
-    const [area, setArea] = useState<number>(0);
-    const [districts, setDistricts] = useState<DistrictData[]>([]);
-    const [declarants, setDeclarants] = useState<DeclarantData[]>([]);
-    const [kinds, setKinds] = useState<KindData[]>([]);
-    const [classifications, setClassifications] = useState<ClassificationData[]>([]);
-    const [subclasses, setSubclasses] = useState<SubclassData[]>([]);
-    const [actualUses, setActualUses] = useState<ActualUsedData[]>([]);
-    const [filteredDeclarants, setFilteredDeclarants] = useState<DeclarantData[]>([]);
-    const [searchText, setSearchText] = useState('');
-    const [showDeclarantSearch, setShowDeclarantSearch] = useState(false);
-    const [isFormValid, setIsFormValid] = useState(false);
-    const [isLoadingDistricts, setIsLoadingDistricts] = useState(true);
-    const [isLoadingDeclarants, setIsLoadingDeclarants] = useState(true);
-    const [isLoadingKinds, setIsLoadingKinds] = useState(true);
-    const [isLoadingClassifications, setIsLoadingClassifications] = useState(true);
-    const [isLoadingSubclasses, setIsLoadingSubclasses] = useState(false);
-    const [isLoadingActualUses, setIsLoadingActualUses] = useState(false);
-    const [showBuildingModal, setShowBuildingModal] = useState(false);
+const FormUpdateModal: React.FC<FormUpdateModalProps> = ({
+  isOpen,
+  formId,
+  onDismiss,
+  onUpdate
+}) => {
+  const [formData, setFormData] = useState<FormData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [showSuccessAlert, setShowSuccessAlert] = useState(false);
+  const [showErrorAlert, setShowErrorAlert] = useState(false);
 
-    // Populate form fields with existing data when modal opens
-    useEffect(() => {
-        if (isOpen && formData) {
-            setDistrict(formData.district);
-            setDeclarantId(formData.declarantId);
-            setKind(formData.kind);
-            setClassification(formData.classification);
-            setSubclass(formData.subclass);
-            setActualUse(formData.actualUse);
-            setArea(formData.area);
-        } else {
-            // Reset state when modal is closed
-            resetForm();
-        }
-    }, [isOpen, formData]);
+  // Predefined options for form fields
+  const kindOptions = ['1', '2', '3', '4'];
+  const classificationOptions = ['Residential', 'Commercial', 'Industrial', 'Agricultural'];
+  const subclassOptions = ['A', 'B', 'C', 'D'];
+  const actualUseOptions = ['Living', 'Working', 'Storage', 'Mixed'];
+  const districtOptions = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
-    // Data loading effect
-    useEffect(() => {
-        const loadData = async () => {
-            try {
-                setIsLoadingDistricts(true);
-                setIsLoadingDeclarants(true);
-                setIsLoadingKinds(true);
-                setIsLoadingClassifications(true);
+  useEffect(() => {
+    if (isOpen && formId) {
+      loadFormData();
+    }
+  }, [isOpen, formId]);
 
-                const [districtData, declarantData, kindData, classificationData] = await Promise.all([
-                    getDistrictData(),
-                    getDeclarantData(),
-                    getKindData(),
-                    getClassificationData()
-                ]);
+  const loadFormData = () => {
+    setIsLoading(true);
+    if (formId) {
+      const data = FormDataLocalStorage.getFormData(formId);
+      if (data) {
+        setFormData(data);
+      }
+    }
+    setIsLoading(false);
+  };
 
-                if (districtData) setDistricts(districtData);
-                if (declarantData) {
-                    setDeclarants(declarantData);
-                    setFilteredDeclarants(declarantData);
-                }
-                if (kindData) setKinds(kindData);
-                if (classificationData) setClassifications(classificationData);
-            } catch (error) {
-                console.error('Error loading data:', error);
-            } finally {
-                setIsLoadingDistricts(false);
-                setIsLoadingDeclarants(false);
-                setIsLoadingKinds(false);
-                setIsLoadingClassifications(false);
-            }
-        };
+  const handleInputChange = (field: keyof FormData, value: any) => {
+    if (formData) {
+      setFormData({
+        ...formData,
+        [field]: value
+      });
+    }
+  };
 
-        if (isOpen) loadData();
-    }, [isOpen]);
+  const handleSubmit = () => {
+    if (formData && formId) {
+      const success = FormDataLocalStorage.updateFormData(formId, formData);
+      if (success) {
+        setShowSuccessAlert(true);
+        onUpdate(formData);
+      } else {
+        setShowErrorAlert(true);
+      }
+    }
+  };
 
-    // Fetch subclasses when classification changes
-    useEffect(() => {
-        const fetchSubclasses = async () => {
-            if (!classification) {
-                setSubclasses([]);
-                setSubclass('');
-                setIsLoadingSubclasses(false);
-                return;
-            }
+  const handleDismiss = () => {
+    setFormData(null);
+    onDismiss();
+  };
 
-            setIsLoadingSubclasses(true);
-            try {
-                const subclassData = await getSubclassesByClassId(classification);
-                setSubclasses(subclassData || []);
+  return (
+    <>
+      <IonModal isOpen={isOpen} onDidDismiss={handleDismiss}>
+        <IonHeader>
+          <IonToolbar>
+            <IonTitle>Update Form</IonTitle>
+          </IonToolbar>
+        </IonHeader>
+        <IonContent>
+          {isLoading ? (
+            <div className="loading-container">
+              <IonSpinner name="crescent" />
+              <p>Loading form data...</p>
+            </div>
+          ) : formData ? (
+            <IonGrid>
+              <IonRow>
+                <IonCol size="12">
+                  <IonItem>
+                    <IonLabel position="stacked">Form ID</IonLabel>
+                    <IonInput value={formData.id} disabled />
+                  </IonItem>
+                </IonCol>
+              </IonRow>
 
-                if (subclass && !subclassData?.some(s => s.subclass_id === subclass)) {
-                    setSubclass('');
-                }
-            } catch (error) {
-                console.error('Error fetching subclasses:', error);
-                setSubclasses([]);
-                setSubclass('');
-            } finally {
-                setIsLoadingSubclasses(false);
-            }
-        };
+              <IonRow>
+                <IonCol size="12" size-md="6">
+                  <IonItem>
+                    <IonLabel position="stacked">District</IonLabel>
+                    <IonSelect
+                      value={formData.district}
+                      placeholder="Select District"
+                      onIonChange={e => handleInputChange('district', e.detail.value)}
+                    >
+                      {districtOptions.map(district => (
+                        <IonSelectOption key={district} value={district}>
+                          {district}
+                        </IonSelectOption>
+                      ))}
+                    </IonSelect>
+                  </IonItem>
+                </IonCol>
 
-        fetchSubclasses();
-    }, [classification, subclass]);
+                <IonCol size="12" size-md="6">
+                  <IonItem>
+                    <IonLabel position="stacked">Declarant ID</IonLabel>
+                    <IonInput
+                      type="number"
+                      value={formData.declarantId || ''}
+                      onIonInput={e => handleInputChange('declarantId', e.detail.value)}
+                    />
+                  </IonItem>
+                </IonCol>
+              </IonRow>
 
-    // Fetch actual uses when classification changes (only for building kinds)
-    useEffect(() => {
-        const fetchActualUses = async () => {
-            if (!classification || !isBuildingKind()) {
-                setActualUses([]);
-                setActualUse('');
-                setIsLoadingActualUses(false);
-                return;
-            }
+              <IonRow>
+                <IonCol size="12" size-md="6">
+                  <IonItem>
+                    <IonLabel position="stacked">Kind</IonLabel>
+                    <IonSelect
+                      value={formData.kind}
+                      placeholder="Select Kind"
+                      onIonChange={e => handleInputChange('kind', e.detail.value)}
+                    >
+                      {kindOptions.map(kind => (
+                        <IonSelectOption key={kind} value={kind}>
+                          {kind}
+                        </IonSelectOption>
+                      ))}
+                    </IonSelect>
+                  </IonItem>
+                </IonCol>
 
-            setIsLoadingActualUses(true);
-            try {
-                const actualUsedData = await getActualUsedByClassId(classification);
-                setActualUses(actualUsedData || []);
+                <IonCol size="12" size-md="6">
+                  <IonItem>
+                    <IonLabel position="stacked">Classification</IonLabel>
+                    <IonSelect
+                      value={formData.classification}
+                      placeholder="Select Classification"
+                      onIonChange={e => handleInputChange('classification', e.detail.value)}
+                    >
+                      {classificationOptions.map(classification => (
+                        <IonSelectOption key={classification} value={classification}>
+                          {classification}
+                        </IonSelectOption>
+                      ))}
+                    </IonSelect>
+                  </IonItem>
+                </IonCol>
+              </IonRow>
 
-                if (actualUse && !actualUsedData?.some(a => a.actual_used_id === actualUse)) {
-                    setActualUse('');
-                }
-            } catch (error) {
-                console.error('Error fetching actual uses:', error);
-                setActualUses([]);
-                setActualUse('');
-            } finally {
-                setIsLoadingActualUses(false);
-            }
-        };
+              <IonRow>
+                <IonCol size="12" size-md="6">
+                  <IonItem>
+                    <IonLabel position="stacked">Subclass</IonLabel>
+                    <IonSelect
+                      value={formData.subclass}
+                      placeholder="Select Subclass"
+                      onIonChange={e => handleInputChange('subclass', e.detail.value)}
+                    >
+                      {subclassOptions.map(subclass => (
+                        <IonSelectOption key={subclass} value={subclass}>
+                          {subclass}
+                        </IonSelectOption>
+                      ))}
+                    </IonSelect>
+                  </IonItem>
+                </IonCol>
 
-        fetchActualUses();
-    }, [classification, actualUse, kind]);
+                <IonCol size="12" size-md="6">
+                  <IonItem>
+                    <IonLabel position="stacked">Actual Use</IonLabel>
+                    <IonSelect
+                      value={formData.actualUse}
+                      placeholder="Select Actual Use"
+                      onIonChange={e => handleInputChange('actualUse', e.detail.value)}
+                    >
+                      {actualUseOptions.map(use => (
+                        <IonSelectOption key={use} value={use}>
+                          {use}
+                        </IonSelectOption>
+                      ))}
+                    </IonSelect>
+                  </IonItem>
+                </IonCol>
+              </IonRow>
 
-    // Filter declarants based on search text
-    useEffect(() => {
-        if (!searchText) {
-            setFilteredDeclarants(declarants);
-        } else {
-            const filtered = declarants.filter(declarant => {
-                const fullName = `${declarant.firstname} ${declarant.lastname}`.toLowerCase();
-                const idString = declarant.declarant_id.toString();
-                return (
-                    fullName.includes(searchText.toLowerCase()) ||
-                    idString.includes(searchText)
-                );
-            });
-            setFilteredDeclarants(filtered);
-        }
-    }, [searchText, declarants]);
+              <IonRow>
+                <IonCol size="12">
+                  <IonItem>
+                    <IonLabel position="stacked">Area</IonLabel>
+                    <IonInput
+                      type="number"
+                      value={formData.area}
+                      onIonInput={e => handleInputChange('area', parseFloat(e.detail.value!))}
+                    />
+                  </IonItem>
+                </IonCol>
+              </IonRow>
 
-    // Check form validity
-    useEffect(() => {
-        const isValid = district !== null &&
-            declarantId !== null &&
-            kind.trim() !== '' &&
-            classification.trim() !== '' &&
-            area > 0;
+              <IonRow>
+                <IonCol>
+                  <IonButton expand="block" onClick={handleSubmit}>
+                    Update Form
+                  </IonButton>
+                </IonCol>
+                <IonCol>
+                  <IonButton expand="block" color="medium" onClick={handleDismiss}>
+                    Cancel
+                  </IonButton>
+                </IonCol>
+              </IonRow>
+            </IonGrid>
+          ) : (
+            <div className="error-container">
+              <p>Form data not found.</p>
+              <IonButton onClick={handleDismiss}>Close</IonButton>
+            </div>
+          )}
+        </IonContent>
+      </IonModal>
 
-        if (isBuildingKind()) {
-            setIsFormValid(isValid && actualUse.trim() !== '');
-        } else {
-            setIsFormValid(isValid);
-        }
-    }, [district, declarantId, kind, classification, area, actualUse]);
+      <IonAlert
+        isOpen={showSuccessAlert}
+        onDidDismiss={() => {
+          setShowSuccessAlert(false);
+          handleDismiss();
+        }}
+        header={'Success'}
+        message={'Form updated successfully!'}
+        buttons={['OK']}
+      />
 
-    // Helper function to check if selected kind is building
-    const isBuildingKind = (): boolean => {
-        if (!kind || isLoadingKinds || kinds.length === 0) return false;
-
-        const selectedKind = kinds.find(k => k.kind_id.toString() === kind);
-        return selectedKind?.description?.toLowerCase().includes('building') || false;
-    };
-
-    const getSelectedDeclarantDisplay = () => {
-        if (!declarantId) return 'Select Declarant';
-        const selected = declarants.find(d => d.declarant_id === declarantId);
-        return selected ? `${selected.declarant_id} - ${selected.firstname} ${selected.lastname}` : 'Select Declarant';
-    };
-
-    const resetForm = useCallback(() => {
-        setDistrict(null);
-        setDeclarantId(null);
-        setKind('');
-        setClassification('');
-        setSubclass('');
-        setActualUse('');
-        setArea(0);
-        setSearchText('');
-    }, []);
-
-    // Event handlers
-    const handleNextClick = () => {
-        if (!isFormValid || !formData) return;
-
-        if (isBuildingKind()) {
-            setShowBuildingModal(true);
-        } else {
-            const updatedFormData: FormData = {
-                id: formData.id,
-                district: district,
-                declarantId: declarantId,
-                kind: kind,
-                classification: classification,
-                subclass: subclass,
-                actualUse: actualUse,
-                area: area
-            };
-            FormDataLocalStorage.updateFormData(formData.id, updatedFormData);
-            onSuccess();
-        }
-    };
-
-    const handleBuildingModalSuccess = (buildingData: any) => {
-        if (!formData) return;
-
-        const updatedFormData: FormData = {
-            id: formData.id,
-            district: district,
-            declarantId: declarantId,
-            kind: kind,
-            classification: classification,
-            subclass: subclass,
-            actualUse: actualUse,
-            area: area
-        };
-        // Assuming Building data is saved separately or merged here
-        // For this example, we just update the main form data
-        FormDataLocalStorage.updateFormData(formData.id, updatedFormData);
-
-        setShowBuildingModal(false);
-        resetForm();
-        onSuccess();
-    };
-
-    const handleBuildingModalDismiss = () => {
-        setShowBuildingModal(false);
-    };
-
-    const handleSelectDeclarant = (id: number) => {
-        setDeclarantId(id);
-        setShowDeclarantSearch(false);
-        setSearchText('');
-    };
-
-    const handleDismiss = () => {
-        resetForm();
-        onDismiss();
-    };
-
-    // Format actual uses for dropdown
-    const getFormattedActualUses = (): Array<{ value: string, label: string }> => {
-        return actualUses.map(actualUse => ({
-            value: actualUse.actual_used_id,
-            label: `${actualUse.actual_used_id} - ${actualUse.description}`
-        }));
-    };
-
-    return (
-        <>
-            <FormView
-                isOpen={isOpen}
-                onDismiss={handleDismiss}
-                district={district}
-                setDistrict={setDistrict}
-                declarantName={getSelectedDeclarantDisplay()}
-                declarantId={declarantId}
-                showDeclarantSearch={() => setShowDeclarantSearch(true)}
-                kind={kind}
-                setKind={setKind}
-                classification={classification}
-                setClassification={setClassification}
-                subclass={subclass}
-                setSubclass={setSubclass}
-                actualUse={actualUse}
-                setActualUse={setActualUse}
-                area={area}
-                setArea={setArea}
-                onNextClick={handleNextClick}
-                isFormValid={isFormValid}
-                districts={districts}
-                kinds={kinds}
-                classifications={classifications}
-                subclasses={subclasses}
-                actualUses={getFormattedActualUses()}
-                isLoadingDistricts={isLoadingDistricts}
-                isLoadingKinds={isLoadingKinds}
-                isLoadingClassifications={isLoadingClassifications}
-                isLoadingSubclasses={isLoadingSubclasses}
-                isLoadingActualUses={isLoadingActualUses}
-                isBuildingKind={isBuildingKind()}
-                showDeclarantSearchModal={showDeclarantSearch}
-                setShowDeclarantSearchModal={setShowDeclarantSearch}
-                searchText={searchText}
-                setSearchText={setSearchText}
-                filteredDeclarants={filteredDeclarants}
-                onSelectDeclarant={handleSelectDeclarant}
-                isLoadingDeclarants={isLoadingDeclarants}
-            />
-
-            <BuildingModal
-                isOpen={showBuildingModal}
-                onDismiss={handleBuildingModalDismiss}
-                onSuccess={handleBuildingModalSuccess}
-                formData={{
-                    district,
-                    declarantId,
-                    kind,
-                    classification,
-                    subclass,
-                    actualUse,
-                    area,
-                }}
-            />
-        </>
-    );
+      <IonAlert
+        isOpen={showErrorAlert}
+        onDidDismiss={() => setShowErrorAlert(false)}
+        header={'Error'}
+        message={'Failed to update form. Please try again.'}
+        buttons={['OK']}
+      />
+    </>
+  );
 };
 
 export default FormUpdateModal;
