@@ -22,6 +22,7 @@ import BuildingList from './BuildingList';
 import BuildingAdjustmentsTable from './BuildingAdjustmentsTable';
 import BuildingAdjustmentModal from "../../components/Modals/BuildingAdjustmentModal";
 import BuildingSubcomponentModal from "../../components/Modals/BuildingSubcomponentModal";
+import "../../CSS/BuildingResponsive.css";
 
 interface BuildingTableProps {
     form_id: string;
@@ -276,6 +277,7 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
                             Back
                         </IonButton>
                     </IonButtons>
+                    <IonTitle>Building Assessment</IonTitle>
                     <IonButtons slot="end">
                         <IonButton 
                             onClick={handleSubmit}

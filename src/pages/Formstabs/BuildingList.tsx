@@ -14,6 +14,7 @@ import {
 } from "@ionic/react";
 import { informationCircle } from "ionicons/icons";
 import BuildingDetailsCard from "./BuildingDetailsCard";
+import "../../CSS/BuildingResponsive.css";
 
 interface BuildingListProps {
     form_id: string;
@@ -76,9 +77,21 @@ const BuildingList: React.FC<BuildingListProps> = ({
     const calculateAssessedValue = (adjustedValue: number, assessmentLevel: any): number => {
         if (!assessmentLevel || !assessmentLevel.rate_percent) return 0;
         
-        // Remove the % sign and convert to number
-        const ratePercent = parseFloat(assessmentLevel.rate_percent.replace('%', ''));
-        return adjustedValue * (ratePercent / 100);
+        let rateDecimal: number;
+        
+        // Check if the rate_percent contains a % sign (like "30%")
+        if (assessmentLevel.rate_percent.includes('%')) {
+            // Remove the % sign and convert to number, then divide by 100
+            rateDecimal = parseFloat(assessmentLevel.rate_percent.replace('%', '')) / 100;
+        } else {
+            // If no % sign, assume it's already in decimal format
+            rateDecimal = parseFloat(assessmentLevel.rate_percent);
+        }
+        
+        const assessedValue = adjustedValue * rateDecimal;
+        
+        // Round to nearest whole number to match your sample record
+        return Math.round(assessedValue);
     };
 
     const filteredBuildingIds = buildingInfoIds.filter(id => {
@@ -165,7 +178,7 @@ const BuildingList: React.FC<BuildingListProps> = ({
                                         <IonCol size="2">{baseMarketValue !== undefined ? `₱${baseMarketValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'N/A'}</IonCol>
                                         <IonCol size="2">{finalAdjustedValue !== undefined ? `₱${finalAdjustedValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'N/A'}</IonCol>
                                         <IonCol size="2">{assessmentLevel ? `${assessmentLevel.rate_percent}` : 'N/A'}</IonCol>
-                                        <IonCol size="2">{assessedValue !== undefined ? `₱${assessedValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'N/A'}</IonCol>
+                                        <IonCol size="2">{assessedValue !== undefined ? `₱${assessedValue.toLocaleString()}` : 'N/A'}</IonCol>
                                     </IonRow>
 
                                     {isSelected && buildingData && (

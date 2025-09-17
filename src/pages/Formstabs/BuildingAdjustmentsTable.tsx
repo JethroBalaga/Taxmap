@@ -1,3 +1,4 @@
+// src/components/Building/BuildingAdjustmentsTable.tsx
 import React, { useState } from "react";
 import {
     IonButton,
@@ -10,6 +11,7 @@ import { createOutline, arrowUpCircleOutline, trashOutline, informationCircle } 
 import DynamicTable from "../../components/GlobalComponent/DynamicTable";
 import { BuildingAdjustmentData } from "../../utils/tablestorages/BuildingAdjustmentLocalStorage";
 import { BuildingAdjustmentLocalStorage } from "../../utils/tablestorages/BuildingAdjustmentLocalStorage";
+import "../../CSS/BuildingResponsive.css";
 
 interface BuildingAdjustmentsTableProps {
     buildingAdjustments: BuildingAdjustmentData[];
