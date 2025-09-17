@@ -1,5 +1,5 @@
 // src/components/Modals/FormUpdateView.tsx
-import React from 'react';
+import React, { useState } from 'react';
 import {
   IonModal,
   IonHeader,
@@ -18,9 +18,10 @@ import {
   IonSpinner,
   IonGrid,
   IonRow,
-  IonCol
+  IonCol,
+  IonSearchbar
 } from '@ionic/react';
-import { closeOutline } from 'ionicons/icons';
+import { closeOutline, searchOutline } from 'ionicons/icons';
 import { DistrictData } from '../../utils/districtLocalStorage';
 import { DeclarantData } from '../../utils/DeclarantLocalStorage';
 import { KindData } from '../../utils/kindLocalStorage';
@@ -80,7 +81,39 @@ const FormUpdateView: React.FC<FormUpdateViewProps> = ({
   onAlertDismiss,
   isUpdating = false
 }) => {
+  const [showDeclarantSearchModal, setShowDeclarantSearchModal] = useState(false);
+  const [searchText, setSearchText] = useState('');
+
   if (!isOpen) return null;
+
+  // Check if kind is BUILDING (ID 2)
+  const isBuildingKind = formData?.kind === "2";
+
+  // Filter declarants based on search text
+  const filteredDeclarants = declarants.filter(declarant =>
+    declarant.declarant_id.toString().includes(searchText) ||
+    declarant.firstname.toLowerCase().includes(searchText.toLowerCase()) ||
+    declarant.lastname.toLowerCase().includes(searchText.toLowerCase()) ||
+    `${declarant.firstname} ${declarant.lastname}`.toLowerCase().includes(searchText.toLowerCase())
+  );
+
+  // Get declarant name for display
+  const getDeclarantName = () => {
+    if (!formData?.declarantId) return 'Select Declarant';
+    const declarant = declarants.find(d => d.declarant_id === formData.declarantId);
+    return declarant ? `${declarant.declarant_id} - ${declarant.firstname} ${declarant.lastname}` : 'Select Declarant';
+  };
+
+  const handleSelectDeclarant = (declarantId: number) => {
+    onInputChange('declarantId', declarantId);
+    setShowDeclarantSearchModal(false);
+    setSearchText('');
+  };
+
+  const handleShowDeclarantSearch = () => {
+    setShowDeclarantSearchModal(true);
+    setSearchText('');
+  };
 
   return (
     <>
@@ -151,16 +184,21 @@ const FormUpdateView: React.FC<FormUpdateViewProps> = ({
                   </IonCol>
 
                   <IonCol size="12" size-md="6">
-                    <IonItem className="custom-input" lines="none">
+                    <IonItem 
+                      className="custom-input" 
+                      lines="none" 
+                      button 
+                      onClick={handleShowDeclarantSearch}
+                    >
                       <IonLabel position="stacked" className="input-label">
-                        Declarant ID
+                        Declarant
                       </IonLabel>
-                      <IonInput
-                        type="number"
-                        value={formData.declarantId || ''}
-                        onIonInput={e => onInputChange('declarantId', parseInt(e.detail.value!))}
-                        className="modal-input"
-                      />
+                      <div className="declarant-item-content">
+                        <div className="declarant-value-container">
+                          <span className="declarant-value">{getDeclarantName()}</span>
+                          <IonIcon icon={searchOutline} className="declarant-search-icon" />
+                        </div>
+                      </div>
                     </IonItem>
                   </IonCol>
                 </IonRow>
@@ -174,24 +212,18 @@ const FormUpdateView: React.FC<FormUpdateViewProps> = ({
                       <IonSelect
                         value={formData.kind}
                         placeholder="Select Kind"
-                        onIonChange={e => onInputChange('kind', e.detail.value)}
                         interface="popover"
                         className="modal-input"
+                        disabled={true} // Make kind unchangeable
                       >
-                        {isLoadingKinds ? (
-                          <IonSelectOption value="" disabled>
-                            Loading kinds...
+                        {kinds.map((kindItem) => (
+                          <IonSelectOption
+                            key={kindItem.kind_id}
+                            value={kindItem.kind_id.toString()}
+                          >
+                            {kindItem.kind_id} - {kindItem.description}
                           </IonSelectOption>
-                        ) : (
-                          kinds.map((kindItem) => (
-                            <IonSelectOption
-                              key={kindItem.kind_id}
-                              value={kindItem.kind_id.toString()}
-                            >
-                              {kindItem.kind_id} - {kindItem.description}
-                            </IonSelectOption>
-                          ))
-                        )}
+                        ))}
                       </IonSelect>
                     </IonItem>
                   </IonCol>
@@ -227,43 +259,48 @@ const FormUpdateView: React.FC<FormUpdateViewProps> = ({
                   </IonCol>
                 </IonRow>
 
+                {/* Hide subclass when kind is BUILDING but keep actual_used visible */}
                 <IonRow>
-                  <IonCol size="12" size-md="6">
-                    <IonItem className="custom-input" lines="none">
-                      <IonLabel position="stacked" className="input-label">
-                        Subclass
-                      </IonLabel>
-                      <IonSelect
-                        value={formData.subclass}
-                        placeholder="Select Subclass"
-                        onIonChange={e => onInputChange('subclass', e.detail.value)}
-                        interface="popover"
-                        className="modal-input"
-                        disabled={isLoadingSubclasses}
-                      >
-                        {isLoadingSubclasses ? (
-                          <IonSelectOption value="" disabled>
-                            Loading subclasses...
-                          </IonSelectOption>
-                        ) : subclasses.length === 0 ? (
-                          <IonSelectOption value="" disabled>
-                            No subclasses available
+                  {/* Subclass - only show if not BUILDING kind */}
+                  {!isBuildingKind && (
+                    <IonCol size="12" size-md="6">
+                      <IonItem className="custom-input" lines="none">
+                        <IonLabel position="stacked" className="input-label">
+                          Subclass
+                        </IonLabel>
+                        <IonSelect
+                          value={formData.subclass}
+                          placeholder="Select Subclass"
+                          onIonChange={e => onInputChange('subclass', e.detail.value)}
+                          interface="popover"
+                          className="modal-input"
+                          disabled={isLoadingSubclasses}
+                        >
+                          {isLoadingSubclasses ? (
+                            <IonSelectOption value="" disabled>
+                              Loading subclasses...
                             </IonSelectOption>
-                        ) : (
-                          subclasses.map((subclassItem) => (
-                            <IonSelectOption
-                              key={subclassItem.subclass_id}
-                              value={subclassItem.subclass_id}
-                            >
-                              {subclassItem.subclass_id} - {subclassItem.subclass}
+                          ) : subclasses.length === 0 ? (
+                            <IonSelectOption value="" disabled>
+                              No subclasses available
                             </IonSelectOption>
-                          ))
-                        )}
-                      </IonSelect>
-                    </IonItem>
-                  </IonCol>
-
-                  <IonCol size="12" size-md="6">
+                          ) : (
+                            subclasses.map((subclassItem) => (
+                              <IonSelectOption
+                                key={subclassItem.subclass_id}
+                                value={subclassItem.subclass_id}
+                              >
+                                {subclassItem.subclass_id} - {subclassItem.subclass}
+                              </IonSelectOption>
+                            ))
+                          )}
+                        </IonSelect>
+                      </IonItem>
+                    </IonCol>
+                  )}
+                  
+                  {/* Actual Use - always show regardless of kind */}
+                  <IonCol size="12" size-md={isBuildingKind ? "12" : "6"}>
                     <IonItem className="custom-input" lines="none">
                       <IonLabel position="stacked" className="input-label">
                         Actual Use
@@ -317,7 +354,6 @@ const FormUpdateView: React.FC<FormUpdateViewProps> = ({
 
                 <IonRow>
                   <IonCol className="ion-text-center">
-                    {/* Changed label to "Submit" and centered the button */}
                     <SubmitButton 
                       label="Submit" 
                       onClick={onSubmit}
@@ -335,6 +371,65 @@ const FormUpdateView: React.FC<FormUpdateViewProps> = ({
               <IonButton onClick={onDismiss}>Close</IonButton>
             </div>
           )}
+        </IonContent>
+      </IonModal>
+
+      {/* Declarant Search Modal */}
+      <IonModal 
+        isOpen={showDeclarantSearchModal} 
+        onDidDismiss={() => setShowDeclarantSearchModal(false)}
+        className="custom-wide-modal"
+      >
+        <IonHeader>
+          <IonToolbar className="fancy-header">
+            <IonTitle className="fancy-title">Select Declarant</IonTitle>
+            <IonButtons slot="end">
+              <IonButton onClick={() => setShowDeclarantSearchModal(false)} className="fancy-close-btn">
+                <IonIcon icon={closeOutline} />
+              </IonButton>
+            </IonButtons>
+          </IonToolbar>
+        </IonHeader>
+        <IonContent className="modal-content">
+          <div className="form-container">
+            <IonSearchbar
+              value={searchText}
+              onIonInput={(e) => setSearchText(e.detail.value || '')}
+              placeholder="Search declarants..."
+              animated
+              className="modal-input"
+            />
+
+            {isLoadingDeclarants ? (
+              <IonItem className="custom-input" lines="none">
+                <IonLabel>Loading declarants...</IonLabel>
+              </IonItem>
+            ) : filteredDeclarants.length === 0 ? (
+              <IonItem className="custom-input" lines="none">
+                <IonLabel>
+                  {searchText ? 'No matching declarants found' : 'No declarants available'}
+                </IonLabel>
+              </IonItem>
+            ) : (
+              <div className="search-results">
+                {filteredDeclarants.map((declarant) => (
+                  <IonItem
+                    key={declarant.declarant_id}
+                    className="custom-input search-result-item"
+                    lines="none"
+                    button
+                    onClick={() => handleSelectDeclarant(declarant.declarant_id)}
+                  >
+                    <div className="declarant-item-content">
+                      <h2 style={{ margin: '0 0 4px 0', color: '#2d3748', fontSize: '16px' }}>
+                        {declarant.declarant_id} - {declarant.firstname} {declarant.lastname}
+                      </h2>
+                    </div>
+                  </IonItem>
+                ))}
+              </div>
+            )}
+          </div> 
         </IonContent>
       </IonModal>
 
