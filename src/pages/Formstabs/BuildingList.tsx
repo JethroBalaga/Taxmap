@@ -73,6 +73,14 @@ const BuildingList: React.FC<BuildingListProps> = ({
         }
     };
 
+    const calculateAssessedValue = (adjustedValue: number, assessmentLevel: any): number => {
+        if (!assessmentLevel || !assessmentLevel.rate_percent) return 0;
+        
+        // Remove the % sign and convert to number
+        const ratePercent = parseFloat(assessmentLevel.rate_percent.replace('%', ''));
+        return adjustedValue * (ratePercent / 100);
+    };
+
     const filteredBuildingIds = buildingInfoIds.filter(id => {
         if (!searchTerm) return true;
         const buildingData = buildingDataList.get(id);
@@ -127,11 +135,12 @@ const BuildingList: React.FC<BuildingListProps> = ({
                     </div>
                     <IonGrid>
                         <IonRow className="table-header">
-                            <IonCol size="3">Building ID</IonCol>
-                            <IonCol size="3">Structure Type</IonCol>
+                            <IonCol size="2">Building ID</IonCol>
+                            <IonCol size="2">Structure Type</IonCol>
                             <IonCol size="2">Base Market Value</IonCol>
                             <IonCol size="2">Adjusted Market Value</IonCol>
                             <IonCol size="2">Assessment Level</IonCol>
+                            <IonCol size="2">Assessed Value</IonCol>
                         </IonRow>
 
                         {filteredBuildingIds.map((id) => {
@@ -141,6 +150,7 @@ const BuildingList: React.FC<BuildingListProps> = ({
                             const adjustmentValue = totalAdjustments.get(id) || 0;
                             const finalAdjustedValue = originalAdjustedValue + adjustmentValue;
                             const assessmentLevel = assessmentLevels.get(id);
+                            const assessedValue = calculateAssessedValue(finalAdjustedValue, assessmentLevel);
                             const isSelected = id === selectedBuildingId;
 
                             return (
@@ -150,11 +160,12 @@ const BuildingList: React.FC<BuildingListProps> = ({
                                         onClick={() => handleRowClick(id)}
                                         style={{ cursor: 'pointer' }}
                                     >
-                                        <IonCol size="3">{id}</IonCol>
-                                        <IonCol size="3">{buildingData?.structureType || 'N/A'}</IonCol>
+                                        <IonCol size="2">{id}</IonCol>
+                                        <IonCol size="2">{buildingData?.structureType || 'N/A'}</IonCol>
                                         <IonCol size="2">{baseMarketValue !== undefined ? `₱${baseMarketValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'N/A'}</IonCol>
                                         <IonCol size="2">{finalAdjustedValue !== undefined ? `₱${finalAdjustedValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'N/A'}</IonCol>
                                         <IonCol size="2">{assessmentLevel ? `${assessmentLevel.rate_percent}` : 'N/A'}</IonCol>
+                                        <IonCol size="2">{assessedValue !== undefined ? `₱${assessedValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'N/A'}</IonCol>
                                     </IonRow>
 
                                     {isSelected && buildingData && (
