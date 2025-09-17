@@ -23,6 +23,7 @@ import { FormDataLocalStorage, FormData } from '../utils/tablestorages/FormDataL
 import './../CSS/Forms.css';
 import DynamicTable from '../components/GlobalComponent/DynamicTable';
 import BuildingTable from './Formstabs/BuildingTable';
+import FormUpdateModal from '../components/Modals/FormUpdateModal';
 
 const Forms: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -32,6 +33,7 @@ const Forms: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [showBuildingTable, setShowBuildingTable] = useState(false);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
 
   const iconActions = [
     { icon: arrowUpCircle, className: selectedForm ? "icon-blue" : "icon-blue icon-disabled", onClick: () => handleUpdateClick(), title: "Update Selected Form", enabled: !!selectedForm },
@@ -90,7 +92,7 @@ const Forms: React.FC = () => {
 
   const handleUpdateClick = () => {
     if (selectedForm) {
-      alert(`Would update form with ID: ${selectedForm.id}`);
+      setShowUpdateModal(true);
     } else {
       alert('Please select a form to update');
     }
@@ -143,6 +145,13 @@ const Forms: React.FC = () => {
     setShowBuildingTable(false);
     // Refresh data when returning from building table
     loadFormData();
+  };
+
+  const handleFormUpdate = (updatedData: FormData) => {
+    // Refresh the form data after update
+    loadFormData();
+    // Keep the updated form selected
+    setSelectedForm(updatedData);
   };
 
   const filteredForms = Array.isArray(formData)
@@ -261,6 +270,13 @@ const Forms: React.FC = () => {
               { text: 'Cancel', role: 'cancel' },
               { text: 'Delete', role: 'destructive', handler: confirmDelete }
             ]}
+          />
+
+          <FormUpdateModal
+            isOpen={showUpdateModal}
+            formId={selectedForm?.id || null}
+            onDismiss={() => setShowUpdateModal(false)}
+            onUpdate={handleFormUpdate}
           />
         </div>
       </IonContent>
