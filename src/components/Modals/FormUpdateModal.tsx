@@ -26,6 +26,7 @@ const FormUpdateModal: React.FC<FormUpdateModalProps> = ({
   const [isLoading, setIsLoading] = useState(true);
   const [showSuccessAlert, setShowSuccessAlert] = useState(false);
   const [showErrorAlert, setShowErrorAlert] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   // Data states
   const [districts, setDistricts] = useState<any[]>([]);
@@ -47,6 +48,9 @@ const FormUpdateModal: React.FC<FormUpdateModalProps> = ({
     if (isOpen && formId) {
       loadFormData();
       loadAllData();
+    } else {
+      // Reset form data when modal is closed
+      setFormData(null);
     }
   }, [isOpen, formId]);
 
@@ -141,7 +145,19 @@ const FormUpdateModal: React.FC<FormUpdateModalProps> = ({
     }
   }, [formData?.classification]);
 
+  // Clear subclass when kind is BUILDING (ID 2)
+  useEffect(() => {
+    if (formData?.kind === "2") {
+      handleInputChange('subclass', null);
+    }
+  }, [formData?.kind]);
+
   const handleInputChange = (field: keyof FormData, value: any) => {
+    // Don't allow changing the kind field
+    if (field === 'kind') {
+      return;
+    }
+    
     if (formData) {
       setFormData({
         ...formData,
@@ -152,12 +168,20 @@ const FormUpdateModal: React.FC<FormUpdateModalProps> = ({
 
   const handleSubmit = () => {
     if (formData && formId) {
-      const success = FormDataLocalStorage.updateFormData(formId, formData);
-      if (success) {
-        setShowSuccessAlert(true);
-        onUpdate(formData);
-      } else {
+      setIsUpdating(true);
+      try {
+        const success = FormDataLocalStorage.updateFormData(formId, formData);
+        if (success) {
+          setShowSuccessAlert(true);
+          onUpdate(formData);
+        } else {
+          setShowErrorAlert(true);
+        }
+      } catch (error) {
+        console.error('Error updating form:', error);
         setShowErrorAlert(true);
+      } finally {
+        setIsUpdating(false);
       }
     }
   };
@@ -198,6 +222,7 @@ const FormUpdateModal: React.FC<FormUpdateModalProps> = ({
       onInputChange={handleInputChange}
       onSubmit={handleSubmit}
       onAlertDismiss={handleAlertDismiss}
+      isUpdating={isUpdating}
     />
   );
 };
