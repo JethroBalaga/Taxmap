@@ -131,7 +131,6 @@ const BuildingList: React.FC<BuildingListProps> = ({
                             <IonCol size="3">Structure Type</IonCol>
                             <IonCol size="2">Base Market Value</IonCol>
                             <IonCol size="2">Adjusted Market Value</IonCol>
-                            <IonCol size="2">Total Adjustments</IonCol>
                             <IonCol size="2">Assessment Level</IonCol>
                         </IonRow>
 
@@ -155,7 +154,6 @@ const BuildingList: React.FC<BuildingListProps> = ({
                                         <IonCol size="3">{buildingData?.structureType || 'N/A'}</IonCol>
                                         <IonCol size="2">{baseMarketValue !== undefined ? `₱${baseMarketValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'N/A'}</IonCol>
                                         <IonCol size="2">{finalAdjustedValue !== undefined ? `₱${finalAdjustedValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'N/A'}</IonCol>
-                                        <IonCol size="2">{adjustmentValue !== undefined ? `₱${adjustmentValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'N/A'}</IonCol>
                                         <IonCol size="2">{assessmentLevel ? `${assessmentLevel.rate_percent}` : 'N/A'}</IonCol>
                                     </IonRow>
 
