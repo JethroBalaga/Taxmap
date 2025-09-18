@@ -21,78 +21,9 @@ import { BuildingAdjustmentLocalStorage, BuildingAdjustmentData } from '../../ut
 import { getBuildingComponentData, BuildingComponentData, getBuildingComponentById } from '../../utils/buildingComponentLocalStorage';
 import { getBuildingSubcomponentByBuildingComId, BuildingSubcomponentData, getBuildingSubcomponentById } from '../../utils/BuildingSubcomponentLocalStorage';
 import BuildingAdjustmentUpdateForm from './BuildingAdjustmentUpdateForm';
+import BuildingAdjustmentCalculations from './BuildingAdjustmentCalculations';
 import './../../CSS/modal.css';
 
-// BuildingAdjustmentCalculations Component
-interface BuildingAdjustmentCalculationsProps {
-    marketValue: number | null;
-    adjustedValue: number | null;
-    selectedSubcomponentRate: number | null;
-    formData: {
-        area: string;
-        completion_percent: string;
-        depreciation: string;
-    };
-}
-
-const BuildingAdjustmentCalculations: React.FC<BuildingAdjustmentCalculationsProps> = ({
-    marketValue,
-    adjustedValue,
-    selectedSubcomponentRate,
-    formData
-}) => {
-    return (
-        <IonGrid className="calculations-grid">
-            <IonRow>
-                <IonCol size="12">
-                    <h3>Calculations</h3>
-                </IonCol>
-            </IonRow>
-            <IonRow>
-                <IonCol size="6">
-                    <IonItem className="calculation-item">
-                        <IonLabel>Base Calculation:</IonLabel>
-                        <IonText slot="end">
-                            {selectedSubcomponentRate !== null && formData.area ? (
-                                <>₱{selectedSubcomponentRate.toLocaleString()} × {formData.area} sq ft</>
-                            ) : (
-                                'N/A'
-                            )}
-                        </IonText>
-                    </IonItem>
-                </IonCol>
-                <IonCol size="6">
-                    <IonItem className="calculation-item">
-                        <IonLabel>Market Value:</IonLabel>
-                        <IonText slot="end" color="primary">
-                            {marketValue !== null ? `₱${marketValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'N/A'}
-                        </IonText>
-                    </IonItem>
-                </IonCol>
-            </IonRow>
-            <IonRow>
-                <IonCol size="6">
-                    <IonItem className="calculation-item">
-                        <IonLabel>Completion:</IonLabel>
-                        <IonText slot="end">
-                            {formData.completion_percent ? `${formData.completion_percent}%` : 'N/A'}
-                        </IonText>
-                    </IonItem>
-                </IonCol>
-                <IonCol size="6">
-                    <IonItem className="calculation-item">
-                        <IonLabel>Adjusted Value:</IonLabel>
-                        <IonText slot="end" color="success">
-                            {adjustedValue !== null ? `₱${adjustedValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'N/A'}
-                        </IonText>
-                    </IonItem>
-                </IonCol>
-            </IonRow>
-        </IonGrid>
-    );
-};
-
-// BuildingAdjustmentUpdateModal Component
 interface BuildingAdjustmentUpdateModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -131,10 +62,7 @@ const BuildingAdjustmentUpdateModal: React.FC<BuildingAdjustmentUpdateModalProps
     useEffect(() => {
         if (isOpen) {
             loadBuildingComponents();
-            // Load existing data
-            if (existingData) {
-                loadExistingData(existingData);
-            }
+            loadExistingData(existingData);
         }
     }, [isOpen, existingData]);
 
@@ -236,8 +164,8 @@ const BuildingAdjustmentUpdateModal: React.FC<BuildingAdjustmentUpdateModalProps
         setFormData(prev => ({
             ...prev,
             Maincomponent: value,
-            buidlingsubcomponent: '', // Reset subcomponent
-            description: '' // Reset description
+            buidlingsubcomponent: '',
+            description: ''
         }));
         setSelectedSubcomponentRate(null);
         setMarketValue(null);
@@ -250,7 +178,6 @@ const BuildingAdjustmentUpdateModal: React.FC<BuildingAdjustmentUpdateModalProps
     };
 
     const handleSubcomponentChange = async (value: string) => {
-        // Fetch the main and subcomponent descriptions
         const mainCom = await getBuildingComponentById(formData.Maincomponent);
         const subCom = await getBuildingSubcomponentById(value);
         let combinedDescription = '';
@@ -262,7 +189,7 @@ const BuildingAdjustmentUpdateModal: React.FC<BuildingAdjustmentUpdateModalProps
         setFormData(prev => ({
             ...prev,
             buidlingsubcomponent: value,
-            description: combinedDescription // Set the auto-filled description
+            description: combinedDescription
         }));
         findAndDisplayRate(value);
     };
@@ -290,7 +217,6 @@ const BuildingAdjustmentUpdateModal: React.FC<BuildingAdjustmentUpdateModalProps
 
             setAlertMessage('Building adjustment updated successfully!');
             setShowAlert(true);
-
             onClose();
 
             if (onSaveSuccess) {
@@ -304,18 +230,6 @@ const BuildingAdjustmentUpdateModal: React.FC<BuildingAdjustmentUpdateModalProps
     };
 
     const handleClose = () => {
-        // Reset to original data when closing
-        setFormData({
-            Maincomponent: existingData.Maincomponent || '',
-            buidlingsubcomponent: existingData.buidlingsubcomponent || '',
-            description: existingData.description || '',
-            completion_percent: existingData.completion_percent || '',
-            depreciation: existingData.depreciation || '',
-            area: existingData.area.toString() || ''
-        });
-        setSelectedSubcomponentRate(null);
-        setMarketValue(null);
-        setAdjustedValue(null);
         onClose();
     };
 

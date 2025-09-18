@@ -87,7 +87,6 @@ const BuildingAdjustmentUpdateForm: React.FC<BuildingAdjustmentUpdateFormProps> 
                             placeholder="Select main component"
                             onIonChange={(e) => handleMainComponentChange(e.detail.value!)}
                             interface="popover"
-                            disabled={isEditing}
                         >
                             {isLoadingComponents ? (
                                 <IonSelectOption value="" disabled>Loading components...</IonSelectOption>
@@ -115,7 +114,7 @@ const BuildingAdjustmentUpdateForm: React.FC<BuildingAdjustmentUpdateFormProps> 
                             placeholder="Select building subcomponent"
                             onIonChange={(e) => handleSubcomponentChange(e.detail.value!)}
                             interface="popover"
-                            disabled={!formData.Maincomponent || isLoadingSubcomponents || isEditing}
+                            disabled={!formData.Maincomponent || isLoadingSubcomponents}
                         >
                             {isLoadingSubcomponents ? (
                                 <IonSelectOption value="" disabled>Loading subcomponents...</IonSelectOption>
