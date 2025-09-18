@@ -8,6 +8,7 @@ export interface FormData {
   subclass: string;
   actualUse: string;
   area: number;
+  status: string; // Status string, defaults to "unploaded"
 }
 
 const FORM_DATA_KEY = 'formData';
@@ -44,13 +45,14 @@ export const FormDataLocalStorage = {
     }
   },
 
-  // Save NEW form data to localStorage with generated ID
-  saveFormData: (formData: Omit<FormData, 'id'>): FormData => {
+  // Save NEW form data to localStorage with generated ID and default status
+  saveFormData: (formData: Omit<FormData, 'id' | 'status'>): FormData => {
     try {
       const allForms = FormDataLocalStorage.getAllFormData();
       const newForm: FormData = {
         ...formData,
-        id: generateRandomId()
+        id: generateRandomId(),
+        status: 'unploaded' // Automatically add status with default value
       };
       
       const updatedForms = [...allForms, newForm];
@@ -106,6 +108,17 @@ export const FormDataLocalStorage = {
     } catch (error) {
       console.error('Error clearing form data from localStorage:', error);
     }
+  },
+
+  // Get form data by status
+  getFormDataByStatus: (status: string): FormData[] => {
+    const allForms = FormDataLocalStorage.getAllFormData();
+    return allForms.filter(form => form.status === status);
+  },
+
+  // Update status of form data
+  updateFormDataStatus: (id: string, status: string): FormData | null => {
+    return FormDataLocalStorage.updateFormData(id, { status });
   },
 
   // Generate a new random ID
