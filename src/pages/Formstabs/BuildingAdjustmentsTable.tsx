@@ -1,4 +1,3 @@
-// src/components/Building/BuildingAdjustmentsTable.tsx
 import React, { useState } from "react";
 import {
     IonButton,
@@ -17,6 +16,7 @@ interface BuildingAdjustmentsTableProps {
     buildingAdjustments: BuildingAdjustmentData[];
     buildingInfoIds: string[];
     onAdjustmentCreate: () => void;
+    onAdjustmentUpdate: (adjustmentId: string) => void;
     onAdjustmentsUpdate: () => void;
     showToastMessage: (message: string, color?: 'success' | 'danger' | 'warning') => void;
     onSubcomponentClick: (rowData: BuildingAdjustmentData) => void;
@@ -26,6 +26,7 @@ const BuildingAdjustmentsTable: React.FC<BuildingAdjustmentsTableProps> = ({
     buildingAdjustments,
     buildingInfoIds,
     onAdjustmentCreate,
+    onAdjustmentUpdate,
     onAdjustmentsUpdate,
     showToastMessage,
     onSubcomponentClick
@@ -76,6 +77,25 @@ const BuildingAdjustmentsTable: React.FC<BuildingAdjustmentsTableProps> = ({
         }
     };
 
+    const handleUpdateAdjustment = () => {
+        if (!selectedAdjustmentId) {
+            showToastMessage('Please select an adjustment to update', 'warning');
+            return;
+        }
+        
+        // Find the selected adjustment data
+        const selectedAdjustment = buildingAdjustments.find(
+            adj => adj.bldg_adjustment_id === selectedAdjustmentId
+        );
+        
+        if (selectedAdjustment) {
+            // Call the update function with the selected adjustment ID
+            onAdjustmentUpdate(selectedAdjustmentId);
+        } else {
+            showToastMessage('Selected adjustment not found', 'danger');
+        }
+    };
+
     const filteredAdjustments = buildingAdjustments.filter(adjustment => {
         if (!searchTerm) return true;
         return Object.values(adjustment).some((value: any) =>
@@ -108,13 +128,7 @@ const BuildingAdjustmentsTable: React.FC<BuildingAdjustmentsTableProps> = ({
         {
             icon: arrowUpCircleOutline,
             className: "update-button",
-            onClick: () => {
-                if (selectedAdjustmentId) {
-                    showToastMessage('Update functionality would be implemented here');
-                } else {
-                    showToastMessage('Please select an adjustment to update', 'warning');
-                }
-            },
+            onClick: handleUpdateAdjustment,
             title: "Update Building adjustment",
             enabled: !!selectedAdjustmentId
         },
