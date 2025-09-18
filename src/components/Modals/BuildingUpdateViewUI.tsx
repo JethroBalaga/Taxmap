@@ -14,7 +14,6 @@ import {
   IonSpinner,
   IonNote
 } from '@ionic/react';
-import { FormData } from './Form';
 import { BuildingData } from './BuildingModal';
 import { StructureTypeData } from '../../utils/structureTypeLocalStorage';
 import { BuildingCodeData } from '../../utils/buildingCodeLocalStorage';
@@ -22,7 +21,7 @@ import SubmitButton from '../GlobalComponent/SubmitButton';
 import '../../CSS/modal.css';
 
 interface BuildingUpdateViewUIProps {
-  formData: FormData;
+  buildingId: string;
   buildingData: BuildingData;
   errors: Partial<Record<keyof BuildingData, string>>;
   isFormValid: boolean;
@@ -210,7 +209,7 @@ const DateInputField: React.FC<{
 );
 
 const BuildingUpdateViewUI: React.FC<BuildingUpdateViewUIProps> = ({
-  formData,
+  buildingId,
   buildingData,
   errors,
   isFormValid,
@@ -226,10 +225,10 @@ const BuildingUpdateViewUI: React.FC<BuildingUpdateViewUIProps> = ({
 }) => {
   return (
     <>
-      {/* Display received form data for reference */}
+      {/* Display building ID for reference */}
       <div style={{ padding: '10px', background: '#f5f5f5', marginBottom: '15px', borderRadius: '8px' }}>
         <IonText color="medium">
-          <small>Form Reference: District {formData.district}, Kind ID: {formData.kind}, Area: {formData.area}m²</small>
+          <small>Updating Building #{buildingId}</small>
         </IonText>
       </div>
 

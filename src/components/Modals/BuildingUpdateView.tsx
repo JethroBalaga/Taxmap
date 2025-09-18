@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { BuildingData } from './BuildingModal';
-import { FormData } from './Form';
 import { StructureTypeData, getStructureTypeData } from '../../utils/structureTypeLocalStorage';
 import { BuildingCodeData, getBuildingCodesByStructureCode } from '../../utils/buildingCodeLocalStorage';
 import BuildingUpdateViewUI from './BuildingUpdateViewUI';
@@ -8,14 +7,14 @@ import BuildingUpdateViewUI from './BuildingUpdateViewUI';
 interface BuildingUpdateViewProps {
   onUpdate: (data: BuildingData) => void;
   onDismiss: () => void;
-  formData: FormData;
-  buildingData: BuildingData;
+  buildingId: string; // Building ID for reference
+  buildingData: BuildingData; // Initial building data
 }
 
 const BuildingUpdateView: React.FC<BuildingUpdateViewProps> = ({
   onUpdate,
   onDismiss,
-  formData,
+  buildingId,
   buildingData: initialBuildingData
 }) => {
   const [buildingData, setBuildingData] = useState<BuildingData>(initialBuildingData);
@@ -151,7 +150,14 @@ const BuildingUpdateView: React.FC<BuildingUpdateViewProps> = ({
       try {
         // Simulate API call or async operation
         await new Promise(resolve => setTimeout(resolve, 1000));
-        onUpdate(buildingData);
+        
+        // Add building ID to the data before sending to parent
+        const updateData = {
+          ...buildingData,
+          id: buildingId // Include the building ID in the update data
+        };
+        
+        onUpdate(updateData);
       } catch (error) {
         console.error('Error updating building:', error);
       } finally {
@@ -162,7 +168,7 @@ const BuildingUpdateView: React.FC<BuildingUpdateViewProps> = ({
 
   return (
     <BuildingUpdateViewUI
-      formData={formData}
+      buildingId={buildingId}
       buildingData={buildingData}
       errors={errors}
       isFormValid={isFormValid}

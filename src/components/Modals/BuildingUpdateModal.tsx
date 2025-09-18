@@ -11,7 +11,6 @@ import {
 } from '@ionic/react';
 import { closeOutline } from 'ionicons/icons';
 import BuildingUpdateView from './BuildingUpdateView';
-import { FormData } from './Form';
 import { BuildingData } from './BuildingModal';
 import '../../CSS/modal.css';
 
@@ -19,16 +18,16 @@ interface BuildingUpdateModalProps {
   isOpen: boolean;
   onDismiss: () => void;
   onUpdate: (data: BuildingData) => void;
-  formData: FormData;
-  buildingData: BuildingData;
+  buildingId: string; // Changed from formData to buildingId
+  initialBuildingData: BuildingData; // Renamed for clarity
 }
 
 const BuildingUpdateModal: React.FC<BuildingUpdateModalProps> = ({ 
   isOpen, 
   onDismiss, 
   onUpdate,
-  formData,
-  buildingData
+  buildingId,
+  initialBuildingData
 }) => {
   const handleDismiss = () => {
     onDismiss();
@@ -44,7 +43,7 @@ const BuildingUpdateModal: React.FC<BuildingUpdateModalProps> = ({
         <IonToolbar className="fancy-header">
           <IonTitle className="fancy-title">
             <i className="icon-building" style={{ marginRight: '10px' }}></i>
-            Update Building
+            Update Building #{buildingId}
           </IonTitle>
           <IonButtons slot="end">
             <IonButton onClick={handleDismiss} className="fancy-close-btn">
@@ -58,8 +57,8 @@ const BuildingUpdateModal: React.FC<BuildingUpdateModalProps> = ({
         <BuildingUpdateView
           onUpdate={onUpdate}
           onDismiss={handleDismiss}
-          formData={formData}
-          buildingData={buildingData}
+          buildingId={buildingId}
+          buildingData={initialBuildingData}
         />
       </IonContent>
     </IonModal>
