@@ -22,6 +22,7 @@ import BuildingList from './BuildingList';
 import BuildingAdjustmentsTable from './BuildingAdjustmentsTable';
 import BuildingAdjustmentModal from "../../components/Modals/BuildingAdjustmentModal";
 import BuildingSubcomponentModal from "../../components/Modals/BuildingSubcomponentModal";
+import BuildingUpdateModal from "../../components/Modals/BuildingUpdateModal";
 import "../../CSS/BuildingResponsive.css";
 
 interface BuildingTableProps {
@@ -75,6 +76,11 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
     const [selectedAdjustmentArea, setSelectedAdjustmentArea] = useState<number>(0);
     const [selectedAdjustmentCompletion, setSelectedAdjustmentCompletion] = useState<string>('');
     const [selectedAdjustmentDepreciation, setSelectedAdjustmentDepreciation] = useState<string>('');
+
+    // Building update modal states
+    const [showUpdateModal, setShowUpdateModal] = useState(false);
+    const [selectedBuildingId, setSelectedBuildingId] = useState<string>('');
+    const [selectedBuildingData, setSelectedBuildingData] = useState<any>(null);
 
     // Toast states
     const [showToast, setShowToast] = useState(false);
@@ -260,6 +266,32 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
         }
     };
 
+    // Add this function to handle building updates
+    const handleBuildingUpdate = (updatedData: any) => {
+        console.log('Updating building:', selectedBuildingId, updatedData);
+        
+        // Update the building data in localStorage
+        try {
+            BuildingDataLocalStorage.updateBuildingData(selectedBuildingId, updatedData);
+            
+            // Reload the data to reflect changes
+            loadBuildingData();
+            loadBuildingAdjustments();
+            
+            showToastMessage('Building updated successfully!', 'success');
+        } catch (error) {
+            console.error('Error updating building:', error);
+            showToastMessage('Error updating building', 'danger');
+        }
+    };
+
+    // Add this function to handle update button clicks from BuildingList
+    const handleUpdateClick = (buildingId: string, buildingData: any) => {
+        setSelectedBuildingId(buildingId);
+        setSelectedBuildingData(buildingData);
+        setShowUpdateModal(true);
+    };
+
     const showToastMessage = (message: string, color: 'success' | 'danger' | 'warning' = 'success') => {
         setToastMessage(message);
         setToastColor(color);
@@ -319,6 +351,7 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
                     buildingCodeRates={buildingCodeRates}
                     totalAdjustments={totalAdjustments}
                     onViewDetails={handleViewDetails}
+                    onUpdateClick={handleUpdateClick} // Pass the update click handler
                 />
 
                 <BuildingAdjustmentsTable
@@ -360,6 +393,17 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
                     completionPercent={selectedAdjustmentCompletion}
                     depreciation={selectedAdjustmentDepreciation}
                 />
+
+                {/* Building Update Modal */}
+                {selectedBuildingId && selectedBuildingData && (
+                    <BuildingUpdateModal
+                        isOpen={showUpdateModal}
+                        onDismiss={() => setShowUpdateModal(false)}
+                        onUpdate={handleBuildingUpdate}
+                        buildingId={selectedBuildingId}
+                        initialBuildingData={selectedBuildingData}
+                    />
+                )}
 
                 <IonToast
                     isOpen={showToast}
