@@ -16,10 +16,15 @@ import {
   IonRefresher,
   IonRefresherContent,
   useIonViewWillEnter,
-  IonSpinner
+  IonSpinner,
+  IonToast
 } from '@ionic/react';
 import { arrowUpCircle, trash, informationCircleOutline } from 'ionicons/icons';
 import { FormDataLocalStorage, FormData } from '../utils/tablestorages/FormDataLocalStorage';
+import { ValueInfoLocalStorage } from '../utils/tablestorages/ValueInfoLocalStorage';
+import { PhotoTagLocalStorage } from '../utils/tablestorages/PhotoTagLocalStorage';
+import { BuildingDataLocalStorage } from '../utils/tablestorages/BuildingDataLocalStorage';
+import { BuildingAdjustmentLocalStorage } from '../utils/tablestorages/BuildingAdjustmentLocalStorage';
 import './../CSS/Forms.css';
 import DynamicTable from '../components/GlobalComponent/DynamicTable';
 import BuildingTable from './Formstabs/BuildingTable';
@@ -34,6 +39,8 @@ const Forms: React.FC = () => {
   const [showBuildingTable, setShowBuildingTable] = useState(false);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
   const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [showToast, setShowToast] = useState(false);
 
   const iconActions = [
     { icon: arrowUpCircle, className: selectedForm ? "icon-blue" : "icon-blue icon-disabled", onClick: () => handleUpdateClick(), title: "Update Selected Form", enabled: !!selectedForm },
@@ -89,7 +96,8 @@ const Forms: React.FC = () => {
     if (selectedForm) {
       setShowUpdateModal(true);
     } else {
-      alert('Please select a form to update');
+      setToastMessage('Please select a form to update');
+      setShowToast(true);
     }
   };
 
@@ -97,7 +105,8 @@ const Forms: React.FC = () => {
     if (selectedForm) {
       setShowDeleteAlert(true);
     } else {
-      alert('Please select a form to delete');
+      setToastMessage('Please select a form to delete');
+      setShowToast(true);
     }
   };
 
@@ -110,23 +119,84 @@ const Forms: React.FC = () => {
       if (kind === 2) {
         setShowBuildingTable(true);
       } else {
-        alert('Building details are only available for forms with kind = 2');
+        setToastMessage('Building details are only available for forms with kind = 2');
+        setShowToast(true);
       }
     } else {
-      alert('Please select a form to view details');
+      setToastMessage('Please select a form to view details');
+      setShowToast(true);
+    }
+  };
+
+  const deleteRelatedData = (formId: string) => {
+    console.log(`Deleting related data for form ID: ${formId}`);
+    
+    // Get all value info entries related to this form
+    const allValueInfo = ValueInfoLocalStorage.getAllValueInfo();
+    const relatedValueInfo = allValueInfo.filter(info => info.formDataId === formId);
+    
+    console.log(`Found ${relatedValueInfo.length} value info entries to delete`);
+    
+    // Delete related building data, photo tags, and building adjustments
+    relatedValueInfo.forEach(valueInfo => {
+      console.log(`Processing value info ID: ${valueInfo.id}`);
+      
+      // Delete related building data
+      const buildingDataDeleted = BuildingDataLocalStorage.deleteBuildingData(valueInfo.id);
+      if (buildingDataDeleted) {
+        console.log(`Deleted building data for value info ID: ${valueInfo.id}`);
+      }
+      
+      // Delete related building adjustments
+      const buildingAdjustmentsDeleted = BuildingAdjustmentLocalStorage.deleteBuildingAdjustmentsByValueInfoId(valueInfo.id);
+      if (buildingAdjustmentsDeleted) {
+        console.log(`Deleted building adjustments for value info ID: ${valueInfo.id}`);
+      }
+      
+      // Delete related photo tags
+      if (valueInfo.photoTagId) {
+        const photoTagDeleted = PhotoTagLocalStorage.deletePhotoTag(valueInfo.photoTagId);
+        if (photoTagDeleted) {
+          console.log(`Deleted photo tag ID: ${valueInfo.photoTagId}`);
+        }
+      }
+      
+      // Delete the value info entry itself
+      const valueInfoDeleted = ValueInfoLocalStorage.deleteValueInfo(valueInfo.id);
+      if (valueInfoDeleted) {
+        console.log(`Deleted value info ID: ${valueInfo.id}`);
+      }
+    });
+    
+    // Also check for any orphaned value info entries that might reference this form
+    const remainingValueInfo = ValueInfoLocalStorage.getAllValueInfo();
+    const orphanedValueInfo = remainingValueInfo.filter(info => info.formDataId === formId);
+    
+    if (orphanedValueInfo.length > 0) {
+      console.log(`Found ${orphanedValueInfo.length} orphaned value info entries, deleting them`);
+      orphanedValueInfo.forEach(info => {
+        ValueInfoLocalStorage.deleteValueInfo(info.id);
+      });
     }
   };
 
   const confirmDelete = () => {
     if (selectedForm) {
+      // First delete all related data
+      deleteRelatedData(selectedForm.id);
+      
+      // Then delete the form itself
       const success = FormDataLocalStorage.deleteFormData(selectedForm.id);
       if (success) {
         const updatedForms = formData.filter(form => form.id !== selectedForm.id);
         setFormData(updatedForms);
         setSelectedForm(null);
         setShowDeleteAlert(false);
+        setToastMessage('Form and all related data deleted successfully');
+        setShowToast(true);
       } else {
-        alert('Error deleting form');
+        setToastMessage('Error deleting form');
+        setShowToast(true);
       }
     }
   };
@@ -253,11 +323,19 @@ const Forms: React.FC = () => {
             isOpen={showDeleteAlert}
             onDidDismiss={() => setShowDeleteAlert(false)}
             header={'Confirm Delete'}
-            message={'Are you sure you want to delete this form? This action cannot be undone.'}
+            message={'Are you sure you want to delete this form and all its related data (value info, photo tags, building data, and adjustments)? This action cannot be undone.'}
             buttons={[
               { text: 'Cancel', role: 'cancel' },
               { text: 'Delete', role: 'destructive', handler: confirmDelete }
             ]}
+          />
+
+          <IonToast
+            isOpen={showToast}
+            onDidDismiss={() => setShowToast(false)}
+            message={toastMessage}
+            duration={3000}
+            position="bottom"
           />
 
           <FormUpdateModal
