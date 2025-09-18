@@ -7,7 +7,7 @@ import {
     IonText,
     IonToast
 } from "@ionic/react";
-import { createOutline, arrowUpCircleOutline, trashOutline, informationCircle } from "ionicons/icons";
+import { createOutline, arrowUpCircleOutline, trashOutline} from "ionicons/icons";
 import DynamicTable from "../../components/GlobalComponent/DynamicTable";
 import { BuildingAdjustmentData } from "../../utils/tablestorages/BuildingAdjustmentLocalStorage";
 import { BuildingAdjustmentLocalStorage } from "../../utils/tablestorages/BuildingAdjustmentLocalStorage";
