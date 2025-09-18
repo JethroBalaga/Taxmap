@@ -4,7 +4,6 @@ export interface ValueInfo {
   id: string; // Random primary key
   formDataId: string; // Reference to FormData id
   photoTagId: string; // Reference to PhotoTagData id
-  status: string; // Status string
 }
 
 const VALUE_INFO_KEY = 'valueInfo';
@@ -103,12 +102,6 @@ export const ValueInfoLocalStorage = {
     return allValueInfo.filter(info => info.photoTagId === photoTagId);
   },
 
-  // Get value info by status
-  getValueInfoByStatus: (status: string): ValueInfo[] => {
-    const allValueInfo = ValueInfoLocalStorage.getAllValueInfo();
-    return allValueInfo.filter(info => info.status === status);
-  },
-
   // Delete value info by ID
   deleteValueInfo: (id: string): boolean => {
     try {
@@ -144,19 +137,6 @@ export const ValueInfoLocalStorage = {
       return true;
     } catch (error) {
       console.error('Error deleting value info by photoTagId:', error);
-      return false;
-    }
-  },
-
-  // Delete all value info with a specific status
-  deleteValueInfoByStatus: (status: string): boolean => {
-    try {
-      const allValueInfo = ValueInfoLocalStorage.getAllValueInfo();
-      const filteredInfo = allValueInfo.filter(info => info.status !== status);
-      ValueInfoLocalStorage.saveAllValueInfo(filteredInfo);
-      return true;
-    } catch (error) {
-      console.error('Error deleting value info by status:', error);
       return false;
     }
   },
