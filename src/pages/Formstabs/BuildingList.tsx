@@ -1,4 +1,3 @@
-// src/components/Building/BuildingList.tsx
 import React, { useState } from "react";
 import {
     IonCard,
@@ -13,6 +12,7 @@ import {
 } from "@ionic/react";
 import { informationCircle } from "ionicons/icons";
 import BuildingDetailsCard from "./BuildingDetailsCard";
+import BuildingUpdateModal from "../../components/Modals/BuildingUpdateModal"; // Add this import
 import "../../CSS/BuildingResponsive.css";
 
 interface BuildingListProps {
@@ -33,6 +33,7 @@ interface BuildingListProps {
     buildingCodeRates: Map<string, number>;
     totalAdjustments: Map<string, number>;
     onViewDetails: (buildingId: string) => void;
+    onBuildingUpdate: (buildingId: string, updatedData: any) => void; // Add this prop
 }
 
 const BuildingList: React.FC<BuildingListProps> = ({
@@ -52,10 +53,13 @@ const BuildingList: React.FC<BuildingListProps> = ({
     assessmentLevels,
     buildingCodeRates,
     totalAdjustments,
-    onViewDetails
+    onViewDetails,
+    onBuildingUpdate // Add this prop
 }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedBuildingId, setSelectedBuildingId] = useState<string | null>(null);
+    const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false); // Add modal state
+    const [buildingToUpdate, setBuildingToUpdate] = useState<any>(null); // Add building data state
 
     const handleSearch = (e: any) => {
         setSearchTerm(e.detail.value || '');
@@ -73,23 +77,33 @@ const BuildingList: React.FC<BuildingListProps> = ({
         }
     };
 
+    // Add this function to handle update button clicks from BuildingDetailsCard
+    const handleUpdateClick = (buildingId: string, buildingData: any) => {
+        setBuildingToUpdate({ id: buildingId, data: buildingData });
+        setIsUpdateModalOpen(true);
+    };
+
+    // Add this function to handle the actual update
+    const handleBuildingUpdate = (updatedData: any) => {
+        if (buildingToUpdate) {
+            onBuildingUpdate(buildingToUpdate.id, updatedData);
+        }
+        setIsUpdateModalOpen(false);
+        setBuildingToUpdate(null);
+    };
+
     const calculateAssessedValue = (adjustedValue: number, assessmentLevel: any): number => {
         if (!assessmentLevel || !assessmentLevel.rate_percent) return 0;
         
         let rateDecimal: number;
         
-        // Check if the rate_percent contains a % sign (like "30%")
         if (assessmentLevel.rate_percent.includes('%')) {
-            // Remove the % sign and convert to number, then divide by 100
             rateDecimal = parseFloat(assessmentLevel.rate_percent.replace('%', '')) / 100;
         } else {
-            // If no % sign, assume it's already in decimal format
             rateDecimal = parseFloat(assessmentLevel.rate_percent);
         }
         
         const assessedValue = adjustedValue * rateDecimal;
-        
-        // Round to nearest whole number to match your sample record
         return Math.round(assessedValue);
     };
 
@@ -184,8 +198,9 @@ const BuildingList: React.FC<BuildingListProps> = ({
                                         <IonRow>
                                             <IonCol size="12">
                                                 <BuildingDetailsCard
-                                                    buildingData={buildingData}
+                                                    buildingData={{ ...buildingData, id }} // Pass the ID to the card
                                                     buildingRate={buildingCodeRates.get(id)}
+                                                    onUpdateClick={handleUpdateClick} // Pass the callback
                                                 />
                                             </IonCol>
                                         </IonRow>
@@ -194,6 +209,17 @@ const BuildingList: React.FC<BuildingListProps> = ({
                             );
                         })}
                     </IonGrid>
+
+                    {/* Building Update Modal */}
+                    {buildingToUpdate && (
+                        <BuildingUpdateModal
+                            isOpen={isUpdateModalOpen}
+                            onDismiss={() => setIsUpdateModalOpen(false)}
+                            onUpdate={handleBuildingUpdate}
+                            buildingId={buildingToUpdate.id}
+                            initialBuildingData={buildingToUpdate.data}
+                        />
+                    )}
                 </>
             ) : (
                 <div className="no-data">
