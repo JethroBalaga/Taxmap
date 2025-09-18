@@ -1,4 +1,3 @@
-// src/pages/BuildingTable.tsx
 import React, { useState, useEffect } from "react";
 import {
     IonPage,
@@ -9,7 +8,13 @@ import {
     IonButtons,
     IonIcon,
     IonToast,
-    IonTitle
+    IonTitle,
+    IonGrid,
+    IonRow,
+    IonCol,
+    IonItem,
+    IonLabel,
+    IonText
 } from "@ionic/react";
 import { arrowBack } from "ionicons/icons";
 import { ValueInfoLocalStorage } from '../../utils/tablestorages/ValueInfoLocalStorage';
@@ -21,6 +26,7 @@ import { BuildingSubcomponentData, getBuildingSubcomponentById } from "../../uti
 import BuildingList from './BuildingList';
 import BuildingAdjustmentsTable from './BuildingAdjustmentsTable';
 import BuildingAdjustmentModal from "../../components/Modals/BuildingAdjustmentModal";
+import BuildingAdjustmentUpdateModal from "../../components/Modals/BuildingAdjustmentUpdateModal";
 import BuildingSubcomponentModal from "../../components/Modals/BuildingSubcomponentModal";
 import BuildingUpdateModal from "../../components/Modals/BuildingUpdateModal";
 import "../../CSS/BuildingResponsive.css";
@@ -69,6 +75,10 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
     const [showAdjustmentModal, setShowAdjustmentModal] = useState(false);
     const [selectedValueInfoId, setSelectedValueInfoId] = useState<string | null>(null);
     const [existingAdjustmentData, setExistingAdjustmentData] = useState<BuildingAdjustmentData | null>(null);
+
+    // Update adjustment modal states
+    const [showUpdateAdjustmentModal, setShowUpdateAdjustmentModal] = useState(false);
+    const [selectedAdjustmentForUpdate, setSelectedAdjustmentForUpdate] = useState<BuildingAdjustmentData | null>(null);
 
     // Subcomponent modal states
     const [showSubcomponentModal, setShowSubcomponentModal] = useState(false);
@@ -248,6 +258,16 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
         }
     };
 
+    const handleAdjustmentUpdate = (adjustmentId: string) => {
+        const adjustment = buildingAdjustments.find(adj => adj.bldg_adjustment_id === adjustmentId);
+        if (adjustment) {
+            setSelectedAdjustmentForUpdate(adjustment);
+            setShowUpdateAdjustmentModal(true);
+        } else {
+            showToastMessage('Adjustment not found', 'danger');
+        }
+    };
+
     const handleSubcomponentRowClick = async (rowData: BuildingAdjustmentData) => {
         try {
             const subcomponentData = await getBuildingSubcomponentById(rowData.buidlingsubcomponent);
@@ -266,7 +286,6 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
         }
     };
 
-    // Add this function to handle building updates
     const handleBuildingUpdate = (updatedData: any) => {
         console.log('Updating building:', selectedBuildingId, updatedData);
         
@@ -290,7 +309,6 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
         }
     };
 
-    // Add this function to handle update button clicks from BuildingList
     const handleUpdateClick = (buildingId: string, buildingData: any) => {
         setSelectedBuildingId(buildingId);
         setSelectedBuildingData(buildingData);
@@ -363,6 +381,7 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
                     buildingAdjustments={buildingAdjustments}
                     buildingInfoIds={buildingInfoIds}
                     onAdjustmentCreate={handleCreateAdjustment}
+                    onAdjustmentUpdate={handleAdjustmentUpdate}
                     onAdjustmentsUpdate={() => {
                         loadBuildingAdjustments();
                         loadBuildingData();
@@ -385,6 +404,26 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
                         onSaveSuccess={() => {
                             loadBuildingData();
                             loadBuildingAdjustments();
+                        }}
+                    />
+                )}
+
+                {/* Building Adjustment Update Modal */}
+                {showUpdateAdjustmentModal && selectedAdjustmentForUpdate && (
+                    <BuildingAdjustmentUpdateModal
+                        isOpen={showUpdateAdjustmentModal}
+                        onClose={() => {
+                            setShowUpdateAdjustmentModal(false);
+                            setSelectedAdjustmentForUpdate(null);
+                            loadBuildingAdjustments();
+                        }}
+                        valueInfoId={selectedAdjustmentForUpdate.value_info_id}
+                        existingData={selectedAdjustmentForUpdate}
+                        onSaveSuccess={() => {
+                            loadBuildingData();
+                            loadBuildingAdjustments();
+                            setShowUpdateAdjustmentModal(false);
+                            setSelectedAdjustmentForUpdate(null);
                         }}
                     />
                 )}
