@@ -12,7 +12,6 @@ import {
 } from "@ionic/react";
 import { informationCircle } from "ionicons/icons";
 import BuildingDetailsCard from "./BuildingDetailsCard";
-import BuildingUpdateModal from "../../components/Modals/BuildingUpdateModal";
 import "../../CSS/BuildingResponsive.css";
 
 interface BuildingListProps {
@@ -33,7 +32,7 @@ interface BuildingListProps {
     buildingCodeRates: Map<string, number>;
     totalAdjustments: Map<string, number>;
     onViewDetails: (buildingId: string) => void;
-    onUpdateClick: (buildingId: string, buildingData: any) => void; // Changed from onBuildingUpdate to onUpdateClick
+    onUpdateClick: (buildingId: string, buildingData: any) => void;
 }
 
 const BuildingList: React.FC<BuildingListProps> = ({
@@ -54,12 +53,10 @@ const BuildingList: React.FC<BuildingListProps> = ({
     buildingCodeRates,
     totalAdjustments,
     onViewDetails,
-    onUpdateClick // Changed from onBuildingUpdate to onUpdateClick
+    onUpdateClick
 }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedBuildingId, setSelectedBuildingId] = useState<string | null>(null);
-    const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
-    const [buildingToUpdate, setBuildingToUpdate] = useState<any>(null);
 
     const handleSearch = (e: any) => {
         setSearchTerm(e.detail.value || '');
@@ -75,22 +72,6 @@ const BuildingList: React.FC<BuildingListProps> = ({
             setSelectedBuildingId(firstBuildingId === selectedBuildingId ? null : firstBuildingId);
             onViewDetails(firstBuildingId);
         }
-    };
-
-    // Handle update button clicks from BuildingDetailsCard
-    const handleUpdateClick = (buildingId: string, buildingData: any) => {
-        setBuildingToUpdate({ id: buildingId, data: buildingData });
-        setIsUpdateModalOpen(true);
-    };
-
-    // Handle the actual update from the modal
-    const handleBuildingUpdate = (updatedData: any) => {
-        if (buildingToUpdate) {
-            // Call the parent's update function with the building ID and updated data
-            onUpdateClick(buildingToUpdate.id, updatedData);
-        }
-        setIsUpdateModalOpen(false);
-        setBuildingToUpdate(null);
     };
 
     const calculateAssessedValue = (adjustedValue: number, assessmentLevel: any): number => {
@@ -201,7 +182,7 @@ const BuildingList: React.FC<BuildingListProps> = ({
                                                 <BuildingDetailsCard
                                                     buildingData={{ ...buildingData, id }}
                                                     buildingRate={buildingCodeRates.get(id)}
-                                                    onUpdateClick={handleUpdateClick}
+                                                    onUpdateClick={onUpdateClick}
                                                 />
                                             </IonCol>
                                         </IonRow>
@@ -210,17 +191,6 @@ const BuildingList: React.FC<BuildingListProps> = ({
                             );
                         })}
                     </IonGrid>
-
-                    {/* Building Update Modal */}
-                    {buildingToUpdate && (
-                        <BuildingUpdateModal
-                            isOpen={isUpdateModalOpen}
-                            onDismiss={() => setIsUpdateModalOpen(false)}
-                            onUpdate={handleBuildingUpdate}
-                            buildingId={buildingToUpdate.id}
-                            initialBuildingData={buildingToUpdate.data}
-                        />
-                    )}
                 </>
             ) : (
                 <div className="no-data">

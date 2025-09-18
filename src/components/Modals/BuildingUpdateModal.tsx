@@ -18,8 +18,8 @@ interface BuildingUpdateModalProps {
   isOpen: boolean;
   onDismiss: () => void;
   onUpdate: (data: BuildingData) => void;
-  buildingId: string; // Changed from formData to buildingId
-  initialBuildingData: BuildingData; // Renamed for clarity
+  buildingId: string;
+  initialBuildingData: BuildingData;
 }
 
 const BuildingUpdateModal: React.FC<BuildingUpdateModalProps> = ({ 
@@ -31,6 +31,11 @@ const BuildingUpdateModal: React.FC<BuildingUpdateModalProps> = ({
 }) => {
   const handleDismiss = () => {
     onDismiss();
+  };
+
+  const handleUpdate = (data: BuildingData) => {
+    onUpdate(data);
+    onDismiss(); // Close the modal after update
   };
 
   return (
@@ -55,7 +60,7 @@ const BuildingUpdateModal: React.FC<BuildingUpdateModalProps> = ({
       
       <IonContent className="modal-content">
         <BuildingUpdateView
-          onUpdate={onUpdate}
+          onUpdate={handleUpdate}
           onDismiss={handleDismiss}
           buildingId={buildingId}
           buildingData={initialBuildingData}

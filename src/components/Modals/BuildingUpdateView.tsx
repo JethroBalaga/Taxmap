@@ -7,8 +7,8 @@ import BuildingUpdateViewUI from './BuildingUpdateViewUI';
 interface BuildingUpdateViewProps {
   onUpdate: (data: BuildingData) => void;
   onDismiss: () => void;
-  buildingId: string; // Building ID for reference
-  buildingData: BuildingData; // Initial building data
+  buildingId: string;
+  buildingData: BuildingData;
 }
 
 const BuildingUpdateView: React.FC<BuildingUpdateViewProps> = ({
@@ -149,7 +149,7 @@ const BuildingUpdateView: React.FC<BuildingUpdateViewProps> = ({
       setIsSubmitting(true);
       try {
         // Simulate API call or async operation
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise(resolve => setTimeout(resolve, 500));
         
         // Add building ID to the data before sending to parent
         const updateData = {

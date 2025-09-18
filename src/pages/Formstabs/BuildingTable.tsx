@@ -279,6 +279,11 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
             loadBuildingAdjustments();
             
             showToastMessage('Building updated successfully!', 'success');
+            
+            // Close the modal
+            setShowUpdateModal(false);
+            setSelectedBuildingId('');
+            setSelectedBuildingData(null);
         } catch (error) {
             console.error('Error updating building:', error);
             showToastMessage('Error updating building', 'danger');
@@ -351,7 +356,7 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
                     buildingCodeRates={buildingCodeRates}
                     totalAdjustments={totalAdjustments}
                     onViewDetails={handleViewDetails}
-                    onUpdateClick={handleUpdateClick} // Pass the update click handler
+                    onUpdateClick={handleUpdateClick}
                 />
 
                 <BuildingAdjustmentsTable
@@ -395,10 +400,14 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
                 />
 
                 {/* Building Update Modal */}
-                {selectedBuildingId && selectedBuildingData && (
+                {showUpdateModal && selectedBuildingId && selectedBuildingData && (
                     <BuildingUpdateModal
                         isOpen={showUpdateModal}
-                        onDismiss={() => setShowUpdateModal(false)}
+                        onDismiss={() => {
+                            setShowUpdateModal(false);
+                            setSelectedBuildingId('');
+                            setSelectedBuildingData(null);
+                        }}
                         onUpdate={handleBuildingUpdate}
                         buildingId={selectedBuildingId}
                         initialBuildingData={selectedBuildingData}
