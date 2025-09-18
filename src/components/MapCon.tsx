@@ -1,11 +1,13 @@
 // src/components/MapCon.tsx
 import React, { useEffect, useRef, useState } from 'react';
-import { MapContainer, TileLayer, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet.offline'; // offline plugin
 import localforage from 'localforage';
 import Form from './Modals/Form';
+import { PhotoTagLocalStorage, PhotoTagData } from '../utils/tablestorages/PhotoTagLocalStorage';
+import { createBlueMarkerIcon } from '../utils/markerIcons';
 
 const TILE_LAYER_URL = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
 const manoloFortichBounds = L.latLngBounds(
@@ -51,6 +53,28 @@ const CreateOutlineControl = ({ onClick }: { onClick: () => void }) => {
   }, [map, onClick]);
 
   return null;
+};
+
+// Photo Markers Component
+const PhotoMarkers: React.FC<{ photoTags: PhotoTagData[] }> = ({ photoTags }) => {
+  return (
+    <>
+      {photoTags.map((tag) => (
+        <Marker
+          key={tag.id}
+          position={[tag.latitude, tag.longitude]}
+          icon={createBlueMarkerIcon()}
+          eventHandlers={{
+            click: () => {
+              // Show photo preview or details
+              console.log('Photo clicked:', tag);
+              // You can add a popup or modal here to show the photo
+            }
+          }}
+        />
+      ))}
+    </>
+  );
 };
 
 // Component to set up the map logic
@@ -125,11 +149,31 @@ const MapLogic = ({ onOpenForm }: { onOpenForm: () => void }) => {
 const MapCon: React.FC = () => {
   const [isMounted, setIsMounted] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  const [photoTags, setPhotoTags] = useState<PhotoTagData[]>([]);
 
   useEffect(() => {
     setIsMounted(true);
+    // Load existing photo tags on component mount
+    const tags = PhotoTagLocalStorage.getAllPhotoTags();
+    setPhotoTags(tags);
     return () => setIsMounted(false);
   }, []);
+
+  // Refresh photo tags when form is closed (in case new tags were added)
+  const handleFormDismiss = () => {
+    setShowForm(false);
+    // Reload photo tags to check for new additions
+    const updatedTags = PhotoTagLocalStorage.getAllPhotoTags();
+    setPhotoTags(updatedTags);
+  };
+
+  // Refresh photo tags when form completes successfully
+  const handleFormSuccess = () => {
+    setShowForm(false);
+    // Reload photo tags to include the new addition
+    const updatedTags = PhotoTagLocalStorage.getAllPhotoTags();
+    setPhotoTags(updatedTags);
+  };
 
   return (
     <div style={{ height: '100vh', width: '100%', overflow: 'hidden', position: 'relative' }}>
@@ -149,6 +193,12 @@ const MapCon: React.FC = () => {
           background: #f4f4f4;
           transform: scale(1.1);
         }
+        
+        /* Ensure Leaflet markers display correctly */
+        .leaflet-marker-icon {
+          border: none !important;
+          background: transparent !important;
+        }
       `}</style>
 
       {isMounted && (
@@ -167,13 +217,17 @@ const MapCon: React.FC = () => {
               url={TILE_LAYER_URL}
               attribution='Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics'
             />
+            
+            {/* Display photo markers */}
+            <PhotoMarkers photoTags={photoTags} />
+            
             <MapLogic onOpenForm={() => setShowForm(true)} />
           </MapContainer>
 
           <Form
             isOpen={showForm}
-            onDismiss={() => setShowForm(false)}
-            onSuccess={() => setShowForm(false)}
+            onDismiss={handleFormDismiss}
+            onSuccess={handleFormSuccess}
           />
         </>
       )}
