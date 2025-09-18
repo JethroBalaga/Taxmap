@@ -1,6 +1,8 @@
 // src/components/Building/BuildingDetailsCard.tsx
 import React from "react";
-import { IonCard, IonCardContent } from "@ionic/react";
+import { IonCard, IonCardContent, IonButton, IonIcon } from "@ionic/react";
+import { create } from "ionicons/icons";
+import "../../CSS/BuildingResponsive.css";
 
 interface BuildingDetailsCardProps {
     buildingData: any;
@@ -11,6 +13,11 @@ const BuildingDetailsCard: React.FC<BuildingDetailsCardProps> = ({
     buildingData,
     buildingRate
 }) => {
+    // You can define an empty function for the button's onClick handler for now
+    const handleUpdate = () => {
+        console.log('Update button clicked (no functionality yet)');
+    };
+
     const buildingDetailItems = [
         { label: "Structure Type", value: buildingData.structureType || 'N/A' },
         { label: "Building Code", value: buildingData.buildingCode || 'N/A' },
@@ -39,6 +46,16 @@ const BuildingDetailsCard: React.FC<BuildingDetailsCardProps> = ({
                             <span className="detail-value">{item.value}</span>
                         </div>
                     ))}
+                </div>
+                <div style={{ textAlign: 'right', marginTop: '16px' }}>
+                    <IonButton 
+                        onClick={handleUpdate} 
+                        color="primary"
+                        fill="solid"
+                    >
+                        <IonIcon icon={create} slot="start" />
+                        Update
+                    </IonButton>
                 </div>
             </IonCardContent>
         </IonCard>
