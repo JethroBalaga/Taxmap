@@ -41,7 +41,6 @@ const Forms: React.FC = () => {
     { icon: informationCircleOutline, className: selectedForm ? "icon-blue" : "icon-blue icon-disabled", onClick: () => handleInfoClick(), title: "View Building Details", enabled: !!selectedForm },
   ];
 
-  // Use useCallback to memoize the loadFormData function
   const loadFormData = useCallback(() => {
     setIsLoading(true);
     try {
@@ -63,21 +62,17 @@ const Forms: React.FC = () => {
     }
   }, []);
 
-  // This will run when the component is about to enter
   useIonViewWillEnter(() => {
     loadFormData();
   });
 
   useEffect(() => {
-    // Load data immediately when component mounts
     loadFormData();
 
-    // Set up an interval to refresh data periodically (every 30 seconds)
     const refreshInterval = setInterval(() => {
       loadFormData();
     }, 30000);
 
-    // Clean up interval on component unmount
     return () => clearInterval(refreshInterval);
   }, [loadFormData]);
 
@@ -108,7 +103,6 @@ const Forms: React.FC = () => {
 
   const handleInfoClick = () => {
     if (selectedForm) {
-      // Convert kind to number for comparison if it's stored as string
       const kind = typeof selectedForm.kind === 'string'
         ? parseInt(selectedForm.kind)
         : selectedForm.kind;
@@ -143,14 +137,11 @@ const Forms: React.FC = () => {
 
   const handleBackToForms = () => {
     setShowBuildingTable(false);
-    // Refresh data when returning from building table
     loadFormData();
   };
 
   const handleFormUpdate = (updatedData: FormData) => {
-    // Refresh the form data after update
     loadFormData();
-    // Keep the updated form selected
     setSelectedForm(updatedData);
   };
 
@@ -221,9 +212,6 @@ const Forms: React.FC = () => {
                       />
                     ))}
                   </div>
-                </div>
-                <div className="last-refresh">
-                  Last refreshed: {lastRefresh.toLocaleTimeString()}
                 </div>
               </IonCol>
             </IonRow>

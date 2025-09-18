@@ -58,18 +58,6 @@ const BuildingList: React.FC<BuildingListProps> = ({
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedBuildingId, setSelectedBuildingId] = useState<string | null>(null);
 
-    // Add this function to correctly calculate adjusted market value
-    const calculateCorrectAdjustedValue = (buildingId: string): number => {
-        const buildingData = buildingDataList.get(buildingId);
-        const baseValue = baseMarketValues.get(buildingId) || 0;
-        
-        if (!buildingData || baseValue === 0) return 0;
-        
-        // Adjusted Market Value = (Area × Building Code Rate) × Construction %
-        const constructionPercent = buildingData.constructionPercent || 0;
-        return baseValue * (constructionPercent / 100);
-    };
-
     const handleSearch = (e: any) => {
         setSearchTerm(e.detail.value || '');
     };
@@ -171,12 +159,9 @@ const BuildingList: React.FC<BuildingListProps> = ({
                         {filteredBuildingIds.map((id) => {
                             const buildingData = buildingDataList.get(id);
                             const baseMarketValue = baseMarketValues.get(id) || 0;
-                            
-                            // Use the corrected calculation for adjusted market value
-                            const adjustedMarketValue = calculateCorrectAdjustedValue(id);
-                            
+                            const originalAdjustedValue = adjustedMarketValues.get(id) || 0;
                             const adjustmentValue = totalAdjustments.get(id) || 0;
-                            const finalAdjustedValue = adjustedMarketValue + adjustmentValue;
+                            const finalAdjustedValue = originalAdjustedValue + adjustmentValue;
                             const assessmentLevel = assessmentLevels.get(id);
                             const assessedValue = calculateAssessedValue(finalAdjustedValue, assessmentLevel);
                             const isSelected = id === selectedBuildingId;

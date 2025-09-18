@@ -6,20 +6,20 @@
 .search-container {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
   gap: 10px;
   padding: 10px;
+  flex-wrap: nowrap; /* Prevents icons from wrapping to the next line on larger screens */
 }
 
 .forms-searchbar {
-  width: 700px;
-  flex-shrink: 0;
+  flex: 1; /* Allows the search bar to grow and take up all available space */
   margin-right: 20px;
 }
 
 .icon-group {
   display: flex;
   gap: 8px;
+  flex-shrink: 0; /* Prevents the icons from shrinking and disappearing */
 }
 
 /* Blue icons with !important to override Ionic defaults */
@@ -56,20 +56,39 @@
   color: var(--ion-color-medium);
 }
 
+.loading-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.loading-indicator IonText {
+  margin-top: 10px;
+}
+
+.last-refresh {
+  text-align: right;
+  font-size: 0.8em;
+  color: var(--ion-color-medium);
+  padding: 0 10px 10px;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .search-container {
-    flex-direction: column;
-    align-items: stretch;
+    flex-direction: column; /* Stacks items vertically on smaller screens */
+    align-items: stretch; /* Stretches items to fill the container's width */
   }
-  
+
   .forms-searchbar {
-    width: 100% !important;
+    width: 100% !important; /* Forces search bar to take full width */
     margin-right: 0;
   }
-  
+
   .icon-group {
-    align-self: center;
+    align-self: flex-start; /* Aligns the icon group to the left side */
     margin-top: 10px;
   }
 }
