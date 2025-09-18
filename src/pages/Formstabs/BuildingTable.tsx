@@ -125,13 +125,17 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
         setTotalAdjustments(adjustmentsMap);
     };
 
-    const calculateMarketValues = (buildingCodeRate: number, depreciationRate: number | null, area: number): { base: number, adjusted: number } => {
+    const calculateMarketValues = (buildingCodeRate: number, depreciationRate: number | null, area: number, constructionPercent: number | null): { base: number, adjusted: number } => {
         const baseMarketValue = buildingCodeRate * area;
         let adjustedMarketValue = baseMarketValue;
 
+        if (constructionPercent !== null && constructionPercent !== undefined) {
+            adjustedMarketValue = adjustedMarketValue * (constructionPercent / 100);
+        }
+
         if (depreciationRate !== null && depreciationRate !== undefined) {
             const depreciationDecimal = depreciationRate / 100;
-            adjustedMarketValue = baseMarketValue * (1 - depreciationDecimal);
+            adjustedMarketValue = adjustedMarketValue * (1 - depreciationDecimal);
         }
 
         return { base: baseMarketValue, adjusted: adjustedMarketValue };
@@ -188,7 +192,7 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
                         const buildingCodeData = await getBuildingCodeByCode(data.buildingCode);
                         if (buildingCodeData) {
                             ratesMap.set(id, buildingCodeData.rate);
-                            const marketValues = calculateMarketValues(buildingCodeData.rate, data.depreciationRate, area);
+                            const marketValues = calculateMarketValues(buildingCodeData.rate, data.depreciationRate, area, data.constructionPercent);
                             baseMarketValuesMap.set(id, marketValues.base);
                             adjustedMarketValuesMap.set(id, marketValues.adjusted);
                             const assessmentLevel = await getAssessmentLevelForBuilding(marketValues.adjusted);

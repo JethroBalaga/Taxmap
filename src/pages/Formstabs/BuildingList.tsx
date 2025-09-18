@@ -8,7 +8,6 @@ import {
     IonCol,
     IonText,
     IonSpinner,
-    IonSearchbar,
     IonIcon,
     IonButton,
 } from "@ionic/react";
