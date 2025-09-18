@@ -8,8 +8,7 @@ import {
 } from "@ionic/react";
 import { createOutline, arrowUpCircleOutline, trashOutline} from "ionicons/icons";
 import DynamicTable from "../../components/GlobalComponent/DynamicTable";
-import { BuildingAdjustmentData } from "../../utils/tablestorages/BuildingAdjustmentLocalStorage";
-import { BuildingAdjustmentLocalStorage } from "../../utils/tablestorages/BuildingAdjustmentLocalStorage";
+import { BuildingAdjustmentData,BuildingAdjustmentLocalStorage} from "../../utils/tablestorages/BuildingAdjustmentLocalStorage";
 import "../../CSS/BuildingResponsive.css";
 
 interface BuildingAdjustmentsTableProps {
