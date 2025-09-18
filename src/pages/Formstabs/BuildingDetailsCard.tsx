@@ -1,4 +1,3 @@
-// src/components/Building/BuildingDetailsCard.tsx
 import React from "react";
 import { IonCard, IonCardContent, IonButton, IonIcon } from "@ionic/react";
 import { create } from "ionicons/icons";
@@ -7,15 +6,17 @@ import "../../CSS/BuildingResponsive.css";
 interface BuildingDetailsCardProps {
     buildingData: any;
     buildingRate?: number;
+    onUpdateClick: (buildingId: string, buildingData: any) => void; // Added callback
 }
 
 const BuildingDetailsCard: React.FC<BuildingDetailsCardProps> = ({
     buildingData,
-    buildingRate
+    buildingRate,
+    onUpdateClick
 }) => {
-    // You can define an empty function for the button's onClick handler for now
     const handleUpdate = () => {
-        console.log('Update button clicked (no functionality yet)');
+        // Call the parent callback with building ID and data
+        onUpdateClick(buildingData.id, buildingData);
     };
 
     const buildingDetailItems = [
