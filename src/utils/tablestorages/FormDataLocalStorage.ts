@@ -9,6 +9,9 @@ export interface FormData {
   actualUse: string;
   area: number;
   status: string; // Status string, defaults to "unploaded"
+  uploaded?: boolean; // ADD THIS - to track if form has been uploaded
+  synced_id?: string; // ADD THIS - to store the database form_id after upload
+  userId?: string; // ADD THIS - optional user ID
 }
 
 const FORM_DATA_KEY = 'formData';
@@ -46,13 +49,14 @@ export const FormDataLocalStorage = {
   },
 
   // Save NEW form data to localStorage with generated ID and default status
-  saveFormData: (formData: Omit<FormData, 'id' | 'status'>): FormData => {
+  saveFormData: (formData: Omit<FormData, 'id' | 'status' | 'uploaded'>): FormData => {
     try {
       const allForms = FormDataLocalStorage.getAllFormData();
       const newForm: FormData = {
         ...formData,
         id: generateRandomId(),
-        status: 'unploaded' // Automatically add status with default value
+        status: 'unploaded', // Automatically add status with default value
+        uploaded: false // ADD THIS - default to not uploaded
       };
       
       const updatedForms = [...allForms, newForm];
@@ -116,9 +120,30 @@ export const FormDataLocalStorage = {
     return allForms.filter(form => form.status === status);
   },
 
+  // Get uploaded forms
+  getUploadedForms: (): FormData[] => {
+    const allForms = FormDataLocalStorage.getAllFormData();
+    return allForms.filter(form => form.uploaded === true);
+  },
+
+  // Get unuploaded forms
+  getUnuploadedForms: (): FormData[] => {
+    const allForms = FormDataLocalStorage.getAllFormData();
+    return allForms.filter(form => form.uploaded !== true);
+  },
+
   // Update status of form data
   updateFormDataStatus: (id: string, status: string): FormData | null => {
     return FormDataLocalStorage.updateFormData(id, { status });
+  },
+
+  // Mark form as uploaded
+  markFormAsUploaded: (id: string, synced_id: string): FormData | null => {
+    return FormDataLocalStorage.updateFormData(id, { 
+      uploaded: true, 
+      synced_id, 
+      status: 'New' 
+    });
   },
 
   // Generate a new random ID
