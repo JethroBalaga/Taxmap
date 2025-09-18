@@ -361,7 +361,7 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
                 user_id: formData.userId || null,
                 district_id: formData.district,
                 actual_used_id: formData.actualUse,
-                subclass_id: formData.subclass,
+                subclass_id: formData.subclass || null,
                 status: 'New'
             });
 
