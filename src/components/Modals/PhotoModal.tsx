@@ -505,6 +505,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
             duration={toastButtons.length === 1 ? 3000 : 0}
             buttons={toastButtons}
             position="middle"
+            color="warning"
           />
         </div>
       </IonContent>
