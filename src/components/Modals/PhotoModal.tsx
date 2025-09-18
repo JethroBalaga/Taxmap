@@ -1,4 +1,3 @@
-// src/components/Modals/PhotoModal.tsx
 import React, { useState, useEffect } from 'react';
 import { Camera, CameraResultType, CameraSource, CameraDirection } from '@capacitor/camera';
 import { Geolocation } from '@capacitor/geolocation';
@@ -20,7 +19,8 @@ import {
   IonCard,
   IonCardContent,
   IonCardHeader,
-  IonCardTitle
+  IonCardTitle,
+  IonToast
 } from '@ionic/react';
 import { close, camera, informationCircle, location, locationOutline, warning } from 'ionicons/icons';
 import { FormData } from './Form';
@@ -63,6 +63,9 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
     photoTag: any;
     valueInfo: any;
   } | null>(null);
+  const [showConfirmToast, setShowConfirmToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastButtons, setToastButtons] = useState<any[]>([]);
 
   // Log the data when modal opens
   useEffect(() => {
@@ -139,6 +142,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
     setIsGettingLocation(false);
     setCurrentLocation(null);
     setStoredData(null);
+    setShowConfirmToast(false);
     onClose();
   };
 
@@ -154,12 +158,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
     return (base64.length * 3) / 4 - padding;
   };
 
-  const handleSubmit = async () => {
-    if (!photo) {
-      setError('Please take a photo first');
-      return;
-    }
-
+  const performSubmission = async () => {
     setIsSubmitting(true);
     setError(null);
 
@@ -193,7 +192,6 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
         valueInfo = ValueInfoLocalStorage.addValueInfo({
           formDataId: savedFormData.id,
           photoTagId: photoTag.id,
-          status: 'pending'
         });
         console.log('ValueInfo created:', valueInfo);
 
@@ -217,21 +215,57 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
 
       // Call callbacks
       if (onSubmit && formData && buildingData) {
-        await onSubmit(photo, formData, buildingData);
+        await onSubmit(photo!, formData, buildingData);
       } else {
-        onPhotoTaken(photo);
+        onPhotoTaken(photo!);
       }
       
       if (onCompleteSubmission) {
         onCompleteSubmission();
       }
       
+      // Show success message
+      setToastMessage('Data successfully saved!');
+      setToastButtons([{ text: 'OK', role: 'cancel' }]);
+      setShowConfirmToast(true);
+      
     } catch (err) {
       setError('Submission failed: ' + (err as Error).message);
       console.error('Submission error:', err);
+      
+      // Show error message
+      setToastMessage('Error saving data: ' + (err as Error).message);
+      setToastButtons([{ text: 'OK', role: 'cancel' }]);
+      setShowConfirmToast(true);
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleSubmit = async () => {
+    if (!photo) {
+      setError('Please take a photo first');
+      return;
+    }
+
+    // Show confirmation toast instead of immediately submitting
+    setToastMessage('Are you sure you want to submit this photo and save all data?');
+    setToastButtons([
+      {
+        text: 'No',
+        role: 'cancel',
+        handler: () => {
+          console.log('Submission cancelled');
+        }
+      },
+      {
+        text: 'Yes',
+        handler: async () => {
+          await performSubmission();
+        }
+      }
+    ]);
+    setShowConfirmToast(true);
   };
 
   const retakePhoto = () => {
@@ -463,6 +497,15 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
               </div>
             </>
           )}
+
+          <IonToast
+            isOpen={showConfirmToast}
+            onDidDismiss={() => setShowConfirmToast(false)}
+            message={toastMessage}
+            duration={toastButtons.length === 1 ? 3000 : 0}
+            buttons={toastButtons}
+            position="middle"
+          />
         </div>
       </IonContent>
     </IonModal>
