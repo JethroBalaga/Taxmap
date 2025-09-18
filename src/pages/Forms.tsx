@@ -37,7 +37,6 @@ const Forms: React.FC = () => {
   const [showDeleteAlert, setShowDeleteAlert] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [showBuildingTable, setShowBuildingTable] = useState(false);
-  const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [showToast, setShowToast] = useState(false);
@@ -60,7 +59,6 @@ const Forms: React.FC = () => {
       } else {
         setFormData([]);
       }
-      setLastRefresh(new Date());
     } catch (error) {
       console.error('Error loading form data:', error);
       setFormData([]);
