@@ -8,6 +8,8 @@ import { BuildingSubcomponentData, getBuildingSubcomponentById } from "../../uti
 import { FormDataLocalStorage } from '../../utils/tablestorages/FormDataLocalStorage';
 import { PhotoTagLocalStorage } from '../../utils/tablestorages/PhotoTagLocalStorage';
 import { supabaseApi } from '../../services/supabaseApi';
+import { supabase } from '../../utils/supaBaseClient';
+import { Directory, Filesystem } from '@capacitor/filesystem';
 
 export interface AssessmentLevelInfo {
     rate_percent: string;
@@ -62,6 +64,85 @@ export const useBuildingTableLogic = (
     const [showToast, setShowToast] = useState(false);
     const [toastMessage, setToastMessage] = useState('');
     const [toastColor, setToastColor] = useState<'success' | 'danger' | 'warning' | undefined>(undefined);
+
+    // Function to get photo file from Capacitor Filesystem
+    const getPhotoFile = useCallback(async (photoTag: any): Promise<Blob | null> => {
+        try {
+            // Check if we have the photo path stored
+            if (!photoTag.photoPath) {
+                console.error('No photo path found in photo tag');
+                return null;
+            }
+
+            try {
+                // Read the file from Filesystem
+                const readFileResult = await Filesystem.readFile({
+                    path: photoTag.photoPath,
+                    directory: Directory.Data
+                });
+
+                // Convert base64 to blob
+                const base64Response = await fetch(`data:image/jpeg;base64,${readFileResult.data}`);
+                const blob = await base64Response.blob();
+                return blob;
+                
+            } catch (readError) {
+                console.error('Error reading file from Filesystem:', readError);
+                
+                // Fallback: try to read from the photoData if available
+                if (photoTag.photoData && photoTag.photoData.startsWith('data:image')) {
+                    const base64Response = await fetch(photoTag.photoData);
+                    return await base64Response.blob();
+                }
+                
+                return null;
+            }
+        } catch (error) {
+            console.error('Error getting photo file:', error);
+            return null;
+        }
+    }, []);
+
+    // Function to get photo file path for display or other purposes
+    const getPhotoFilePath = useCallback(async (photoTag: any): Promise<string | null> => {
+        try {
+            if (photoTag.photoPath) {
+                // For mobile, we can use the Filesystem URL
+                const fileInfo = await Filesystem.getUri({
+                    path: photoTag.photoPath,
+                    directory: Directory.Data
+                });
+                return fileInfo.uri;
+            }
+            
+            // Fallback to base64 data URL
+            if (photoTag.photoData) {
+                return photoTag.photoData;
+            }
+            
+            return null;
+        } catch (error) {
+            console.error('Error getting photo file path:', error);
+            return null;
+        }
+    }, []);
+
+    // Function to clean up photos after successful upload
+    const cleanupLocalPhotos = useCallback(async (photoTag: any) => {
+        try {
+            if (photoTag.photoPath) {
+                // Delete the local file after successful upload
+                await Filesystem.deleteFile({
+                    path: photoTag.photoPath,
+                    directory: Directory.Data
+                });
+                console.log('Local photo cleaned up successfully');
+            }
+        } catch (error) {
+            console.warn('Could not clean up local photo:', error);
+            // Non-critical error, continue anyway
+        }
+    }, []);
 
     const calculateMarketValues = useCallback((buildingCodeRate: number, depreciationRate: number | null, area: number, constructionPercent: number | null): { base: number, adjusted: number } => {
         const baseMarketValue = buildingCodeRate * area;
@@ -304,6 +385,58 @@ export const useBuildingTableLogic = (
 
             const valueInfo = valueInfos[0];
 
+            if (!valueInfo.photoTagId) {
+                throw new Error('No photo tag ID found in value info');
+            }
+
+            const photoTag = PhotoTagLocalStorage.getPhotoTag(valueInfo.photoTagId);
+            if (!photoTag) {
+                throw new Error('Photo tag not found in local storage');
+            }
+
+            // 1. First insert the tag record to get the tag_id
+            const databaseTagId = await supabaseApi.insertPhoto({
+                photo: photoTag.photoName,
+                longitude: photoTag.longitude,
+                latitude: photoTag.latitude,
+                accuracy: photoTag.accuracy || null,
+                altitude: photoTag.altitude || null,
+                date_taken: photoTag.timestamp.toISOString().split('T')[0]
+            });
+
+            // 2. Upload the photo to Supabase storage using the tag_id as folder name
+            const photoFile = await getPhotoFile(photoTag);
+            if (photoFile) {
+                try {
+                    const folderName = `tag_${databaseTagId}`;
+                    const filePath = `${folderName}/${photoTag.photoName}`;
+
+                    const { error: uploadError } = await supabase.storage
+                        .from('tag-photos')
+                        .upload(filePath, photoFile, {
+                            contentType: 'image/jpeg',
+                            upsert: false
+                        });
+
+                    if (uploadError) {
+                        console.error('Photo upload failed:', uploadError);
+                        showToastMessage('Form submitted but photo upload failed', 'warning');
+                    } else {
+                        console.log('Photo uploaded successfully to Supabase storage');
+                        
+                        // Clean up local photo after successful upload
+                        await cleanupLocalPhotos(photoTag);
+                    }
+                } catch (uploadError) {
+                    console.error('Photo upload error:', uploadError);
+                    showToastMessage('Form submitted but photo upload failed', 'warning');
+                }
+            } else {
+                console.warn('Could not retrieve photo file for upload');
+                showToastMessage('Form submitted but could not retrieve photo', 'warning');
+            }
+
+            // 3. Continue with the rest of the database operations
             const databaseFormId = await supabaseApi.insertForm({
                 declarant_id: formData.declarantId || 0,
                 kind_id: parseInt(formData.kind),
@@ -314,24 +447,6 @@ export const useBuildingTableLogic = (
                 actual_used_id: formData.actualUse,
                 subclass_id: formData.subclass || null,
                 status: 'New'
-            });
-
-            if (!valueInfo.photoTagId) {
-                throw new Error('No photo tag ID found in value info');
-            }
-
-            const photoTag = PhotoTagLocalStorage.getPhotoTag(valueInfo.photoTagId);
-            if (!photoTag) {
-                throw new Error('Photo tag not found in local storage');
-            }
-
-            const databaseTagId = await supabaseApi.insertPhoto({
-                photo: photoTag.photoName,
-                longitude: photoTag.longitude,
-                latitude: photoTag.latitude,
-                accuracy: photoTag.accuracy || null,
-                altitude: photoTag.altitude || null,
-                date_taken: photoTag.timestamp.toISOString().split('T')[0]
             });
 
             const databaseValueInfoId = await supabaseApi.insertValueInfo(
@@ -417,7 +532,7 @@ export const useBuildingTableLogic = (
         showToast,
         toastMessage,
         toastColor,
-
+        
         // State setters
         setBuildingInfoIds,
         setBuildingDataList,
@@ -445,7 +560,7 @@ export const useBuildingTableLogic = (
         setShowToast,
         setToastMessage,
         setToastColor,
-
+        
         // Functions
         loadBuildingData,
         loadBuildingAdjustments,
@@ -456,6 +571,7 @@ export const useBuildingTableLogic = (
         handleBuildingUpdate,
         handleUpdateClick,
         showToastMessage,
-        handleSubmit
+        handleSubmit,
+        getPhotoFilePath
     };
 };

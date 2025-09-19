@@ -83,7 +83,7 @@ const BuildingTableContent: React.FC<BuildingTableProps> = ({
         handleUpdateClick,
         showToastMessage,
         handleSubmit,
-        // Add the missing state setters that are used in the modal onClose handlers
+        // State setters
         setShowAdjustmentModal,
         setSelectedAdjustmentForUpdate,
         setShowUpdateAdjustmentModal,
@@ -91,7 +91,7 @@ const BuildingTableContent: React.FC<BuildingTableProps> = ({
         setShowUpdateModal,
         setSelectedBuildingId,
         setSelectedBuildingData,
-        setShowToast // Add this line
+        setShowToast
     } = useBuildingTableLogic(form_id, kind, classification, area, declarant, actual_use, district, subclass);
 
     return (
