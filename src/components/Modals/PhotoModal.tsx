@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Camera, CameraResultType, CameraSource, CameraDirection } from '@capacitor/camera';
 import { Geolocation } from '@capacitor/geolocation';
+import { Filesystem, Directory } from '@capacitor/filesystem';
+import { Capacitor } from '@capacitor/core';
 import { 
   IonButton, 
   IonImg, 
@@ -66,15 +68,52 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
   const [showConfirmToast, setShowConfirmToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [toastButtons, setToastButtons] = useState<any[]>([]);
+  const [photoName, setPhotoName] = useState<string>('');
+  const [isNativePlatform, setIsNativePlatform] = useState(false);
+
+  useEffect(() => {
+    setIsNativePlatform(Capacitor.isNativePlatform());
+  }, []);
+
+  // Check and create phototags directory when modal opens (mobile only)
+  const checkAndCreateDirectory = async () => {
+    if (!isNativePlatform) return;
+    
+    try {
+      await Filesystem.readdir({
+        path: 'phototags',
+        directory: Directory.Data
+      });
+      console.log('phototags directory exists');
+    } catch (error) {
+      console.log('Creating phototags directory...');
+      try {
+        await Filesystem.mkdir({
+          path: 'phototags',
+          directory: Directory.Data,
+          recursive: true
+        });
+        console.log('phototags directory created');
+      } catch (mkdirError) {
+        console.warn('Could not create phototags directory:', mkdirError);
+      }
+    }
+  };
 
   // Log the data when modal opens
   useEffect(() => {
     if (isOpen) {
       console.log('PhotoModal opened with formData:', formData);
       console.log('PhotoModal opened with buildingData:', buildingData);
+      console.log('Platform:', isNativePlatform ? 'Mobile' : 'Browser');
       setStoredData(null);
+      setPhotoName(generateFileName());
+      
+      if (isNativePlatform) {
+        checkAndCreateDirectory().catch(console.error);
+      }
     }
-  }, [isOpen, formData, buildingData]);
+  }, [isOpen, formData, buildingData, isNativePlatform]);
 
   const takePhoto = async () => {
     try {
@@ -88,6 +127,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
 
       if (image.dataUrl) {
         setPhoto(image.dataUrl);
+        setPhotoName(generateFileName());
         setError(null);
         setLocationError(null);
         await getCurrentLocation();
@@ -103,6 +143,16 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
     try {
       setIsGettingLocation(true);
       setLocationError(null);
+      
+      // On browser, mock location for testing
+      if (!isNativePlatform) {
+        setCurrentLocation({
+          latitude: 37.7749 + (Math.random() - 0.5) * 0.01,
+          longitude: -122.4194 + (Math.random() - 0.5) * 0.01,
+          accuracy: 10
+        });
+        return;
+      }
       
       const position = await Geolocation.getCurrentPosition();
       
@@ -143,6 +193,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
     setCurrentLocation(null);
     setStoredData(null);
     setShowConfirmToast(false);
+    setPhotoName('');
     onClose();
   };
 
@@ -158,13 +209,56 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
     return (base64.length * 3) / 4 - padding;
   };
 
+  // Function to save the image - works on both browser and mobile
+  const saveImageToStorage = async (dataUrl: string, fileName: string): Promise<string> => {
+    try {
+      const base64Data = dataUrl.split(',')[1];
+      
+      if (!base64Data) {
+        throw new Error('Invalid data URL format');
+      }
+
+      if (isNativePlatform) {
+        // Mobile - use Filesystem API
+        const result = await Filesystem.writeFile({
+          path: `phototags/${fileName}`,
+          data: base64Data,
+          directory: Directory.Data,
+          recursive: true
+        });
+
+        console.log('Image saved to mobile storage:', result.uri);
+        return result.uri;
+      } else {
+        // Browser - simulate saving
+        console.log('Browser environment - simulating file save');
+        
+        // Store in localStorage for testing purposes
+        const photoKey = `photo_${fileName}`;
+        localStorage.setItem(photoKey, dataUrl);
+        
+        // Return mock path for consistency
+        return `mock://phototags/${fileName}`;
+      }
+      
+    } catch (error: any) {
+      console.error('Error saving image:', error);
+      throw new Error(`Failed to save image: ${error.message}`);
+    }
+  };
+
   const performSubmission = async () => {
     setIsSubmitting(true);
     setError(null);
 
     try {
-      const fileName = generateFileName();
-      const photoPath = `../phototags/${fileName}`;
+      if (!photo) {
+        throw new Error('No photo to submit');
+      }
+
+      // Save the image to storage
+      const imageUri = await saveImageToStorage(photo, photoName);
+      console.log('Image saved at:', imageUri);
       
       let savedFormData = null;
       let savedBuildingData = null;
@@ -177,9 +271,9 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
         console.log('Form data saved:', savedFormData);
       }
       
-      // 2. Store PhotoTag
+      // 2. Store PhotoTag (using photoName instead of photoPath)
       photoTag = PhotoTagLocalStorage.addPhotoTag({
-        photoPath,
+        photoName, // Use just the filename
         longitude: currentLocation?.longitude || 0,
         latitude: currentLocation?.latitude || 0,
         accuracy: currentLocation?.accuracy,
@@ -215,26 +309,30 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
 
       // Call callbacks
       if (onSubmit && formData && buildingData) {
-        await onSubmit(photo!, formData, buildingData);
+        await onSubmit(photo, formData, buildingData);
       } else {
-        onPhotoTaken(photo!);
+        onPhotoTaken(photo);
       }
       
       if (onCompleteSubmission) {
         onCompleteSubmission();
       }
       
-      // Show success message
-      setToastMessage('Data successfully saved!');
+      // Show success message with platform info
+      const platformMessage = isNativePlatform 
+        ? 'Data successfully saved! Image stored in phototags folder.' 
+        : 'Data successfully saved! (Browser simulation mode)';
+      
+      setToastMessage(platformMessage);
       setToastButtons([{ text: 'OK', role: 'cancel' }]);
       setShowConfirmToast(true);
       
-    } catch (err) {
-      setError('Submission failed: ' + (err as Error).message);
+    } catch (err: any) {
+      setError('Submission failed: ' + err.message);
       console.error('Submission error:', err);
       
       // Show error message
-      setToastMessage('Error saving data: ' + (err as Error).message);
+      setToastMessage('Error saving data: ' + err.message);
       setToastButtons([{ text: 'OK', role: 'cancel' }]);
       setShowConfirmToast(true);
     } finally {
@@ -274,6 +372,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
     setLocationError(null);
     setCurrentLocation(null);
     setStoredData(null);
+    setPhotoName(generateFileName());
   };
 
   const formatCoordinates = (lat: number, lng: number): string => {
@@ -289,7 +388,9 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
     <IonModal isOpen={isOpen} onDidDismiss={handleClose} className="custom-wide-modal">
       <IonHeader>
         <IonToolbar className="fancy-header">
-          <IonTitle className="fancy-title">Take Building Photo</IonTitle>
+          <IonTitle className="fancy-title">
+            Take Building Photo {!isNativePlatform && '(Simulation Mode)'}
+          </IonTitle>
           <IonButtons slot="end">
             <IonButton onClick={handleClose} disabled={isSubmitting} className="fancy-close-btn">
               <IonIcon icon={close} />
@@ -299,6 +400,22 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
       </IonHeader>
       <IonContent className="modal-content">
         <div className="form-container">
+          {!isNativePlatform && (
+            <div style={{ 
+              backgroundColor: '#fff3cd', 
+              border: '1px solid #ffeaa7', 
+              padding: '10px', 
+              margin: '10px',
+              borderRadius: '5px',
+              textAlign: 'center'
+            }}>
+              <IonIcon icon={warning} color="warning" /> 
+              <IonText color="warning">
+                Browser simulation mode - files are stored in memory
+              </IonText>
+            </div>
+          )}
+
           {error && (
             <IonAlert
               isOpen={!!error}
@@ -442,9 +559,23 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                   </div>
                   
                   <div className="info-item">
-                    <span className="info-label">File Path:</span>
+                    <span className="info-label">File Name:</span>
                     <span className="info-value" style={{ fontSize: '12px' }}>
-                      ../phototags/{generateFileName()}
+                      {photoName}
+                    </span>
+                  </div>
+
+                  <div className="info-item">
+                    <span className="info-label">Storage Path:</span>
+                    <span className="info-value" style={{ fontSize: '12px' }}>
+                      {isNativePlatform ? 'data/phototags/' : 'browser/memory/'}
+                    </span>
+                  </div>
+
+                  <div className="info-item">
+                    <span className="info-label">Platform:</span>
+                    <span className="info-value" style={{ fontSize: '12px' }}>
+                      {isNativePlatform ? 'Mobile' : 'Browser (Simulation)'}
                     </span>
                   </div>
                 </div>
@@ -466,7 +597,6 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                         <IonButton 
                           onClick={getCurrentLocation}
                           size="small"
-                          fill="outline"
                           color="medium"
                           disabled={isSubmitting}
                         >
