@@ -32,17 +32,52 @@ import '@ionic/react/css/palettes/dark.system.css';
 /* Theme variables */
 import './theme/variables.css';
 import Login from './pages/Login';
-import { menu } from 'ionicons/icons';
 import Menu from './pages/Menu';
+import { isSessionValid } from './utils/localStorage';
 
 setupIonicReact();
+
+// Protected Route Component
+const ProtectedRoute: React.FC<{ component: React.ComponentType<any>; path: string; exact?: boolean }> = ({
+  component: Component,
+  ...rest
+}) => (
+  <Route
+    {...rest}
+    render={(props) =>
+      isSessionValid() ? (
+        <Component {...props} />
+      ) : (
+        <Redirect to="/" />
+      )
+    }
+  />
+);
+
+// Public Route Component (redirect to menu if already logged in)
+const PublicRoute: React.FC<{ component: React.ComponentType<any>; path: string; exact?: boolean }> = ({
+  component: Component,
+  ...rest
+}) => (
+  <Route
+    {...rest}
+    render={(props) =>
+      !isSessionValid() ? (
+        <Component {...props} />
+      ) : (
+        <Redirect to="/menu" />
+      )
+    }
+  />
+);
 
 const App: React.FC = () => (
   <IonApp>
     <IonReactRouter>
       <IonRouterOutlet>
-        <Route exact path="/" component={Login} />
-        <Route path="/menu" component={Menu} />
+        <PublicRoute exact path="/" component={Login} />
+        <ProtectedRoute path="/menu" component={Menu} />
+        <Redirect to="/" />
       </IonRouterOutlet>
     </IonReactRouter>
   </IonApp>
