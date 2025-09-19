@@ -24,10 +24,18 @@ import { ValueInfoLocalStorage } from '../utils/tablestorages/ValueInfoLocalStor
 import { PhotoTagLocalStorage } from '../utils/tablestorages/PhotoTagLocalStorage';
 import { BuildingDataLocalStorage } from '../utils/tablestorages/BuildingDataLocalStorage';
 import { BuildingAdjustmentLocalStorage } from '../utils/tablestorages/BuildingAdjustmentLocalStorage';
+import { Filesystem, Directory } from '@capacitor/filesystem';
 import './../CSS/Forms.css';
 import DynamicTable from '../components/GlobalComponent/DynamicTable';
 import FormUpdateModal from '../components/Modals/FormUpdateModal';
 import { useHistory } from 'react-router-dom';
+
+// Add interface for PhotoTag if not already defined
+interface PhotoTag {
+  id: string;
+  imagePath?: string;
+  // Add other properties as needed
+}
 
 const Forms: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -142,7 +150,58 @@ const Forms: React.FC = () => {
     }
   };
 
-  const deleteRelatedData = (formId: string) => {
+  const deleteImageFile = async (imagePath: string): Promise<void> => {
+    if (!imagePath || typeof imagePath !== 'string' || imagePath.trim() === '') {
+      console.warn('Invalid image path provided for deletion');
+      return;
+    }
+    
+    try {
+      // Extract just the filename from the path
+      let filename = imagePath;
+      
+      // Remove file:// prefix if present
+      if (filename.startsWith('file://')) {
+        filename = filename.substring(7); // Remove "file://" prefix
+      }
+      
+      // Extract just the filename part (after the last slash)
+      const lastSlashIndex = Math.max(
+        filename.lastIndexOf('/'),
+        filename.lastIndexOf('\\')
+      );
+      
+      if (lastSlashIndex !== -1) {
+        filename = filename.substring(lastSlashIndex + 1);
+      }
+      
+      // Ensure we have a valid filename
+      if (!filename || filename.trim() === '') {
+        console.warn('Could not extract valid filename from path:', imagePath);
+        return;
+      }
+      
+      console.log(`Attempting to delete image file: ${filename}`);
+      
+      // Try to delete the file
+      await Filesystem.deleteFile({
+        path: filename,
+        directory: Directory.Data
+      });
+      
+      console.log(`Successfully deleted image file: ${filename}`);
+    } catch (error: any) {
+      // Check if it's a "file does not exist" error
+      if (error.message && error.message.includes('does not exist')) {
+        console.log(`Image file already deleted: ${imagePath}`);
+      } else {
+        console.warn(`Could not delete image file: ${imagePath}`, error);
+      }
+      // Continue with other deletions even if file deletion fails
+    }
+  };
+
+  const deleteRelatedData = async (formId: string): Promise<void> => {
     console.log(`Deleting related data for form ID: ${formId}`);
 
     const allValueInfo = ValueInfoLocalStorage.getAllValueInfo();
@@ -150,57 +209,108 @@ const Forms: React.FC = () => {
 
     console.log(`Found ${relatedValueInfo.length} value info entries to delete`);
 
-    relatedValueInfo.forEach(valueInfo => {
+    // First, delete all image files
+    const imageDeletionPromises: Promise<void>[] = [];
+    
+    for (const valueInfo of relatedValueInfo) {
       console.log(`Processing value info ID: ${valueInfo.id}`);
-
-      const buildingDataDeleted = BuildingDataLocalStorage.deleteBuildingData(valueInfo.id);
-      if (buildingDataDeleted) {
-        console.log(`Deleted building data for value info ID: ${valueInfo.id}`);
-      }
-
-      const buildingAdjustmentsDeleted = BuildingAdjustmentLocalStorage.deleteBuildingAdjustmentsByValueInfoId(valueInfo.id);
-      if (buildingAdjustmentsDeleted) {
-        console.log(`Deleted building adjustments for value info ID: ${valueInfo.id}`);
-      }
-
+      
       if (valueInfo.photoTagId) {
-        const photoTagDeleted = PhotoTagLocalStorage.deletePhotoTag(valueInfo.photoTagId);
-        if (photoTagDeleted) {
-          console.log(`Deleted photo tag ID: ${valueInfo.photoTagId}`);
+        try {
+          // Use type assertion to handle the photoTag response
+          const photoTag = PhotoTagLocalStorage.getPhotoTag(valueInfo.photoTagId) as unknown as PhotoTag;
+          
+          // Check if photoTag exists and has imagePath property
+          if (photoTag && typeof photoTag === 'object' && 'imagePath' in photoTag) {
+            const imagePath = (photoTag as any).imagePath;
+            if (imagePath && typeof imagePath === 'string') {
+              // Add the deletion promise to the array
+              imageDeletionPromises.push(deleteImageFile(imagePath));
+            }
+          }
+        } catch (error) {
+          console.error(`Error processing photo tag for value info ${valueInfo.id}:`, error);
+          // Continue with other deletions
         }
       }
+    }
 
-      const valueInfoDeleted = ValueInfoLocalStorage.deleteValueInfo(valueInfo.id);
-      if (valueInfoDeleted) {
-        console.log(`Deleted value info ID: ${valueInfo.id}`);
+    // Wait for all image deletions to complete (or fail)
+    try {
+      await Promise.allSettled(imageDeletionPromises);
+      console.log('All image deletion operations completed');
+    } catch (error) {
+      console.error('Error in image deletion process:', error);
+    }
+
+    // Then delete database entries
+    relatedValueInfo.forEach(valueInfo => {
+      console.log(`Deleting database entries for value info ID: ${valueInfo.id}`);
+
+      try {
+        const buildingDataDeleted = BuildingDataLocalStorage.deleteBuildingData(valueInfo.id);
+        if (buildingDataDeleted) {
+          console.log(`Deleted building data for value info ID: ${valueInfo.id}`);
+        }
+
+        const buildingAdjustmentsDeleted = BuildingAdjustmentLocalStorage.deleteBuildingAdjustmentsByValueInfoId(valueInfo.id);
+        if (buildingAdjustmentsDeleted) {
+          console.log(`Deleted building adjustments for value info ID: ${valueInfo.id}`);
+        }
+
+        if (valueInfo.photoTagId) {
+          const photoTagDeleted = PhotoTagLocalStorage.deletePhotoTag(valueInfo.photoTagId);
+          if (photoTagDeleted) {
+            console.log(`Deleted photo tag ID: ${valueInfo.photoTagId}`);
+          }
+        }
+
+        const valueInfoDeleted = ValueInfoLocalStorage.deleteValueInfo(valueInfo.id);
+        if (valueInfoDeleted) {
+          console.log(`Deleted value info ID: ${valueInfo.id}`);
+        }
+      } catch (error) {
+        console.error(`Error deleting database entries for value info ${valueInfo.id}:`, error);
       }
     });
 
+    // Clean up any orphaned entries
     const remainingValueInfo = ValueInfoLocalStorage.getAllValueInfo();
     const orphanedValueInfo = remainingValueInfo.filter(info => info.formDataId === formId);
 
     if (orphanedValueInfo.length > 0) {
       console.log(`Found ${orphanedValueInfo.length} orphaned value info entries, deleting them`);
       orphanedValueInfo.forEach(info => {
-        ValueInfoLocalStorage.deleteValueInfo(info.id);
+        try {
+          ValueInfoLocalStorage.deleteValueInfo(info.id);
+        } catch (error) {
+          console.error(`Error deleting orphaned value info ${info.id}:`, error);
+        }
       });
     }
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (selectedForm) {
-      deleteRelatedData(selectedForm.id);
+      try {
+        await deleteRelatedData(selectedForm.id);
 
-      const success = FormDataLocalStorage.deleteFormData(selectedForm.id);
-      if (success) {
-        const updatedForms = formData.filter(form => form.id !== selectedForm.id);
-        setFormData(updatedForms);
-        setSelectedForm(null);
-        setToastMessage('Form and all related data deleted successfully');
-        setToastButtons([{ text: 'OK', role: 'cancel' }]);
-        setShowToast(true);
-      } else {
-        setToastMessage('Error deleting form');
+        const success = FormDataLocalStorage.deleteFormData(selectedForm.id);
+        if (success) {
+          const updatedForms = formData.filter(form => form.id !== selectedForm.id);
+          setFormData(updatedForms);
+          setSelectedForm(null);
+          setToastMessage('Form and all related data deleted successfully');
+          setToastButtons([{ text: 'OK', role: 'cancel' }]);
+          setShowToast(true);
+        } else {
+          setToastMessage('Error deleting form');
+          setToastButtons([{ text: 'OK', role: 'cancel' }]);
+          setShowToast(true);
+        }
+      } catch (error) {
+        console.error('Error during deletion:', error);
+        setToastMessage('Error deleting form data');
         setToastButtons([{ text: 'OK', role: 'cancel' }]);
         setShowToast(true);
       }
