@@ -27,6 +27,7 @@ import BuildingAdjustmentModal from "../../components/Modals/BuildingAdjustmentM
 import BuildingAdjustmentUpdateModal from "../../components/Modals/BuildingAdjustmentUpdateModal";
 import BuildingSubcomponentModal from "../../components/Modals/BuildingSubcomponentModal";
 import BuildingUpdateModal from "../../components/Modals/BuildingUpdateModal";
+import { useParams, useHistory } from 'react-router-dom';
 import "../../CSS/BuildingResponsive.css";
 
 interface BuildingTableProps {
@@ -47,7 +48,65 @@ interface AssessmentLevelInfo {
     range2: number;
 }
 
-const BuildingTable: React.FC<BuildingTableProps> = ({
+// Create a wrapper component that handles routing
+const BuildingTableWrapper: React.FC = () => {
+    const { formId } = useParams<{ formId: string }>();
+    const history = useHistory();
+    
+    const [formData, setFormData] = useState<any>(null);
+    
+    useEffect(() => {
+        if (formId) {
+            const data = FormDataLocalStorage.getFormData(formId);
+            setFormData(data);
+        }
+    }, [formId]);
+    
+    const handleBack = () => {
+        history.push('/menu/forms');
+    };
+    
+    if (!formData) {
+        return (
+            <IonPage>
+                <IonHeader>
+                    <IonToolbar>
+                        <IonButtons slot="start">
+                            <IonButton onClick={handleBack}>
+                                <IonIcon icon={arrowBack} />
+                                Back
+                            </IonButton>
+                        </IonButtons>
+                        <IonTitle>Building Assessment</IonTitle>
+                    </IonToolbar>
+                </IonHeader>
+                <IonContent>
+                    <div style={{ textAlign: 'center', padding: '20px' }}>
+                        <IonSpinner name="crescent" />
+                        <p>Loading form data...</p>
+                    </div>
+                </IonContent>
+            </IonPage>
+        );
+    }
+    
+    return (
+        <BuildingTableContent
+            form_id={formData.id}
+            onBack={handleBack}
+            kind={formData.kind || ''}
+            classification={formData.classification || ''}
+            area={formData.area || 0}
+            declarant={formData.declarantId?.toString() || ''}
+            actual_use={formData.actualUse || ''}
+            district={formData.district}
+            subclass={formData.subclass}
+        />
+    );
+};
+
+// Main BuildingTable component (renamed to BuildingTableContent)
+const BuildingTableContent: React.FC<BuildingTableProps> = ({
     form_id,
     onBack,
     kind,
@@ -439,6 +498,7 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
             setIsSubmitting(false);
         }
     };
+
     return (
         <IonPage>
             <IonHeader>
@@ -580,4 +640,5 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
     );
 };
 
-export default BuildingTable;
+// Export the wrapper component as default
+export default BuildingTableWrapper;

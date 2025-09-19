@@ -18,8 +18,8 @@ import {mapOutline, logOutOutline, documentTextOutline } from 'ionicons/icons';
 import { Redirect, Route } from 'react-router';
 import { useIonRouter } from '@ionic/react';
 import Map from './Map';
-import { clearSession } from '../utils/localStorage'; // Import the clearSession function
-import { supabase } from '../utils/supaBaseClient'; // Import supabase client
+import { clearSession } from '../utils/localStorage';
+import { supabase } from '../utils/supaBaseClient';
 import Forms from './Forms';
 import BuildingTable from './Formstabs/BuildingTable';
 
@@ -32,13 +32,8 @@ const Menu: React.FC = () => {
 
     const handleLogout = async () => {
         try {
-            // Sign out from Supabase
             await supabase.auth.signOut();
-            
-            // Clear session from localStorage
             clearSession();
-            
-            // Redirect to login page
             router.push('/', 'root', 'replace');
         } catch (error) {
             console.error('Logout error:', error);
@@ -64,7 +59,6 @@ const Menu: React.FC = () => {
                             </IonMenuToggle>
                         ))}
                         
-                        {/* Logout Button */}
                         <IonMenuToggle autoHide={false}>
                             <IonItem button onClick={handleLogout} lines="none">
                                 <IonIcon icon={logOutOutline} slot="start" color="danger"></IonIcon>
@@ -87,7 +81,7 @@ const Menu: React.FC = () => {
                     <IonRouterOutlet id="main">
                         <Route exact path="/menu/map" component={Map} />
                         <Route exact path="/menu/forms" component={Forms} />
-                        <Route exact path="/menu/forms/buildingtable" component={BuildingTable} />
+                        <Route exact path="/menu/forms/buildingtable/:formId" component={BuildingTable} />
                         <Route exact path="/menu">
                             <Redirect to="/menu/map" />
                         </Route>

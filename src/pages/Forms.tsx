@@ -26,19 +26,19 @@ import { BuildingDataLocalStorage } from '../utils/tablestorages/BuildingDataLoc
 import { BuildingAdjustmentLocalStorage } from '../utils/tablestorages/BuildingAdjustmentLocalStorage';
 import './../CSS/Forms.css';
 import DynamicTable from '../components/GlobalComponent/DynamicTable';
-import BuildingTable from './Formstabs/BuildingTable';
 import FormUpdateModal from '../components/Modals/FormUpdateModal';
+import { useHistory } from 'react-router-dom';
 
 const Forms: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [formData, setFormData] = useState<FormData[]>([]);
   const [selectedForm, setSelectedForm] = useState<FormData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [showBuildingTable, setShowBuildingTable] = useState(false);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [showToast, setShowToast] = useState(false);
   const [toastButtons, setToastButtons] = useState<any[]>([]);
+  const history = useHistory();
 
   const iconActions = [
     { icon: arrowUpCircle, className: selectedForm ? "icon-blue" : "icon-blue icon-disabled", onClick: () => handleUpdateClick(), title: "Update Selected Form", enabled: !!selectedForm },
@@ -128,7 +128,8 @@ const Forms: React.FC = () => {
         : selectedForm.kind;
 
       if (kind === 2) {
-        setShowBuildingTable(true);
+        // Navigate to building table using routing
+        history.push(`/menu/forms/buildingtable/${selectedForm.id}`);
       } else {
         setToastMessage('Building details are only available for forms with kind = 2');
         setToastButtons([{ text: 'OK', role: 'cancel' }]);
@@ -210,11 +211,6 @@ const Forms: React.FC = () => {
     setSelectedForm(rowData);
   };
 
-  const handleBackToForms = () => {
-    setShowBuildingTable(false);
-    loadFormData();
-  };
-
   const handleFormUpdate = (updatedData: FormData) => {
     loadFormData();
     setSelectedForm(updatedData);
@@ -227,30 +223,6 @@ const Forms: React.FC = () => {
       )
     )
     : [];
-
-  if (showBuildingTable && selectedForm) {
-    return (
-      <IonPage>
-        <IonHeader>
-          <IonToolbar>
-            <IonTitle>Building Details</IonTitle>
-            <IonButton slot="end" onClick={handleBackToForms}>
-              Back to Forms
-            </IonButton>
-          </IonToolbar>
-        </IonHeader>
-        <BuildingTable
-          form_id={selectedForm.id}
-          declarant={selectedForm.declarantId?.toString() || ''}
-          onBack={handleBackToForms}
-          kind={selectedForm.kind || ''}
-          classification={selectedForm.classification || ''}
-          area={selectedForm.area || 0}
-          actual_use={selectedForm.actualUse || ''}
-        />
-      </IonPage>
-    );
-  }
 
   return (
     <IonPage>
