@@ -8,6 +8,15 @@ import localforage from 'localforage';
 import Form from './Modals/Form';
 import { PhotoTagLocalStorage, PhotoTagData } from '../utils/tablestorages/PhotoTagLocalStorage';
 import { createBlueMarkerIcon } from '../utils/markerIcons';
+import { 
+  IonModal, 
+  IonContent, 
+  IonIcon 
+} from '@ionic/react';
+import { close } from 'ionicons/icons';
+import MapMarkerPopup from './MapMarkerPopup';
+import { Capacitor } from '@capacitor/core';
+import { Filesystem, Directory } from '@capacitor/filesystem';
 
 const TILE_LAYER_URL = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
 const manoloFortichBounds = L.latLngBounds(
@@ -56,7 +65,10 @@ const CreateOutlineControl = ({ onClick }: { onClick: () => void }) => {
 };
 
 // Photo Markers Component
-const PhotoMarkers: React.FC<{ photoTags: PhotoTagData[] }> = ({ photoTags }) => {
+const PhotoMarkers: React.FC<{ 
+  photoTags: PhotoTagData[];
+  onMarkerClick: (photoTagId: string) => void;
+}> = ({ photoTags, onMarkerClick }) => {
   return (
     <>
       {photoTags.map((tag) => (
@@ -66,9 +78,7 @@ const PhotoMarkers: React.FC<{ photoTags: PhotoTagData[] }> = ({ photoTags }) =>
           icon={createBlueMarkerIcon()}
           eventHandlers={{
             click: () => {
-              // Show photo preview or details
-              console.log('Photo clicked:', tag);
-              // You can add a popup or modal here to show the photo
+              onMarkerClick(tag.id);
             }
           }}
         />
@@ -150,6 +160,7 @@ const MapCon: React.FC = () => {
   const [isMounted, setIsMounted] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [photoTags, setPhotoTags] = useState<PhotoTagData[]>([]);
+  const [selectedPhotoTagId, setSelectedPhotoTagId] = useState<string | null>(null);
 
   useEffect(() => {
     setIsMounted(true);
@@ -173,6 +184,10 @@ const MapCon: React.FC = () => {
     // Reload photo tags to include the new addition
     const updatedTags = PhotoTagLocalStorage.getAllPhotoTags();
     setPhotoTags(updatedTags);
+  };
+
+  const handleMarkerClick = (photoTagId: string) => {
+    setSelectedPhotoTagId(photoTagId);
   };
 
   return (
@@ -199,6 +214,13 @@ const MapCon: React.FC = () => {
           border: none !important;
           background: transparent !important;
         }
+        
+        /* Make blue markers more interactive */
+        .leaflet-marker-icon:hover {
+          transform: scale(1.2);
+          transition: transform 0.2s ease;
+          z-index: 1000;
+        }
       `}</style>
 
       {isMounted && (
@@ -219,7 +241,10 @@ const MapCon: React.FC = () => {
             />
             
             {/* Display photo markers */}
-            <PhotoMarkers photoTags={photoTags} />
+            <PhotoMarkers 
+              photoTags={photoTags} 
+              onMarkerClick={handleMarkerClick}
+            />
             
             <MapLogic onOpenForm={() => setShowForm(true)} />
           </MapContainer>
@@ -229,6 +254,22 @@ const MapCon: React.FC = () => {
             onDismiss={handleFormDismiss}
             onSuccess={handleFormSuccess}
           />
+
+          {/* Marker Popup Modal */}
+          <IonModal
+            isOpen={!!selectedPhotoTagId}
+            onDidDismiss={() => setSelectedPhotoTagId(null)}
+            style={{ '--width': '90%', '--max-width': '320px' }}
+          >
+            <IonContent>
+              {selectedPhotoTagId && (
+                <MapMarkerPopup 
+                  photoTagId={selectedPhotoTagId}
+                  onClose={() => setSelectedPhotoTagId(null)}
+                />
+              )}
+            </IonContent>
+          </IonModal>
         </>
       )}
     </div>

@@ -376,7 +376,7 @@ const BuildingTable: React.FC<BuildingTableProps> = ({
             }
 
             const databaseTagId = await supabaseApi.insertPhoto({
-                photo: photoTag.photoPath,
+                photo: photoTag.photoName,
                 longitude: photoTag.longitude,
                 latitude: photoTag.latitude,
                 accuracy: photoTag.accuracy || null,
