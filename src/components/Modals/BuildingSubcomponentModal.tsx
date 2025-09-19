@@ -156,9 +156,6 @@ const BuildingSubcomponentModal: React.FC<BuildingSubcomponentModalProps> = ({
                                     <IonCol size="12" className="custom-col">
                                         <div className="calculation-display adjusted-value">
                                             <IonText className="calculation-title">Value after Completion</IonText>
-                                            <div className="calculation-details">
-                                                Market Value × Completion % = {formattedMarketValue} × {validCompletionPercent}%
-                                            </div>
                                             <div className="calculation-result">{formattedValueAfterCompletion}</div>
                                         </div>
                                     </IonCol>
@@ -168,9 +165,6 @@ const BuildingSubcomponentModal: React.FC<BuildingSubcomponentModalProps> = ({
                                     <IonCol size="12" className="custom-col">
                                         <div className="calculation-display adjusted-value">
                                             <IonText className="calculation-title">Depreciation Amount</IonText>
-                                            <div className="calculation-details">
-                                                Value after Completion × Depreciation % = {formattedValueAfterCompletion} × {validDepreciation}%
-                                            </div>
                                             <div className="calculation-result">{formattedDepreciationAmount}</div>
                                         </div>
                                     </IonCol>
@@ -179,10 +173,7 @@ const BuildingSubcomponentModal: React.FC<BuildingSubcomponentModalProps> = ({
                                 <IonRow>
                                     <IonCol size="12" className="custom-col">
                                         <div className="calculation-display market-value">
-                                            <IonText className="calculation-title">Final Adjusted Market Value</IonText>
-                                            <div className="calculation-details">
-                                                Value after Completion - Depreciation Amount = {formattedValueAfterCompletion} - {formattedDepreciationAmount}
-                                            </div>
+                                            <IonText className="calculation-title">Adjusted Market Value</IonText>
                                             <div className="calculation-result" style={{ fontSize: '1.1em', fontWeight: 'bold' }}>
                                                 {formattedFinalAdjustedMarketValue}
                                             </div>

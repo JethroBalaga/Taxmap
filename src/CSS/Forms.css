@@ -8,18 +8,18 @@
   align-items: center;
   gap: 10px;
   padding: 10px;
-  flex-wrap: nowrap; /* Prevents icons from wrapping to the next line on larger screens */
+  flex-wrap: nowrap;
 }
 
 .forms-searchbar {
-  flex: 1; /* Allows the search bar to grow and take up all available space */
+  flex: 1;
   margin-right: 20px;
 }
 
 .icon-group {
   display: flex;
   gap: 8px;
-  flex-shrink: 0; /* Prevents the icons from shrinking and disappearing */
+  flex-shrink: 0;
 }
 
 /* Blue icons with !important to override Ionic defaults */
@@ -48,12 +48,22 @@
   padding: 12px;
   background-color: var(--ion-color-light);
   border-radius: 8px;
+  font-size: 14px;
 }
 
 .empty-state {
   text-align: center;
   padding: 40px 20px;
   color: var(--ion-color-medium);
+}
+
+.empty-state h3 {
+  font-size: 18px;
+  margin-bottom: 8px;
+}
+
+.empty-state p {
+  font-size: 14px;
 }
 
 .loading-indicator {
@@ -64,8 +74,9 @@
   padding: 20px;
 }
 
-.loading-indicator IonText {
+.loading-indicator ion-text {
   margin-top: 10px;
+  font-size: 14px;
 }
 
 .last-refresh {
@@ -75,20 +86,116 @@
   padding: 0 10px 10px;
 }
 
-/* Responsive adjustments */
+/* Global mobile responsiveness */
 @media (max-width: 768px) {
+  /* Make Ionic title smaller on mobile */
+  ion-title {
+    font-size: 0.9rem !important;
+    padding: 0 10px;
+  }
+  
+  /* Adjust toolbar height for mobile */
+  ion-toolbar {
+    min-height: 44px;
+  }
+  
+  /* Stack search and icons vertically on mobile */
   .search-container {
-    flex-direction: column; /* Stacks items vertically on smaller screens */
-    align-items: stretch; /* Stretches items to fill the container's width */
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
   }
 
   .forms-searchbar {
-    width: 100% !important; /* Forces search bar to take full width */
+    width: 100%;
     margin-right: 0;
+    --height: 36px;
+  }
+  
+  /* Make searchbar text smaller */
+  .forms-searchbar .searchbar-input {
+    font-size: 14px;
+    padding: 6px 45px;
   }
 
   .icon-group {
-    align-self: flex-start; /* Aligns the icon group to the left side */
-    margin-top: 10px;
+    justify-content: space-around;
+    width: 100%;
+    margin-top: 5px;
+  }
+
+  /* Make icons slightly smaller on mobile */
+  .icon-blue {
+    font-size: 22px;
+  }
+  
+  /* Adjust table container for mobile */
+  .dynamic-table-container {
+    overflow-x: auto;
+  }
+  
+  /* Make table text smaller for mobile */
+  .dynamic-table-container ion-grid,
+  .dynamic-table-container ion-row,
+  .dynamic-table-container ion-col {
+    font-size: 0.7rem;
+  }
+  
+  /* Reduce table column padding for a tighter look on mobile */
+  .dynamic-table-container ion-col {
+    padding: 6px 3px;
+  }
+  
+  /* Make table headers smaller */
+  .dynamic-table-container ion-col[slot="header"] {
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+  
+  /* Adjust selection info text size */
+  .selection-info {
+    font-size: 0.75rem;
+    padding: 8px;
+  }
+  
+  /* Make toast messages more compact */
+  ion-toast {
+    --width: 90%;
+    --max-width: 300px;
+    font-size: 0.8rem;
+  }
+  
+  /* Adjust button sizes */
+  ion-button {
+    --padding-top: 6px;
+    --padding-bottom: 6px;
+    --padding-start: 12px;
+    --padding-end: 12px;
+    font-size: 0.8rem;
+  }
+  
+  /* Make modal content smaller */
+  .modal-content ion-item,
+  .modal-content ion-label,
+  .modal-content ion-input,
+  .modal-content ion-select,
+  .modal-content ion-textarea {
+    font-size: 0.85rem;
+  }
+}
+
+/* Extra small devices */
+@media (max-width: 360px) {
+  .dynamic-table-container ion-col {
+    font-size: 0.65rem;
+    padding: 4px 2px;
+  }
+  
+  .icon-blue {
+    font-size: 20px;
+  }
+  
+  ion-title {
+    font-size: 0.8rem !important;
   }
 }

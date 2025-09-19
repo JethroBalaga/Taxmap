@@ -87,7 +87,7 @@ const Menu: React.FC = () => {
                     <IonRouterOutlet id="main">
                         <Route exact path="/menu/map" component={Map} />
                         <Route exact path="/menu/forms" component={Forms} />
-                        <Route exact path="/menu/buildingtable" component={BuildingTable} />
+                        <Route exact path="/menu/forms/buildingtable" component={BuildingTable} />
                         <Route exact path="/menu">
                             <Redirect to="/menu/map" />
                         </Route>

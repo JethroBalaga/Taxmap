@@ -3,13 +3,13 @@ import React from 'react';
 import { FormDataLocalStorage } from '../utils/tablestorages/FormDataLocalStorage';
 import { PhotoTagLocalStorage } from '../utils/tablestorages/PhotoTagLocalStorage';
 import { ValueInfoLocalStorage } from '../utils/tablestorages/ValueInfoLocalStorage';
-import { 
-  IonCard, 
-  IonCardContent, 
-  IonCardHeader, 
-  IonCardTitle, 
-  IonImg, 
-  IonText, 
+import {
+  IonCard,
+  IonCardContent,
+  IonCardHeader,
+  IonCardTitle,
+  IonImg,
+  IonText,
   IonButton,
   IonIcon,
   IonSpinner
@@ -40,7 +40,7 @@ const MapMarkerPopup: React.FC<MapMarkerPopupProps> = ({ photoTagId, onClose }) 
           setLoading(false);
           return;
         }
-        
+
         setPhotoTag(tag);
 
         // Get the associated value info
@@ -130,9 +130,9 @@ const MapMarkerPopup: React.FC<MapMarkerPopupProps> = ({ photoTagId, onClose }) 
         <IonCardHeader className="popup-header">
           <div className="popup-header-content">
             <IonCardTitle className="popup-title">Property Details</IonCardTitle>
-            <IonButton 
-              fill="clear" 
-              size="small" 
+            <IonButton
+              fill="clear"
+              size="small"
               onClick={onClose}
               className="popup-close-btn"
             >
@@ -140,14 +140,14 @@ const MapMarkerPopup: React.FC<MapMarkerPopupProps> = ({ photoTagId, onClose }) 
             </IonButton>
           </div>
         </IonCardHeader>
-        
+
         <IonCardContent className="popup-content">
           {/* Photo with fixed size container */}
           {photoData ? (
             <div className="popup-photo-container">
-              <IonImg 
-                src={photoData} 
-                alt="Property photo" 
+              <IonImg
+                src={photoData}
+                alt="Property photo"
                 className="popup-photo"
               />
             </div>

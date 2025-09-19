@@ -1,27 +1,27 @@
 /* src/components/MapMarkerPopup.css */
+
 .map-marker-popup-container {
   position: relative;
   width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
+  display: block;
+  padding: 0;
   box-sizing: border-box;
 }
 
 .map-marker-popup-card {
   width: 100%;
-  max-width: 400px;
   margin: 0;
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
   overflow: hidden;
+  background: #f8f9fa;
 }
 
+/* Header styling */
 .popup-header {
-  padding: 16px 16px 12px;
+  padding: 12px 16px;
   border-bottom: 1px solid var(--ion-color-light-shade);
+  background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
 }
 
 .popup-header-content {
@@ -32,48 +32,53 @@
 }
 
 .popup-title {
-  font-size: 18px;
+  font-size: 1.1rem;
   font-weight: 600;
   margin: 0;
-  color: var(--ion-color-dark);
+  color: white;
 }
 
+/* Close button styling */
 .popup-close-btn {
-  --padding-start: 8px;
-  --padding-end: 8px;
-  --padding-top: 8px;
-  --padding-bottom: 8px;
-  margin: 0;
-  color: var(--ion-color-medium);
+  --background: rgba(255, 255, 255, 0.2);
   --border-radius: 50%;
+  --padding-start: 4px;
+  --padding-end: 4px;
+  --width: 32px;
+  --height: 32px;
+  margin: 0;
+  color: white;
 }
 
 .popup-content {
   padding: 0;
+  max-height: none;
+  overflow-y: visible;
 }
 
+/* Loading and error states */
 .popup-loading,
 .popup-error {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 60px 20px;
+  padding: 20px;
   text-align: center;
   color: var(--ion-color-medium);
 }
 
 .popup-loading ion-spinner {
-  margin-bottom: 16px;
+  margin-bottom: 12px;
   color: var(--ion-color-primary);
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
 }
 
-/* Fixed photo container */
+/* Photo container */
 .popup-photo-container {
   width: 100%;
-  height: 250px; /* Fixed height */
+  height: 180px;
   margin: 0;
   overflow: hidden;
   background: var(--ion-color-light);
@@ -83,13 +88,13 @@
 .popup-photo {
   width: 100%;
   height: 100%;
-  object-fit: cover; /* Ensures image fills container without distortion */
+  object-fit: cover;
   display: block;
 }
 
 .popup-photo-placeholder {
   width: 100%;
-  height: 250px; /* Same fixed height as photo container */
+  height: 180px;
   background: var(--ion-color-light);
   display: flex;
   align-items: center;
@@ -98,6 +103,7 @@
   font-size: 14px;
 }
 
+/* Data sections */
 .popup-form-data,
 .popup-meta-data {
   padding: 16px;
@@ -113,13 +119,17 @@
   margin: 8px 0;
   font-size: 14px;
   line-height: 1.4;
-  color: var(--ion-color-dark);
+  color: #2d3748;
   word-break: break-word;
+}
+
+.popup-data-item strong {
+  color: #2d3748;
 }
 
 .popup-data-item.meta {
   font-size: 13px;
-  color: var(--ion-color-medium);
+  color: #718096;
 }
 
 .popup-no-data {
@@ -136,29 +146,19 @@
   font-style: italic;
 }
 
-/* Responsive adjustments for mobile */
+/* Responsive adjustments */
 @media (max-width: 480px) {
-  .map-marker-popup-container {
-    padding: 12px;
-  }
-  
-  .map-marker-popup-card {
-    border-radius: 12px;
-    max-width: 350px;
-  }
-  
   .popup-header {
-    padding: 12px 12px 8px;
+    padding: 10px 12px;
   }
   
   .popup-title {
-    font-size: 16px;
+    font-size: 1rem;
   }
   
-  /* Maintain fixed photo size on mobile */
   .popup-photo-container,
   .popup-photo-placeholder {
-    height: 220px; /* Slightly smaller but still fixed */
+    height: 150px;
   }
   
   .popup-form-data,
@@ -170,109 +170,19 @@
     font-size: 13px;
     margin: 6px 0;
   }
-  
-  .popup-data-item.meta {
-    font-size: 12px;
-  }
-  
-  .popup-no-data {
-    padding: 12px;
-  }
 }
 
 @media (max-width: 360px) {
-  .map-marker-popup-container {
-    padding: 8px;
-  }
-  
-  .map-marker-popup-card {
-    max-width: 320px;
-  }
-  
-  /* Fixed photo size for very small screens */
   .popup-photo-container,
   .popup-photo-placeholder {
-    height: 200px;
+    height: 130px;
   }
   
   .popup-title {
-    font-size: 15px;
-  }
-  
-  .popup-form-data,
-  .popup-meta-data {
-    padding: 10px;
+    font-size: 0.95rem;
   }
   
   .popup-data-item {
     font-size: 12px;
   }
-}
-
-/* Handle landscape orientation - maintain fixed photo size */
-@media (max-height: 500px) and (orientation: landscape) {
-  .map-marker-popup-container {
-    padding: 8px;
-  }
-  
-  /* Smaller but still fixed photo size in landscape */
-  .popup-photo-container,
-  .popup-photo-placeholder {
-    height: 180px;
-  }
-  
-  .popup-form-data,
-  .popup-meta-data {
-    padding: 8px;
-  }
-}
-
-/* Tablet and larger screens */
-@media (min-width: 768px) {
-  .popup-photo-container,
-  .popup-photo-placeholder {
-    height: 280px; /* Larger fixed size for tablets */
-  }
-  
-  .map-marker-popup-card {
-    max-width: 450px;
-  }
-}
-
-/* iOS specific adjustments */
-.ios .map-marker-popup-card {
-  border-radius: 14px;
-}
-
-.ios .popup-photo-container {
-  border-radius: 0; /* Remove border radius for full-width photos */
-}
-
-/* Android specific adjustments */
-.md .map-marker-popup-card {
-  border-radius: 12px;
-}
-
-.md .popup-photo-container {
-  border-radius: 0; /* Remove border radius for full-width photos */
-}
-
-/* Ensure content doesn't overflow on very small screens */
-.popup-content {
-  max-height: 80vh;
-  overflow-y: auto;
-}
-
-/* Custom scrollbar for web */
-.popup-content::-webkit-scrollbar {
-  width: 4px;
-}
-
-.popup-content::-webkit-scrollbar-track {
-  background: var(--ion-color-light);
-}
-
-.popup-content::-webkit-scrollbar-thumb {
-  background: var(--ion-color-medium);
-  border-radius: 2px;
 }

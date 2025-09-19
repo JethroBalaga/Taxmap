@@ -8,15 +8,7 @@ import localforage from 'localforage';
 import Form from './Modals/Form';
 import { PhotoTagLocalStorage, PhotoTagData } from '../utils/tablestorages/PhotoTagLocalStorage';
 import { createBlueMarkerIcon } from '../utils/markerIcons';
-import { 
-  IonModal, 
-  IonContent, 
-  IonIcon 
-} from '@ionic/react';
-import { close } from 'ionicons/icons';
 import MapMarkerPopup from './MapMarkerPopup';
-import { Capacitor } from '@capacitor/core';
-import { Filesystem, Directory } from '@capacitor/filesystem';
 
 const TILE_LAYER_URL = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
 const manoloFortichBounds = L.latLngBounds(
@@ -221,6 +213,20 @@ const MapCon: React.FC = () => {
           transition: transform 0.2s ease;
           z-index: 1000;
         }
+
+        /* Popup overlay */
+        .popup-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background-color: rgba(0, 0, 0, 0.5);
+          z-index: 999;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+        }
       `}</style>
 
       {isMounted && (
@@ -255,21 +261,26 @@ const MapCon: React.FC = () => {
             onSuccess={handleFormSuccess}
           />
 
-          {/* Marker Popup Modal */}
-          <IonModal
-            isOpen={!!selectedPhotoTagId}
-            onDidDismiss={() => setSelectedPhotoTagId(null)}
-            style={{ '--width': '90%', '--max-width': '320px' }}
-          >
-            <IonContent>
-              {selectedPhotoTagId && (
-                <MapMarkerPopup 
+          {/* Popup overlay and content */}
+          {selectedPhotoTagId && (
+            <>
+              <div className="popup-overlay" onClick={() => setSelectedPhotoTagId(null)} />
+              <div style={{
+                position: 'fixed',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                zIndex: 1000,
+                width: '90%',
+                maxWidth: '400px'
+              }}>
+                <MapMarkerPopup
                   photoTagId={selectedPhotoTagId}
                   onClose={() => setSelectedPhotoTagId(null)}
                 />
-              )}
-            </IonContent>
-          </IonModal>
+              </div>
+            </>
+          )}
         </>
       )}
     </div>

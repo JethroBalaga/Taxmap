@@ -9,12 +9,6 @@ import {
     IonIcon,
     IonToast,
     IonTitle,
-    IonGrid,
-    IonRow,
-    IonCol,
-    IonItem,
-    IonLabel,
-    IonText,
     IonSpinner
 } from "@ionic/react";
 import { arrowBack } from "ionicons/icons";
