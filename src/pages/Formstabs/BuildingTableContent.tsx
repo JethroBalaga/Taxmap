@@ -19,8 +19,7 @@ import BuildingAdjustmentUpdateModal from "../../components/Modals/BuildingAdjus
 import BuildingSubcomponentModal from "../../components/Modals/BuildingSubcomponentModal";
 import BuildingUpdateModal from "../../components/Modals/BuildingUpdateModal";
 import {
-    useBuildingTableLogic,
-    AssessmentLevelInfo
+    useBuildingTableLogic
 } from './BuildingTableLogic';
 import "../../CSS/BuildingResponsive.css";
 
@@ -83,7 +82,16 @@ const BuildingTableContent: React.FC<BuildingTableProps> = ({
         handleBuildingUpdate,
         handleUpdateClick,
         showToastMessage,
-        handleSubmit
+        handleSubmit,
+        // Add the missing state setters that are used in the modal onClose handlers
+        setShowAdjustmentModal,
+        setSelectedAdjustmentForUpdate,
+        setShowUpdateAdjustmentModal,
+        setShowSubcomponentModal,
+        setShowUpdateModal,
+        setSelectedBuildingId,
+        setSelectedBuildingData,
+        setShowToast // Add this line
     } = useBuildingTableLogic(form_id, kind, classification, area, declarant, actual_use, district, subclass);
 
     return (
