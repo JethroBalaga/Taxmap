@@ -3,7 +3,7 @@ import { Geolocation } from '@capacitor/geolocation';
 
 export interface PhotoTagData {
   id: string;
-  photoPath: string;
+  photoName: string; // Changed from photoPath to photoName
   longitude: number;
   latitude: number;
   timestamp: Date;
@@ -104,7 +104,7 @@ export const PhotoTagLocalStorage = {
   },
 
   // Add photo tag with current location
-  async addPhotoTagWithCurrentLocation(photoPath: string): Promise<PhotoTagData> {
+  async addPhotoTagWithCurrentLocation(photoName: string): Promise<PhotoTagData> { // Changed parameter name
     try {
       let latitude = 0;
       let longitude = 0;
@@ -126,7 +126,7 @@ export const PhotoTagLocalStorage = {
       }
 
       return PhotoTagLocalStorage.addPhotoTag({
-        photoPath,
+        photoName, // Changed from photoPath to photoName
         longitude,
         latitude,
         accuracy,
