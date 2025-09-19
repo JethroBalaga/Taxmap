@@ -390,6 +390,7 @@ export const useBuildingTableLogic = (
     };
 
     return {
+        // State values
         buildingInfoIds,
         buildingDataList,
         buildingCodeRates,
@@ -416,6 +417,36 @@ export const useBuildingTableLogic = (
         showToast,
         toastMessage,
         toastColor,
+
+        // State setters
+        setBuildingInfoIds,
+        setBuildingDataList,
+        setBuildingCodeRates,
+        setBaseMarketValues,
+        setAdjustedMarketValues,
+        setAssessmentLevels,
+        setBuildingAdjustments,
+        setTotalAdjustments,
+        setLoading,
+        setIsSubmitting,
+        setShowAdjustmentModal,
+        setSelectedValueInfoId,
+        setExistingAdjustmentData,
+        setShowUpdateAdjustmentModal,
+        setSelectedAdjustmentForUpdate,
+        setShowSubcomponentModal,
+        setSelectedSubcomponentData,
+        setSelectedAdjustmentArea,
+        setSelectedAdjustmentCompletion,
+        setSelectedAdjustmentDepreciation,
+        setShowUpdateModal,
+        setSelectedBuildingId,
+        setSelectedBuildingData,
+        setShowToast,
+        setToastMessage,
+        setToastColor,
+
+        // Functions
         loadBuildingData,
         loadBuildingAdjustments,
         handleViewDetails,
