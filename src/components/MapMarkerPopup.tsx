@@ -11,11 +11,13 @@ import {
   IonImg, 
   IonText, 
   IonButton,
-  IonIcon 
+  IonIcon,
+  IonSpinner
 } from '@ionic/react';
 import { close } from 'ionicons/icons';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
+import '../CSS/MapMarkerPopup.css';
 
 interface MapMarkerPopupProps {
   photoTagId: string;
@@ -95,110 +97,113 @@ const MapMarkerPopup: React.FC<MapMarkerPopupProps> = ({ photoTagId, onClose }) 
 
   if (loading) {
     return (
-      <IonCard style={{ margin: 0, maxWidth: '300px' }}>
-        <IonCardContent>
-          <div style={{ textAlign: 'center', padding: '20px' }}>
-            <p>Loading...</p>
-          </div>
-        </IonCardContent>
-      </IonCard>
+      <div className="map-marker-popup-container">
+        <IonCard className="map-marker-popup-card">
+          <IonCardContent>
+            <div className="popup-loading">
+              <IonSpinner name="crescent" />
+              <p>Loading property details...</p>
+            </div>
+          </IonCardContent>
+        </IonCard>
+      </div>
     );
   }
 
   if (!photoTag) {
     return (
-      <IonCard style={{ margin: 0, maxWidth: '300px' }}>
-        <IonCardContent>
-          <div style={{ textAlign: 'center', padding: '20px' }}>
-            <p>No data found for this marker</p>
-          </div>
-        </IonCardContent>
-      </IonCard>
+      <div className="map-marker-popup-container">
+        <IonCard className="map-marker-popup-card">
+          <IonCardContent>
+            <div className="popup-error">
+              <p>No data found for this marker</p>
+            </div>
+          </IonCardContent>
+        </IonCard>
+      </div>
     );
   }
 
   return (
-    <IonCard style={{ margin: 0, maxWidth: '300px' }}>
-      <IonCardHeader>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <IonCardTitle style={{ fontSize: '16px' }}>Property Details</IonCardTitle>
-          <IonButton fill="clear" size="small" onClick={onClose}>
-            <IonIcon icon={close} />
-          </IonButton>
-        </div>
-      </IonCardHeader>
-      
-      <IonCardContent>
-        {/* Photo */}
-        {photoData ? (
-          <div style={{ marginBottom: '15px' }}>
-            <IonImg 
-              src={photoData} 
-              alt="Property photo" 
-              style={{ borderRadius: '8px', maxHeight: '200px', objectFit: 'cover' }}
-            />
+    <div className="map-marker-popup-container">
+      <IonCard className="map-marker-popup-card">
+        <IonCardHeader className="popup-header">
+          <div className="popup-header-content">
+            <IonCardTitle className="popup-title">Property Details</IonCardTitle>
+            <IonButton 
+              fill="clear" 
+              size="small" 
+              onClick={onClose}
+              className="popup-close-btn"
+            >
+              <IonIcon icon={close} slot="icon-only" />
+            </IonButton>
           </div>
-        ) : (
-          <div style={{ 
-            marginBottom: '15px', 
-            height: '150px', 
-            backgroundColor: '#f0f0f0', 
-            borderRadius: '8px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#666'
-          }}>
-            Photo not available
-          </div>
-        )}
+        </IonCardHeader>
+        
+        <IonCardContent className="popup-content">
+          {/* Photo with fixed size container */}
+          {photoData ? (
+            <div className="popup-photo-container">
+              <IonImg 
+                src={photoData} 
+                alt="Property photo" 
+                className="popup-photo"
+              />
+            </div>
+          ) : (
+            <div className="popup-photo-placeholder">
+              <span>Photo not available</span>
+            </div>
+          )}
 
-        {/* Form Data */}
-        {formData ? (
-          <div style={{ marginBottom: '10px' }}>
+          {/* Form Data */}
+          {formData ? (
+            <div className="popup-form-data">
+              <IonText>
+                <p className="popup-data-item">
+                  <strong>Form ID:</strong> {formData.id.substring(0, 8)}...
+                </p>
+                <p className="popup-data-item">
+                  <strong>Kind:</strong> {formData.kind}
+                </p>
+                <p className="popup-data-item">
+                  <strong>Classification:</strong> {formData.classification}
+                </p>
+                <p className="popup-data-item">
+                  <strong>Area:</strong> {formData.area} m²
+                </p>
+              </IonText>
+            </div>
+          ) : (
+            <div className="popup-no-data">
+              <IonText>
+                <p className="popup-no-data-text">
+                  No form data associated
+                </p>
+              </IonText>
+            </div>
+          )}
+
+          {/* Photo Tag Info */}
+          <div className="popup-meta-data">
             <IonText>
-              <p style={{ margin: '5px 0', fontSize: '14px' }}>
-                <strong>Form ID:</strong> {formData.id.substring(0, 8)}...
+              <p className="popup-data-item meta">
+                <strong>Date Taken:</strong> {formatDate(photoTag.timestamp)}
               </p>
-              <p style={{ margin: '5px 0', fontSize: '14px' }}>
-                <strong>Kind:</strong> {formData.kind}
+              <p className="popup-data-item meta">
+                <strong>Location:</strong> {photoTag.latitude.toFixed(6)}, {photoTag.longitude.toFixed(6)}
               </p>
-              <p style={{ margin: '5px 0', fontSize: '14px' }}>
-                <strong>Classification:</strong> {formData.classification}
-              </p>
-              <p style={{ margin: '5px 0', fontSize: '14px' }}>
-                <strong>Area:</strong> {formData.area} m²
-              </p>
+              {photoTag.accuracy && (
+                <p className="popup-data-item meta">
+                  <strong>Accuracy:</strong> ±{photoTag.accuracy.toFixed(1)}m
+                </p>
+              )}
             </IonText>
           </div>
-        ) : (
-          <div style={{ marginBottom: '10px' }}>
-            <IonText>
-              <p style={{ margin: '5px 0', fontSize: '14px', color: '#666', fontStyle: 'italic' }}>
-                No form data associated
-              </p>
-            </IonText>
-          </div>
-        )}
-
-        {/* Photo Tag Info */}
-        <div>
-          <IonText>
-            <p style={{ margin: '5px 0', fontSize: '12px', color: '#666' }}>
-              <strong>Date Taken:</strong> {formatDate(photoTag.timestamp)}
-            </p>
-            <p style={{ margin: '5px 0', fontSize: '12px', color: '#666' }}>
-              <strong>Location:</strong> {photoTag.latitude.toFixed(6)}, {photoTag.longitude.toFixed(6)}
-            </p>
-            {photoTag.accuracy && (
-              <p style={{ margin: '5px 0', fontSize: '12px', color: '#666' }}>
-                <strong>Accuracy:</strong> ±{photoTag.accuracy.toFixed(1)}m
-              </p>
-            )}
-          </IonText>
-        </div>
-      </IonCardContent>
-    </IonCard>
+        </IonCardContent>
+      </IonCard>
+    </div>
   );
 };
 
