@@ -1,10 +1,10 @@
-// src/components/MapCon.tsx
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet.offline'; // offline plugin
 import localforage from 'localforage';
+import { useIonViewWillEnter } from '@ionic/react'; // 👈 Import useIonViewWillEnter
 import Form from './Modals/Form';
 import { PhotoTagLocalStorage, PhotoTagData } from '../utils/tablestorages/PhotoTagLocalStorage';
 import { createBlueMarkerIcon } from '../utils/markerIcons';
@@ -57,7 +57,7 @@ const CreateOutlineControl = ({ onClick }: { onClick: () => void }) => {
 };
 
 // Photo Markers Component
-const PhotoMarkers: React.FC<{ 
+const PhotoMarkers: React.FC<{
   photoTags: PhotoTagData[];
   onMarkerClick: (photoTagId: string) => void;
 }> = ({ photoTags, onMarkerClick }) => {
@@ -154,28 +154,32 @@ const MapCon: React.FC = () => {
   const [photoTags, setPhotoTags] = useState<PhotoTagData[]>([]);
   const [selectedPhotoTagId, setSelectedPhotoTagId] = useState<string | null>(null);
 
-  useEffect(() => {
-    setIsMounted(true);
-    // Load existing photo tags on component mount
+  // Use a useCallback to memoize the loading function
+  const loadPhotoTags = useCallback(() => {
     const tags = PhotoTagLocalStorage.getAllPhotoTags();
     setPhotoTags(tags);
+  }, []);
+
+  // Use useIonViewWillEnter to refresh data whenever the view is navigated to
+  useIonViewWillEnter(() => {
+    loadPhotoTags();
+  });
+
+  // useEffect for initial mount/unmount logic
+  useEffect(() => {
+    setIsMounted(true);
     return () => setIsMounted(false);
   }, []);
 
-  // Refresh photo tags when form is closed (in case new tags were added)
+  // The rest of the handlers already call loadPhotoTags, which is good
   const handleFormDismiss = () => {
     setShowForm(false);
-    // Reload photo tags to check for new additions
-    const updatedTags = PhotoTagLocalStorage.getAllPhotoTags();
-    setPhotoTags(updatedTags);
+    loadPhotoTags();
   };
 
-  // Refresh photo tags when form completes successfully
   const handleFormSuccess = () => {
     setShowForm(false);
-    // Reload photo tags to include the new addition
-    const updatedTags = PhotoTagLocalStorage.getAllPhotoTags();
-    setPhotoTags(updatedTags);
+    loadPhotoTags();
   };
 
   const handleMarkerClick = (photoTagId: string) => {
@@ -247,8 +251,8 @@ const MapCon: React.FC = () => {
             />
             
             {/* Display photo markers */}
-            <PhotoMarkers 
-              photoTags={photoTags} 
+            <PhotoMarkers
+              photoTags={photoTags}
               onMarkerClick={handleMarkerClick}
             />
             
