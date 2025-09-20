@@ -17,6 +17,7 @@ import {
 import { close, eye } from 'ionicons/icons';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
+import { useHistory } from 'react-router-dom';
 import '../CSS/MapMarkerPopup.css';
 
 interface MapMarkerPopupProps {
@@ -29,6 +30,7 @@ const MapMarkerPopup: React.FC<MapMarkerPopupProps> = ({ photoTagId, onClose }) 
   const [formData, setFormData] = React.useState<any>(null);
   const [photoTag, setPhotoTag] = React.useState<any>(null);
   const [loading, setLoading] = React.useState(true);
+  const history = useHistory();
 
   React.useEffect(() => {
     const loadData = async () => {
@@ -96,9 +98,12 @@ const MapMarkerPopup: React.FC<MapMarkerPopupProps> = ({ photoTagId, onClose }) 
   };
 
   const handleViewDetails = () => {
-    // TODO: Implement view details functionality
-    console.log('View details for photo tag:', photoTagId);
-    // This could navigate to a detail page or open a modal
+    if (formData && formData.id) {
+      // Navigate to the forms page and pass the form ID as state
+      history.push('/menu/forms', { 
+        selectedFormId: formData.id 
+      });
+    }
   };
 
   if (loading) {
@@ -208,19 +213,21 @@ const MapMarkerPopup: React.FC<MapMarkerPopupProps> = ({ photoTagId, onClose }) 
             </IonText>
           </div>
 
-          {/* View Button */}
-          <div className="popup-actions">
-            <IonButton 
-              expand="block" 
-              fill="solid" 
-              color="primary"
-              onClick={handleViewDetails}
-              className="view-details-btn"
-            >
-              <IonIcon icon={eye} slot="start" />
-              View Details
-            </IonButton>
-          </div>
+          {/* View Button - Only show if form data exists */}
+          {formData && (
+            <div className="popup-actions">
+              <IonButton 
+                expand="block" 
+                fill="solid" 
+                color="primary"
+                onClick={handleViewDetails}
+                className="view-details-btn"
+              >
+                <IonIcon icon={eye} slot="start" />
+                View Form Details
+              </IonButton>
+            </div>
+          )}
         </IonCardContent>
       </IonCard>
     </div>
