@@ -186,3 +186,12 @@
     font-size: 12px;
   }
 }
+.popup-actions {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--ion-color-light-shade);
+}
+
+.view-details-btn {
+  margin: 0;
+}

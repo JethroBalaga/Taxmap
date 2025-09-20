@@ -14,7 +14,7 @@ import {
   IonIcon,
   IonSpinner
 } from '@ionic/react';
-import { close } from 'ionicons/icons';
+import { close, eye } from 'ionicons/icons';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import '../CSS/MapMarkerPopup.css';
@@ -93,6 +93,12 @@ const MapMarkerPopup: React.FC<MapMarkerPopupProps> = ({ photoTagId, onClose }) 
       hour: '2-digit',
       minute: '2-digit'
     });
+  };
+
+  const handleViewDetails = () => {
+    // TODO: Implement view details functionality
+    console.log('View details for photo tag:', photoTagId);
+    // This could navigate to a detail page or open a modal
   };
 
   if (loading) {
@@ -200,6 +206,20 @@ const MapMarkerPopup: React.FC<MapMarkerPopupProps> = ({ photoTagId, onClose }) 
                 </p>
               )}
             </IonText>
+          </div>
+
+          {/* View Button */}
+          <div className="popup-actions">
+            <IonButton 
+              expand="block" 
+              fill="solid" 
+              color="primary"
+              onClick={handleViewDetails}
+              className="view-details-btn"
+            >
+              <IonIcon icon={eye} slot="start" />
+              View Details
+            </IonButton>
           </div>
         </IonCardContent>
       </IonCard>
