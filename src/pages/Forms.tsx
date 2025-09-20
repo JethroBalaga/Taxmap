@@ -1,3 +1,4 @@
+// src/pages/Forms.tsx
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   IonPage,
@@ -30,11 +31,9 @@ import DynamicTable from '../components/GlobalComponent/DynamicTable';
 import FormUpdateModal from '../components/Modals/FormUpdateModal';
 import { useHistory, useLocation } from 'react-router-dom';
 
-// Add interface for PhotoTag if not already defined
 interface PhotoTag {
   id: string;
   imagePath?: string;
-  // Add other properties as needed
 }
 
 const Forms: React.FC = () => {
@@ -55,59 +54,55 @@ const Forms: React.FC = () => {
     { icon: informationCircleOutline, className: selectedForm ? "icon-blue" : "icon-blue icon-disabled", onClick: () => handleInfoClick(), title: "View Building Details", enabled: !!selectedForm },
   ];
 
-  // Function to select a form by ID
-  const selectFormById = useCallback((formId: string) => {
-    const form = formData.find(f => f.id === formId);
-    if (form) {
-      setSelectedForm(form);
-    }
-  }, [formData]);
-
   const loadFormData = useCallback(() => {
     setIsLoading(true);
     try {
       const allForms = FormDataLocalStorage.getAllFormData();
       if (Array.isArray(allForms)) {
         setFormData(allForms);
-        
-        // Check if we have a form ID passed from navigation
-        const state = location.state as { selectedFormId?: string };
-        if (state && state.selectedFormId) {
-          // Select the form that was passed from the map marker
-          const formToSelect = allForms.find(f => f.id === state.selectedFormId);
-          if (formToSelect) {
-            setSelectedForm(formToSelect);
-          }
-          // Clear the state to avoid re-selecting on refresh
-          history.replace('/menu/forms', {});
-        }
-      } else if (allForms && typeof allForms === 'object' && 'id' in allForms) {
-        setFormData([allForms]);
-        localStorage.setItem('formData', JSON.stringify([allForms]));
+      } else if (allForms && typeof allForms === 'object') {
+        const singleForm = allForms as FormData;
+        setFormData([singleForm]);
+        localStorage.setItem('formData', JSON.stringify([singleForm]));
       } else {
         setFormData([]);
+        setSelectedForm(null);
       }
     } catch (error) {
       console.error('Error loading form data:', error);
       setFormData([]);
+      setSelectedForm(null);
     } finally {
       setIsLoading(false);
     }
-  }, [location.state, history]);
+  }, []);
 
   useIonViewWillEnter(() => {
     loadFormData();
   });
 
   useEffect(() => {
-    loadFormData();
-
     const refreshInterval = setInterval(() => {
       loadFormData();
     }, 30000);
 
     return () => clearInterval(refreshInterval);
   }, [loadFormData]);
+
+  useEffect(() => {
+    const urlParams = new URLSearchParams(location.search);
+    const selectedFormId = urlParams.get('selectedFormId');
+
+    if (selectedFormId && formData.length > 0) {
+      const formToSelect = formData.find(f => f.id === selectedFormId);
+      if (formToSelect) {
+        setSelectedForm(formToSelect);
+        history.replace('/menu/forms');
+      }
+    } else if (!selectedForm && formData.length > 0) {
+      setSelectedForm(formData[0]);
+    }
+  }, [formData, location.search, history, selectedForm]);
 
   const handleRefresh = (event: CustomEvent) => {
     loadFormData();
@@ -157,7 +152,6 @@ const Forms: React.FC = () => {
         : selectedForm.kind;
 
       if (kind === 2) {
-        // Navigate to building table using routing
         history.push(`/menu/forms/buildingtable/${selectedForm.id}`);
       } else {
         setToastMessage('Building details are only available for forms with kind = 2');
@@ -176,49 +170,41 @@ const Forms: React.FC = () => {
       console.warn('Invalid image path provided for deletion');
       return;
     }
-    
+
     try {
-      // Extract just the filename from the path
       let filename = imagePath;
-      
-      // Remove file:// prefix if present
       if (filename.startsWith('file://')) {
-        filename = filename.substring(7); // Remove "file://" prefix
+        filename = filename.substring(7);
       }
-      
-      // Extract just the filename part (after the last slash)
+
       const lastSlashIndex = Math.max(
         filename.lastIndexOf('/'),
         filename.lastIndexOf('\\')
       );
-      
+
       if (lastSlashIndex !== -1) {
         filename = filename.substring(lastSlashIndex + 1);
       }
-      
-      // Ensure we have a valid filename
+
       if (!filename || filename.trim() === '') {
         console.warn('Could not extract valid filename from path:', imagePath);
         return;
       }
-      
+
       console.log(`Attempting to delete image file: ${filename}`);
-      
-      // Try to delete the file
+
       await Filesystem.deleteFile({
         path: filename,
         directory: Directory.Data
       });
-      
+
       console.log(`Successfully deleted image file: ${filename}`);
     } catch (error: any) {
-      // Check if it's a "file does not exist" error
       if (error.message && error.message.includes('does not exist')) {
         console.log(`Image file already deleted: ${imagePath}`);
       } else {
         console.warn(`Could not delete image file: ${imagePath}`, error);
       }
-      // Continue with other deletions even if file deletion fails
     }
   };
 
@@ -230,33 +216,27 @@ const Forms: React.FC = () => {
 
     console.log(`Found ${relatedValueInfo.length} value info entries to delete`);
 
-    // First, delete all image files
     const imageDeletionPromises: Promise<void>[] = [];
-    
+
     for (const valueInfo of relatedValueInfo) {
       console.log(`Processing value info ID: ${valueInfo.id}`);
-      
+
       if (valueInfo.photoTagId) {
         try {
-          // Use type assertion to handle the photoTag response
           const photoTag = PhotoTagLocalStorage.getPhotoTag(valueInfo.photoTagId) as unknown as PhotoTag;
-          
-          // Check if photoTag exists and has imagePath property
+
           if (photoTag && typeof photoTag === 'object' && 'imagePath' in photoTag) {
             const imagePath = (photoTag as any).imagePath;
             if (imagePath && typeof imagePath === 'string') {
-              // Add the deletion promise to the array
               imageDeletionPromises.push(deleteImageFile(imagePath));
             }
           }
         } catch (error) {
           console.error(`Error processing photo tag for value info ${valueInfo.id}:`, error);
-          // Continue with other deletions
         }
       }
     }
 
-    // Wait for all image deletions to complete (or fail)
     try {
       await Promise.allSettled(imageDeletionPromises);
       console.log('All image deletion operations completed');
@@ -264,43 +244,23 @@ const Forms: React.FC = () => {
       console.error('Error in image deletion process:', error);
     }
 
-    // Then delete database entries
     relatedValueInfo.forEach(valueInfo => {
       console.log(`Deleting database entries for value info ID: ${valueInfo.id}`);
-
       try {
-        const buildingDataDeleted = BuildingDataLocalStorage.deleteBuildingData(valueInfo.id);
-        if (buildingDataDeleted) {
-          console.log(`Deleted building data for value info ID: ${valueInfo.id}`);
-        }
-
-        const buildingAdjustmentsDeleted = BuildingAdjustmentLocalStorage.deleteBuildingAdjustmentsByValueInfoId(valueInfo.id);
-        if (buildingAdjustmentsDeleted) {
-          console.log(`Deleted building adjustments for value info ID: ${valueInfo.id}`);
-        }
-
+        BuildingDataLocalStorage.deleteBuildingData(valueInfo.id);
+        BuildingAdjustmentLocalStorage.deleteBuildingAdjustmentsByValueInfoId(valueInfo.id);
         if (valueInfo.photoTagId) {
-          const photoTagDeleted = PhotoTagLocalStorage.deletePhotoTag(valueInfo.photoTagId);
-          if (photoTagDeleted) {
-            console.log(`Deleted photo tag ID: ${valueInfo.photoTagId}`);
-          }
+          PhotoTagLocalStorage.deletePhotoTag(valueInfo.photoTagId);
         }
-
-        const valueInfoDeleted = ValueInfoLocalStorage.deleteValueInfo(valueInfo.id);
-        if (valueInfoDeleted) {
-          console.log(`Deleted value info ID: ${valueInfo.id}`);
-        }
+        ValueInfoLocalStorage.deleteValueInfo(valueInfo.id);
       } catch (error) {
         console.error(`Error deleting database entries for value info ${valueInfo.id}:`, error);
       }
     });
 
-    // Clean up any orphaned entries
     const remainingValueInfo = ValueInfoLocalStorage.getAllValueInfo();
     const orphanedValueInfo = remainingValueInfo.filter(info => info.formDataId === formId);
-
     if (orphanedValueInfo.length > 0) {
-      console.log(`Found ${orphanedValueInfo.length} orphaned value info entries, deleting them`);
       orphanedValueInfo.forEach(info => {
         try {
           ValueInfoLocalStorage.deleteValueInfo(info.id);
@@ -315,7 +275,6 @@ const Forms: React.FC = () => {
     if (selectedForm) {
       try {
         await deleteRelatedData(selectedForm.id);
-
         const success = FormDataLocalStorage.deleteFormData(selectedForm.id);
         if (success) {
           const updatedForms = formData.filter(form => form.id !== selectedForm.id);
@@ -349,10 +308,10 @@ const Forms: React.FC = () => {
 
   const filteredForms = Array.isArray(formData)
     ? formData.filter(form =>
-      form && Object.values(form).some(value =>
-        value && value.toString().toLowerCase().includes(searchTerm.toLowerCase())
+        form && Object.values(form).some(value =>
+          value && value.toString().toLowerCase().includes(searchTerm.toLowerCase())
+        )
       )
-    )
     : [];
 
   return (
@@ -362,12 +321,10 @@ const Forms: React.FC = () => {
           <IonTitle>Forms Management</IonTitle>
         </IonToolbar>
       </IonHeader>
-
       <IonContent fullscreen>
         <IonRefresher slot="fixed" onIonRefresh={handleRefresh}>
           <IonRefresherContent></IonRefresherContent>
         </IonRefresher>
-
         <div className="forms-container">
           <IonGrid>
             <IonRow>
@@ -393,7 +350,6 @@ const Forms: React.FC = () => {
                 </div>
               </IonCol>
             </IonRow>
-
             <IonRow>
               <IonCol size="12">
                 {isLoading ? (
@@ -408,6 +364,7 @@ const Forms: React.FC = () => {
                       title={`Forms (${filteredForms.length} of ${formData.length})`}
                       keyField="id"
                       onRowClick={handleRowClick}
+                      selectedRow={selectedForm}
                     />
                     {selectedForm && (
                       <div className="selection-info">
@@ -426,24 +383,22 @@ const Forms: React.FC = () => {
               </IonCol>
             </IonRow>
           </IonGrid>
-
-          <IonToast
-            isOpen={showToast}
-            onDidDismiss={() => { setShowToast(false); setToastButtons([]); }}
-            message={toastMessage}
-            duration={toastButtons.length > 1 ? 0 : 3000}
-            buttons={toastButtons}
-            position="middle"
-            color="warning"
-          />
-
-          <FormUpdateModal
-            isOpen={showUpdateModal}
-            formId={selectedForm?.id || null}
-            onDismiss={() => setShowUpdateModal(false)}
-            onUpdate={handleFormUpdate}
-          />
         </div>
+        <IonToast
+          isOpen={showToast}
+          onDidDismiss={() => { setShowToast(false); setToastButtons([]); }}
+          message={toastMessage}
+          duration={toastButtons.length > 1 ? 0 : 3000}
+          buttons={toastButtons}
+          position="middle"
+          color="warning"
+        />
+        <FormUpdateModal
+          isOpen={showUpdateModal}
+          formId={selectedForm?.id || null}
+          onDismiss={() => setShowUpdateModal(false)}
+          onUpdate={handleFormUpdate}
+        />
       </IonContent>
     </IonPage>
   );

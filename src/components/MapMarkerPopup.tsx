@@ -99,9 +99,10 @@ const MapMarkerPopup: React.FC<MapMarkerPopupProps> = ({ photoTagId, onClose }) 
 
   const handleViewDetails = () => {
     if (formData && formData.id) {
-      // Navigate to the forms page and pass the form ID as state
-      history.push('/menu/forms', { 
-        selectedFormId: formData.id 
+      // Navigate to the forms page and pass the form ID as a query parameter
+      history.push({
+        pathname: '/menu/forms',
+        search: `?selectedFormId=${formData.id}`
       });
     }
   };
@@ -173,7 +174,7 @@ const MapMarkerPopup: React.FC<MapMarkerPopupProps> = ({ photoTagId, onClose }) 
             <div className="popup-form-data">
               <IonText>
                 <p className="popup-data-item">
-                  <strong>Form ID:</strong> {formData.id.substring(0, 8)}...
+                  <strong>Form ID:</strong> {formData.id}
                 </p>
                 <p className="popup-data-item">
                   <strong>Kind:</strong> {formData.kind}
@@ -216,9 +217,9 @@ const MapMarkerPopup: React.FC<MapMarkerPopupProps> = ({ photoTagId, onClose }) 
           {/* View Button - Only show if form data exists */}
           {formData && (
             <div className="popup-actions">
-              <IonButton 
-                expand="block" 
-                fill="solid" 
+              <IonButton
+                expand="block"
+                fill="solid"
                 color="primary"
                 onClick={handleViewDetails}
                 className="view-details-btn"
