@@ -28,7 +28,7 @@ import { Filesystem, Directory } from '@capacitor/filesystem';
 import './../CSS/Forms.css';
 import DynamicTable from '../components/GlobalComponent/DynamicTable';
 import FormUpdateModal from '../components/Modals/FormUpdateModal';
-import { useHistory } from 'react-router-dom';
+import { useHistory, useLocation } from 'react-router-dom';
 
 // Add interface for PhotoTag if not already defined
 interface PhotoTag {
@@ -47,6 +47,7 @@ const Forms: React.FC = () => {
   const [showToast, setShowToast] = useState(false);
   const [toastButtons, setToastButtons] = useState<any[]>([]);
   const history = useHistory();
+  const location = useLocation();
 
   const iconActions = [
     { icon: arrowUpCircle, className: selectedForm ? "icon-blue" : "icon-blue icon-disabled", onClick: () => handleUpdateClick(), title: "Update Selected Form", enabled: !!selectedForm },
@@ -54,12 +55,32 @@ const Forms: React.FC = () => {
     { icon: informationCircleOutline, className: selectedForm ? "icon-blue" : "icon-blue icon-disabled", onClick: () => handleInfoClick(), title: "View Building Details", enabled: !!selectedForm },
   ];
 
+  // Function to select a form by ID
+  const selectFormById = useCallback((formId: string) => {
+    const form = formData.find(f => f.id === formId);
+    if (form) {
+      setSelectedForm(form);
+    }
+  }, [formData]);
+
   const loadFormData = useCallback(() => {
     setIsLoading(true);
     try {
       const allForms = FormDataLocalStorage.getAllFormData();
       if (Array.isArray(allForms)) {
         setFormData(allForms);
+        
+        // Check if we have a form ID passed from navigation
+        const state = location.state as { selectedFormId?: string };
+        if (state && state.selectedFormId) {
+          // Select the form that was passed from the map marker
+          const formToSelect = allForms.find(f => f.id === state.selectedFormId);
+          if (formToSelect) {
+            setSelectedForm(formToSelect);
+          }
+          // Clear the state to avoid re-selecting on refresh
+          history.replace('/menu/forms', {});
+        }
       } else if (allForms && typeof allForms === 'object' && 'id' in allForms) {
         setFormData([allForms]);
         localStorage.setItem('formData', JSON.stringify([allForms]));
@@ -72,7 +93,7 @@ const Forms: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [location.state, history]);
 
   useIonViewWillEnter(() => {
     loadFormData();
