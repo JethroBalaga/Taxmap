@@ -152,7 +152,11 @@ const Forms: React.FC = () => {
         : selectedForm.kind;
 
       if (kind === 2) {
-        history.push(`/menu/forms/buildingtable/${selectedForm.id}`);
+        // Pass the current form data through state
+        history.push({
+          pathname: `/menu/forms/buildingtable/${selectedForm.id}`,
+          state: { formData: selectedForm }
+        });
       } else {
         setToastMessage('Building details are only available for forms with kind = 2');
         setToastButtons([{ text: 'OK', role: 'cancel' }]);
@@ -304,6 +308,14 @@ const Forms: React.FC = () => {
   const handleFormUpdate = (updatedData: FormData) => {
     loadFormData();
     setSelectedForm(updatedData);
+    
+    // Dispatch custom event to notify other components
+    window.dispatchEvent(new CustomEvent('formUpdated', {
+      detail: { formId: updatedData.id }
+    }));
+    
+    // Also trigger a storage event for cross-tab compatibility
+    localStorage.setItem('formUpdateTrigger', Date.now().toString());
   };
 
   const filteredForms = Array.isArray(formData)
