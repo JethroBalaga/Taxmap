@@ -45,11 +45,11 @@ export const formatCoordinates = (lat: number, lng: number): string => {
   return `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
 };
 
-// Adjust coordinates to fix inaccuracy (subtract 50 from lat, 3 from lng)
+// Adjust coordinates to fix inaccuracy (subtract 50 from lat, 15 from lng)
 export const adjustCoordinates = (lat: number, lng: number): {latitude: number; longitude: number} => {
   // Convert to decimal degrees, adjust, then convert back
   const adjustedLat = parseFloat((lat - 0.000050).toFixed(6));
-  const adjustedLng = parseFloat((lng - 0.000003).toFixed(6));
+  const adjustedLng = parseFloat((lng - 0.000015).toFixed(6));
   
   console.log(`Original coordinates: ${lat}, ${lng}`);
   console.log(`Adjusted coordinates: ${adjustedLat}, ${adjustedLng}`);
