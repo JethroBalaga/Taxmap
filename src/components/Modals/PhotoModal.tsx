@@ -20,7 +20,7 @@ import {
   IonCardTitle,
   IonToast
 } from '@ionic/react';
-import { close, camera, informationCircle, location, locationOutline, warning } from 'ionicons/icons';
+import { close, camera, informationCircle, location, locationOutline, warning, compass } from 'ionicons/icons';
 import { FormData } from './Form';
 import { BuildingData } from './BuildingModal';
 import SubmitButton from '../../components/GlobalComponent/SubmitButton';
@@ -53,6 +53,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
     isSubmitting,
     isGettingLocation,
     currentLocation,
+    adjustedLocation,
     locationError,
     storedData,
     showConfirmToast,
@@ -188,7 +189,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                   </div>
                   
                   <div className="info-item">
-                    <span className="info-label">Location:</span>
+                    <span className="info-label">Original Location:</span>
                     <div className="info-value">
                       {isGettingLocation ? (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -197,7 +198,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                         </div>
                       ) : currentLocation ? (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <IonIcon icon={location} color="success" style={{ fontSize: '14px' }} />
+                          <IonIcon icon={location} color="medium" style={{ fontSize: '14px' }} />
                           <span>{formatCoordinates(currentLocation.latitude, currentLocation.longitude)}</span>
                           <IonText color="medium" style={{ fontSize: '12px' }}>
                             (±{currentLocation.accuracy?.toFixed(1)}m)
@@ -218,6 +219,19 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                       )}
                     </div>
                   </div>
+                  
+                  {adjustedLocation && (
+                    <div className="info-item">
+                      <span className="info-label">Adjusted Location:</span>
+                      <div className="info-value" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <IonIcon icon={compass} color="success" style={{ fontSize: '14px' }} />
+                        <span>{formatCoordinates(adjustedLocation.latitude, adjustedLocation.longitude)}</span>
+                        <IonText color="success" style={{ fontSize: '12px' }}>
+                          (Corrected)
+                        </IonText>
+                      </div>
+                    </div>
+                  )}
                   
                   {locationError && (
                     <div className="info-item" style={{ gridColumn: '1 / -1' }}>
