@@ -12,7 +12,6 @@ import {
   IonSearchbar,
   IonIcon,
   IonText,
-  IonButton,
   IonRefresher,
   IonRefresherContent,
   useIonViewWillEnter,
@@ -25,7 +24,6 @@ import { ValueInfoLocalStorage } from '../utils/tablestorages/ValueInfoLocalStor
 import { PhotoTagLocalStorage } from '../utils/tablestorages/PhotoTagLocalStorage';
 import { BuildingDataLocalStorage } from '../utils/tablestorages/BuildingDataLocalStorage';
 import { BuildingAdjustmentLocalStorage } from '../utils/tablestorages/BuildingAdjustmentLocalStorage';
-import { Filesystem, Directory } from '@capacitor/filesystem';
 import './../CSS/Forms.css';
 import DynamicTable from '../components/GlobalComponent/DynamicTable';
 import FormUpdateModal from '../components/Modals/FormUpdateModal';
@@ -166,49 +164,6 @@ const Forms: React.FC = () => {
     }
   };
 
-  const deleteImageFile = async (imagePath: string): Promise<void> => {
-    if (!imagePath || typeof imagePath !== 'string' || imagePath.trim() === '') {
-      console.warn('Invalid image path provided for deletion');
-      return;
-    }
-
-    try {
-      let filename = imagePath;
-      if (filename.startsWith('file://')) {
-        filename = filename.substring(7);
-      }
-
-      const lastSlashIndex = Math.max(
-        filename.lastIndexOf('/'),
-        filename.lastIndexOf('\\')
-      );
-
-      if (lastSlashIndex !== -1) {
-        filename = filename.substring(lastSlashIndex + 1);
-      }
-
-      if (!filename || filename.trim() === '') {
-        console.warn('Could not extract valid filename from path:', imagePath);
-        return;
-      }
-
-      console.log(`Attempting to delete image file: ${filename}`);
-
-      await Filesystem.deleteFile({
-        path: filename,
-        directory: Directory.Data
-      });
-
-      console.log(`Successfully deleted image file: ${filename}`);
-    } catch (error: any) {
-      if (error.message && error.message.includes('does not exist')) {
-        console.log(`Image file already deleted: ${imagePath}`);
-      } else {
-        console.warn(`Could not delete image file: ${imagePath}`, error);
-      }
-    }
-  };
-
   const deleteRelatedData = async (formId: string): Promise<void> => {
     console.log(`Deleting related data for form ID: ${formId}`);
 
@@ -217,48 +172,31 @@ const Forms: React.FC = () => {
 
     console.log(`Found ${relatedValueInfo.length} value info entries to delete`);
 
-    const imageDeletionPromises: Promise<void>[] = [];
-
     for (const valueInfo of relatedValueInfo) {
       console.log(`Processing value info ID: ${valueInfo.id}`);
 
       if (valueInfo.photoTagId) {
         try {
-          const photoTag = PhotoTagLocalStorage.getPhotoTag(valueInfo.photoTagId) as unknown as PhotoTag;
-
-          if (photoTag && typeof photoTag === 'object' && 'imagePath' in photoTag) {
-            const imagePath = (photoTag as any).imagePath;
-            if (imagePath && typeof imagePath === 'string') {
-              imageDeletionPromises.push(deleteImageFile(imagePath));
-            }
-          }
+          // Delete the photo tag from storage
+          PhotoTagLocalStorage.deletePhotoTag(valueInfo.photoTagId);
+          console.log(`Deleted photo tag: ${valueInfo.photoTagId}`);
         } catch (error) {
-          console.error(`Error processing photo tag for value info ${valueInfo.id}:`, error);
+          console.error(`Error deleting photo tag for value info ${valueInfo.id}:`, error);
         }
       }
-    }
 
-    try {
-      await Promise.allSettled(imageDeletionPromises);
-      console.log('All image deletion operations completed');
-    } catch (error) {
-      console.error('Error in image deletion process:', error);
-    }
-
-    relatedValueInfo.forEach(valueInfo => {
+      // Delete other related data
       console.log(`Deleting database entries for value info ID: ${valueInfo.id}`);
       try {
         BuildingDataLocalStorage.deleteBuildingData(valueInfo.id);
         BuildingAdjustmentLocalStorage.deleteBuildingAdjustmentsByValueInfoId(valueInfo.id);
-        if (valueInfo.photoTagId) {
-          PhotoTagLocalStorage.deletePhotoTag(valueInfo.photoTagId);
-        }
         ValueInfoLocalStorage.deleteValueInfo(valueInfo.id);
       } catch (error) {
         console.error(`Error deleting database entries for value info ${valueInfo.id}:`, error);
       }
-    });
+    }
 
+    // Clean up any orphaned data
     const remainingValueInfo = ValueInfoLocalStorage.getAllValueInfo();
     const orphanedValueInfo = remainingValueInfo.filter(info => info.formDataId === formId);
     if (orphanedValueInfo.length > 0) {
