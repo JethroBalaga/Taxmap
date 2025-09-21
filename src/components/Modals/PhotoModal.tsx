@@ -69,17 +69,10 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
   const [toastMessage, setToastMessage] = useState('');
   const [toastButtons, setToastButtons] = useState<any[]>([]);
   const [photoName, setPhotoName] = useState<string>('');
-  const [isNativePlatform, setIsNativePlatform] = useState(false);
   const [hasAttemptedLocation, setHasAttemptedLocation] = useState(false);
 
-  useEffect(() => {
-    setIsNativePlatform(Capacitor.isNativePlatform());
-  }, []);
-
-  // Check and create phototags directory when modal opens (mobile only)
+  // Check and create phototags directory when modal opens
   const checkAndCreateDirectory = async () => {
-    if (!isNativePlatform) return;
-    
     try {
       await Filesystem.readdir({
         path: 'phototags',
@@ -106,16 +99,13 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
     if (isOpen) {
       console.log('PhotoModal opened with formData:', formData);
       console.log('PhotoModal opened with buildingData:', buildingData);
-      console.log('Platform:', isNativePlatform ? 'Mobile' : 'Browser');
       setStoredData(null);
       setPhotoName(generateFileName());
       setHasAttemptedLocation(false);
       
-      if (isNativePlatform) {
-        checkAndCreateDirectory().catch(console.error);
-      }
+      checkAndCreateDirectory().catch(console.error);
     }
-  }, [isOpen, formData, buildingData, isNativePlatform]);
+  }, [isOpen, formData, buildingData]);
 
   const takePhoto = async () => {
     try {
@@ -146,17 +136,6 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
     try {
       setIsGettingLocation(true);
       setLocationError(null);
-      
-      // On browser, mock location for testing
-      if (!isNativePlatform) {
-        setCurrentLocation({
-          latitude: 37.7749 + (Math.random() - 0.5) * 0.01,
-          longitude: -122.4194 + (Math.random() - 0.5) * 0.01,
-          accuracy: 10
-        });
-        setHasAttemptedLocation(true);
-        return;
-      }
       
       const position = await Geolocation.getCurrentPosition();
       
@@ -216,7 +195,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
     return (base64.length * 3) / 4 - padding;
   };
 
-  // Function to save the image - works on both browser and mobile
+  // Function to save the image - native mobile only
   const saveImageToStorage = async (dataUrl: string, fileName: string): Promise<string> => {
     try {
       const base64Data = dataUrl.split(',')[1];
@@ -225,28 +204,16 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
         throw new Error('Invalid data URL format');
       }
 
-      if (isNativePlatform) {
-        // Mobile - use Filesystem API
-        const result = await Filesystem.writeFile({
-          path: `phototags/${fileName}`,
-          data: base64Data,
-          directory: Directory.Data,
-          recursive: true
-        });
+      // Mobile - use Filesystem API
+      const result = await Filesystem.writeFile({
+        path: `phototags/${fileName}`,
+        data: base64Data,
+        directory: Directory.Data,
+        recursive: true
+      });
 
-        console.log('Image saved to mobile storage:', result.uri);
-        return result.uri;
-      } else {
-        // Browser - simulate saving
-        console.log('Browser environment - simulating file save');
-        
-        // Store in localStorage for testing purposes
-        const photoKey = `photo_${fileName}`;
-        localStorage.setItem(photoKey, dataUrl);
-        
-        // Return mock path for consistency
-        return `mock://phototags/${fileName}`;
-      }
+      console.log('Image saved to mobile storage:', result.uri);
+      return result.uri;
       
     } catch (error: any) {
       console.error('Error saving image:', error);
@@ -325,12 +292,8 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
         onCompleteSubmission();
       }
       
-      // Show success message with platform info
-      const platformMessage = isNativePlatform 
-        ? 'Data successfully saved! Image stored in phototags folder.' 
-        : 'Data successfully saved! (Browser simulation mode)';
-      
-      setToastMessage(platformMessage);
+      // Show success message
+      setToastMessage('Data successfully saved! Image stored in phototags folder.');
       setToastButtons([{ text: 'OK', role: 'cancel' }]);
       setShowConfirmToast(true);
       
@@ -397,7 +360,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
       <IonHeader>
         <IonToolbar className="fancy-header">
           <IonTitle className="fancy-title">
-            Take Building Photo {!isNativePlatform && '(Simulation Mode)'}
+            Take Building Photo
           </IonTitle>
           <IonButtons slot="end">
             <IonButton onClick={handleClose} disabled={isSubmitting} className="fancy-close-btn">
@@ -408,22 +371,6 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
       </IonHeader>
       <IonContent className="modal-content">
         <div className="form-container">
-          {!isNativePlatform && (
-            <div style={{ 
-              backgroundColor: '#fff3cd', 
-              border: '1px solid #ffeaa7', 
-              padding: '10px', 
-              margin: '10px',
-              borderRadius: '5px',
-              textAlign: 'center'
-            }}>
-              <IonIcon icon={warning} color="warning" /> 
-              <IonText color="warning">
-                Browser simulation mode - files are stored in memory
-              </IonText>
-            </div>
-          )}
-
           {error && (
             <IonAlert
               isOpen={!!error}
@@ -576,14 +523,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                   <div className="info-item">
                     <span className="info-label">Storage Path:</span>
                     <span className="info-value" style={{ fontSize: '12px' }}>
-                      {isNativePlatform ? 'data/phototags/' : 'browser/memory/'}
-                    </span>
-                  </div>
-
-                  <div className="info-item">
-                    <span className="info-label">Platform:</span>
-                    <span className="info-value" style={{ fontSize: '12px' }}>
-                      {isNativePlatform ? 'Mobile' : 'Browser (Simulation)'}
+                      data/phototags/
                     </span>
                   </div>
                 </div>
