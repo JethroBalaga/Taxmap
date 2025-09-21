@@ -152,11 +152,8 @@ const Forms: React.FC = () => {
         : selectedForm.kind;
 
       if (kind === 2) {
-        // Pass the current form data through state
-        history.push({
-          pathname: `/menu/forms/buildingtable/${selectedForm.id}`,
-          state: { formData: selectedForm }
-        });
+        // Just navigate normally without passing state
+        history.push(`/menu/forms/buildingtable/${selectedForm.id}`);
       } else {
         setToastMessage('Building details are only available for forms with kind = 2');
         setToastButtons([{ text: 'OK', role: 'cancel' }]);
@@ -309,7 +306,7 @@ const Forms: React.FC = () => {
     loadFormData();
     setSelectedForm(updatedData);
     
-    // Dispatch custom event to notify other components
+    // Dispatch custom event to notify other components WITHOUT navigating
     window.dispatchEvent(new CustomEvent('formUpdated', {
       detail: { formId: updatedData.id }
     }));
