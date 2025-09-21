@@ -1,4 +1,3 @@
-// src/components/MapMarkerPopup.tsx
 import React from 'react';
 import { FormDataLocalStorage } from '../utils/tablestorages/FormDataLocalStorage';
 import { PhotoTagLocalStorage } from '../utils/tablestorages/PhotoTagLocalStorage';
@@ -99,6 +98,8 @@ const MapMarkerPopup: React.FC<MapMarkerPopupProps> = ({ photoTagId, onClose }) 
 
   const handleViewDetails = () => {
     if (formData && formData.id) {
+      // Close the popup before navigating
+      onClose();
       // Navigate to the forms page and pass the form ID as a query parameter
       history.push({
         pathname: '/menu/forms',

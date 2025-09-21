@@ -5,7 +5,6 @@ export interface FormData {
   kind_id: number;
   class_id: string;
   area: string;
-  user_id: string | null;
   district_id: number | null;
   actual_used_id: string | null;
   subclass_id: string | null;
@@ -43,14 +42,15 @@ export interface GeneralDescriptionData {
 }
 
 export const supabaseApi = {
-  // Insert form and return new form_id
+  /**
+   * Insert a form and return the new form_id (UUID)
+   */
   async insertForm(formData: FormData): Promise<string> {
     const { data, error } = await supabase.rpc('insert_form_and_return_id', {
       p_declarant_id: formData.declarant_id,
       p_kind_id: formData.kind_id,
       p_class_id: formData.class_id,
       p_area: formData.area,
-      p_user_id: formData.user_id,
       p_district_id: formData.district_id,
       p_actual_used_id: formData.actual_used_id,
       p_subclass_id: formData.subclass_id,
@@ -58,11 +58,13 @@ export const supabaseApi = {
     });
 
     if (error) throw error;
-    return data;
+    return data; // UUID as string
   },
 
-  // Insert photo and return tag_id
-  async insertPhoto(photoData: PhotoData): Promise<number> {
+  /**
+   * Insert a photo and return the new tag_id (UUID)
+   */
+  async insertPhoto(photoData: PhotoData): Promise<string> {
     const { data, error } = await supabase.rpc('insert_photo_and_return_id', {
       p_photo: photoData.photo,
       p_longitude: photoData.longitude,
@@ -73,22 +75,26 @@ export const supabaseApi = {
     });
 
     if (error) throw error;
-    return data;
+    return data; // UUID as string
   },
 
-  // Insert value_info and return value_info_id
-  async insertValueInfo(form_id: string, tag_id: number): Promise<number> {
+  /**
+   * Insert value_info and return value_info_id (UUID)
+   */
+  async insertValueInfo(form_id: string, tag_id: string): Promise<string> {
     const { data, error } = await supabase.rpc('insert_value_info_and_return_id', {
       p_form_id: form_id,
       p_tag_id: tag_id
     });
 
     if (error) throw error;
-    return data;
+    return data; // UUID as string
   },
 
-  // Insert general description
-  async insertGeneralDescription(value_info_id: number, data: GeneralDescriptionData): Promise<void> {
+  /**
+   * Insert general description for a value_info record
+   */
+  async insertGeneralDescription(value_info_id: string, data: GeneralDescriptionData): Promise<void> {
     const { error } = await supabase.rpc('insert_general_description', {
       p_value_info_id: value_info_id,
       p_building_code: data.building_code,
@@ -106,8 +112,10 @@ export const supabaseApi = {
     if (error) throw error;
   },
 
-  // Insert building adjustments
-  async insertBuildingAdjustments(value_info_id: number, adjustments: BuildingAdjustmentData[]): Promise<void> {
+  /**
+   * Insert multiple building adjustments for a value_info record
+   */
+  async insertBuildingAdjustments(value_info_id: string, adjustments: BuildingAdjustmentData[]): Promise<void> {
     for (const adjustment of adjustments) {
       const { error } = await supabase.rpc('insert_building_adjustments', {
         p_value_info_id: value_info_id,
@@ -122,7 +130,9 @@ export const supabaseApi = {
     }
   },
 
-  // Update form status
+  /**
+   * Update form status by form_id
+   */
   async updateFormStatus(form_id: string, status: string): Promise<void> {
     const { error } = await supabase
       .from('formtbl')
