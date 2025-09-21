@@ -70,6 +70,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
   const [toastButtons, setToastButtons] = useState<any[]>([]);
   const [photoName, setPhotoName] = useState<string>('');
   const [isNativePlatform, setIsNativePlatform] = useState(false);
+  const [hasAttemptedLocation, setHasAttemptedLocation] = useState(false);
 
   useEffect(() => {
     setIsNativePlatform(Capacitor.isNativePlatform());
@@ -108,6 +109,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
       console.log('Platform:', isNativePlatform ? 'Mobile' : 'Browser');
       setStoredData(null);
       setPhotoName(generateFileName());
+      setHasAttemptedLocation(false);
       
       if (isNativePlatform) {
         checkAndCreateDirectory().catch(console.error);
@@ -130,7 +132,8 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
         setPhotoName(generateFileName());
         setError(null);
         setLocationError(null);
-        await getCurrentLocation();
+        setCurrentLocation(null); // Reset location when taking a new photo
+        setHasAttemptedLocation(false); // Reset location attempt status
       } else {
         setError('No photo was taken.');
       }
@@ -151,6 +154,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
           longitude: -122.4194 + (Math.random() - 0.5) * 0.01,
           accuracy: 10
         });
+        setHasAttemptedLocation(true);
         return;
       }
       
@@ -165,6 +169,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
         longitude: position.coords.longitude,
         accuracy: position.coords.accuracy
       });
+      setHasAttemptedLocation(true);
       
     } catch (err: any) {
       console.warn('Location error:', err);
@@ -179,6 +184,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
       
       setLocationError(errorMessage);
       setCurrentLocation(null);
+      setHasAttemptedLocation(true);
     } finally {
       setIsGettingLocation(false);
     }
@@ -194,6 +200,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
     setStoredData(null);
     setShowConfirmToast(false);
     setPhotoName('');
+    setHasAttemptedLocation(false);
     onClose();
   };
 
@@ -373,6 +380,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
     setCurrentLocation(null);
     setStoredData(null);
     setPhotoName(generateFileName());
+    setHasAttemptedLocation(false);
   };
 
   const formatCoordinates = (lat: number, lng: number): string => {
@@ -536,7 +544,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                       ) : (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                           <IonIcon icon={locationOutline} color="medium" style={{ fontSize: '14px' }} />
-                          <span>Location not requested</span>
+                          <span>Location not captured yet</span>
                         </div>
                       )}
                     </div>
@@ -587,12 +595,27 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                     <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
                       <SubmitButton
                         onClick={handleSubmit}
-                        disabled={isSubmitting || isGettingLocation}
+                        disabled={isSubmitting || isGettingLocation || !hasAttemptedLocation}
                         loading={isSubmitting}
                       />
                     </div>
                     
-                    {(!currentLocation && !isGettingLocation) && (
+                    {!hasAttemptedLocation ? (
+                      <div style={{ textAlign: 'center', marginBottom: '16px' }}>
+                        <IonButton 
+                          onClick={getCurrentLocation}
+                          size="default"
+                          color="primary"
+                          disabled={isSubmitting}
+                        >
+                          <IonIcon icon={locationOutline} slot="start" />
+                          Capture Location
+                        </IonButton>
+                        <p style={{ fontSize: '12px', color: 'var(--ion-color-medium)', marginTop: '8px' }}>
+                          Please capture your current location before submitting
+                        </p>
+                      </div>
+                    ) : !currentLocation && (
                       <div style={{ textAlign: 'center', marginBottom: '16px' }}>
                         <IonButton 
                           onClick={getCurrentLocation}
@@ -601,7 +624,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                           disabled={isSubmitting}
                         >
                           <IonIcon icon={locationOutline} slot="start" />
-                          {locationError ? 'Retry Location' : 'Get Location'}
+                          Retry Location
                         </IonButton>
                       </div>
                     )}
