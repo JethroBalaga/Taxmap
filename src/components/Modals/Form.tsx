@@ -1,5 +1,5 @@
 // src/components/Modals/Form.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { DeclarantData, getDeclarantData } from '../../utils/DeclarantLocalStorage';
 import { DistrictData, getDistrictData } from '../../utils/districtLocalStorage';
 import { KindData, getKindData } from '../../utils/kindLocalStorage';
@@ -51,6 +51,36 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
   const [isLoadingSubclasses, setIsLoadingSubclasses] = useState(false);
   const [isLoadingActualUses, setIsLoadingActualUses] = useState(false);
   const [showBuildingModal, setShowBuildingModal] = useState(false);
+
+  // Memoized values to prevent unnecessary recalculations
+  const isBuilding = useMemo((): boolean => {
+    if (!kind || isLoadingKinds || kinds.length === 0) return false;
+    const selectedKind = kinds.find(k => k.kind_id.toString() === kind);
+    return selectedKind?.description?.toLowerCase().includes('building') || false;
+  }, [kind, isLoadingKinds, kinds]);
+
+  const formattedActualUses = useMemo((): Array<{value: string, label: string}> => {
+    return actualUses.map(actualUse => ({
+      value: actualUse.actual_used_id,
+      label: `${actualUse.actual_used_id} - ${actualUse.description}`
+    }));
+  }, [actualUses]);
+
+  const selectedDeclarantDisplay = useMemo(() => {
+    if (!declarantId) return 'Select Declarant';
+    const selected = declarants.find(d => d.declarant_id === declarantId);
+    return selected ? `${selected.declarant_id} - ${selected.firstname} ${selected.lastname}` : 'Select Declarant';
+  }, [declarantId, declarants]);
+
+  const formData: FormData = useMemo(() => ({
+    district,
+    declarantId,
+    kind,
+    classification,
+    subclass,
+    actualUse,
+    area
+  }), [district, declarantId, kind, classification, subclass, actualUse, area]);
 
   // Data loading effect
   useEffect(() => {
@@ -121,7 +151,7 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
   // Fetch actual uses when classification changes (only for building kinds)
   useEffect(() => {
     const fetchActualUses = async () => {
-      if (!classification || !isBuildingKind()) {
+      if (!classification || !isBuilding) {
         setActualUses([]);
         setActualUse('');
         setIsLoadingActualUses(false);
@@ -146,7 +176,7 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
     };
 
     fetchActualUses();
-  }, [classification, actualUse, kind]);
+  }, [classification, actualUse, isBuilding]);
 
   // Filter declarants based on search text
   useEffect(() => {
@@ -173,28 +203,15 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
       classification.trim() !== '' &&
       area > 0;
     
-    if (isBuildingKind()) {
+    if (isBuilding) {
       setIsFormValid(isValid && actualUse.trim() !== '');
     } else {
       setIsFormValid(isValid);
     }
-  }, [district, declarantId, kind, classification, area, actualUse]);
+  }, [district, declarantId, kind, classification, area, actualUse, isBuilding]);
 
-  // Helper function to check if selected kind is building
-  const isBuildingKind = (): boolean => {
-    if (!kind || isLoadingKinds || kinds.length === 0) return false;
-    
-    const selectedKind = kinds.find(k => k.kind_id.toString() === kind);
-    return selectedKind?.description?.toLowerCase().includes('building') || false;
-  };
-
-  const getSelectedDeclarantDisplay = () => {
-    if (!declarantId) return 'Select Declarant';
-    const selected = declarants.find(d => d.declarant_id === declarantId);
-    return selected ? `${selected.declarant_id} - ${selected.firstname} ${selected.lastname}` : 'Select Declarant';
-  };
-
-  const resetForm = () => {
+  // Memoized callbacks to prevent unnecessary re-renders
+  const resetForm = useCallback(() => {
     setDistrict(null);
     setDeclarantId(null);
     setKind('');
@@ -203,21 +220,20 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
     setActualUse('');
     setArea(0);
     setSearchText('');
-  };
+  }, []);
 
-  // Event handlers
-  const handleNextClick = () => {
+  const handleNextClick = useCallback(() => {
     if (!isFormValid) return;
 
-    if (isBuildingKind()) {
+    if (isBuilding) {
       setShowBuildingModal(true);
     } else {
       console.log('Form data:', { district, declarantId, kind, classification, subclass, area });
       onSuccess();
     }
-  };
+  }, [isFormValid, isBuilding, district, declarantId, kind, classification, subclass, area, onSuccess]);
 
-  const handleBuildingModalSuccess = (buildingData: any) => {
+  const handleBuildingModalSuccess = useCallback((buildingData: any) => {
     console.log('=== FINAL SUBMISSION DATA ===');
     console.log('Form data:', { district, declarantId, kind, classification, subclass, actualUse, area });
     console.log('Building data:', buildingData);
@@ -227,41 +243,26 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
     setShowBuildingModal(false);
     resetForm();
     onSuccess(); // This should close the main form modal
-  };
+  }, [district, declarantId, kind, classification, subclass, actualUse, area, resetForm, onSuccess]);
 
-  const handleBuildingModalDismiss = () => {
+  const handleBuildingModalDismiss = useCallback(() => {
     setShowBuildingModal(false);
-  };
+  }, []);
 
-  const handleSelectDeclarant = (id: number) => {
+  const handleSelectDeclarant = useCallback((id: number) => {
     setDeclarantId(id);
     setShowDeclarantSearch(false);
     setSearchText('');
-  };
+  }, []);
 
-  const handleDismiss = () => {
+  const handleDismiss = useCallback(() => {
     resetForm();
     onDismiss();
-  };
+  }, [resetForm, onDismiss]);
 
-  // Format actual uses for dropdown
-  const getFormattedActualUses = (): Array<{value: string, label: string}> => {
-    return actualUses.map(actualUse => ({
-      value: actualUse.actual_used_id,
-      label: `${actualUse.actual_used_id} - ${actualUse.description}`
-    }));
-  };
-
-  // Prepare form data
-  const formData: FormData = {
-    district,
-    declarantId,
-    kind,
-    classification,
-    subclass,
-    actualUse,
-    area
-  };
+  const showDeclarantSearchHandler = useCallback(() => {
+    setShowDeclarantSearch(true);
+  }, []);
 
   return (
     <>
@@ -270,9 +271,9 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
         onDismiss={handleDismiss}
         district={district}
         setDistrict={setDistrict}
-        declarantName={getSelectedDeclarantDisplay()}
+        declarantName={selectedDeclarantDisplay}
         declarantId={declarantId}
-        showDeclarantSearch={() => setShowDeclarantSearch(true)}
+        showDeclarantSearch={showDeclarantSearchHandler}
         kind={kind}
         setKind={setKind}
         classification={classification}
@@ -289,13 +290,13 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
         kinds={kinds}
         classifications={classifications}
         subclasses={subclasses}
-        actualUses={getFormattedActualUses()}
+        actualUses={formattedActualUses}
         isLoadingDistricts={isLoadingDistricts}
         isLoadingKinds={isLoadingKinds}
         isLoadingClassifications={isLoadingClassifications}
         isLoadingSubclasses={isLoadingSubclasses}
         isLoadingActualUses={isLoadingActualUses}
-        isBuildingKind={isBuildingKind()}
+        isBuildingKind={isBuilding}
         showDeclarantSearchModal={showDeclarantSearch}
         setShowDeclarantSearchModal={setShowDeclarantSearch}
         searchText={searchText}
@@ -305,14 +306,16 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
         isLoadingDeclarants={isLoadingDeclarants}
       />
 
-      <BuildingModal
-        isOpen={showBuildingModal}
-        onDismiss={handleBuildingModalDismiss}
-        onSuccess={handleBuildingModalSuccess}
-        formData={formData}
-      />
+      {showBuildingModal && (
+        <BuildingModal
+          isOpen={showBuildingModal}
+          onDismiss={handleBuildingModalDismiss}
+          onSuccess={handleBuildingModalSuccess}
+          formData={formData}
+        />
+      )}
     </>
   );
 };
 
-export default Form;
+export default React.memo(Form);
