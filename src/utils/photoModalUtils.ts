@@ -49,7 +49,7 @@ export const formatCoordinates = (lat: number, lng: number): string => {
 export const adjustCoordinates = (lat: number, lng: number): {latitude: number; longitude: number} => {
   // Convert to decimal degrees, adjust, then convert back
   const adjustedLat = parseFloat((lat - 0.000050).toFixed(6));
-  const adjustedLng = parseFloat((lng - 0.000015).toFixed(6));
+  const adjustedLng = parseFloat((lng - 0.000050).toFixed(6));
   
   console.log(`Original coordinates: ${lat}, ${lng}`);
   console.log(`Adjusted coordinates: ${adjustedLat}, ${adjustedLng}`);
