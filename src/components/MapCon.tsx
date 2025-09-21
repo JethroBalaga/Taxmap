@@ -2,13 +2,14 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import 'leaflet.offline'; // offline plugin
+import 'leaflet.offline';
 import localforage from 'localforage';
-import { useIonViewWillEnter } from '@ionic/react'; // 👈 Import useIonViewWillEnter
+import { useIonViewWillEnter } from '@ionic/react';
 import Form from './Modals/Form';
 import { PhotoTagLocalStorage, PhotoTagData } from '../utils/tablestorages/PhotoTagLocalStorage';
 import { createBlueMarkerIcon } from '../utils/markerIcons';
 import MapMarkerPopup from './MapMarkerPopup';
+import AutoDownloadTiles from './AutoDownloadTiles';
 
 const TILE_LAYER_URL = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
 const manoloFortichBounds = L.latLngBounds(
@@ -40,7 +41,7 @@ const CreateOutlineControl = ({ onClick }: { onClick: () => void }) => {
             <path fill="currentColor" d="${CREATE_OUTLINE_PATH}"/>
           </svg>
         `;
-        L.DomEvent.on(link, 'click', (e) => {
+        L.DomEvent.on(link, 'click', function(e) {
           L.DomEvent.stop(e);
           onClick();
         });
@@ -50,7 +51,11 @@ const CreateOutlineControl = ({ onClick }: { onClick: () => void }) => {
 
     controlRef.current = new CustomControl();
     controlRef.current.addTo(map);
-    return () => controlRef.current?.remove();
+    return function() {
+      if (controlRef.current) {
+        controlRef.current.remove();
+      }
+    };
   }, [map, onClick]);
 
   return null;
@@ -63,29 +68,37 @@ const PhotoMarkers: React.FC<{
 }> = ({ photoTags, onMarkerClick }) => {
   return (
     <>
-      {photoTags.map((tag) => (
-        <Marker
-          key={tag.id}
-          position={[tag.latitude, tag.longitude]}
-          icon={createBlueMarkerIcon()}
-          eventHandlers={{
-            click: () => {
-              onMarkerClick(tag.id);
-            }
-          }}
-        />
-      ))}
+      {photoTags.map(function(tag) {
+        return (
+          <Marker
+            key={tag.id}
+            position={[tag.latitude, tag.longitude]}
+            icon={createBlueMarkerIcon()}
+            eventHandlers={{
+              click: function() {
+                onMarkerClick(tag.id);
+              }
+            }}
+          />
+        );
+      })}
     </>
   );
 };
 
 // Component to set up the map logic
-const MapLogic = ({ onOpenForm }: { onOpenForm: () => void }) => {
+const MapLogic = ({ 
+  onOpenForm, 
+  onOfflineLayerReady 
+}: { 
+  onOpenForm: () => void;
+  onOfflineLayerReady: (layer: any) => void;
+}) => {
   const map = useMap();
   const tileLayerRef = useRef<any>(null);
   const [allowZoomOut, setAllowZoomOut] = useState(false);
 
-  useEffect(() => {
+  useEffect(function() {
     // LocalForage config
     localforage.config({
       driver: [localforage.INDEXEDDB, localforage.WEBSQL, localforage.LOCALSTORAGE],
@@ -101,20 +114,54 @@ const MapLogic = ({ onOpenForm }: { onOpenForm: () => void }) => {
       maxZoom: MAX_ZOOM
     });
 
-    offlineLayer.on('tileloadend', (e: any) => {
-      if (offlineLayer.saveTile) {
-        offlineLayer.saveTile(e.tile);
+    // Enhanced saveTile method without function references
+    offlineLayer.saveTile = function(options: { coords: { x: number; y: number; z: number } }) {
+      return new Promise<void>(function(resolve, reject) {
+        // Create a simple object without any function references
+        const tileData = {
+          coords: options.coords,
+          url: TILE_LAYER_URL
+            .replace('{z}', options.coords.z.toString())
+            .replace('{x}', options.coords.x.toString())
+            .replace('{y}', options.coords.y.toString()),
+          timestamp: Date.now()
+        };
+        
+        const tileKey = `tile_${options.coords.z}_${options.coords.x}_${options.coords.y}`;
+        
+        // Use localForage directly to avoid function references
+        localforage.setItem(tileKey, tileData)
+          .then(function() {
+            resolve();
+          })
+          .catch(function(err) {
+            reject(err);
+          });
+      });
+    };
+
+    // Define error handler separately
+    const handleTileSaveError = function(err: any) {
+      console.error('Failed to save tile:', err);
+    };
+
+    offlineLayer.on('tileloadend', function(e: any) {
+      if (offlineLayer.saveTile && e.coords) {
+        // Use the enhanced save method
+        offlineLayer.saveTile({ coords: e.coords })
+          .catch(handleTileSaveError);
       }
     });
 
     offlineLayer.addTo(map);
     tileLayerRef.current = offlineLayer;
+    onOfflineLayerReady(offlineLayer);
 
     // Initial map view and restriction
     map.setView([8.35985, 124.869077], DEFAULT_ZOOM);
     map.setMaxBounds(manoloFortichBounds);
 
-    const enforceRestrictions = () => {
+    const enforceRestrictions = function() {
       const currentZoom = map.getZoom();
 
       if (currentZoom > DEFAULT_ZOOM) {
@@ -135,14 +182,16 @@ const MapLogic = ({ onOpenForm }: { onOpenForm: () => void }) => {
     map.on('zoomend', enforceRestrictions);
     map.on('move', enforceRestrictions);
 
-    setTimeout(() => map.invalidateSize(), 100);
+    setTimeout(function() {
+      map.invalidateSize();
+    }, 100);
 
-    return () => {
+    return function() {
       map.off('zoomend', enforceRestrictions);
       map.off('move', enforceRestrictions);
       offlineLayer.remove();
     };
-  }, [map, allowZoomOut]);
+  }, [map, allowZoomOut, onOfflineLayerReady]);
 
   return <CreateOutlineControl onClick={onOpenForm} />;
 };
@@ -153,38 +202,58 @@ const MapCon: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
   const [photoTags, setPhotoTags] = useState<PhotoTagData[]>([]);
   const [selectedPhotoTagId, setSelectedPhotoTagId] = useState<string | null>(null);
+  const [offlineLayer, setOfflineLayer] = useState<any>(null);
+  const [isDownloadingTiles, setIsDownloadingTiles] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState({ current: 0, total: 0 });
 
-  // Use a useCallback to memoize the loading function
-  const loadPhotoTags = useCallback(() => {
+  // Use a useCallback to memoize the loading function to prevent infinite re-renders
+  const loadPhotoTags = useCallback(function() {
     const tags = PhotoTagLocalStorage.getAllPhotoTags();
     setPhotoTags(tags);
   }, []);
 
   // Use useIonViewWillEnter to refresh data whenever the view is navigated to
-  useIonViewWillEnter(() => {
+  useIonViewWillEnter(function() {
     loadPhotoTags();
   });
 
   // useEffect for initial mount/unmount logic
-  useEffect(() => {
+  useEffect(function() {
     setIsMounted(true);
-    return () => setIsMounted(false);
+    return function() {
+      setIsMounted(false);
+    };
   }, []);
 
-  // The rest of the handlers already call loadPhotoTags, which is good
-  const handleFormDismiss = () => {
+  // Memoize callbacks to prevent infinite re-renders
+  const handleOfflineLayerReady = useCallback(function(layer: any) {
+    setOfflineLayer(layer);
+    setIsDownloadingTiles(true);
+  }, []);
+
+  const handleTileDownloadProgress = useCallback(function(current: number, total: number) {
+    setDownloadProgress({ current, total });
+  }, []);
+
+  const handleTileDownloadComplete = useCallback(function() {
+    setIsDownloadingTiles(false);
+    setDownloadProgress({ current: 0, total: 0 });
+    console.log('✅ All tiles downloaded successfully');
+  }, []);
+
+  const handleFormDismiss = useCallback(function() {
     setShowForm(false);
     loadPhotoTags();
-  };
+  }, [loadPhotoTags]);
 
-  const handleFormSuccess = () => {
+  const handleFormSuccess = useCallback(function() {
     setShowForm(false);
     loadPhotoTags();
-  };
+  }, [loadPhotoTags]);
 
-  const handleMarkerClick = (photoTagId: string) => {
+  const handleMarkerClick = useCallback(function(photoTagId: string) {
     setSelectedPhotoTagId(photoTagId);
-  };
+  }, []);
 
   return (
     <div style={{ height: '100vh', width: '100%', overflow: 'hidden', position: 'relative' }}>
@@ -231,10 +300,98 @@ const MapCon: React.FC = () => {
           justify-content: center;
           align-items: center;
         }
+
+        /* Download progress bar at the bottom */
+        .download-progress-container {
+          position: fixed;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          height: 60px;
+          background: rgba(0, 0, 0, 0.85);
+          color: white;
+          z-index: 1000;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+          padding: 0 20px;
+          box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
+          transition: opacity 0.3s ease;
+        }
+
+        .download-progress-text {
+          margin-bottom: 8px;
+          font-size: 14px;
+          text-align: center;
+          font-weight: 500;
+        }
+
+        .download-progress-bar {
+          width: 100%;
+          max-width: 400px;
+          height: 6px;
+          background: rgba(255, 255, 255, 0.3);
+          border-radius: 3px;
+          overflow: hidden;
+        }
+
+        .download-progress-fill {
+          height: 100%;
+          background: linear-gradient(90deg, #4caf50, #2e7d32);
+          transition: width 0.3s ease;
+          border-radius: 3px;
+        }
+
+        .download-progress-stats {
+          margin-top: 6px;
+          font-size: 12px;
+          opacity: 0.8;
+        }
+
+        /* Download complete animation */
+        @keyframes downloadComplete {
+          0% { opacity: 1; }
+          50% { opacity: 0.7; }
+          100% { opacity: 1; }
+        }
+
+        .download-complete {
+          animation: downloadComplete 1s ease-in-out 2;
+        }
+
+        /* Map container styles to ensure proper rendering */
+        .leaflet-container {
+          height: 100%;
+          width: 100%;
+        }
       `}</style>
 
       {isMounted && (
         <>
+          {/* Download progress bar at the bottom */}
+          {isDownloadingTiles && (
+            <div className="download-progress-container">
+              <div className="download-progress-text">
+                Downloading Manolo Fortich map for offline use...
+              </div>
+              <div className="download-progress-bar">
+                <div 
+                  className="download-progress-fill"
+                  style={{ 
+                    width: `${downloadProgress.total > 0 ? (downloadProgress.current / downloadProgress.total) * 100 : 0}%` 
+                  }}
+                />
+              </div>
+              <div className="download-progress-stats">
+                {downloadProgress.current} / {downloadProgress.total} tiles
+                {downloadProgress.total > 0 && (
+                  <span> ({Math.round((downloadProgress.current / downloadProgress.total) * 100)}%)</span>
+                )}
+              </div>
+            </div>
+          )}
+
           <MapContainer
             center={[8.35985, 124.869077]}
             zoom={DEFAULT_ZOOM}
@@ -256,7 +413,23 @@ const MapCon: React.FC = () => {
               onMarkerClick={handleMarkerClick}
             />
             
-            <MapLogic onOpenForm={() => setShowForm(true)} />
+            <MapLogic 
+              onOpenForm={function() {
+                setShowForm(true);
+              }} 
+              onOfflineLayerReady={handleOfflineLayerReady}
+            />
+            
+            {/* Auto-download tiles when offline layer is ready */}
+            {offlineLayer && (
+              <AutoDownloadTiles 
+                tileLayer={offlineLayer}
+                bounds={manoloFortichBounds}
+                zoomLevels={[14, 15, 16]}
+                onProgress={handleTileDownloadProgress}
+                onComplete={handleTileDownloadComplete}
+              />
+            )}
           </MapContainer>
 
           <Form
@@ -268,7 +441,9 @@ const MapCon: React.FC = () => {
           {/* Popup overlay and content */}
           {selectedPhotoTagId && (
             <>
-              <div className="popup-overlay" onClick={() => setSelectedPhotoTagId(null)} />
+              <div className="popup-overlay" onClick={function() {
+                setSelectedPhotoTagId(null);
+              }} />
               <div style={{
                 position: 'fixed',
                 top: '50%',
@@ -280,7 +455,9 @@ const MapCon: React.FC = () => {
               }}>
                 <MapMarkerPopup
                   photoTagId={selectedPhotoTagId}
-                  onClose={() => setSelectedPhotoTagId(null)}
+                  onClose={function() {
+                    setSelectedPhotoTagId(null);
+                  }}
                 />
               </div>
             </>
