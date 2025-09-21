@@ -8,7 +8,7 @@ import { FormDataLocalStorage } from '../../utils/tablestorages/FormDataLocalSto
 import { BuildingDataLocalStorage } from '../../utils/tablestorages/BuildingDataLocalStorage';
 import { PhotoTagLocalStorage } from '../../utils/tablestorages/PhotoTagLocalStorage';
 import { ValueInfoLocalStorage } from '../../utils/tablestorages/ValueInfoLocalStorage';
-import { generateFileName, saveImageToStorage } from '../../utils/photoModalUtils';
+import { generateFileName, saveImageToStorage, adjustCoordinates } from '../../utils/photoModalUtils';
 
 interface UsePhotoModalProps {
   isOpen: boolean;
@@ -34,6 +34,7 @@ export const usePhotoModal = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [currentLocation, setCurrentLocation] = useState<{latitude: number; longitude: number; accuracy: number} | null>(null);
+  const [adjustedLocation, setAdjustedLocation] = useState<{latitude: number; longitude: number} | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [storedData, setStoredData] = useState<{
     formData: any;
@@ -78,6 +79,7 @@ export const usePhotoModal = ({
       setStoredData(null);
       setPhotoName(generateFileName());
       setHasAttemptedLocation(false);
+      setAdjustedLocation(null);
       
       checkAndCreateDirectory().catch(console.error);
     }
@@ -99,6 +101,7 @@ export const usePhotoModal = ({
         setError(null);
         setLocationError(null);
         setCurrentLocation(null); // Reset location when taking a new photo
+        setAdjustedLocation(null); // Reset adjusted location
         setHasAttemptedLocation(false); // Reset location attempt status
       } else {
         setError('No photo was taken.');
@@ -119,11 +122,21 @@ export const usePhotoModal = ({
         throw new Error('Unable to get GPS coordinates');
       }
 
-      setCurrentLocation({
+      const originalLocation = {
         latitude: position.coords.latitude,
         longitude: position.coords.longitude,
         accuracy: position.coords.accuracy
-      });
+      };
+      
+      setCurrentLocation(originalLocation);
+      
+      // Apply coordinate adjustment
+      const adjustedCoords = adjustCoordinates(
+        originalLocation.latitude, 
+        originalLocation.longitude
+      );
+      
+      setAdjustedLocation(adjustedCoords);
       setHasAttemptedLocation(true);
       
     } catch (err: any) {
@@ -139,6 +152,7 @@ export const usePhotoModal = ({
       
       setLocationError(errorMessage);
       setCurrentLocation(null);
+      setAdjustedLocation(null);
       setHasAttemptedLocation(true);
     } finally {
       setIsGettingLocation(false);
@@ -152,6 +166,7 @@ export const usePhotoModal = ({
     setIsSubmitting(false);
     setIsGettingLocation(false);
     setCurrentLocation(null);
+    setAdjustedLocation(null);
     setStoredData(null);
     setShowConfirmToast(false);
     setPhotoName('');
@@ -184,10 +199,14 @@ export const usePhotoModal = ({
       }
       
       // 2. Store PhotoTag (using photoName instead of photoPath)
+      // Use adjusted coordinates if available, otherwise use original or default
+      const finalLatitude = adjustedLocation?.latitude || currentLocation?.latitude || 0;
+      const finalLongitude = adjustedLocation?.longitude || currentLocation?.longitude || 0;
+      
       photoTag = PhotoTagLocalStorage.addPhotoTag({
         photoName, // Use just the filename
-        longitude: currentLocation?.longitude || 0,
-        latitude: currentLocation?.latitude || 0,
+        longitude: finalLongitude,
+        latitude: finalLatitude,
         accuracy: currentLocation?.accuracy,
         timestamp: new Date()
       });
@@ -246,7 +265,7 @@ export const usePhotoModal = ({
     } finally {
       setIsSubmitting(false);
     }
-  }, [photo, photoName, formData, buildingData, currentLocation, onSubmit, onPhotoTaken, onCompleteSubmission]);
+  }, [photo, photoName, formData, buildingData, currentLocation, adjustedLocation, onSubmit, onPhotoTaken, onCompleteSubmission]);
 
   const handleSubmit = useCallback(async () => {
     if (!photo) {
@@ -279,6 +298,7 @@ export const usePhotoModal = ({
     setError(null);
     setLocationError(null);
     setCurrentLocation(null);
+    setAdjustedLocation(null);
     setStoredData(null);
     setPhotoName(generateFileName());
     setHasAttemptedLocation(false);
@@ -290,6 +310,7 @@ export const usePhotoModal = ({
     isSubmitting,
     isGettingLocation,
     currentLocation,
+    adjustedLocation,
     locationError,
     storedData,
     showConfirmToast,
