@@ -4,7 +4,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet.offline'; // offline plugin
 import localforage from 'localforage';
-import { useIonViewWillEnter } from '@ionic/react'; // 👈 Import useIonViewWillEnter
+import { useIonViewWillEnter } from '@ionic/react';
 import Form from './Modals/Form';
 import { PhotoTagLocalStorage, PhotoTagData } from '../utils/tablestorages/PhotoTagLocalStorage';
 import { createBlueMarkerIcon } from '../utils/markerIcons';
@@ -153,6 +153,7 @@ const MapCon: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
   const [photoTags, setPhotoTags] = useState<PhotoTagData[]>([]);
   const [selectedPhotoTagId, setSelectedPhotoTagId] = useState<string | null>(null);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
 
   // Use a useCallback to memoize the loading function
   const loadPhotoTags = useCallback(() => {
@@ -168,10 +169,21 @@ const MapCon: React.FC = () => {
   // useEffect for initial mount/unmount logic
   useEffect(() => {
     setIsMounted(true);
-    return () => setIsMounted(false);
+    
+    // Add event listeners for online/offline status
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    return () => {
+      setIsMounted(false);
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
   }, []);
 
-  // The rest of the handlers already call loadPhotoTags, which is good
   const handleFormDismiss = () => {
     setShowForm(false);
     loadPhotoTags();
@@ -231,6 +243,28 @@ const MapCon: React.FC = () => {
           justify-content: center;
           align-items: center;
         }
+        
+        /* Internet status notification */
+        .internet-status {
+          position: absolute;
+          bottom: 10px;
+          left: 50%;
+          transform: translateX(-50%);
+          background-color: #ff4d4f;
+          color: white;
+          padding: 8px 16px;
+          border-radius: 4px;
+          z-index: 1000;
+          font-size: 14px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        
+        .internet-status.online {
+          background-color: #52c41a;
+        }
       `}</style>
 
       {isMounted && (
@@ -258,6 +292,13 @@ const MapCon: React.FC = () => {
             
             <MapLogic onOpenForm={() => setShowForm(true)} />
           </MapContainer>
+
+          {/* Internet status notification */}
+          {!isOnline && (
+            <div className="internet-status">
+              <span>⚠️ No internet connection. Map may not display correctly.</span>
+            </div>
+          )}
 
           <Form
             isOpen={showForm}
