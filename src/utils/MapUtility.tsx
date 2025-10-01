@@ -67,6 +67,7 @@ import {
   getBuildingCodeDataSize,
   getCurrentBuildingCodeVersion
 } from './buildingCodeLocalStorage';
+// ADD DECLARANT IMPORTS
 import { 
   getDeclarantData, 
   isDeclarantDataFresh,
@@ -77,6 +78,7 @@ import {
   getDeclarantDataSize,
   getCurrentDeclarantVersion
 } from './DeclarantLocalStorage';
+// ADD BUILDING COMPONENT IMPORTS
 import { 
   getBuildingComponentData, 
   isBuildingComponentDataFresh,
@@ -87,6 +89,7 @@ import {
   getBuildingComponentDataSize,
   getCurrentBuildingComponentVersion
 } from './buildingComponentLocalStorage';
+// ADD BUILDING SUBCOMPONENT IMPORTS
 import { 
   getBuildingSubcomponentData, 
   isBuildingSubcomponentDataFresh,
@@ -97,6 +100,7 @@ import {
   getBuildingSubcomponentDataSize,
   getCurrentBuildingSubcomponentVersion
 } from './BuildingSubcomponentLocalStorage';
+// ADD EQUIPMENT IMPORTS
 import { 
   getEquipmentData, 
   isEquipmentDataFresh,
@@ -107,17 +111,6 @@ import {
   getEquipmentDataSize,
   getCurrentEquipmentVersion
 } from './equipmentLocalStorage';
-// ADD MACHINE IMPORTS
-import { 
-  getMachineData, 
-  isMachineDataFresh,
-  clearMachineData,
-  getStoredMachineVersion,
-  getMachineTimestamp,
-  hasMachineData,
-  getMachineDataSize,
-  getCurrentMachineVersion
-} from './machineLocalStorage';
 
 import { ClassificationFetcher } from './dataFetchers/ClassificationFetcher';
 import { SubclassFetcher } from './dataFetchers/SubclassFetcher';
@@ -130,12 +123,14 @@ import { KindFetcher } from './dataFetchers/KindFetcher';
 import { AssessmentLevelFetcher } from './dataFetchers/AssessmentLevelFetcher';
 import { StructureTypeFetcher } from './dataFetchers/StructureTypeFetcher';
 import { BuildingCodeFetcher } from './dataFetchers/BuildingCodeFetcher';
+// ADD DECLARANT FETCHER IMPORT
 import { DeclarantFetcher } from './dataFetchers/DeclarantFetcher';
+// ADD BUILDING COMPONENT FETCHER IMPORT
 import { BuildingComponentFetcher } from './dataFetchers/BuildingComponentFetcher';
+// ADD BUILDING SUBCOMPONENT FETCHER IMPORT
 import { BuildingSubcomponentFetcher } from './dataFetchers/BuildingSubcomponentFetcher';
+// ADD EQUIPMENT FETCHER IMPORT
 import { EquipmentFetcher } from './dataFetchers/EquipmentFetcher';
-// ADD MACHINE FETCHER IMPORT
-import { MachineFetcher } from './dataFetchers/MachineFetcher';
 
 export interface FetchDataResult {
   success: boolean;
@@ -144,7 +139,7 @@ export interface FetchDataResult {
 }
 
 export class MapDataManager {
-  // Check if all data is fresh (including machine data)
+  // Check if all data is fresh (including building component and subcomponent data)
   static async checkAllDataFreshness(): Promise<boolean> {
     try {
       const [
@@ -162,8 +157,7 @@ export class MapDataManager {
         isDeclarantFresh,
         isBuildingComponentFresh,
         isBuildingSubcomponentFresh,
-        isEquipmentFresh,
-        isMachineFresh // ADD MACHINE FRESHNESS CHECK
+        isEquipmentFresh // ADD EQUIPMENT FRESHNESS CHECK
       ] = await Promise.all([
         isClassificationDataFresh(),
         isSubclassDataFresh(),
@@ -179,8 +173,7 @@ export class MapDataManager {
         isDeclarantDataFresh(),
         isBuildingComponentDataFresh(),
         isBuildingSubcomponentDataFresh(),
-        isEquipmentDataFresh(),
-        isMachineDataFresh() // ADD MACHINE FRESHNESS CHECK
+        isEquipmentDataFresh() // ADD EQUIPMENT FRESHNESS CHECK
       ]);
 
       return isClassFresh && isSubclassFresh && isRateFresh &&
@@ -188,14 +181,14 @@ export class MapDataManager {
              isTaxRateFresh && isKindFresh && isAssessmentLevelFresh &&
              isStructureTypeFresh && isBuildingCodeFresh && isDeclarantFresh &&
              isBuildingComponentFresh && isBuildingSubcomponentFresh &&
-             isEquipmentFresh && isMachineFresh; // ADD MACHINE TO RETURN
+             isEquipmentFresh; // ADD EQUIPMENT TO RETURN
     } catch (error) {
       console.error('Error checking data freshness:', error);
       return false;
     }
   }
 
-  // Fetch all data that needs updating (including machine data)
+  // Fetch all data that needs updating (including building component and subcomponent data)
   static async fetchAllRequiredData(): Promise<{
     results: FetchDataResult[];
     hasErrors: boolean;
@@ -219,8 +212,7 @@ export class MapDataManager {
       existingDeclarantData, isDeclarantFresh,
       existingBuildingComponentData, isBuildingComponentFresh,
       existingBuildingSubcomponentData, isBuildingSubcomponentFresh,
-      existingEquipmentData, isEquipmentFresh,
-      existingMachineData, isMachineFresh // ADD MACHINE DATA CHECKS
+      existingEquipmentData, isEquipmentFresh // ADD EQUIPMENT DATA CHECKS
     ] = await Promise.all([
       getClassificationData(), isClassificationDataFresh(),
       getSubclassData(), isSubclassDataFresh(),
@@ -236,8 +228,7 @@ export class MapDataManager {
       getDeclarantData(), isDeclarantDataFresh(),
       getBuildingComponentData(), isBuildingComponentDataFresh(),
       getBuildingSubcomponentData(), isBuildingSubcomponentDataFresh(),
-      getEquipmentData(), isEquipmentDataFresh(),
-      getMachineData(), isMachineDataFresh() // ADD MACHINE DATA CHECKS
+      getEquipmentData(), isEquipmentDataFresh() // ADD EQUIPMENT DATA CHECKS
     ]);
 
     // Fetch data that is not fresh or doesn't exist
@@ -307,33 +298,30 @@ export class MapDataManager {
       if (!result.success) hasErrors = true;
     }
 
+    // ADD DECLARANT FETCHING
     if (!existingDeclarantData || !isDeclarantFresh) {
       const result = await DeclarantFetcher.fetchData();
       results.push(result);
       if (!result.success) hasErrors = true;
     }
 
+    // ADD BUILDING COMPONENT FETCHING
     if (!existingBuildingComponentData || !isBuildingComponentFresh) {
       const result = await BuildingComponentFetcher.fetchData();
       results.push(result);
       if (!result.success) hasErrors = true;
     }
 
+    // ADD BUILDING SUBCOMPONENT FETCHING
     if (!existingBuildingSubcomponentData || !isBuildingSubcomponentFresh) {
       const result = await BuildingSubcomponentFetcher.fetchData();
       results.push(result);
       if (!result.success) hasErrors = true;
     }
 
+    // ADD EQUIPMENT FETCHING
     if (!existingEquipmentData || !isEquipmentFresh) {
       const result = await EquipmentFetcher.fetchData();
-      results.push(result);
-      if (!result.success) hasErrors = true;
-    }
-
-    // ADD MACHINE FETCHING
-    if (!existingMachineData || !isMachineFresh) {
-      const result = await MachineFetcher.fetchData();
       results.push(result);
       if (!result.success) hasErrors = true;
     }
@@ -341,7 +329,7 @@ export class MapDataManager {
     return { results, hasErrors };
   }
 
-  // Clear all data (including machine data)
+  // Clear all data (including building component and subcomponent data)
   static async clearAllData(): Promise<FetchDataResult[]> {
     const results: FetchDataResult[] = [];
     
@@ -355,8 +343,7 @@ export class MapDataManager {
         clearDeclarantData(),
         clearBuildingComponentData(),
         clearBuildingSubcomponentData(),
-        clearEquipmentData(),
-        clearMachineData() // ADD MACHINE CLEAR
+        clearEquipmentData() // ADD EQUIPMENT CLEAR
       ]);
       
       results.push({
@@ -638,39 +625,6 @@ export class MapDataManager {
     };
   }
 
-  // Get machine data statistics
-  static async getMachineDataStats(): Promise<{
-    exists: boolean;
-    isFresh: boolean;
-    timestamp: number | null;
-    version: number | null;
-    size: number;
-    currentVersion: number;
-  }> {
-    const [
-      exists,
-      isFresh,
-      timestamp,
-      storedVersion,
-      size
-    ] = await Promise.all([
-      hasMachineData(),
-      isMachineDataFresh(),
-      getMachineTimestamp(),
-      getStoredMachineVersion(),
-      getMachineDataSize()
-    ]);
-
-    return {
-      exists,
-      isFresh,
-      timestamp,
-      version: storedVersion,
-      size,
-      currentVersion: getCurrentMachineVersion()
-    };
-  }
-
   // Get all data statistics
   static async getAllDataStats(): Promise<{
     declarant: Awaited<ReturnType<typeof MapDataManager.getDeclarantDataStats>>;
@@ -680,8 +634,7 @@ export class MapDataManager {
     buildingCode: Awaited<ReturnType<typeof MapDataManager.getBuildingCodeDataStats>>;
     buildingComponent: Awaited<ReturnType<typeof MapDataManager.getBuildingComponentDataStats>>;
     buildingSubcomponent: Awaited<ReturnType<typeof MapDataManager.getBuildingSubcomponentDataStats>>;
-    equipment: Awaited<ReturnType<typeof MapDataManager.getEquipmentDataStats>>;
-    machine: Awaited<ReturnType<typeof MapDataManager.getMachineDataStats>>; // ADD MACHINE STATS
+    equipment: Awaited<ReturnType<typeof MapDataManager.getEquipmentDataStats>>; // ADD EQUIPMENT STATS
   }> {
     const [
       declarantStats,
@@ -691,8 +644,7 @@ export class MapDataManager {
       buildingCodeStats,
       buildingComponentStats,
       buildingSubcomponentStats,
-      equipmentStats,
-      machineStats // ADD MACHINE STATS
+      equipmentStats // ADD EQUIPMENT STATS
     ] = await Promise.all([
       this.getDeclarantDataStats(),
       this.getKindDataStats(),
@@ -701,8 +653,7 @@ export class MapDataManager {
       this.getBuildingCodeDataStats(),
       this.getBuildingComponentDataStats(),
       this.getBuildingSubcomponentDataStats(),
-      this.getEquipmentDataStats(),
-      this.getMachineDataStats() // ADD MACHINE STATS
+      this.getEquipmentDataStats() // ADD EQUIPMENT STATS
     ]);
 
     return {
@@ -713,8 +664,7 @@ export class MapDataManager {
       buildingCode: buildingCodeStats,
       buildingComponent: buildingComponentStats,
       buildingSubcomponent: buildingSubcomponentStats,
-      equipment: equipmentStats,
-      machine: machineStats // ADD MACHINE TO RETURN
+      equipment: equipmentStats // ADD EQUIPMENT TO RETURN
     };
   }
 }
