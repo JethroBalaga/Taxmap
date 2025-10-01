@@ -8,6 +8,7 @@ import { SubclassData, getSubclassesByClassId } from '../../utils/subclassLocalS
 import { ActualUsedData, getActualUsedByClassId } from '../../utils/actualUsedLocalStorage';
 import FormView from './FormView';
 import BuildingModal from './BuildingModal';
+import MachineModal from './MachineModal';
 
 export interface FormData {
   district: number | null;
@@ -51,6 +52,7 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
   const [isLoadingSubclasses, setIsLoadingSubclasses] = useState(false);
   const [isLoadingActualUses, setIsLoadingActualUses] = useState(false);
   const [showBuildingModal, setShowBuildingModal] = useState(false);
+  const [showMachineModal, setShowMachineModal] = useState(false);
 
   // Memoized values to prevent unnecessary recalculations
   const isBuilding = useMemo((): boolean => {
@@ -63,6 +65,12 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
     if (!kind || isLoadingKinds || kinds.length === 0) return false;
     const selectedKind = kinds.find(k => k.kind_id.toString() === kind);
     return selectedKind?.description?.toLowerCase().includes('land') || false;
+  }, [kind, isLoadingKinds, kinds]);
+
+  const isMachineryKind = useMemo((): boolean => {
+    if (!kind || isLoadingKinds || kinds.length === 0) return false;
+    const selectedKind = kinds.find(k => k.kind_id.toString() === kind);
+    return selectedKind?.description?.toLowerCase().includes('machinery') || false;
   }, [kind, isLoadingKinds, kinds]);
 
   const formattedActualUses = useMemo((): Array<{value: string, label: string}> => {
@@ -182,7 +190,7 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
     };
 
     fetchActualUses();
-  }, [classification, actualUse]); // Removed isBuilding dependency
+  }, [classification, actualUse]);
 
   // Filter declarants based on search text
   useEffect(() => {
@@ -211,7 +219,7 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
       area > 0;
     
     setIsFormValid(isValid);
-  }, [district, declarantId, kind, classification, area, actualUse]); // Removed isBuilding dependency
+  }, [district, declarantId, kind, classification, area, actualUse]);
 
   // Memoized callbacks to prevent unnecessary re-renders
   const resetForm = useCallback(() => {
@@ -230,11 +238,13 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
 
     if (isBuilding) {
       setShowBuildingModal(true);
+    } else if (isMachineryKind) {
+      setShowMachineModal(true);
     } else {
       console.log('Form data:', { district, declarantId, kind, classification, subclass, actualUse, area });
       onSuccess();
     }
-  }, [isFormValid, isBuilding, district, declarantId, kind, classification, subclass, actualUse, area, onSuccess]);
+  }, [isFormValid, isBuilding, isMachineryKind, district, declarantId, kind, classification, subclass, actualUse, area, onSuccess]);
 
   const handleBuildingModalSuccess = useCallback((buildingData: any) => {
     console.log('=== FINAL SUBMISSION DATA ===');
@@ -245,11 +255,25 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
     // Close building modal and form modal
     setShowBuildingModal(false);
     resetForm();
-    onSuccess(); // This should close the main form modal
+    onSuccess();
   }, [district, declarantId, kind, classification, subclass, actualUse, area, resetForm, onSuccess]);
 
   const handleBuildingModalDismiss = useCallback(() => {
     setShowBuildingModal(false);
+  }, []);
+
+  const handleMachineModalSuccess = useCallback(() => {
+    console.log('=== FINAL SUBMISSION DATA ===');
+    console.log('Form data:', { district, declarantId, kind, classification, subclass, actualUse, area });
+    console.log('=== END SUBMISSION DATA ===');
+    
+    setShowMachineModal(false);
+    resetForm();
+    onSuccess();
+  }, [district, declarantId, kind, classification, subclass, actualUse, area, resetForm, onSuccess]);
+
+  const handleMachineModalClose = useCallback(() => {
+    setShowMachineModal(false);
   }, []);
 
   const handleSelectDeclarant = useCallback((id: number) => {
@@ -318,6 +342,12 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
           formData={formData}
         />
       )}
+
+      <MachineModal
+        isOpen={showMachineModal}
+        onClose={handleMachineModalClose}
+        onSuccess={handleMachineModalSuccess}
+      />
     </>
   );
 };

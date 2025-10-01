@@ -18,9 +18,10 @@ import './buildingmodal.css';
 interface MachineModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
 }
 
-const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose }) => {
+const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess }) => {
   const [selectedEquipment, setSelectedEquipment] = useState<string>('');
 
   // Placeholder for equipment options - replace with your actual data
@@ -28,6 +29,14 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose }) => {
 
   const handleEquipmentChange = (value: string) => {
     setSelectedEquipment(value);
+  };
+
+  const handleContinue = () => {
+    // Handle equipment data here
+    if (onSuccess) {
+      onSuccess();
+    }
+    onClose();
   };
 
   return (
@@ -80,6 +89,7 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose }) => {
             expand="block" 
             className="next-button"
             disabled={!selectedEquipment}
+            onClick={handleContinue}
           >
             Continue
           </IonButton>
