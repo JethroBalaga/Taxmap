@@ -63,6 +63,7 @@ interface FormViewProps {
   onSelectDeclarant: (id: number) => void;
   isLoadingDeclarants: boolean;
   isBuildingKind: boolean;
+  isLandKind: boolean;
 }
 
 const FormView: React.FC<FormViewProps> = ({
@@ -102,7 +103,8 @@ const FormView: React.FC<FormViewProps> = ({
   filteredDeclarants,
   onSelectDeclarant,
   isLoadingDeclarants,
-  isBuildingKind
+  isBuildingKind,
+  isLandKind
 }) => {
   return (
     <>
@@ -237,94 +239,83 @@ const FormView: React.FC<FormViewProps> = ({
               </IonSelect>
             </IonItem>
 
-            {/* Subclass Dropdown - Disabled for building kind */}
-            <IonItem className="custom-input" lines="none">
-              <IonLabel position="stacked" className="input-label">
-                Subclass
-                {isBuildingKind && (
-                  <span style={{ fontStyle: 'italic', color: '#666', fontSize: '12px', marginLeft: '5px' }}>
-                    (Disabled for building kind)
-                  </span>
-                )}
-              </IonLabel>
-              <IonSelect
-                value={subclass}
-                placeholder={
-                  isBuildingKind 
-                    ? "Not available for building kind" 
-                    : isLoadingSubclasses 
-                      ? "Loading subclasses..." 
-                      : "Select Subclass"
-                }
-                onIonChange={(e) => setSubclass(e.detail.value)}
-                interface="popover"
-                className="modal-input"
-                disabled={isBuildingKind || isLoadingSubclasses || !classification}
-              >
-                {isBuildingKind ? (
-                  <IonSelectOption value="" disabled>
-                    Subclass not available for building kind
-                  </IonSelectOption>
-                ) : isLoadingSubclasses ? (
-                  <IonSelectOption value="" disabled>
-                    Loading subclasses...
-                  </IonSelectOption>
-                ) : subclasses.length === 0 ? (
-                  <IonSelectOption value="" disabled>
-                    {classification ? "No subclasses available" : "Select classification first"}
-                  </IonSelectOption>
-                ) : (
-                  subclasses.map((subclassItem) => (
-                    <IonSelectOption
-                      key={subclassItem.subclass_id}
-                      value={subclassItem.subclass_id}
-                    >
-                      {subclassItem.subclass_id} - {subclassItem.subclass}
-                    </IonSelectOption>
-                  ))
-                )}
-              </IonSelect>
-            </IonItem>
-
-            {/* Actual Use Dropdown - Only shown for building kind */}
-            {isBuildingKind && (
+            {/* Subclass Dropdown - Only shown for LAND kind */}
+            {isLandKind && (
               <IonItem className="custom-input" lines="none">
                 <IonLabel position="stacked" className="input-label">
-                  Actual Use <span style={{ color: 'red' }}>*</span>
+                  Subclass
                 </IonLabel>
                 <IonSelect
-                  value={actualUse}
+                  value={subclass}
                   placeholder={
-                    isLoadingActualUses 
-                      ? "Loading actual uses..." 
-                      : "Select Actual Use"
+                    isLoadingSubclasses 
+                      ? "Loading subclasses..." 
+                      : "Select Subclass"
                   }
-                  onIonChange={(e) => setActualUse(e.detail.value)}
+                  onIonChange={(e) => setSubclass(e.detail.value)}
                   interface="popover"
                   className="modal-input"
-                  disabled={isLoadingActualUses}
+                  disabled={isLoadingSubclasses || !classification}
                 >
-                  {isLoadingActualUses ? (
+                  {isLoadingSubclasses ? (
                     <IonSelectOption value="" disabled>
-                      Loading actual uses...
+                      Loading subclasses...
                     </IonSelectOption>
-                  ) : actualUses.length === 0 ? (
+                  ) : subclasses.length === 0 ? (
                     <IonSelectOption value="" disabled>
-                      No actual uses available
+                      {classification ? "No subclasses available" : "Select classification first"}
                     </IonSelectOption>
                   ) : (
-                    actualUses.map((use) => (
+                    subclasses.map((subclassItem) => (
                       <IonSelectOption
-                        key={use.value}
-                        value={use.value}
+                        key={subclassItem.subclass_id}
+                        value={subclassItem.subclass_id}
                       >
-                        {use.label}
+                        {subclassItem.subclass_id} - {subclassItem.subclass}
                       </IonSelectOption>
                     ))
                   )}
                 </IonSelect>
               </IonItem>
             )}
+
+            {/* Actual Use Dropdown - Available for ALL kinds and classifications */}
+            <IonItem className="custom-input" lines="none">
+              <IonLabel position="stacked" className="input-label">
+                Actual Use <span style={{ color: 'red' }}>*</span>
+              </IonLabel>
+              <IonSelect
+                value={actualUse}
+                placeholder={
+                  isLoadingActualUses 
+                    ? "Loading actual uses..." 
+                    : "Select Actual Use"
+                }
+                onIonChange={(e) => setActualUse(e.detail.value)}
+                interface="popover"
+                className="modal-input"
+                disabled={isLoadingActualUses}
+              >
+                {isLoadingActualUses ? (
+                  <IonSelectOption value="" disabled>
+                    Loading actual uses...
+                  </IonSelectOption>
+                ) : actualUses.length === 0 ? (
+                  <IonSelectOption value="" disabled>
+                    No actual uses available
+                  </IonSelectOption>
+                ) : (
+                  actualUses.map((use) => (
+                    <IonSelectOption
+                      key={use.value}
+                      value={use.value}
+                    >
+                      {use.label}
+                    </IonSelectOption>
+                  ))
+                )}
+              </IonSelect>
+            </IonItem>
 
             <Area value={area} onChange={setArea} />
             

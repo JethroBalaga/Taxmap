@@ -59,6 +59,12 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
     return selectedKind?.description?.toLowerCase().includes('building') || false;
   }, [kind, isLoadingKinds, kinds]);
 
+  const isLandKind = useMemo((): boolean => {
+    if (!kind || isLoadingKinds || kinds.length === 0) return false;
+    const selectedKind = kinds.find(k => k.kind_id.toString() === kind);
+    return selectedKind?.description?.toLowerCase().includes('land') || false;
+  }, [kind, isLoadingKinds, kinds]);
+
   const formattedActualUses = useMemo((): Array<{value: string, label: string}> => {
     return actualUses.map(actualUse => ({
       value: actualUse.actual_used_id,
@@ -148,10 +154,10 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
     fetchSubclasses();
   }, [classification, subclass]);
 
-  // Fetch actual uses when classification changes (only for building kinds)
+  // Fetch actual uses when classification changes - FOR ALL KINDS
   useEffect(() => {
     const fetchActualUses = async () => {
-      if (!classification || !isBuilding) {
+      if (!classification) {
         setActualUses([]);
         setActualUse('');
         setIsLoadingActualUses(false);
@@ -176,7 +182,7 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
     };
 
     fetchActualUses();
-  }, [classification, actualUse, isBuilding]);
+  }, [classification, actualUse]); // Removed isBuilding dependency
 
   // Filter declarants based on search text
   useEffect(() => {
@@ -195,20 +201,17 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
     }
   }, [searchText, declarants]);
 
-  // Check form validity
+  // Check form validity - Actual Use is required for ALL kinds now
   useEffect(() => {
     const isValid = district !== null &&
       declarantId !== null &&
       kind.trim() !== '' &&
       classification.trim() !== '' &&
+      actualUse.trim() !== '' && // Actual Use is now required for all kinds
       area > 0;
     
-    if (isBuilding) {
-      setIsFormValid(isValid && actualUse.trim() !== '');
-    } else {
-      setIsFormValid(isValid);
-    }
-  }, [district, declarantId, kind, classification, area, actualUse, isBuilding]);
+    setIsFormValid(isValid);
+  }, [district, declarantId, kind, classification, area, actualUse]); // Removed isBuilding dependency
 
   // Memoized callbacks to prevent unnecessary re-renders
   const resetForm = useCallback(() => {
@@ -228,10 +231,10 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
     if (isBuilding) {
       setShowBuildingModal(true);
     } else {
-      console.log('Form data:', { district, declarantId, kind, classification, subclass, area });
+      console.log('Form data:', { district, declarantId, kind, classification, subclass, actualUse, area });
       onSuccess();
     }
-  }, [isFormValid, isBuilding, district, declarantId, kind, classification, subclass, area, onSuccess]);
+  }, [isFormValid, isBuilding, district, declarantId, kind, classification, subclass, actualUse, area, onSuccess]);
 
   const handleBuildingModalSuccess = useCallback((buildingData: any) => {
     console.log('=== FINAL SUBMISSION DATA ===');
@@ -297,6 +300,7 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
         isLoadingSubclasses={isLoadingSubclasses}
         isLoadingActualUses={isLoadingActualUses}
         isBuildingKind={isBuilding}
+        isLandKind={isLandKind}
         showDeclarantSearchModal={showDeclarantSearch}
         setShowDeclarantSearchModal={setShowDeclarantSearch}
         searchText={searchText}
