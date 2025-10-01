@@ -64,6 +64,7 @@ interface FormViewProps {
   isLoadingDeclarants: boolean;
   isBuildingKind: boolean;
   isLandKind: boolean;
+  isMachineryKind: boolean;
 }
 
 const FormView: React.FC<FormViewProps> = ({
@@ -104,7 +105,8 @@ const FormView: React.FC<FormViewProps> = ({
   onSelectDeclarant,
   isLoadingDeclarants,
   isBuildingKind,
-  isLandKind
+  isLandKind,
+  isMachineryKind
 }) => {
   return (
     <>
@@ -317,7 +319,10 @@ const FormView: React.FC<FormViewProps> = ({
               </IonSelect>
             </IonItem>
 
-            <Area value={area} onChange={setArea} />
+            {/* Area Input - Only show if NOT Machinery kind */}
+            {!isMachineryKind && (
+              <Area value={area} onChange={setArea} />
+            )}
             
             <div className="next-btn-container">
               <Next onClick={onNextClick} disabled={!isFormValid} />
