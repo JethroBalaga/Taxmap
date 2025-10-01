@@ -209,17 +209,19 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
     }
   }, [searchText, declarants]);
 
-  // Check form validity - Actual Use is required for ALL kinds now
+  // Check form validity - Area is NOT required for Machinery kind
   useEffect(() => {
-    const isValid = district !== null &&
+    const baseValid = district !== null &&
       declarantId !== null &&
       kind.trim() !== '' &&
       classification.trim() !== '' &&
-      actualUse.trim() !== '' && // Actual Use is now required for all kinds
-      area > 0;
+      actualUse.trim() !== '';
+
+    // Area is required for all kinds EXCEPT machinery
+    const isValid = isMachineryKind ? baseValid : baseValid && area > 0;
     
     setIsFormValid(isValid);
-  }, [district, declarantId, kind, classification, area, actualUse]);
+  }, [district, declarantId, kind, classification, area, actualUse, isMachineryKind]);
 
   // Memoized callbacks to prevent unnecessary re-renders
   const resetForm = useCallback(() => {
@@ -325,6 +327,7 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
         isLoadingActualUses={isLoadingActualUses}
         isBuildingKind={isBuilding}
         isLandKind={isLandKind}
+        isMachineryKind={isMachineryKind}
         showDeclarantSearchModal={showDeclarantSearch}
         setShowDeclarantSearchModal={setShowDeclarantSearch}
         searchText={searchText}
