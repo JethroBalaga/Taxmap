@@ -10,10 +10,14 @@ import {
   IonSelect,
   IonSelectOption,
   IonButton,
-  IonIcon
+  IonIcon,
+  IonInput,
+  IonText,
+  IonSpinner,
+  IonNote
 } from '@ionic/react';
 import { close } from 'ionicons/icons';
-import './buildingmodal.css';
+import '../../CSS/modal.css';
 
 interface MachineModalProps {
   isOpen: boolean;
@@ -45,9 +49,12 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
       onDidDismiss={onClose}
       className="custom-wide-modal"
     >
-      <IonHeader className="fancy-header">
-        <IonToolbar>
-          <IonTitle className="fancy-title">Select Equipment</IonTitle>
+      <IonHeader>
+        <IonToolbar className="fancy-header">
+          <IonTitle className="fancy-title">
+            <i className="icon-machine" style={{ marginRight: '10px' }}></i>
+            Select Equipment
+          </IonTitle>
           <IonButton 
             fill="clear" 
             slot="end" 
@@ -60,39 +67,29 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
       </IonHeader>
 
       <IonContent className="modal-content">
-        <div className="form-section">
-          <h3 className="section-title">Equipment Selection</h3>
-          
-          <IonItem className="custom-input" lines="none">
-            <IonLabel position="stacked" className="input-label">
-              Equipment
-            </IonLabel>
-            <IonSelect
-              value={selectedEquipment}
-              placeholder="Select equipment"
-              onIonChange={e => handleEquipmentChange(e.detail.value)}
-              interface="action-sheet"
-            >
-              {equipmentOptions.map((equipment, index) => (
-                <IonSelectOption key={index} value={equipment}>
-                  {equipment}
-                </IonSelectOption>
-              ))}
-            </IonSelect>
-          </IonItem>
-
-          {/* Add more form fields here as needed */}
-        </div>
-
-        <div className="next-btn-container">
-          <IonButton 
-            expand="block" 
-            className="next-button"
-            disabled={!selectedEquipment}
-            onClick={handleContinue}
-          >
-            Continue
-          </IonButton>
+        <div className="form-container">
+          <div className="form-section">
+            <h3 className="section-title">Equipment Selection</h3>
+            
+            <IonItem className="custom-input" lines="none">
+              <IonLabel position="stacked" className="input-label">
+                Equipment <span style={{ color: 'red' }}>*</span>
+              </IonLabel>
+              <IonSelect
+                value={selectedEquipment}
+                placeholder="Select equipment"
+                onIonChange={e => handleEquipmentChange(e.detail.value)}
+                interface="popover"
+                className="modal-input"
+              >
+                {equipmentOptions.map((equipment, index) => (
+                  <IonSelectOption key={index} value={equipment}>
+                    {equipment}
+                  </IonSelectOption>
+                ))}
+              </IonSelect>
+            </IonItem>
+          </div>
         </div>
       </IonContent>
     </IonModal>
