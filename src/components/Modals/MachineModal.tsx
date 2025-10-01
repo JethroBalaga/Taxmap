@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   IonModal,
   IonHeader,
@@ -11,9 +11,11 @@ import {
   IonSelectOption,
   IonButton,
   IonIcon,
-  IonButtons // Add this import
+  IonButtons,
+  IonSpinner
 } from '@ionic/react';
 import { closeOutline } from 'ionicons/icons';
+import { EquipmentData, getEquipmentData } from '../../utils/equipmentLocalStorage';
 import '../../CSS/modal.css';
 
 interface MachineModalProps {
@@ -24,9 +26,35 @@ interface MachineModalProps {
 
 const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess }) => {
   const [selectedEquipment, setSelectedEquipment] = useState<string>('');
+  const [equipmentOptions, setEquipmentOptions] = useState<EquipmentData[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Placeholder for equipment options - replace with your actual data
-  const equipmentOptions: string[] = []; // Add your equipment values here
+  // Fetch equipment data when modal opens
+  useEffect(() => {
+    const fetchEquipmentData = async () => {
+      if (!isOpen) return;
+      
+      setIsLoading(true);
+      setError(null);
+      
+      try {
+        const equipmentData = await getEquipmentData();
+        if (equipmentData) {
+          setEquipmentOptions(equipmentData);
+        } else {
+          setError('No equipment data available');
+        }
+      } catch (err) {
+        console.error('Error fetching equipment data:', err);
+        setError('Failed to load equipment data');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchEquipmentData();
+  }, [isOpen]);
 
   const handleEquipmentChange = (value: string) => {
     setSelectedEquipment(value);
@@ -38,6 +66,10 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
       onSuccess();
     }
     onClose();
+  };
+
+  const getSelectedEquipment = () => {
+    return equipmentOptions.find(e => e.equipment_id === selectedEquipment);
   };
 
   return (
@@ -52,7 +84,7 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
             <i className="icon-machine" style={{ marginRight: '10px' }}></i>
             Select Equipment
           </IonTitle>
-          <IonButtons slot="end"> {/* Use IonButtons instead of IonButton directly */}
+          <IonButtons slot="end">
             <IonButton onClick={onClose} className="fancy-close-btn">
               <IonIcon icon={closeOutline} />
             </IonButton>
@@ -71,29 +103,61 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
               </IonLabel>
               <IonSelect
                 value={selectedEquipment}
-                placeholder="Select equipment"
+                placeholder={
+                  isLoading 
+                    ? "Loading equipment..." 
+                    : error 
+                    ? "Failed to load equipment"
+                    : "Select equipment"
+                }
                 onIonChange={e => handleEquipmentChange(e.detail.value)}
                 interface="popover"
                 className="modal-input"
+                disabled={isLoading || !!error || equipmentOptions.length === 0}
               >
-                {equipmentOptions.map((equipment, index) => (
-                  <IonSelectOption key={index} value={equipment}>
-                    {equipment}
+                {isLoading ? (
+                  <IonSelectOption value="" disabled>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <IonSpinner name="dots" style={{ width: '16px', height: '16px' }} />
+                      Loading equipment...
+                    </div>
                   </IonSelectOption>
-                ))}
+                ) : error ? (
+                  <IonSelectOption value="" disabled>
+                    {error}
+                  </IonSelectOption>
+                ) : equipmentOptions.length === 0 ? (
+                  <IonSelectOption value="" disabled>
+                    No equipment available
+                  </IonSelectOption>
+                ) : (
+                  equipmentOptions.map((equipment) => (
+                    <IonSelectOption 
+                      key={equipment.equipment_id} 
+                      value={equipment.equipment_id}
+                    >
+                      {equipment.equipment_id} - {equipment.machine_type}
+                    </IonSelectOption>
+                  ))
+                )}
               </IonSelect>
             </IonItem>
-          </div>
 
-          <div className="next-btn-container">
-            <IonButton 
-              expand="block" 
-              className="next-button"
-              disabled={!selectedEquipment}
-              onClick={handleContinue}
-            >
-              Continue
-            </IonButton>
+            {/* Display selected equipment details */}
+            {selectedEquipment && (
+              <div style={{ 
+                padding: '12px', 
+                background: '#f8f9fa', 
+                borderRadius: '8px', 
+                marginTop: '16px',
+                border: '1px solid #e9ecef',
+                color: '#2d3748' // Added explicit text color
+              }}>
+                <strong style={{ color: '#2d3748' }}>Selected Equipment:</strong><br />
+                ID: {getSelectedEquipment()?.equipment_id}<br />
+                Type: {getSelectedEquipment()?.machine_type}
+              </div>
+            )}
           </div>
         </div>
       </IonContent>
