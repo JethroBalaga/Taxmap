@@ -11,12 +11,9 @@ import {
   IonSelectOption,
   IonButton,
   IonIcon,
-  IonInput,
-  IonText,
-  IonSpinner,
-  IonNote
+  IonButtons // Add this import
 } from '@ionic/react';
-import { close } from 'ionicons/icons';
+import { closeOutline } from 'ionicons/icons';
 import '../../CSS/modal.css';
 
 interface MachineModalProps {
@@ -55,14 +52,11 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
             <i className="icon-machine" style={{ marginRight: '10px' }}></i>
             Select Equipment
           </IonTitle>
-          <IonButton 
-            fill="clear" 
-            slot="end" 
-            onClick={onClose}
-            className="fancy-close-btn"
-          >
-            <IonIcon icon={close} />
-          </IonButton>
+          <IonButtons slot="end"> {/* Use IonButtons instead of IonButton directly */}
+            <IonButton onClick={onClose} className="fancy-close-btn">
+              <IonIcon icon={closeOutline} />
+            </IonButton>
+          </IonButtons>
         </IonToolbar>
       </IonHeader>
 
@@ -89,6 +83,17 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
                 ))}
               </IonSelect>
             </IonItem>
+          </div>
+
+          <div className="next-btn-container">
+            <IonButton 
+              expand="block" 
+              className="next-button"
+              disabled={!selectedEquipment}
+              onClick={handleContinue}
+            >
+              Continue
+            </IonButton>
           </div>
         </div>
       </IonContent>
