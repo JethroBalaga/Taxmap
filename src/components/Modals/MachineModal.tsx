@@ -39,9 +39,6 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
   const [capacity, setCapacity] = useState<string>('');
   const [capacityType, setCapacityType] = useState<string>('cubic meter');
   const [condition, setCondition] = useState<string>('');
-  const getSelectedEquipment = () => {
-  return equipmentOptions.find(e => e.equipment_id === selectedEquipment);
-};
 
   // Fetch equipment data when modal opens
   useEffect(() => {
@@ -85,14 +82,15 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
 
   const handleEquipmentChange = (value: string) => {
     setSelectedEquipment(value);
-    // Optionally auto-fill some fields based on selected equipment
+    // Auto-fill machine description with equipment type
     const equipment = equipmentOptions.find(e => e.equipment_id === value);
     if (equipment) {
-      // You can auto-populate fields here if the equipment data has these properties
-      // For example:
-      // setMachineDescription(equipment.description || '');
-      // setBrandModel(equipment.brand || '');
+      setMachineDescription(equipment.machine_type);
     }
+  };
+
+  const getSelectedEquipment = () => {
+    return equipmentOptions.find(e => e.equipment_id === selectedEquipment);
   };
 
   const capacityTypes = [
@@ -178,28 +176,12 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
                       key={equipment.equipment_id} 
                       value={equipment.equipment_id}
                     >
-                      {equipment.equipment_id} - {equipment.machine_type}
+                      {equipment.equipment_id}
                     </IonSelectOption>
                   ))
                 )}
               </IonSelect>
             </IonItem>
-
-            {/* Display selected equipment details */}
-            {selectedEquipment && (
-              <div style={{ 
-                padding: '12px', 
-                background: '#f8f9fa', 
-                borderRadius: '8px', 
-                marginTop: '16px',
-                border: '1px solid #e9ecef',
-                color: '#2d3748'
-              }}>
-                <strong style={{ color: '#2d3748' }}>Selected Equipment:</strong><br />
-                ID: {getSelectedEquipment()?.equipment_id}<br />
-                Type: {getSelectedEquipment()?.machine_type}
-              </div>
-            )}
           </div>
 
           {/* Additional Equipment Details Section */}
@@ -219,18 +201,17 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
               />
             </IonItem>
 
-            {/* Machine Description */}
+            {/* Machine Description - Auto-filled from equipment type and not editable */}
             <IonItem className="custom-input" lines="none">
               <IonLabel position="stacked" className="input-label">
-                Machine Description
+                Machine Type
               </IonLabel>
-              <IonTextarea
+              <IonInput
                 value={machineDescription}
-                placeholder="Enter machine description"
-                onIonInput={(e) => setMachineDescription(e.detail.value!)}
                 className="modal-input"
-                rows={3}
-                autoGrow
+                readonly
+                style={{ opacity: 0.7 }}
+                placeholder="Select equipment to auto-fill type"
               />
             </IonItem>
 
