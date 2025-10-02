@@ -32,13 +32,15 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  // New form fields
+  // Form fields
   const [serialNo, setSerialNo] = useState<string>('');
   const [machineDescription, setMachineDescription] = useState<string>('');
   const [brandModel, setBrandModel] = useState<string>('');
   const [capacity, setCapacity] = useState<string>('');
   const [capacityType, setCapacityType] = useState<string>('cubic meter');
   const [condition, setCondition] = useState<string>('');
+  const [machineDetails, setMachineDetails] = useState<string>('');
+  const [purchaseType, setPurchaseType] = useState<string>('');
 
   // Fetch equipment data when modal opens
   useEffect(() => {
@@ -76,6 +78,8 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
       setCapacity('');
       setCapacityType('cubic meter');
       setCondition('');
+      setMachineDetails('');
+      setPurchaseType('');
       setError(null);
     }
   }, [isOpen]);
@@ -110,6 +114,13 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
     'Fair',
     'Poor',
     'Needs Repair'
+  ];
+
+  const purchaseTypeOptions = [
+    'New Purchase',
+    'Used Purchase',
+    'Lease',
+    'Rental'
   ];
 
   return (
@@ -184,11 +195,9 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
             </IonItem>
           </div>
 
-          {/* Additional Equipment Details Section */}
           <div className="form-section" style={{ marginTop: '24px' }}>
             <h3 className="section-title">Equipment Details</h3>
             
-            {/* Serial No */}
             <IonItem className="custom-input" lines="none">
               <IonLabel position="stacked" className="input-label">
                 Serial No <span style={{ color: 'red' }}>*</span>
@@ -201,7 +210,6 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
               />
             </IonItem>
 
-            {/* Machine Description - Auto-filled from equipment type and not editable */}
             <IonItem className="custom-input" lines="none">
               <IonLabel position="stacked" className="input-label">
                 Machine Type
@@ -215,7 +223,6 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
               />
             </IonItem>
 
-            {/* Brand/Model */}
             <IonItem className="custom-input" lines="none">
               <IonLabel position="stacked" className="input-label">
                 Brand/Model <span style={{ color: 'red' }}>*</span>
@@ -228,7 +235,6 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
               />
             </IonItem>
 
-            {/* Capacity with Type */}
             <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end' }}>
               <IonItem className="custom-input" lines="none" style={{ flex: 1 }}>
                 <IonLabel position="stacked" className="input-label">
@@ -262,7 +268,6 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
               </IonItem>
             </div>
 
-            {/* Condition */}
             <IonItem className="custom-input" lines="none">
               <IonLabel position="stacked" className="input-label">
                 Condition
@@ -277,6 +282,41 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
                 {conditionOptions.map((cond) => (
                   <IonSelectOption key={cond} value={cond}>
                     {cond}
+                  </IonSelectOption>
+                ))}
+              </IonSelect>
+            </IonItem>
+          </div>
+
+          <div className="form-section" style={{ marginTop: '24px' }}>
+            <h3 className="section-title">Machine Details</h3>
+            
+            <IonItem className="custom-input" lines="none">
+              <IonLabel position="stacked" className="input-label">
+                Machine Details
+              </IonLabel>
+              <IonInput
+                value={machineDetails}
+                placeholder="Enter machine details"
+                onIonInput={(e) => setMachineDetails(e.detail.value!)}
+                className="modal-input"
+              />
+            </IonItem>
+
+            <IonItem className="custom-input" lines="none">
+              <IonLabel position="stacked" className="input-label">
+                Purchase Type
+              </IonLabel>
+              <IonSelect
+                value={purchaseType}
+                placeholder="Select purchase type"
+                onIonChange={e => setPurchaseType(e.detail.value)}
+                interface="popover"
+                className="modal-input"
+              >
+                {purchaseTypeOptions.map((type) => (
+                  <IonSelectOption key={type} value={type}>
+                    {type}
                   </IonSelectOption>
                 ))}
               </IonSelect>
