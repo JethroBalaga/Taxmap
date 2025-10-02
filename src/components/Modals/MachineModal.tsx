@@ -12,7 +12,9 @@ import {
   IonButton,
   IonIcon,
   IonButtons,
-  IonSpinner
+  IonSpinner,
+  IonInput,
+  IonTextarea
 } from '@ionic/react';
 import { closeOutline } from 'ionicons/icons';
 import { EquipmentData, getEquipmentData } from '../../utils/equipmentLocalStorage';
@@ -29,6 +31,17 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
   const [equipmentOptions, setEquipmentOptions] = useState<EquipmentData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // New form fields
+  const [serialNo, setSerialNo] = useState<string>('');
+  const [machineDescription, setMachineDescription] = useState<string>('');
+  const [brandModel, setBrandModel] = useState<string>('');
+  const [capacity, setCapacity] = useState<string>('');
+  const [capacityType, setCapacityType] = useState<string>('cubic meter');
+  const [condition, setCondition] = useState<string>('');
+  const getSelectedEquipment = () => {
+  return equipmentOptions.find(e => e.equipment_id === selectedEquipment);
+};
 
   // Fetch equipment data when modal opens
   useEffect(() => {
@@ -56,21 +69,50 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
     fetchEquipmentData();
   }, [isOpen]);
 
+  // Reset form when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setSelectedEquipment('');
+      setSerialNo('');
+      setMachineDescription('');
+      setBrandModel('');
+      setCapacity('');
+      setCapacityType('cubic meter');
+      setCondition('');
+      setError(null);
+    }
+  }, [isOpen]);
+
   const handleEquipmentChange = (value: string) => {
     setSelectedEquipment(value);
-  };
-
-  const handleContinue = () => {
-    // Handle equipment data here
-    if (onSuccess) {
-      onSuccess();
+    // Optionally auto-fill some fields based on selected equipment
+    const equipment = equipmentOptions.find(e => e.equipment_id === value);
+    if (equipment) {
+      // You can auto-populate fields here if the equipment data has these properties
+      // For example:
+      // setMachineDescription(equipment.description || '');
+      // setBrandModel(equipment.brand || '');
     }
-    onClose();
   };
 
-  const getSelectedEquipment = () => {
-    return equipmentOptions.find(e => e.equipment_id === selectedEquipment);
-  };
+  const capacityTypes = [
+    'cubic meter',
+    'liters',
+    'tons',
+    'kilograms',
+    'pieces',
+    'units',
+    'hours',
+    'meters'
+  ];
+
+  const conditionOptions = [
+    'Excellent',
+    'Good',
+    'Fair',
+    'Poor',
+    'Needs Repair'
+  ];
 
   return (
     <IonModal 
@@ -82,7 +124,7 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
         <IonToolbar className="fancy-header">
           <IonTitle className="fancy-title">
             <i className="icon-machine" style={{ marginRight: '10px' }}></i>
-            Select Equipment
+            Equipment Information
           </IonTitle>
           <IonButtons slot="end">
             <IonButton onClick={onClose} className="fancy-close-btn">
@@ -151,13 +193,113 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
                 borderRadius: '8px', 
                 marginTop: '16px',
                 border: '1px solid #e9ecef',
-                color: '#2d3748' // Added explicit text color
+                color: '#2d3748'
               }}>
                 <strong style={{ color: '#2d3748' }}>Selected Equipment:</strong><br />
                 ID: {getSelectedEquipment()?.equipment_id}<br />
                 Type: {getSelectedEquipment()?.machine_type}
               </div>
             )}
+          </div>
+
+          {/* Additional Equipment Details Section */}
+          <div className="form-section" style={{ marginTop: '24px' }}>
+            <h3 className="section-title">Equipment Details</h3>
+            
+            {/* Serial No */}
+            <IonItem className="custom-input" lines="none">
+              <IonLabel position="stacked" className="input-label">
+                Serial No <span style={{ color: 'red' }}>*</span>
+              </IonLabel>
+              <IonInput
+                value={serialNo}
+                placeholder="Enter serial number"
+                onIonInput={(e) => setSerialNo(e.detail.value!)}
+                className="modal-input"
+              />
+            </IonItem>
+
+            {/* Machine Description */}
+            <IonItem className="custom-input" lines="none">
+              <IonLabel position="stacked" className="input-label">
+                Machine Description
+              </IonLabel>
+              <IonTextarea
+                value={machineDescription}
+                placeholder="Enter machine description"
+                onIonInput={(e) => setMachineDescription(e.detail.value!)}
+                className="modal-input"
+                rows={3}
+                autoGrow
+              />
+            </IonItem>
+
+            {/* Brand/Model */}
+            <IonItem className="custom-input" lines="none">
+              <IonLabel position="stacked" className="input-label">
+                Brand/Model <span style={{ color: 'red' }}>*</span>
+              </IonLabel>
+              <IonInput
+                value={brandModel}
+                placeholder="Enter brand and model"
+                onIonInput={(e) => setBrandModel(e.detail.value!)}
+                className="modal-input"
+              />
+            </IonItem>
+
+            {/* Capacity with Type */}
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end' }}>
+              <IonItem className="custom-input" lines="none" style={{ flex: 1 }}>
+                <IonLabel position="stacked" className="input-label">
+                  Capacity
+                </IonLabel>
+                <IonInput
+                  value={capacity}
+                  type="number"
+                  placeholder="Enter capacity"
+                  onIonInput={(e) => setCapacity(e.detail.value!)}
+                  className="modal-input"
+                />
+              </IonItem>
+              
+              <IonItem className="custom-input" lines="none" style={{ flex: 1 }}>
+                <IonLabel position="stacked" className="input-label">
+                  Capacity Type
+                </IonLabel>
+                <IonSelect
+                  value={capacityType}
+                  onIonChange={e => setCapacityType(e.detail.value)}
+                  interface="popover"
+                  className="modal-input"
+                >
+                  {capacityTypes.map((type) => (
+                    <IonSelectOption key={type} value={type}>
+                      {type}
+                    </IonSelectOption>
+                  ))}
+                </IonSelect>
+              </IonItem>
+            </div>
+
+            {/* Condition */}
+            <IonItem className="custom-input" lines="none">
+              <IonLabel position="stacked" className="input-label">
+                Condition
+              </IonLabel>
+              <IonSelect
+                value={condition}
+                placeholder="Select condition"
+                onIonChange={e => setCondition(e.detail.value)}
+                interface="popover"
+                className="modal-input"
+              >
+                {conditionOptions.map((cond) => (
+                  <IonSelectOption key={cond} value={cond}>
+                    {cond}
+                  </IonSelectOption>
+                ))}
+              </IonSelect>
+            </IonItem>
           </div>
         </div>
       </IonContent>
