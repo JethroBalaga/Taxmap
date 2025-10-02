@@ -14,7 +14,8 @@ import {
   IonButtons,
   IonSpinner,
   IonInput,
-  IonTextarea
+  IonTextarea,
+  IonDatetime
 } from '@ionic/react';
 import { closeOutline } from 'ionicons/icons';
 import { EquipmentData, getEquipmentData } from '../../utils/equipmentLocalStorage';
@@ -41,6 +42,11 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
   const [condition, setCondition] = useState<string>('');
   const [machineDetails, setMachineDetails] = useState<string>('');
   const [purchaseType, setPurchaseType] = useState<string>('');
+
+  // New date fields
+  const [dateAcquired, setDateAcquired] = useState<string>('');
+  const [dateInstalled, setDateInstalled] = useState<string>('');
+  const [dateOperated, setDateOperated] = useState<string>('');
 
   // Fetch equipment data when modal opens
   useEffect(() => {
@@ -80,6 +86,9 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
       setCondition('');
       setMachineDetails('');
       setPurchaseType('');
+      setDateAcquired('');
+      setDateInstalled('');
+      setDateOperated('');
       setError(null);
     }
   }, [isOpen]);
@@ -320,6 +329,50 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
                   </IonSelectOption>
                 ))}
               </IonSelect>
+            </IonItem>
+          </div>
+
+          {/* New Date Information Section */}
+          <div className="form-section" style={{ marginTop: '24px' }}>
+            <h3 className="section-title">Date Information</h3>
+            
+            {/* Date Acquired */}
+            <IonItem className="custom-input" lines="none">
+              <IonLabel position="stacked" className="input-label">
+                Date Acquired
+              </IonLabel>
+              <IonDatetime
+                value={dateAcquired}
+                onIonChange={e => setDateAcquired(e.detail.value as string)}
+                presentation="date"
+                className="modal-input"
+              />
+            </IonItem>
+
+            {/* Date Installed */}
+            <IonItem className="custom-input" lines="none">
+              <IonLabel position="stacked" className="input-label">
+                Date Installed
+              </IonLabel>
+              <IonDatetime
+                value={dateInstalled}
+                onIonChange={e => setDateInstalled(e.detail.value as string)}
+                presentation="date"
+                className="modal-input"
+              />
+            </IonItem>
+
+            {/* Date Operated */}
+            <IonItem className="custom-input" lines="none">
+              <IonLabel position="stacked" className="input-label">
+                Date Operated
+              </IonLabel>
+              <IonDatetime
+                value={dateOperated}
+                onIonChange={e => setDateOperated(e.detail.value as string)}
+                presentation="date"
+                className="modal-input"
+              />
             </IonItem>
           </div>
         </div>
