@@ -23,6 +23,7 @@ import {
 import { close, camera, informationCircle, location, locationOutline, warning, compass } from 'ionicons/icons';
 import { FormData } from './Form';
 import { BuildingData } from './BuildingModal';
+import { MachineData } from './MachineModal';
 import SubmitButton from '../../components/GlobalComponent/SubmitButton';
 import { usePhotoModal } from './usePhotoModal';
 import { formatCoordinates, formatDataForDisplay, getFileSize } from '../../utils/photoModalUtils';
@@ -34,7 +35,8 @@ interface PhotoModalProps {
   onPhotoTaken: (photo: string) => void;
   formData?: FormData;
   buildingData?: BuildingData;
-  onSubmit?: (photo: string, formData: FormData, buildingData: BuildingData) => Promise<void>;
+  machineData?: MachineData;
+  onSubmit?: (photo: string, formData: FormData, buildingData: BuildingData, machineData: MachineData) => Promise<void>;
   onCompleteSubmission?: () => void;
 }
 
@@ -44,6 +46,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
   onPhotoTaken, 
   formData, 
   buildingData,
+  machineData,
   onSubmit,
   onCompleteSubmission 
 }) => {
@@ -74,6 +77,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
     onPhotoTaken,
     formData,
     buildingData,
+    machineData,
     onSubmit,
     onCompleteSubmission
   });
@@ -83,7 +87,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
       <IonHeader>
         <IonToolbar className="fancy-header">
           <IonTitle className="fancy-title">
-            Take Building Photo
+            {machineData ? 'Take Machine Photo' : buildingData ? 'Take Building Photo' : 'Take Photo'}
           </IonTitle>
           <IonButtons slot="end">
             <IonButton onClick={handleClose} disabled={isSubmitting} className="fancy-close-btn">
@@ -118,14 +122,29 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                     </pre>
                   </IonLabel>
                 </IonItem>
-                <IonItem lines="none">
-                  <IonLabel>
-                    <strong>Building Data:</strong>
-                    <pre style={{ fontSize: '10px', overflow: 'auto' }}>
-                      {formatDataForDisplay(storedData.buildingData)}
-                    </pre>
-                  </IonLabel>
-                </IonItem>
+                
+                {storedData.buildingData && (
+                  <IonItem lines="none">
+                    <IonLabel>
+                      <strong>Building Data:</strong>
+                      <pre style={{ fontSize: '10px', overflow: 'auto' }}>
+                        {formatDataForDisplay(storedData.buildingData)}
+                      </pre>
+                    </IonLabel>
+                  </IonItem>
+                )}
+                
+                {storedData.machineData && (
+                  <IonItem lines="none">
+                    <IonLabel>
+                      <strong>Machine Data:</strong>
+                      <pre style={{ fontSize: '10px', overflow: 'auto' }}>
+                        {formatDataForDisplay(storedData.machineData)}
+                      </pre>
+                    </IonLabel>
+                  </IonItem>
+                )}
+                
                 <IonItem lines="none">
                   <IonLabel>
                     <strong>Photo Tag:</strong>
@@ -149,7 +168,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
           {!photo ? (
             <div className="photo-placeholder" style={{ textAlign: 'center', padding: '40px 0' }}>
               <p className="input-label">
-                Building Photo <span style={{ color: 'red' }}>*</span>
+                {machineData ? 'Machine Photo' : buildingData ? 'Building Photo' : 'Photo'} <span style={{ color: 'red' }}>*</span>
               </p>
               
               <IonButton 
@@ -163,7 +182,12 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                 <IonIcon icon={camera} size="large" />
               </IonButton>
               <p style={{ marginTop: '20px', color: 'var(--ion-color-medium)' }}>
-                Tap to take a photo of the building
+                {machineData 
+                  ? 'Tap to take a photo of the machine' 
+                  : buildingData 
+                    ? 'Tap to take a photo of the building' 
+                    : 'Tap to take a photo'
+                }
               </p>
             </div>
           ) : (
