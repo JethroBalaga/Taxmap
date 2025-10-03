@@ -115,6 +115,16 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
     }
   }, [isOpen]);
 
+  // Form validation - only require Equipment and Serial No
+  useEffect(() => {
+    const validateForm = () => {
+      const requiredFieldsValid = selectedEquipment.trim() !== '' && serialNo.trim() !== '';
+      setIsFormValid(requiredFieldsValid);
+    };
+
+    validateForm();
+  }, [selectedEquipment, serialNo]);
+
   // Calculate years used and remaining life when dates change
   useEffect(() => {
     const calculateLifeMetrics = () => {
@@ -198,6 +208,30 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
   const handleNextClick = () => {
     // TODO: Add functionality for Next button
     console.log('Next button clicked');
+    console.log('Form data:', {
+      selectedEquipment,
+      serialNo,
+      machineDescription,
+      brandModel,
+      condition,
+      machineDetails,
+      purchaseType,
+      dateAcquired,
+      dateInstalled,
+      dateOperated,
+      yearsUsed,
+      estimatedLife,
+      remainingLife,
+      numberOfUnits,
+      originalCost,
+      freight,
+      insurance,
+      installation,
+      others,
+      totalCost,
+      depreciation,
+      adjustedMarketValue
+    });
     // You can add form validation and submission logic here
   };
 
@@ -210,10 +244,8 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
   ];
 
   const purchaseTypeOptions = [
-    'New Purchase',
-    'Used Purchase',
-    'Lease',
-    'Rental'
+    'Locally Purchased',
+    'Internationally Purchased'
   ];
 
   return (
@@ -324,7 +356,7 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
 
             <IonItem className="custom-input" lines="none">
               <IonLabel position="stacked" className="input-label">
-                Brand/Model <span style={{ color: 'red' }}>*</span>
+                Brand/Model
               </IonLabel>
               <IonInput
                 value={brandModel}
@@ -609,7 +641,7 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
           </div>
         </div>
 
-        {/* Next Button - Moved outside the main content div */}
+        {/* Next Button */}
         <div className="next-btn-container">
           <Next onClick={handleNextClick} disabled={!isFormValid} />
         </div>
