@@ -45,6 +45,10 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
   const [dateAcquired, setDateAcquired] = useState<string>('');
   const [dateInstalled, setDateInstalled] = useState<string>('');
   const [dateOperated, setDateOperated] = useState<string>('');
+  const [yearsUsed, setYearsUsed] = useState<string>('');
+  const [estimatedLife, setEstimatedLife] = useState<string>('');
+  const [remainingLife, setRemainingLife] = useState<string>('');
+  const [numberOfUnits, setNumberOfUnits] = useState<string>('');
 
   // Fetch equipment data when modal opens
   useEffect(() => {
@@ -87,9 +91,42 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
       setDateAcquired('');
       setDateInstalled('');
       setDateOperated('');
+      setYearsUsed('');
+      setEstimatedLife('');
+      setRemainingLife('');
+      setNumberOfUnits('');
       setError(null);
     }
   }, [isOpen]);
+
+  // Calculate years used and remaining life when dates change
+  useEffect(() => {
+    const calculateLifeMetrics = () => {
+      // Calculate years used based on date acquired and current date
+      if (dateAcquired) {
+        const acquiredDate = new Date(dateAcquired);
+        const currentDate = new Date();
+        const yearsUsedValue = ((currentDate.getTime() - acquiredDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25)).toFixed(1);
+        setYearsUsed(yearsUsedValue);
+        
+        // Calculate remaining life if estimated life is provided
+        if (estimatedLife) {
+          const remaining = (parseFloat(estimatedLife) - parseFloat(yearsUsedValue)).toFixed(1);
+          setRemainingLife(remaining);
+        }
+      }
+    };
+
+    calculateLifeMetrics();
+  }, [dateAcquired, estimatedLife]);
+
+  // Update remaining life when years used or estimated life changes
+  useEffect(() => {
+    if (yearsUsed && estimatedLife) {
+      const remaining = (parseFloat(estimatedLife) - parseFloat(yearsUsed)).toFixed(1);
+      setRemainingLife(remaining);
+    }
+  }, [yearsUsed, estimatedLife]);
 
   const handleEquipmentChange = (value: string) => {
     setSelectedEquipment(value);
@@ -324,6 +361,38 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
                   ))}
                 </IonSelect>
               </IonItem>
+
+              {/* New Life Metrics Section */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', textAlign: 'left' }}>
+                <IonItem className="custom-input" lines="none" style={{ textAlign: 'left' }}>
+                  <IonLabel position="stacked" className="input-label" style={{ textAlign: 'left' }}>
+                    Years Used
+                  </IonLabel>
+                  <IonInput
+                    value={yearsUsed}
+                    type="number"
+                    placeholder="Auto-calculated"
+                    onIonInput={(e) => setYearsUsed(e.detail.value!)}
+                    className="modal-input"
+                    style={{ textAlign: 'left' }}
+                    readonly={!!dateAcquired}
+                  />
+                </IonItem>
+
+                <IonItem className="custom-input" lines="none" style={{ textAlign: 'left' }}>
+                  <IonLabel position="stacked" className="input-label" style={{ textAlign: 'left' }}>
+                    No. of Units
+                  </IonLabel>
+                  <IonInput
+                    value={numberOfUnits}
+                    type="number"
+                    placeholder="Enter number of units"
+                    onIonInput={(e) => setNumberOfUnits(e.detail.value!)}
+                    className="modal-input"
+                    style={{ textAlign: 'left' }}
+                  />
+                </IonItem>
+              </div>
             </div>
           </div>
 
@@ -372,6 +441,48 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
                   ))}
                 </IonSelect>
               </IonItem>
+            </div>
+
+            <div style={{ marginBottom: '32px' }}>
+              <h3 style={{ 
+                fontSize: '18px', 
+                fontWeight: '600', 
+                marginBottom: '16px',
+                color: '#2c3e50',
+                textAlign: 'left'
+              }}>
+                Life Metrics
+              </h3>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', textAlign: 'left' }}>
+                <IonItem className="custom-input" lines="none" style={{ textAlign: 'left' }}>
+                  <IonLabel position="stacked" className="input-label" style={{ textAlign: 'left' }}>
+                    Estimated Life (years)
+                  </IonLabel>
+                  <IonInput
+                    value={estimatedLife}
+                    type="number"
+                    placeholder="Enter estimated life"
+                    onIonInput={(e) => setEstimatedLife(e.detail.value!)}
+                    className="modal-input"
+                    style={{ textAlign: 'left' }}
+                  />
+                </IonItem>
+
+                <IonItem className="custom-input" lines="none" style={{ textAlign: 'left' }}>
+                  <IonLabel position="stacked" className="input-label" style={{ textAlign: 'left' }}>
+                    Remaining Life (years)
+                  </IonLabel>
+                  <IonInput
+                    value={remainingLife}
+                    type="number"
+                    placeholder="Auto-calculated"
+                    className="modal-input"
+                    style={{ textAlign: 'left' }}
+                    readonly
+                  />
+                </IonItem>
+              </div>
             </div>
 
             <div>
