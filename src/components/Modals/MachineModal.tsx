@@ -19,6 +19,7 @@ import {
 } from '@ionic/react';
 import { closeOutline } from 'ionicons/icons';
 import { EquipmentData, getEquipmentData } from '../../utils/equipmentLocalStorage';
+import Next from '../../components/GlobalComponent/Next';
 import '../../CSS/modal.css';
 
 interface MachineModalProps {
@@ -32,7 +33,7 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
   const [equipmentOptions, setEquipmentOptions] = useState<EquipmentData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Form fields
   const [serialNo, setSerialNo] = useState<string>('');
   const [machineDescription, setMachineDescription] = useState<string>('');
@@ -47,7 +48,7 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
   const [estimatedLife, setEstimatedLife] = useState<string>('');
   const [remainingLife, setRemainingLife] = useState<string>('');
   const [numberOfUnits, setNumberOfUnits] = useState<string>('');
-  
+
   // New financial fields
   const [originalCost, setOriginalCost] = useState<string>('');
   const [freight, setFreight] = useState<string>('');
@@ -57,15 +58,16 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
   const [totalCost, setTotalCost] = useState<string>('');
   const [depreciation, setDepreciation] = useState<string>('');
   const [adjustedMarketValue, setAdjustedMarketValue] = useState<string>('');
+  const [isFormValid, setIsFormValid] = useState(false);
 
   // Fetch equipment data when modal opens
   useEffect(() => {
     const fetchEquipmentData = async () => {
       if (!isOpen) return;
-      
+
       setIsLoading(true);
       setError(null);
-      
+
       try {
         const equipmentData = await getEquipmentData();
         if (equipmentData) {
@@ -121,7 +123,7 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
         const currentDate = new Date();
         const yearsUsedValue = ((currentDate.getTime() - acquiredDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25)).toFixed(1);
         setYearsUsed(yearsUsedValue);
-        
+
         if (estimatedLife) {
           const remaining = (parseFloat(estimatedLife) - parseFloat(yearsUsedValue)).toFixed(1);
           setRemainingLife(remaining);
@@ -148,7 +150,7 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
       const insuranceCost = parseFloat(insurance) || 0;
       const installationCost = parseFloat(installation) || 0;
       const othersCost = parseFloat(others) || 0;
-      
+
       const total = cost + freightCost + insuranceCost + installationCost + othersCost;
       setTotalCost(total.toFixed(2));
     };
@@ -161,7 +163,7 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
     const calculateAdjustedMarketValue = () => {
       const total = parseFloat(totalCost) || 0;
       const depreciationPercent = parseFloat(depreciation) || 0;
-      
+
       if (total > 0 && depreciationPercent > 0) {
         const depreciationAmount = total * (depreciationPercent / 100);
         const adjustedValue = total - depreciationAmount;
@@ -193,6 +195,12 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
     return `${depreciation}%`;
   };
 
+  const handleNextClick = () => {
+    // TODO: Add functionality for Next button
+    console.log('Next button clicked');
+    // You can add form validation and submission logic here
+  };
+
   const conditionOptions = [
     'Excellent',
     'Good',
@@ -209,8 +217,8 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
   ];
 
   return (
-    <IonModal 
-      isOpen={isOpen} 
+    <IonModal
+      isOpen={isOpen}
       onDidDismiss={onClose}
       className="custom-wide-modal"
     >
@@ -225,18 +233,17 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
               <IonIcon icon={closeOutline} />
             </IonButton>
           </IonButtons>
-
         </IonToolbar>
       </IonHeader>
 
       <IonContent className="modal-content">
-        <div style={{ 
-          display: 'flex', 
+        <div style={{
+          display: 'flex',
           flexDirection: 'column',
           gap: '24px',
           padding: '16px'
         }}>
-          
+
           {/* Equipment Selection */}
           <div className="form-section">
             <h3 className="section-title">Equipment Selection</h3>
@@ -247,11 +254,11 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
               <IonSelect
                 value={selectedEquipment}
                 placeholder={
-                  isLoading 
-                    ? "Loading equipment..." 
-                    : error 
-                    ? "Failed to load equipment"
-                    : "Select equipment"
+                  isLoading
+                    ? "Loading equipment..."
+                    : error
+                      ? "Failed to load equipment"
+                      : "Select equipment"
                 }
                 onIonChange={e => handleEquipmentChange(e.detail.value)}
                 interface="popover"
@@ -275,8 +282,8 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
                   </IonSelectOption>
                 ) : (
                   equipmentOptions.map((equipment) => (
-                    <IonSelectOption 
-                      key={equipment.equipment_id} 
+                    <IonSelectOption
+                      key={equipment.equipment_id}
                       value={equipment.equipment_id}
                     >
                       {equipment.equipment_id}
@@ -486,7 +493,7 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
           {/* Financial Information */}
           <div className="form-section">
             <h3 className="section-title">Financial Information</h3>
-            
+
             <IonItem className="custom-input" lines="none">
               <IonLabel position="stacked" className="input-label">
                 Original Cost ($)
@@ -600,6 +607,11 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
               </IonItem>
             </div>
           </div>
+        </div>
+
+        {/* Next Button - Moved outside the main content div */}
+        <div className="next-btn-container">
+          <Next onClick={handleNextClick} disabled={!isFormValid} />
         </div>
       </IonContent>
     </IonModal>
