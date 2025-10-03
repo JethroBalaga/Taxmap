@@ -377,7 +377,7 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
         onPhotoTaken={() => {}}
         formData={formData}
         buildingData={buildingData}
-        machineData={machineData} // Fixed: changed from MachineData to machineData
+        machineData={machineData}
         onCompleteSubmission={handlePhotoModalSuccess}
       />
     </>

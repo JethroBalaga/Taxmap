@@ -1,5 +1,6 @@
 // src/utils/tablestorages/MachineDataLocalStorage.ts
 export interface MachineData {
+  valueInfoId?: string; 
   selectedEquipment: string;
   serialNo: string;
   machineDescription: string;
@@ -22,7 +23,6 @@ export interface MachineData {
   totalCost: string;
   depreciation: string;
   adjustedMarketValue: string;
-  valueInfoId?: string; 
 }
 
 const MACHINE_DATA_KEY = 'machineData';
