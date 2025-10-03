@@ -1,14 +1,14 @@
 import React from 'react';
-import { 
-  IonButton, 
-  IonImg, 
-  IonContent, 
-  IonModal, 
-  IonAlert, 
-  IonHeader, 
-  IonToolbar, 
-  IonTitle, 
-  IonButtons, 
+import {
+  IonButton,
+  IonImg,
+  IonContent,
+  IonModal,
+  IonAlert,
+  IonHeader,
+  IonToolbar,
+  IonTitle,
+  IonButtons,
   IonIcon,
   IonSpinner,
   IonText,
@@ -35,20 +35,20 @@ interface PhotoModalProps {
   onPhotoTaken: (photo: string) => void;
   formData?: FormData;
   buildingData?: BuildingData;
-  machineData?: MachineData; // Fixed: changed from machineData to machineData
+  machineData?: MachineData | null;
   onSubmit?: (photo: string, formData: FormData, buildingData: BuildingData, machineData: MachineData) => Promise<void>;
   onCompleteSubmission?: () => void;
 }
 
-const PhotoModal: React.FC<PhotoModalProps> = ({ 
-  isOpen, 
-  onClose, 
-  onPhotoTaken, 
-  formData, 
+const PhotoModal: React.FC<PhotoModalProps> = ({
+  isOpen,
+  onClose,
+  onPhotoTaken,
+  formData,
   buildingData,
   machineData, // Fixed: changed from machineData to machineData
   onSubmit,
-  onCompleteSubmission 
+  onCompleteSubmission
 }) => {
   const {
     photo,
@@ -122,7 +122,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                     </pre>
                   </IonLabel>
                 </IonItem>
-                
+
                 {storedData.buildingData && (
                   <IonItem lines="none">
                     <IonLabel>
@@ -133,7 +133,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                     </IonLabel>
                   </IonItem>
                 )}
-                
+
                 {storedData.machineData && (
                   <IonItem lines="none">
                     <IonLabel>
@@ -144,7 +144,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                     </IonLabel>
                   </IonItem>
                 )}
-                
+
                 <IonItem lines="none">
                   <IonLabel>
                     <strong>Photo Tag:</strong>
@@ -170,8 +170,8 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
               <p className="input-label">
                 {machineData ? 'Machine Photo' : buildingData ? 'Building Photo' : 'Photo'} <span style={{ color: 'red' }}>*</span>
               </p>
-              
-              <IonButton 
+
+              <IonButton
                 onClick={takePhoto}
                 disabled={isSubmitting}
                 size="large"
@@ -182,10 +182,10 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                 <IonIcon icon={camera} size="large" />
               </IonButton>
               <p style={{ marginTop: '20px', color: 'var(--ion-color-medium)' }}>
-                {machineData 
-                  ? 'Tap to take a photo of the machine' 
-                  : buildingData 
-                    ? 'Tap to take a photo of the building' 
+                {machineData
+                  ? 'Tap to take a photo of the machine'
+                  : buildingData
+                    ? 'Tap to take a photo of the building'
                     : 'Tap to take a photo'
                 }
               </p>
@@ -193,9 +193,9 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
           ) : (
             <>
               <div className="photo-preview-container">
-                <IonImg 
-                  src={photo} 
-                  alt="Captured photo" 
+                <IonImg
+                  src={photo}
+                  alt="Captured photo"
                   className="captured-photo"
                 />
               </div>
@@ -205,13 +205,13 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                   <IonIcon icon={informationCircle} className="info-icon" />
                   <span>Photo Information</span>
                 </div>
-                
+
                 <div className="info-grid">
                   <div className="info-item">
                     <span className="info-label">Status:</span>
                     <span className="info-value">{storedData ? 'Stored' : 'Ready to Submit'}</span>
                   </div>
-                  
+
                   <div className="info-item">
                     <span className="info-label">Original Location:</span>
                     <div className="info-value">
@@ -243,7 +243,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                       )}
                     </div>
                   </div>
-                  
+
                   {adjustedLocation && (
                     <div className="info-item">
                       <span className="info-label">Adjusted Location:</span>
@@ -256,7 +256,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                       </div>
                     </div>
                   )}
-                  
+
                   {locationError && (
                     <div className="info-item" style={{ gridColumn: '1 / -1' }}>
                       <span className="info-label">Location Error:</span>
@@ -265,14 +265,14 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                       </span>
                     </div>
                   )}
-                  
+
                   <div className="info-item">
                     <span className="info-label">Size:</span>
                     <span className="info-value">
                       {photo ? `${(getFileSize(photo) / 1024 / 1024).toFixed(2)} MB` : 'N/A'}
                     </span>
                   </div>
-                  
+
                   <div className="info-item">
                     <span className="info-label">File Name:</span>
                     <span className="info-value" style={{ fontSize: '12px' }}>
@@ -299,10 +299,10 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                         loading={isSubmitting}
                       />
                     </div>
-                    
+
                     {!hasAttemptedLocation ? (
                       <div style={{ textAlign: 'center', marginBottom: '16px' }}>
-                        <IonButton 
+                        <IonButton
                           onClick={getCurrentLocation}
                           size="default"
                           color="primary"
@@ -317,7 +317,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                       </div>
                     ) : !currentLocation && (
                       <div style={{ textAlign: 'center', marginBottom: '16px' }}>
-                        <IonButton 
+                        <IonButton
                           onClick={getCurrentLocation}
                           size="small"
                           color="medium"
@@ -331,7 +331,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                   </>
                 ) : (
                   <div style={{ textAlign: 'center', marginBottom: '16px' }}>
-                    <IonButton 
+                    <IonButton
                       onClick={handleClose}
                       size="default"
                       fill="solid"
@@ -341,7 +341,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                     </IonButton>
                   </div>
                 )}
-                
+
                 <div className="retake-link">
                   <button onClick={retakePhoto} disabled={isSubmitting}>
                     {storedData ? 'Take New Photo' : 'Retake Photo'}
