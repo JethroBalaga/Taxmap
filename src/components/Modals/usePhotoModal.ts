@@ -4,8 +4,10 @@ import { Geolocation } from '@capacitor/geolocation';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { FormData } from './Form';
 import { BuildingData } from './BuildingModal';
+import { MachineData } from './MachineModal';
 import { FormDataLocalStorage } from '../../utils/tablestorages/FormDataLocalStorage';
 import { BuildingDataLocalStorage } from '../../utils/tablestorages/BuildingDataLocalStorage';
+import { MachineDataLocalStorage } from '../../utils/tablestorages/MachineDataLocalStorage';
 import { PhotoTagLocalStorage } from '../../utils/tablestorages/PhotoTagLocalStorage';
 import { ValueInfoLocalStorage } from '../../utils/tablestorages/ValueInfoLocalStorage';
 import { generateFileName, saveImageToStorage, adjustCoordinates } from '../../utils/photoModalUtils';
@@ -16,7 +18,8 @@ interface UsePhotoModalProps {
   onPhotoTaken: (photo: string) => void;
   formData?: FormData;
   buildingData?: BuildingData;
-  onSubmit?: (photo: string, formData: FormData, buildingData: BuildingData) => Promise<void>;
+  machineData?: MachineData;
+  onSubmit?: (photo: string, formData: FormData, buildingData: BuildingData, machineData: MachineData) => Promise<void>;
   onCompleteSubmission?: () => void;
 }
 
@@ -26,6 +29,7 @@ export const usePhotoModal = ({
   onPhotoTaken,
   formData,
   buildingData,
+  machineData,
   onSubmit,
   onCompleteSubmission
 }: UsePhotoModalProps) => {
@@ -39,6 +43,7 @@ export const usePhotoModal = ({
   const [storedData, setStoredData] = useState<{
     formData: any;
     buildingData: any;
+    machineData: any;
     photoTag: any;
     valueInfo: any;
   } | null>(null);
@@ -76,6 +81,7 @@ export const usePhotoModal = ({
     if (isOpen) {
       console.log('PhotoModal opened with formData:', formData);
       console.log('PhotoModal opened with buildingData:', buildingData);
+      console.log('PhotoModal opened with machineData:', machineData);
       setStoredData(null);
       setPhotoName(generateFileName());
       setHasAttemptedLocation(false);
@@ -83,7 +89,7 @@ export const usePhotoModal = ({
       
       checkAndCreateDirectory().catch(console.error);
     }
-  }, [isOpen, formData, buildingData, checkAndCreateDirectory]);
+  }, [isOpen, formData, buildingData, machineData, checkAndCreateDirectory]);
 
   const takePhoto = useCallback(async () => {
     try {
@@ -189,16 +195,17 @@ export const usePhotoModal = ({
       
       let savedFormData = null;
       let savedBuildingData = null;
+      let savedMachineData = null;
       let photoTag = null;
       let valueInfo = null;
 
-      // 1. Store FormData
+      // 1. Store FormData (ALWAYS stored for all kinds)
       if (formData) {
         savedFormData = FormDataLocalStorage.saveFormData(formData);
         console.log('Form data saved:', savedFormData);
       }
       
-      // 2. Store PhotoTag (using photoName instead of photoPath)
+      // 2. Store PhotoTag (ALWAYS stored for all kinds)
       // Use adjusted coordinates if available, otherwise use original or default
       const finalLatitude = adjustedLocation?.latitude || currentLocation?.latitude || 0;
       const finalLongitude = adjustedLocation?.longitude || currentLocation?.longitude || 0;
@@ -212,7 +219,7 @@ export const usePhotoModal = ({
       });
       console.log('Photo tag saved:', photoTag);
 
-      // 3. Create ValueInfo entry
+      // 3. Create ValueInfo entry (ALWAYS created for all kinds)
       if (savedFormData && photoTag) {
         valueInfo = ValueInfoLocalStorage.addValueInfo({
           formDataId: savedFormData.id,
@@ -220,13 +227,22 @@ export const usePhotoModal = ({
         });
         console.log('ValueInfo created:', valueInfo);
 
-        // 4. Store BuildingData
+        // 4. Store BuildingData (ONLY if buildingData exists - Building kind)
         if (buildingData && valueInfo) {
           savedBuildingData = BuildingDataLocalStorage.saveBuildingData({
             ...buildingData,
-            valueInfoId: valueInfo.id
+            valueInfoId: valueInfo.id.toString() // Convert number to string
           });
           console.log('Building data saved:', savedBuildingData);
+        }
+
+        // 5. Store MachineData (ONLY if machineData exists - Machinery kind)
+        if (machineData && valueInfo) {
+          savedMachineData = MachineDataLocalStorage.saveMachineData({
+            ...machineData,
+            valueInfoId: valueInfo.id.toString() // Convert number to string
+          });
+          console.log('Machine data saved:', savedMachineData);
         }
       }
 
@@ -234,13 +250,14 @@ export const usePhotoModal = ({
       setStoredData({
         formData: savedFormData,
         buildingData: savedBuildingData,
+        machineData: savedMachineData,
         photoTag: photoTag,
         valueInfo: valueInfo
       });
 
       // Call callbacks
-      if (onSubmit && formData && buildingData) {
-        await onSubmit(photo, formData, buildingData);
+      if (onSubmit && formData) {
+        await onSubmit(photo, formData, buildingData!, machineData!);
       } else {
         onPhotoTaken(photo);
       }
@@ -265,7 +282,7 @@ export const usePhotoModal = ({
     } finally {
       setIsSubmitting(false);
     }
-  }, [photo, photoName, formData, buildingData, currentLocation, adjustedLocation, onSubmit, onPhotoTaken, onCompleteSubmission]);
+  }, [photo, photoName, formData, buildingData, machineData, currentLocation, adjustedLocation, onSubmit, onPhotoTaken, onCompleteSubmission]);
 
   const handleSubmit = useCallback(async () => {
     if (!photo) {
