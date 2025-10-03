@@ -58,6 +58,8 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
   const [installation, setInstallation] = useState<string>('');
   const [others, setOthers] = useState<string>('');
   const [totalCost, setTotalCost] = useState<string>('');
+  const [depreciation, setDepreciation] = useState<string>('');
+  const [adjustedMarketValue, setAdjustedMarketValue] = useState<string>('');
 
   // Fetch equipment data when modal opens
   useEffect(() => {
@@ -111,6 +113,8 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
       setInstallation('');
       setOthers('');
       setTotalCost('');
+      setDepreciation('');
+      setAdjustedMarketValue('');
       setError(null);
     }
   }, [isOpen]);
@@ -158,12 +162,41 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
     calculateTotalCost();
   }, [originalCost, freight, insurance, installation, others]);
 
+  // Calculate adjusted market value when total cost or depreciation changes
+  useEffect(() => {
+    const calculateAdjustedMarketValue = () => {
+      const total = parseFloat(totalCost) || 0;
+      const depreciationPercent = parseFloat(depreciation) || 0;
+      
+      if (total > 0 && depreciationPercent > 0) {
+        const depreciationAmount = total * (depreciationPercent / 100);
+        const adjustedValue = total - depreciationAmount;
+        setAdjustedMarketValue(adjustedValue.toFixed(2));
+      } else {
+        setAdjustedMarketValue(totalCost);
+      }
+    };
+
+    calculateAdjustedMarketValue();
+  }, [totalCost, depreciation]);
+
   const handleEquipmentChange = (value: string) => {
     setSelectedEquipment(value);
     const equipment = equipmentOptions.find(e => e.equipment_id === value);
     if (equipment) {
       setMachineDescription(equipment.machine_type);
     }
+  };
+
+  const handleDepreciationChange = (value: string) => {
+    // Remove any non-numeric characters except decimal point
+    const numericValue = value.replace(/[^0-9.]/g, '');
+    setDepreciation(numericValue);
+  };
+
+  const getDepreciationDisplayValue = () => {
+    if (!depreciation) return '';
+    return `${depreciation}%`;
   };
 
   const capacityTypes = [
@@ -623,6 +656,37 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
                   readonly
                 />
               </IonItem>
+
+              {/* Depreciation and Adjusted Market Value */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', textAlign: 'left', marginTop: '16px' }}>
+                <IonItem className="custom-input" lines="none" style={{ textAlign: 'left' }}>
+                  <IonLabel position="stacked" className="input-label" style={{ textAlign: 'left' }}>
+                    Depreciation (%)
+                  </IonLabel>
+                  <IonInput
+                    value={getDepreciationDisplayValue()}
+                    type="text"
+                    placeholder="Enter percentage"
+                    onIonInput={(e) => handleDepreciationChange(e.detail.value!)}
+                    className="modal-input"
+                    style={{ textAlign: 'left' }}
+                  />
+                </IonItem>
+
+                <IonItem className="custom-input" lines="none" style={{ textAlign: 'left' }}>
+                  <IonLabel position="stacked" className="input-label" style={{ textAlign: 'left', fontWeight: 'bold' }}>
+                    Adjusted Market Value ($)
+                  </IonLabel>
+                  <IonInput
+                    value={adjustedMarketValue}
+                    type="number"
+                    placeholder="Auto-calculated"
+                    className="modal-input"
+                    style={{ textAlign: 'left', fontWeight: 'bold', color: '#2c3e50' }}
+                    readonly
+                  />
+                </IonItem>
+              </div>
             </div>
 
             <div>
