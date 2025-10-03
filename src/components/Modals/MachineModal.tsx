@@ -17,10 +17,35 @@ import '../../CSS/modal.css';
 interface MachineModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess?: () => void;
+  onSuccess?: (machineData: MachineData) => void;
 }
 
 export interface FormData {
+  selectedEquipment: string;
+  serialNo: string;
+  machineDescription: string;
+  brandModel: string;
+  condition: string;
+  machineDetails: string;
+  purchaseType: string;
+  dateAcquired: string;
+  dateInstalled: string;
+  dateOperated: string;
+  yearsUsed: string;
+  estimatedLife: string;
+  remainingLife: string;
+  numberOfUnits: string;
+  originalCost: string;
+  freight: string;
+  insurance: string;
+  installation: string;
+  others: string;
+  totalCost: string;
+  depreciation: string;
+  adjustedMarketValue: string;
+}
+
+export interface MachineData {
   selectedEquipment: string;
   serialNo: string;
   machineDescription: string;
@@ -137,8 +162,38 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
   };
 
   const handleNextClick = () => {
-    console.log('Form data:', formData);
-    // You can add form validation and submission logic here
+    if (!isFormValid) return;
+
+    const machineData: MachineData = {
+      selectedEquipment: formData.selectedEquipment,
+      serialNo: formData.serialNo,
+      machineDescription: formData.machineDescription,
+      brandModel: formData.brandModel,
+      condition: formData.condition,
+      machineDetails: formData.machineDetails,
+      purchaseType: formData.purchaseType,
+      dateAcquired: formData.dateAcquired,
+      dateInstalled: formData.dateInstalled,
+      dateOperated: formData.dateOperated,
+      yearsUsed: formData.yearsUsed,
+      estimatedLife: formData.estimatedLife,
+      remainingLife: formData.remainingLife,
+      numberOfUnits: formData.numberOfUnits,
+      originalCost: formData.originalCost,
+      freight: formData.freight,
+      insurance: formData.insurance,
+      installation: formData.installation,
+      others: formData.others,
+      totalCost: formData.totalCost,
+      depreciation: formData.depreciation,
+      adjustedMarketValue: formData.adjustedMarketValue
+    };
+
+    console.log('Machine data to pass to PhotoModal:', machineData);
+    
+    if (onSuccess) {
+      onSuccess(machineData);
+    }
   };
 
   const isFormValid = formData.selectedEquipment.trim() !== '' && formData.serialNo.trim() !== '';
