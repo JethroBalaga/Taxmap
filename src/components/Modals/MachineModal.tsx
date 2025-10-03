@@ -37,8 +37,6 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
   const [serialNo, setSerialNo] = useState<string>('');
   const [machineDescription, setMachineDescription] = useState<string>('');
   const [brandModel, setBrandModel] = useState<string>('');
-  const [capacity, setCapacity] = useState<string>('');
-  const [capacityType, setCapacityType] = useState<string>('cubic meter');
   const [condition, setCondition] = useState<string>('');
   const [machineDetails, setMachineDetails] = useState<string>('');
   const [purchaseType, setPurchaseType] = useState<string>('');
@@ -51,7 +49,6 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
   const [numberOfUnits, setNumberOfUnits] = useState<string>('');
   
   // New financial fields
-  const [convFactor, setConvFactor] = useState<string>('');
   const [originalCost, setOriginalCost] = useState<string>('');
   const [freight, setFreight] = useState<string>('');
   const [insurance, setInsurance] = useState<string>('');
@@ -94,8 +91,6 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
       setSerialNo('');
       setMachineDescription('');
       setBrandModel('');
-      setCapacity('');
-      setCapacityType('cubic meter');
       setCondition('');
       setMachineDetails('');
       setPurchaseType('');
@@ -106,7 +101,6 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
       setEstimatedLife('');
       setRemainingLife('');
       setNumberOfUnits('');
-      setConvFactor('');
       setOriginalCost('');
       setFreight('');
       setInsurance('');
@@ -199,17 +193,6 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
     return `${depreciation}%`;
   };
 
-  const capacityTypes = [
-    'cubic meter',
-    'liters',
-    'tons',
-    'kilograms',
-    'pieces',
-    'units',
-    'hours',
-    'meters'
-  ];
-
   const conditionOptions = [
     'Excellent',
     'Good',
@@ -242,6 +225,7 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
               <IonIcon icon={closeOutline} />
             </IonButton>
           </IonButtons>
+
         </IonToolbar>
       </IonHeader>
 
@@ -342,39 +326,6 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
                 className="modal-input"
               />
             </IonItem>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-              <IonItem className="custom-input" lines="none">
-                <IonLabel position="stacked" className="input-label">
-                  Capacity
-                </IonLabel>
-                <IonInput
-                  value={capacity}
-                  type="number"
-                  placeholder="Enter capacity"
-                  onIonInput={(e) => setCapacity(e.detail.value!)}
-                  className="modal-input"
-                />
-              </IonItem>
-              
-              <IonItem className="custom-input" lines="none">
-                <IonLabel position="stacked" className="input-label">
-                  Capacity Type
-                </IonLabel>
-                <IonSelect
-                  value={capacityType}
-                  onIonChange={e => setCapacityType(e.detail.value)}
-                  interface="popover"
-                  className="modal-input"
-                >
-                  {capacityTypes.map((type) => (
-                    <IonSelectOption key={type} value={type}>
-                      {type}
-                    </IonSelectOption>
-                  ))}
-                </IonSelect>
-              </IonItem>
-            </div>
 
             <IonItem className="custom-input" lines="none">
               <IonLabel position="stacked" className="input-label">
@@ -535,33 +486,19 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
           {/* Financial Information */}
           <div className="form-section">
             <h3 className="section-title">Financial Information</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-              <IonItem className="custom-input" lines="none">
-                <IonLabel position="stacked" className="input-label">
-                  Conv Factor
-                </IonLabel>
-                <IonInput
-                  value={convFactor}
-                  type="number"
-                  placeholder="Enter conversion factor"
-                  onIonInput={(e) => setConvFactor(e.detail.value!)}
-                  className="modal-input"
-                />
-              </IonItem>
-
-              <IonItem className="custom-input" lines="none">
-                <IonLabel position="stacked" className="input-label">
-                  Original Cost ($)
-                </IonLabel>
-                <IonInput
-                  value={originalCost}
-                  type="number"
-                  placeholder="Enter original cost"
-                  onIonInput={(e) => setOriginalCost(e.detail.value!)}
-                  className="modal-input"
-                />
-              </IonItem>
-            </div>
+            
+            <IonItem className="custom-input" lines="none">
+              <IonLabel position="stacked" className="input-label">
+                Original Cost ($)
+              </IonLabel>
+              <IonInput
+                value={originalCost}
+                type="number"
+                placeholder="Enter original cost"
+                onIonInput={(e) => setOriginalCost(e.detail.value!)}
+                className="modal-input"
+              />
+            </IonItem>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
               <IonItem className="custom-input" lines="none">
