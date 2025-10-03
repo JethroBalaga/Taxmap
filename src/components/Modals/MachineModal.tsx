@@ -49,6 +49,15 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
   const [estimatedLife, setEstimatedLife] = useState<string>('');
   const [remainingLife, setRemainingLife] = useState<string>('');
   const [numberOfUnits, setNumberOfUnits] = useState<string>('');
+  
+  // New financial fields
+  const [convFactor, setConvFactor] = useState<string>('');
+  const [originalCost, setOriginalCost] = useState<string>('');
+  const [freight, setFreight] = useState<string>('');
+  const [insurance, setInsurance] = useState<string>('');
+  const [installation, setInstallation] = useState<string>('');
+  const [others, setOthers] = useState<string>('');
+  const [totalCost, setTotalCost] = useState<string>('');
 
   // Fetch equipment data when modal opens
   useEffect(() => {
@@ -95,6 +104,13 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
       setEstimatedLife('');
       setRemainingLife('');
       setNumberOfUnits('');
+      setConvFactor('');
+      setOriginalCost('');
+      setFreight('');
+      setInsurance('');
+      setInstallation('');
+      setOthers('');
+      setTotalCost('');
       setError(null);
     }
   }, [isOpen]);
@@ -102,14 +118,12 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
   // Calculate years used and remaining life when dates change
   useEffect(() => {
     const calculateLifeMetrics = () => {
-      // Calculate years used based on date acquired and current date
       if (dateAcquired) {
         const acquiredDate = new Date(dateAcquired);
         const currentDate = new Date();
         const yearsUsedValue = ((currentDate.getTime() - acquiredDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25)).toFixed(1);
         setYearsUsed(yearsUsedValue);
         
-        // Calculate remaining life if estimated life is provided
         if (estimatedLife) {
           const remaining = (parseFloat(estimatedLife) - parseFloat(yearsUsedValue)).toFixed(1);
           setRemainingLife(remaining);
@@ -128,17 +142,28 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
     }
   }, [yearsUsed, estimatedLife]);
 
+  // Calculate total cost when financial fields change
+  useEffect(() => {
+    const calculateTotalCost = () => {
+      const cost = parseFloat(originalCost) || 0;
+      const freightCost = parseFloat(freight) || 0;
+      const insuranceCost = parseFloat(insurance) || 0;
+      const installationCost = parseFloat(installation) || 0;
+      const othersCost = parseFloat(others) || 0;
+      
+      const total = cost + freightCost + insuranceCost + installationCost + othersCost;
+      setTotalCost(total.toFixed(2));
+    };
+
+    calculateTotalCost();
+  }, [originalCost, freight, insurance, installation, others]);
+
   const handleEquipmentChange = (value: string) => {
     setSelectedEquipment(value);
-    // Auto-fill machine description with equipment type
     const equipment = equipmentOptions.find(e => e.equipment_id === value);
     if (equipment) {
       setMachineDescription(equipment.machine_type);
     }
-  };
-
-  const getSelectedEquipment = () => {
-    return equipmentOptions.find(e => e.equipment_id === selectedEquipment);
   };
 
   const capacityTypes = [
@@ -362,7 +387,6 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
                 </IonSelect>
               </IonItem>
 
-              {/* New Life Metrics Section */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', textAlign: 'left' }}>
                 <IonItem className="custom-input" lines="none" style={{ textAlign: 'left' }}>
                   <IonLabel position="stacked" className="input-label" style={{ textAlign: 'left' }}>
@@ -483,6 +507,122 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
                   />
                 </IonItem>
               </div>
+            </div>
+
+            <div style={{ marginBottom: '32px' }}>
+              <h3 style={{ 
+                fontSize: '18px', 
+                fontWeight: '600', 
+                marginBottom: '16px',
+                color: '#2c3e50',
+                textAlign: 'left'
+              }}>
+                Financial Information
+              </h3>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', textAlign: 'left' }}>
+                <IonItem className="custom-input" lines="none" style={{ textAlign: 'left' }}>
+                  <IonLabel position="stacked" className="input-label" style={{ textAlign: 'left' }}>
+                    Conv Factor
+                  </IonLabel>
+                  <IonInput
+                    value={convFactor}
+                    type="number"
+                    placeholder="Enter conversion factor"
+                    onIonInput={(e) => setConvFactor(e.detail.value!)}
+                    className="modal-input"
+                    style={{ textAlign: 'left' }}
+                  />
+                </IonItem>
+
+                <IonItem className="custom-input" lines="none" style={{ textAlign: 'left' }}>
+                  <IonLabel position="stacked" className="input-label" style={{ textAlign: 'left' }}>
+                    Original Cost ($)
+                  </IonLabel>
+                  <IonInput
+                    value={originalCost}
+                    type="number"
+                    placeholder="Enter original cost"
+                    onIonInput={(e) => setOriginalCost(e.detail.value!)}
+                    className="modal-input"
+                    style={{ textAlign: 'left' }}
+                  />
+                </IonItem>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', textAlign: 'left' }}>
+                <IonItem className="custom-input" lines="none" style={{ textAlign: 'left' }}>
+                  <IonLabel position="stacked" className="input-label" style={{ textAlign: 'left' }}>
+                    Freight ($)
+                  </IonLabel>
+                  <IonInput
+                    value={freight}
+                    type="number"
+                    placeholder="Shipping cost"
+                    onIonInput={(e) => setFreight(e.detail.value!)}
+                    className="modal-input"
+                    style={{ textAlign: 'left' }}
+                  />
+                </IonItem>
+
+                <IonItem className="custom-input" lines="none" style={{ textAlign: 'left' }}>
+                  <IonLabel position="stacked" className="input-label" style={{ textAlign: 'left' }}>
+                    Insurance ($)
+                  </IonLabel>
+                  <IonInput
+                    value={insurance}
+                    type="number"
+                    placeholder="Insurance cost"
+                    onIonInput={(e) => setInsurance(e.detail.value!)}
+                    className="modal-input"
+                    style={{ textAlign: 'left' }}
+                  />
+                </IonItem>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', textAlign: 'left' }}>
+                <IonItem className="custom-input" lines="none" style={{ textAlign: 'left' }}>
+                  <IonLabel position="stacked" className="input-label" style={{ textAlign: 'left' }}>
+                    Installation ($)
+                  </IonLabel>
+                  <IonInput
+                    value={installation}
+                    type="number"
+                    placeholder="Installation cost"
+                    onIonInput={(e) => setInstallation(e.detail.value!)}
+                    className="modal-input"
+                    style={{ textAlign: 'left' }}
+                  />
+                </IonItem>
+
+                <IonItem className="custom-input" lines="none" style={{ textAlign: 'left' }}>
+                  <IonLabel position="stacked" className="input-label" style={{ textAlign: 'left' }}>
+                    Others ($)
+                  </IonLabel>
+                  <IonInput
+                    value={others}
+                    type="number"
+                    placeholder="Other costs"
+                    onIonInput={(e) => setOthers(e.detail.value!)}
+                    className="modal-input"
+                    style={{ textAlign: 'left' }}
+                  />
+                </IonItem>
+              </div>
+
+              <IonItem className="custom-input" lines="none" style={{ textAlign: 'left', marginTop: '12px' }}>
+                <IonLabel position="stacked" className="input-label" style={{ textAlign: 'left', fontWeight: 'bold' }}>
+                  Total Cost ($)
+                </IonLabel>
+                <IonInput
+                  value={totalCost}
+                  type="number"
+                  placeholder="Auto-calculated"
+                  className="modal-input"
+                  style={{ textAlign: 'left', fontWeight: 'bold', color: '#2c3e50' }}
+                  readonly
+                />
+              </IonItem>
             </div>
 
             <div>
