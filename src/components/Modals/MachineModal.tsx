@@ -315,6 +315,93 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
               </IonItem>
             </div>
 
+            <div style={{ marginBottom: '32px' }}>
+              <h3 style={{ 
+                fontSize: '18px', 
+                fontWeight: '600', 
+                marginBottom: '16px',
+                color: '#2c3e50',
+                textAlign: 'left'
+              }}>
+                Machine Details
+              </h3>
+              
+              <IonItem className="custom-input" lines="none" style={{ textAlign: 'left' }}>
+                <IonLabel position="stacked" className="input-label" style={{ textAlign: 'left' }}>
+                  Machine Details
+                </IonLabel>
+                <IonInput
+                  value={machineDetails}
+                  placeholder="Enter machine details"
+                  onIonInput={(e) => setMachineDetails(e.detail.value!)}
+                  className="modal-input"
+                  style={{ textAlign: 'left' }}
+                />
+              </IonItem>
+
+              <IonItem className="custom-input" lines="none" style={{ textAlign: 'left' }}>
+                <IonLabel position="stacked" className="input-label" style={{ textAlign: 'left' }}>
+                  Purchase Type
+                </IonLabel>
+                <IonSelect
+                  value={purchaseType}
+                  placeholder="Select purchase type"
+                  onIonChange={e => setPurchaseType(e.detail.value)}
+                  interface="popover"
+                  className="modal-input"
+                  style={{ textAlign: 'left' }}
+                >
+                  {purchaseTypeOptions.map((type) => (
+                    <IonSelectOption key={type} value={type}>
+                      {type}
+                    </IonSelectOption>
+                  ))}
+                </IonSelect>
+              </IonItem>
+            </div>
+
+            <div style={{ marginBottom: '32px' }}>
+              <h3 style={{ 
+                fontSize: '18px', 
+                fontWeight: '600', 
+                marginBottom: '16px',
+                color: '#2c3e50',
+                textAlign: 'left'
+              }}>
+                Life Metrics
+              </h3>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', textAlign: 'left' }}>
+                <IonItem className="custom-input" lines="none" style={{ textAlign: 'left' }}>
+                  <IonLabel position="stacked" className="input-label" style={{ textAlign: 'left' }}>
+                    Estimated Life (years)
+                  </IonLabel>
+                  <IonInput
+                    value={estimatedLife}
+                    type="number"
+                    placeholder="Enter estimated life"
+                    onIonInput={(e) => setEstimatedLife(e.detail.value!)}
+                    className="modal-input"
+                    style={{ textAlign: 'left' }}
+                  />
+                </IonItem>
+
+                <IonItem className="custom-input" lines="none" style={{ textAlign: 'left' }}>
+                  <IonLabel position="stacked" className="input-label" style={{ textAlign: 'left' }}>
+                    Remaining Life (years)
+                  </IonLabel>
+                  <IonInput
+                    value={remainingLife}
+                    type="number"
+                    placeholder="Auto-calculated"
+                    className="modal-input"
+                    style={{ textAlign: 'left' }}
+                    readonly
+                  />
+                </IonItem>
+              </div>
+            </div>
+
             <div>
               <h3 style={{ 
                 fontSize: '18px', 
@@ -455,93 +542,6 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
 
           {/* Right Column */}
           <div style={{ textAlign: 'left' }}>
-            <div style={{ marginBottom: '32px' }}>
-              <h3 style={{ 
-                fontSize: '18px', 
-                fontWeight: '600', 
-                marginBottom: '16px',
-                color: '#2c3e50',
-                textAlign: 'left'
-              }}>
-                Machine Details
-              </h3>
-              
-              <IonItem className="custom-input" lines="none" style={{ textAlign: 'left' }}>
-                <IonLabel position="stacked" className="input-label" style={{ textAlign: 'left' }}>
-                  Machine Details
-                </IonLabel>
-                <IonInput
-                  value={machineDetails}
-                  placeholder="Enter machine details"
-                  onIonInput={(e) => setMachineDetails(e.detail.value!)}
-                  className="modal-input"
-                  style={{ textAlign: 'left' }}
-                />
-              </IonItem>
-
-              <IonItem className="custom-input" lines="none" style={{ textAlign: 'left' }}>
-                <IonLabel position="stacked" className="input-label" style={{ textAlign: 'left' }}>
-                  Purchase Type
-                </IonLabel>
-                <IonSelect
-                  value={purchaseType}
-                  placeholder="Select purchase type"
-                  onIonChange={e => setPurchaseType(e.detail.value)}
-                  interface="popover"
-                  className="modal-input"
-                  style={{ textAlign: 'left' }}
-                >
-                  {purchaseTypeOptions.map((type) => (
-                    <IonSelectOption key={type} value={type}>
-                      {type}
-                    </IonSelectOption>
-                  ))}
-                </IonSelect>
-              </IonItem>
-            </div>
-
-            <div style={{ marginBottom: '32px' }}>
-              <h3 style={{ 
-                fontSize: '18px', 
-                fontWeight: '600', 
-                marginBottom: '16px',
-                color: '#2c3e50',
-                textAlign: 'left'
-              }}>
-                Life Metrics
-              </h3>
-              
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', textAlign: 'left' }}>
-                <IonItem className="custom-input" lines="none" style={{ textAlign: 'left' }}>
-                  <IonLabel position="stacked" className="input-label" style={{ textAlign: 'left' }}>
-                    Estimated Life (years)
-                  </IonLabel>
-                  <IonInput
-                    value={estimatedLife}
-                    type="number"
-                    placeholder="Enter estimated life"
-                    onIonInput={(e) => setEstimatedLife(e.detail.value!)}
-                    className="modal-input"
-                    style={{ textAlign: 'left' }}
-                  />
-                </IonItem>
-
-                <IonItem className="custom-input" lines="none" style={{ textAlign: 'left' }}>
-                  <IonLabel position="stacked" className="input-label" style={{ textAlign: 'left' }}>
-                    Remaining Life (years)
-                  </IonLabel>
-                  <IonInput
-                    value={remainingLife}
-                    type="number"
-                    placeholder="Auto-calculated"
-                    className="modal-input"
-                    style={{ textAlign: 'left' }}
-                    readonly
-                  />
-                </IonItem>
-              </div>
-            </div>
-
             <div style={{ marginBottom: '32px' }}>
               <h3 style={{ 
                 fontSize: '18px', 
