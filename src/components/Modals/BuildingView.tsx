@@ -1,11 +1,9 @@
-// src/components/Modals/BuildingView.tsx
 import React, { useState, useEffect } from 'react';
 import { BuildingData } from './BuildingModal';
 import { FormData } from './Form';
 import { StructureTypeData, getStructureTypeData } from '../../utils/structureTypeLocalStorage';
 import { BuildingCodeData, getBuildingCodesByStructureCode } from '../../utils/buildingCodeLocalStorage';
 import BuildingViewUI from './BuildingViewUI';
-import PhotoModal from './PhotoModal';
 
 interface BuildingViewProps {
   onSuccess: (data: BuildingData) => void;
@@ -40,7 +38,6 @@ const BuildingView: React.FC<BuildingViewProps> = ({
   const [isLoadingStructureTypes, setIsLoadingStructureTypes] = useState(false);
   const [isLoadingBuildingCodes, setIsLoadingBuildingCodes] = useState(false);
   const [selectedBuildingCode, setSelectedBuildingCode] = useState<BuildingCodeData | null>(null);
-  const [isPhotoModalOpen, setIsPhotoModalOpen] = useState(false);
 
   // Fetch all structure types
   useEffect(() => {
@@ -181,21 +178,15 @@ const BuildingView: React.FC<BuildingViewProps> = ({
     return Object.keys(newErrors).length === 0;
   };
 
-  // Handle form submission - open the photo modal
+  // Handle form submission - send data directly to Form component
   const handleNextClick = () => {
-    console.log('Building data to be passed to PhotoModal:', buildingData);
+    console.log('BuildingView: Next clicked, sending data to Form');
     if (validateForm()) {
-      setIsPhotoModalOpen(true);
+      // Send the building data back to the Form component
+      onSuccess(buildingData);
+      // Close the building modal - Form will handle opening PhotoModal
+      onDismiss();
     }
-  };
-
-  // Handle photo modal completion
-  const handlePhotoModalComplete = () => {
-    console.log('Photo modal completed, sending building data to parent');
-    // Send the building data back to the Form component
-    onSuccess(buildingData);
-    setIsPhotoModalOpen(false);
-    onDismiss(); // Close the building modal
   };
 
   return (
@@ -212,15 +203,6 @@ const BuildingView: React.FC<BuildingViewProps> = ({
         selectedBuildingCode={selectedBuildingCode}
         onInputChange={handleInputChange}
         onNextClick={handleNextClick}
-      />
-      
-      <PhotoModal
-        isOpen={isPhotoModalOpen}
-        onClose={() => setIsPhotoModalOpen(false)}
-        onPhotoTaken={() => {}}
-        formData={formData}
-        buildingData={buildingData}
-        onCompleteSubmission={handlePhotoModalComplete}
       />
     </>
   );

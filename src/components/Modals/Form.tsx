@@ -55,7 +55,7 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
   const [showMachineModal, setShowMachineModal] = useState(false);
   const [showPhotoModal, setShowPhotoModal] = useState(false);
   const [buildingData, setBuildingData] = useState<any>(null);
-  const [machineData, setMachineData] = useState<MachineData | null>(null); // Fixed: changed from MachineData to machineData
+  const [machineData, setMachineData] = useState<MachineData | null>(null);
 
   // Memoized values to prevent unnecessary recalculations
   const isBuilding = useMemo((): boolean => {
@@ -254,12 +254,14 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
     }
   }, [isFormValid, isBuilding, isMachineryKind, district, declarantId, kind, classification, subclass, actualUse, area]);
 
+  // FIXED: Updated handleBuildingModalSuccess to properly open PhotoModal
   const handleBuildingModalSuccess = useCallback((buildingData: any) => {
-    console.log('=== BUILDING DATA RECEIVED ===');
-    console.log('Building data:', buildingData);
+    console.log('✅ Form: Received building data, opening PhotoModal');
+    console.log('🏗️ Form: Building data state updated:', buildingData);
     
     setBuildingData(buildingData);
     setShowBuildingModal(false);
+    // Open PhotoModal after building data is received
     setShowPhotoModal(true);
   }, []);
 

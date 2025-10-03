@@ -1,6 +1,6 @@
 // src/utils/BuildingDataLocalStorage.ts
 export interface BuildingData {
-  valueInfoId: string; // Reference to ValueInfo id
+  valueInfoId: string; 
   structureType: string;
   buildingCode: string;
   storey: number | null;

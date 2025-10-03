@@ -1,6 +1,6 @@
 // src/utils/tablestorages/MachineDataLocalStorage.ts
 export interface MachineData {
-  valueInfoId?: string; 
+  valueInfoId: string; 
   selectedEquipment: string;
   serialNo: string;
   machineDescription: string;
