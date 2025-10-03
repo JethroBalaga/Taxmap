@@ -1,4 +1,3 @@
-// src/components/Modals/Form.tsx
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { DeclarantData, getDeclarantData } from '../../utils/DeclarantLocalStorage';
 import { DistrictData, getDistrictData } from '../../utils/districtLocalStorage';
@@ -8,7 +7,8 @@ import { SubclassData, getSubclassesByClassId } from '../../utils/subclassLocalS
 import { ActualUsedData, getActualUsedByClassId } from '../../utils/actualUsedLocalStorage';
 import FormView from './FormView';
 import BuildingModal from './BuildingModal';
-import MachineModal from './MachineModal';
+import MachineModal, { MachineData } from './MachineModal';
+import PhotoModal from './PhotoModal';
 
 export interface FormData {
   district: number | null;
@@ -53,6 +53,9 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
   const [isLoadingActualUses, setIsLoadingActualUses] = useState(false);
   const [showBuildingModal, setShowBuildingModal] = useState(false);
   const [showMachineModal, setShowMachineModal] = useState(false);
+  const [showPhotoModal, setShowPhotoModal] = useState(false);
+  const [buildingData, setBuildingData] = useState<any>(null);
+  const [machineData, setMachineData] = useState<MachineData | null>(null);
 
   // Memoized values to prevent unnecessary recalculations
   const isBuilding = useMemo((): boolean => {
@@ -233,6 +236,8 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
     setActualUse('');
     setArea(0);
     setSearchText('');
+    setBuildingData(null);
+    setMachineData(null);
   }, []);
 
   const handleNextClick = useCallback(() => {
@@ -244,39 +249,53 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
       setShowMachineModal(true);
     } else {
       console.log('Form data:', { district, declarantId, kind, classification, subclass, actualUse, area });
-      onSuccess();
+      // For land kind, directly open photo modal
+      setShowPhotoModal(true);
     }
-  }, [isFormValid, isBuilding, isMachineryKind, district, declarantId, kind, classification, subclass, actualUse, area, onSuccess]);
+  }, [isFormValid, isBuilding, isMachineryKind, district, declarantId, kind, classification, subclass, actualUse, area]);
 
   const handleBuildingModalSuccess = useCallback((buildingData: any) => {
-    console.log('=== FINAL SUBMISSION DATA ===');
-    console.log('Form data:', { district, declarantId, kind, classification, subclass, actualUse, area });
+    console.log('=== BUILDING DATA RECEIVED ===');
     console.log('Building data:', buildingData);
-    console.log('=== END SUBMISSION DATA ===');
     
-    // Close building modal and form modal
+    setBuildingData(buildingData);
     setShowBuildingModal(false);
-    resetForm();
-    onSuccess();
-  }, [district, declarantId, kind, classification, subclass, actualUse, area, resetForm, onSuccess]);
+    setShowPhotoModal(true);
+  }, []);
 
   const handleBuildingModalDismiss = useCallback(() => {
     setShowBuildingModal(false);
   }, []);
 
-  const handleMachineModalSuccess = useCallback(() => {
-    console.log('=== FINAL SUBMISSION DATA ===');
-    console.log('Form data:', { district, declarantId, kind, classification, subclass, actualUse, area });
-    console.log('=== END SUBMISSION DATA ===');
+  const handleMachineModalSuccess = useCallback((machineData: MachineData) => {
+    console.log('=== MACHINE DATA RECEIVED ===');
+    console.log('Machine data:', machineData);
     
+    setMachineData(machineData);
     setShowMachineModal(false);
-    resetForm();
-    onSuccess();
-  }, [district, declarantId, kind, classification, subclass, actualUse, area, resetForm, onSuccess]);
+    setShowPhotoModal(true);
+  }, []);
 
   const handleMachineModalClose = useCallback(() => {
     setShowMachineModal(false);
   }, []);
+
+  const handlePhotoModalClose = useCallback(() => {
+    setShowPhotoModal(false);
+    resetForm();
+    onSuccess();
+  }, [resetForm, onSuccess]);
+
+  const handlePhotoModalSuccess = useCallback(() => {
+    console.log('=== FINAL SUBMISSION COMPLETE ===');
+    console.log('Form data:', formData);
+    console.log('Building data:', buildingData);
+    console.log('Machine data:', machineData);
+    
+    setShowPhotoModal(false);
+    resetForm();
+    onSuccess();
+  }, [formData, buildingData, machineData, resetForm, onSuccess]);
 
   const handleSelectDeclarant = useCallback((id: number) => {
     setDeclarantId(id);
@@ -350,6 +369,16 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
         isOpen={showMachineModal}
         onClose={handleMachineModalClose}
         onSuccess={handleMachineModalSuccess}
+      />
+
+      <PhotoModal
+        isOpen={showPhotoModal}
+        onClose={handlePhotoModalClose}
+        onPhotoTaken={() => {}}
+        formData={formData}
+        buildingData={buildingData}
+        machineData={machineData}
+        onCompleteSubmission={handlePhotoModalSuccess}
       />
     </>
   );
