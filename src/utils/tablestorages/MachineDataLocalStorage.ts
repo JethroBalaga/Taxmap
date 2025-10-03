@@ -22,7 +22,7 @@ export interface MachineData {
   totalCost: string;
   depreciation: string;
   adjustedMarketValue: string;
-  valueInfoId?: string; // Changed to string to match BuildingData
+  valueInfoId?: string; 
 }
 
 const MACHINE_DATA_KEY = 'machineData';

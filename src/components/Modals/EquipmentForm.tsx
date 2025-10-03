@@ -24,26 +24,7 @@ const EquipmentForm: React.FC<EquipmentFormProps> = ({
   onNextClick,
   isFormValid
 }) => {
-  // Calculate years used and remaining life when dates change
-  useEffect(() => {
-    const calculateLifeMetrics = () => {
-      if (formData.dateAcquired) {
-        const acquiredDate = new Date(formData.dateAcquired);
-        const currentDate = new Date();
-        const yearsUsedValue = ((currentDate.getTime() - acquiredDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25)).toFixed(1);
-        onFormChange('yearsUsed', yearsUsedValue);
-
-        if (formData.estimatedLife) {
-          const remaining = (parseFloat(formData.estimatedLife) - parseFloat(yearsUsedValue)).toFixed(1);
-          onFormChange('remainingLife', remaining);
-        }
-      }
-    };
-
-    calculateLifeMetrics();
-  }, [formData.dateAcquired, formData.estimatedLife]);
-
-  // Update remaining life when years used or estimated life changes
+  // Calculate remaining life when years used or estimated life changes
   useEffect(() => {
     if (formData.yearsUsed && formData.estimatedLife) {
       const remaining = (parseFloat(formData.estimatedLife) - parseFloat(formData.yearsUsed)).toFixed(1);
@@ -102,6 +83,9 @@ const EquipmentForm: React.FC<EquipmentFormProps> = ({
     if (!formData.depreciation) return '';
     return `${formData.depreciation}%`;
   };
+
+  // Enhanced form validation - require original cost
+  const enhancedFormValid = isFormValid && formData.originalCost.trim() !== '';
 
   return (
     <>
@@ -172,8 +156,9 @@ const EquipmentForm: React.FC<EquipmentFormProps> = ({
             <EquipmentFormSection.Input
               label="Years Used"
               value={formData.yearsUsed}
-              placeholder="Auto-calculated"
-              readonly={!!formData.dateAcquired}
+              placeholder="Enter years used"
+              onChange={(value) => onFormChange('yearsUsed', value)}
+              type="number"
             />
             <EquipmentFormSection.Input
               label="No. of Units"
@@ -250,6 +235,7 @@ const EquipmentForm: React.FC<EquipmentFormProps> = ({
         <EquipmentFormSection title="Financial Information">
           <EquipmentFormSection.Input
             label="Original Cost ($)"
+            required={true}
             value={formData.originalCost}
             placeholder="Enter original cost"
             onChange={(value) => onFormChange('originalCost', value)}
@@ -318,7 +304,7 @@ const EquipmentForm: React.FC<EquipmentFormProps> = ({
 
       {/* Next Button */}
       <div className="next-btn-container">
-        <Next onClick={onNextClick} disabled={!isFormValid} />
+        <Next onClick={onNextClick} disabled={!enhancedFormValid} />
       </div>
     </>
   );

@@ -5,8 +5,7 @@ import {
   IonSelect,
   IonSelectOption,
   IonInput,
-  IonDatetime,
-  IonSpinner
+  IonDatetime
 } from '@ionic/react';
 
 interface FieldOption {
