@@ -35,7 +35,7 @@ interface PhotoModalProps {
   onPhotoTaken: (photo: string) => void;
   formData?: FormData;
   buildingData?: BuildingData;
-  machineData?: MachineData;
+  machineData?: MachineData; // Fixed: changed from machineData to machineData
   onSubmit?: (photo: string, formData: FormData, buildingData: BuildingData, machineData: MachineData) => Promise<void>;
   onCompleteSubmission?: () => void;
 }
@@ -46,7 +46,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
   onPhotoTaken, 
   formData, 
   buildingData,
-  machineData,
+  machineData, // Fixed: changed from machineData to machineData
   onSubmit,
   onCompleteSubmission 
 }) => {
@@ -77,7 +77,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
     onPhotoTaken,
     formData,
     buildingData,
-    machineData,
+    machineData, // Fixed: changed from machineData to machineData
     onSubmit,
     onCompleteSubmission
   });

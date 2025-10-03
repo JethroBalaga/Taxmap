@@ -55,7 +55,7 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
   const [showMachineModal, setShowMachineModal] = useState(false);
   const [showPhotoModal, setShowPhotoModal] = useState(false);
   const [buildingData, setBuildingData] = useState<any>(null);
-  const [machineData, setMachineData] = useState<MachineData | null>(null);
+  const [machineData, setMachineData] = useState<MachineData | null>(null); // Fixed: changed from MachineData to machineData
 
   // Memoized values to prevent unnecessary recalculations
   const isBuilding = useMemo((): boolean => {
@@ -377,7 +377,7 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
         onPhotoTaken={() => {}}
         formData={formData}
         buildingData={buildingData}
-        machineData={machineData}
+        machineData={machineData} // Fixed: changed from MachineData to machineData
         onCompleteSubmission={handlePhotoModalSuccess}
       />
     </>

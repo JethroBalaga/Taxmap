@@ -18,7 +18,7 @@ interface UsePhotoModalProps {
   onPhotoTaken: (photo: string) => void;
   formData?: FormData;
   buildingData?: BuildingData;
-  machineData?: MachineData;
+  machineData?: MachineData | null;
   onSubmit?: (photo: string, formData: FormData, buildingData: BuildingData, machineData: MachineData) => Promise<void>;
   onCompleteSubmission?: () => void;
 }
@@ -37,8 +37,8 @@ export const usePhotoModal = ({
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
-  const [currentLocation, setCurrentLocation] = useState<{latitude: number; longitude: number; accuracy: number} | null>(null);
-  const [adjustedLocation, setAdjustedLocation] = useState<{latitude: number; longitude: number} | null>(null);
+  const [currentLocation, setCurrentLocation] = useState<{ latitude: number; longitude: number; accuracy: number } | null>(null);
+  const [adjustedLocation, setAdjustedLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [storedData, setStoredData] = useState<{
     formData: any;
@@ -86,7 +86,7 @@ export const usePhotoModal = ({
       setPhotoName(generateFileName());
       setHasAttemptedLocation(false);
       setAdjustedLocation(null);
-      
+
       checkAndCreateDirectory().catch(console.error);
     }
   }, [isOpen, formData, buildingData, machineData, checkAndCreateDirectory]);
@@ -106,9 +106,9 @@ export const usePhotoModal = ({
         setPhotoName(generateFileName());
         setError(null);
         setLocationError(null);
-        setCurrentLocation(null); // Reset location when taking a new photo
-        setAdjustedLocation(null); // Reset adjusted location
-        setHasAttemptedLocation(false); // Reset location attempt status
+        setCurrentLocation(null);
+        setAdjustedLocation(null);
+        setHasAttemptedLocation(false);
       } else {
         setError('No photo was taken.');
       }
@@ -121,9 +121,9 @@ export const usePhotoModal = ({
     try {
       setIsGettingLocation(true);
       setLocationError(null);
-      
+
       const position = await Geolocation.getCurrentPosition();
-      
+
       if (!position?.coords) {
         throw new Error('Unable to get GPS coordinates');
       }
@@ -133,29 +133,28 @@ export const usePhotoModal = ({
         longitude: position.coords.longitude,
         accuracy: position.coords.accuracy
       };
-      
+
       setCurrentLocation(originalLocation);
-      
-      // Apply coordinate adjustment
+
       const adjustedCoords = adjustCoordinates(
-        originalLocation.latitude, 
+        originalLocation.latitude,
         originalLocation.longitude
       );
-      
+
       setAdjustedLocation(adjustedCoords);
       setHasAttemptedLocation(true);
-      
+
     } catch (err: any) {
       console.warn('Location error:', err);
-      
+
       let errorMessage = 'Could not get location. Photo will be saved without coordinates.';
-      
+
       if (err.message?.includes('permission')) {
         errorMessage = 'Location access denied. Please enable location permissions.';
       } else if (err.message?.includes('timeout')) {
         errorMessage = 'Location request timed out. Please try again.';
       }
-      
+
       setLocationError(errorMessage);
       setCurrentLocation(null);
       setAdjustedLocation(null);
@@ -189,29 +188,25 @@ export const usePhotoModal = ({
         throw new Error('No photo to submit');
       }
 
-      // Save the image to storage
       const imageUri = await saveImageToStorage(photo, photoName);
       console.log('Image saved at:', imageUri);
-      
+
       let savedFormData = null;
       let savedBuildingData = null;
       let savedMachineData = null;
       let photoTag = null;
       let valueInfo = null;
 
-      // 1. Store FormData (ALWAYS stored for all kinds)
       if (formData) {
         savedFormData = FormDataLocalStorage.saveFormData(formData);
         console.log('Form data saved:', savedFormData);
       }
-      
-      // 2. Store PhotoTag (ALWAYS stored for all kinds)
-      // Use adjusted coordinates if available, otherwise use original or default
+
       const finalLatitude = adjustedLocation?.latitude || currentLocation?.latitude || 0;
       const finalLongitude = adjustedLocation?.longitude || currentLocation?.longitude || 0;
-      
+
       photoTag = PhotoTagLocalStorage.addPhotoTag({
-        photoName, // Use just the filename
+        photoName,
         longitude: finalLongitude,
         latitude: finalLatitude,
         accuracy: currentLocation?.accuracy,
@@ -219,7 +214,6 @@ export const usePhotoModal = ({
       });
       console.log('Photo tag saved:', photoTag);
 
-      // 3. Create ValueInfo entry (ALWAYS created for all kinds)
       if (savedFormData && photoTag) {
         valueInfo = ValueInfoLocalStorage.addValueInfo({
           formDataId: savedFormData.id,
@@ -227,26 +221,23 @@ export const usePhotoModal = ({
         });
         console.log('ValueInfo created:', valueInfo);
 
-        // 4. Store BuildingData (ONLY if buildingData exists - Building kind)
         if (buildingData && valueInfo) {
           savedBuildingData = BuildingDataLocalStorage.saveBuildingData({
             ...buildingData,
-            valueInfoId: valueInfo.id.toString() // Convert number to string
+            valueInfoId: valueInfo.id.toString()
           });
           console.log('Building data saved:', savedBuildingData);
         }
 
-        // 5. Store MachineData (ONLY if machineData exists - Machinery kind)
         if (machineData && valueInfo) {
           savedMachineData = MachineDataLocalStorage.saveMachineData({
             ...machineData,
-            valueInfoId: valueInfo.id.toString() // Convert number to string
+            valueInfoId: valueInfo.id.toString()
           });
           console.log('Machine data saved:', savedMachineData);
         }
       }
 
-      // Store all data for display
       setStoredData({
         formData: savedFormData,
         buildingData: savedBuildingData,
@@ -255,27 +246,24 @@ export const usePhotoModal = ({
         valueInfo: valueInfo
       });
 
-      // Call callbacks
       if (onSubmit && formData) {
         await onSubmit(photo, formData, buildingData!, machineData!);
       } else {
         onPhotoTaken(photo);
       }
-      
+
       if (onCompleteSubmission) {
         onCompleteSubmission();
       }
-      
-      // Show success message
+
       setToastMessage('Data successfully saved! Image stored in phototags folder.');
       setToastButtons([{ text: 'OK', role: 'cancel' }]);
       setShowConfirmToast(true);
-      
+
     } catch (err: any) {
       setError('Submission failed: ' + err.message);
       console.error('Submission error:', err);
-      
-      // Show error message
+
       setToastMessage('Error saving data: ' + err.message);
       setToastButtons([{ text: 'OK', role: 'cancel' }]);
       setShowConfirmToast(true);
@@ -290,7 +278,6 @@ export const usePhotoModal = ({
       return;
     }
 
-    // Show confirmation toast instead of immediately submitting
     setToastMessage('Are you sure you want to submit this photo and save all data?');
     setToastButtons([
       {
