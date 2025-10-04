@@ -46,7 +46,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
   onPhotoTaken,
   formData,
   buildingData,
-  machineData, // Fixed: changed from machineData to machineData
+  machineData,
   onSubmit,
   onCompleteSubmission
 }) => {
@@ -77,7 +77,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
     onPhotoTaken,
     formData,
     buildingData,
-    machineData, // Fixed: changed from machineData to machineData
+    machineData,
     onSubmit,
     onCompleteSubmission
   });
