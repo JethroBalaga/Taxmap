@@ -58,16 +58,13 @@ export interface MachineData {
   dateOperated: string;
   yearsUsed: string;
   estimatedLife: string;
-  remainingLife: string;
   numberOfUnits: string;
   originalCost: string;
   freight: string;
   insurance: string;
   installation: string;
   others: string;
-  totalCost: string;
   depreciation: string;
-  adjustedMarketValue: string;
 }
 
 const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess }) => {
@@ -177,16 +174,13 @@ const MachineModal: React.FC<MachineModalProps> = ({ isOpen, onClose, onSuccess 
       dateOperated: formData.dateOperated,
       yearsUsed: formData.yearsUsed,
       estimatedLife: formData.estimatedLife,
-      remainingLife: formData.remainingLife,
       numberOfUnits: formData.numberOfUnits,
       originalCost: formData.originalCost,
       freight: formData.freight,
       insurance: formData.insurance,
       installation: formData.installation,
       others: formData.others,
-      totalCost: formData.totalCost,
-      depreciation: formData.depreciation,
-      adjustedMarketValue: formData.adjustedMarketValue
+      depreciation: formData.depreciation
     };
 
     console.log('Machine data to pass to PhotoModal:', machineData);
