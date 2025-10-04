@@ -13,16 +13,13 @@ export interface MachineData {
   dateOperated: string;
   yearsUsed: string;
   estimatedLife: string;
-  remainingLife: string;
   numberOfUnits: string;
   originalCost: string;
   freight: string;
   insurance: string;
   installation: string;
   others: string;
-  totalCost: string;
   depreciation: string;
-  adjustedMarketValue: string;
 }
 
 const MACHINE_DATA_KEY = 'machineData';
