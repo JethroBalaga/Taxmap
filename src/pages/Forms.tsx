@@ -144,24 +144,26 @@ const Forms: React.FC = () => {
   };
 
   const handleInfoClick = () => {
-  if (selectedForm) {
-    const kind = selectedForm.kind?.toString().toUpperCase();
+    if (selectedForm) {
+      const kind = selectedForm.kind?.toString().toUpperCase();
 
-    if (kind === '2' || kind === 'BUILDING') {
-      history.push(`/menu/forms/buildingtable/${selectedForm.id}`);
-    } else if (kind === 'MACHINERY' || kind === '3') {
-      history.push(`/menu/forms/machinerytable/${selectedForm.id}`);
+      if (kind === '2') {
+        history.push(`/menu/forms/buildingtable/${selectedForm.id}`);
+      } else if (kind === '3') {
+        // Make sure selectedForm.id contains the actual form ID, not the word "id"
+        console.log('Navigating with form ID:', selectedForm.id); // Debug log
+        history.push(`/menu/forms/machinerytable/${selectedForm.id}`);
+      } else {
+        setToastMessage('Details are only available for Building or Machinery forms');
+        setToastButtons([{ text: 'OK', role: 'cancel' }]);
+        setShowToast(true);
+      }
     } else {
-      setToastMessage('Details are only available for Building or Machinery forms');
+      setToastMessage('Please select a form to view details');
       setToastButtons([{ text: 'OK', role: 'cancel' }]);
       setShowToast(true);
     }
-  } else {
-    setToastMessage('Please select a form to view details');
-    setToastButtons([{ text: 'OK', role: 'cancel' }]);
-    setShowToast(true);
-  }
-};
+  };
 
   const deleteRelatedData = async (formId: string): Promise<void> => {
     console.log(`Deleting related data for form ID: ${formId}`);
@@ -242,22 +244,22 @@ const Forms: React.FC = () => {
   const handleFormUpdate = (updatedData: FormData) => {
     loadFormData();
     setSelectedForm(updatedData);
-    
+
     // Dispatch custom event to notify other components WITHOUT navigating
     window.dispatchEvent(new CustomEvent('formUpdated', {
       detail: { formId: updatedData.id }
     }));
-    
+
     // Also trigger a storage event for cross-tab compatibility
     localStorage.setItem('formUpdateTrigger', Date.now().toString());
   };
 
   const filteredForms = Array.isArray(formData)
     ? formData.filter(form =>
-        form && Object.values(form).some(value =>
-          value && value.toString().toLowerCase().includes(searchTerm.toLowerCase())
-        )
+      form && Object.values(form).some(value =>
+        value && value.toString().toLowerCase().includes(searchTerm.toLowerCase())
       )
+    )
     : [];
 
   return (

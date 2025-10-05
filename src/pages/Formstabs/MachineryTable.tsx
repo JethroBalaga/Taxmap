@@ -27,25 +27,25 @@ import { MachineDataLocalStorage, MachineData } from '../../utils/tablestorages/
 import { ValueInfoLocalStorage } from '../../utils/tablestorages/ValueInfoLocalStorage';
 
 interface RouteParams {
-  id: string;
+  formId: string;
 }
 
 const MachineryTable: React.FC = () => {
-  const { id } = useParams<RouteParams>();
+  const { formId } = useParams<RouteParams>();
   const history = useHistory();
   const [machineryData, setMachineryData] = useState<{machineData: MachineData, valueInfoId: string}[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     loadMachineryData();
-  }, [id]);
+  }, [formId]);
 
   const loadMachineryData = () => {
     setIsLoading(true);
     try {
       // Get all value info for this form
       const allValueInfo = ValueInfoLocalStorage.getAllValueInfo();
-      const formValueInfo = allValueInfo.filter(info => info.formDataId === id);
+      const formValueInfo = allValueInfo.filter(info => info.formDataId === formId);
       
       // Get machine data for each value info that has machinery data
       const machineryWithValueInfo: {machineData: MachineData, valueInfoId: string}[] = [];
@@ -121,7 +121,7 @@ const MachineryTable: React.FC = () => {
               <IonIcon slot="icon-only" icon={arrowBack} />
             </IonButton>
           </IonButtons>
-          <IonTitle>Machinery - Form {id}</IonTitle>
+          <IonTitle>Machinery - Form {formId}</IonTitle>
           <IonBadge slot="end" color="primary">
             {machineryData.length} items
           </IonBadge>
@@ -134,7 +134,7 @@ const MachineryTable: React.FC = () => {
               <IonIcon icon={construct} size="large" />
               <IonText>
                 <h3>No Machinery Equipment Found</h3>
-                <p>No machinery has been added to this form yet.</p>
+                <p>No machinery has been added to Form {formId} yet.</p>
               </IonText>
             </div>
           ) : (
