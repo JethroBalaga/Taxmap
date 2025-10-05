@@ -30,15 +30,59 @@ interface RouteParams {
   formId: string;
 }
 
+interface CalculatedMachineData extends MachineData {
+  remainingLife: string;
+  totalCost: string;
+  adjustedMarketValue: string;
+}
+
 const MachineryTable: React.FC = () => {
   const { formId } = useParams<RouteParams>();
   const history = useHistory();
-  const [machineryData, setMachineryData] = useState<{machineData: MachineData, valueInfoId: string}[]>([]);
+  const [machineryData, setMachineryData] = useState<{machineData: CalculatedMachineData, valueInfoId: string}[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     loadMachineryData();
   }, [formId]);
+
+  const calculateRemainingLife = (yearsUsed: string, estimatedLife: string): string => {
+    if (!yearsUsed || !estimatedLife) return 'N/A';
+    const years = parseFloat(yearsUsed);
+    const life = parseFloat(estimatedLife);
+    if (isNaN(years) || isNaN(life)) return 'N/A';
+    const remaining = life - years;
+    return remaining > 0 ? remaining.toFixed(1) : '0.0';
+  };
+
+  const calculateTotalCost = (
+    originalCost: string,
+    freight: string,
+    insurance: string,
+    installation: string,
+    others: string
+  ): string => {
+    const cost = parseFloat(originalCost) || 0;
+    const freightCost = parseFloat(freight) || 0;
+    const insuranceCost = parseFloat(insurance) || 0;
+    const installationCost = parseFloat(installation) || 0;
+    const othersCost = parseFloat(others) || 0;
+
+    const total = cost + freightCost + insuranceCost + installationCost + othersCost;
+    return total > 0 ? total.toFixed(2) : 'N/A';
+  };
+
+  const calculateAdjustedMarketValue = (totalCost: string, depreciation: string): string => {
+    const total = parseFloat(totalCost) || 0;
+    const depreciationPercent = parseFloat(depreciation) || 0;
+
+    if (total > 0 && depreciationPercent > 0) {
+      const depreciationAmount = total * (depreciationPercent / 100);
+      const adjustedValue = total - depreciationAmount;
+      return adjustedValue > 0 ? adjustedValue.toFixed(2) : '0.00';
+    }
+    return total > 0 ? total.toFixed(2) : 'N/A';
+  };
 
   const loadMachineryData = () => {
     setIsLoading(true);
@@ -46,19 +90,38 @@ const MachineryTable: React.FC = () => {
       const allValueInfo = ValueInfoLocalStorage.getAllValueInfo();
       const formValueInfo = allValueInfo.filter(info => info.formDataId === formId);
       
-      const machineryWithValueInfo: {machineData: MachineData, valueInfoId: string}[] = [];
+      const machineryWithCalculations: {machineData: CalculatedMachineData, valueInfoId: string}[] = [];
       
       formValueInfo.forEach(valueInfo => {
         const machineData = MachineDataLocalStorage.getMachineData(valueInfo.id);
         if (machineData) {
-          machineryWithValueInfo.push({
-            machineData,
+          // Calculate values
+          const remainingLife = calculateRemainingLife(machineData.yearsUsed, machineData.estimatedLife);
+          const totalCost = calculateTotalCost(
+            machineData.originalCost,
+            machineData.freight,
+            machineData.insurance,
+            machineData.installation,
+            machineData.others
+          );
+          const adjustedMarketValue = calculateAdjustedMarketValue(totalCost, machineData.depreciation);
+
+          // Create enhanced machine data with calculations
+          const calculatedMachineData: CalculatedMachineData = {
+            ...machineData,
+            remainingLife,
+            totalCost,
+            adjustedMarketValue
+          };
+
+          machineryWithCalculations.push({
+            machineData: calculatedMachineData,
             valueInfoId: valueInfo.id
           });
         }
       });
       
-      setMachineryData(machineryWithValueInfo);
+      setMachineryData(machineryWithCalculations);
     } catch (error) {
       console.error('Error loading machinery data:', error);
     } finally {
@@ -71,7 +134,7 @@ const MachineryTable: React.FC = () => {
   };
 
   const formatCurrency = (value: string): string => {
-    if (!value) return 'N/A';
+    if (!value || value === 'N/A') return 'N/A';
     const number = parseFloat(value);
     if (isNaN(number)) return value;
     return new Intl.NumberFormat('en-US', {
@@ -87,6 +150,11 @@ const MachineryTable: React.FC = () => {
     } catch {
       return dateString;
     }
+  };
+
+  const formatDepreciation = (depreciation: string): string => {
+    if (!depreciation) return 'N/A';
+    return `${depreciation}%`;
   };
 
   if (isLoading) {
@@ -200,7 +268,30 @@ const MachineryTable: React.FC = () => {
                             </div>
                             <div className="info-item">
                               <label>Estimated Life</label>
-                              <IonText>{machineData.estimatedLife || 'N/A'}</IonText>
+                              <IonText>{machineData.estimatedLife ? `${machineData.estimatedLife} years` : 'N/A'}</IonText>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Life Metrics Section */}
+                        <div className="card-section">
+                          <IonText color="medium" className="section-title">
+                            <h4>Life Metrics</h4>
+                          </IonText>
+                          <div className="info-grid">
+                            <div className="info-item">
+                              <label>Years Used</label>
+                              <IonText>{machineData.yearsUsed || 'N/A'}</IonText>
+                            </div>
+                            <div className="info-item">
+                              <label>Estimated Life</label>
+                              <IonText>{machineData.estimatedLife ? `${machineData.estimatedLife} years` : 'N/A'}</IonText>
+                            </div>
+                            <div className="info-item">
+                              <label>Remaining Life</label>
+                              <IonText className="calculated-value">
+                                {machineData.remainingLife ? `${machineData.remainingLife} years` : 'N/A'}
+                              </IonText>
                             </div>
                           </div>
                         </div>
@@ -236,15 +327,7 @@ const MachineryTable: React.FC = () => {
                           <div className="info-grid">
                             <div className="info-item">
                               <label>Original Cost</label>
-                              <IonText className="cost-value">
-                                {formatCurrency(machineData.originalCost)}
-                              </IonText>
-                            </div>
-                            <div className="info-item">
-                              <label>Depreciation</label>
-                              <IonText className="cost-value">
-                                {formatCurrency(machineData.depreciation)}
-                              </IonText>
+                              <IonText>{formatCurrency(machineData.originalCost)}</IonText>
                             </div>
                             <div className="info-item">
                               <label>Freight</label>
@@ -261,6 +344,31 @@ const MachineryTable: React.FC = () => {
                             <div className="info-item">
                               <label>Other Costs</label>
                               <IonText>{formatCurrency(machineData.others)}</IonText>
+                            </div>
+                            <div className="info-item full-width">
+                              <label>Total Cost</label>
+                              <IonText className="calculated-value total-cost">
+                                {formatCurrency(machineData.totalCost)}
+                              </IonText>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Depreciation Section */}
+                        <div className="card-section">
+                          <IonText color="medium" className="section-title">
+                            <h4>Depreciation & Value</h4>
+                          </IonText>
+                          <div className="info-grid">
+                            <div className="info-item">
+                              <label>Depreciation Rate</label>
+                              <IonText>{formatDepreciation(machineData.depreciation)}</IonText>
+                            </div>
+                            <div className="info-item">
+                              <label>Adjusted Market Value</label>
+                              <IonText className="calculated-value market-value">
+                                {formatCurrency(machineData.adjustedMarketValue)}
+                              </IonText>
                             </div>
                           </div>
                         </div>
