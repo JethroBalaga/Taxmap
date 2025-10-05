@@ -21,7 +21,7 @@ import {
   IonChip,
 } from '@ionic/react';
 import { useParams, useHistory } from 'react-router-dom';
-import { arrowBack, construct, calendar, cash, cube } from 'ionicons/icons';
+import { arrowBack, construct, calendar, cash, cube, arrowUpCircleOutline } from 'ionicons/icons';
 import { MachineDataLocalStorage, MachineData } from '../../utils/tablestorages/MachineDataLocalStorage';
 import { ValueInfoLocalStorage } from '../../utils/tablestorages/ValueInfoLocalStorage';
 import '../../CSS/MachineryTable.css';
@@ -95,7 +95,6 @@ const MachineryTable: React.FC = () => {
       formValueInfo.forEach(valueInfo => {
         const machineData = MachineDataLocalStorage.getMachineData(valueInfo.id);
         if (machineData) {
-          // Calculate values
           const remainingLife = calculateRemainingLife(machineData.yearsUsed, machineData.estimatedLife);
           const totalCost = calculateTotalCost(
             machineData.originalCost,
@@ -106,7 +105,6 @@ const MachineryTable: React.FC = () => {
           );
           const adjustedMarketValue = calculateAdjustedMarketValue(totalCost, machineData.depreciation);
 
-          // Create enhanced machine data with calculations
           const calculatedMachineData: CalculatedMachineData = {
             ...machineData,
             remainingLife,
@@ -131,6 +129,12 @@ const MachineryTable: React.FC = () => {
 
   const handleBack = () => {
     history.goBack();
+  };
+
+  const handleUpdateClick = (machineData: CalculatedMachineData, valueInfoId: string) => {
+    console.log('Update clicked for:', machineData.selectedEquipment);
+    console.log('ValueInfo ID:', valueInfoId);
+    // Update functionality will be added later
   };
 
   const formatCurrency = (value: string): string => {
@@ -207,10 +211,20 @@ const MachineryTable: React.FC = () => {
                   <IonCol size="12" size-lg="10" size-xl="8" key={valueInfoId}>
                     <IonCard className="machine-card">
                       <IonCardHeader>
-                        <IonCardTitle className="card-title">
-                          <IonIcon icon={construct} className="card-title-icon" />
-                          {machineData.selectedEquipment || `Equipment ${index + 1}`}
-                        </IonCardTitle>
+                        <div className="card-header-with-update">
+                          <IonCardTitle className="card-title">
+                            <IonIcon icon={construct} className="card-title-icon" />
+                            {machineData.selectedEquipment || `Equipment ${index + 1}`}
+                          </IonCardTitle>
+                          <IonButton 
+                            fill="clear" 
+                            className="icon-blue update-button"
+                            onClick={() => handleUpdateClick(machineData, valueInfoId)}
+                          >
+                            <IonIcon icon={arrowUpCircleOutline} className="update-icon" />
+                            <span className="update-text">Update Machinery Data</span>
+                          </IonButton>
+                        </div>
                       </IonCardHeader>
 
                       <IonCardContent>
@@ -328,6 +342,12 @@ const MachineryTable: React.FC = () => {
                             <div className="info-item">
                               <label>Original Cost</label>
                               <IonText>{formatCurrency(machineData.originalCost)}</IonText>
+                            </div>
+                            <div className="info-item">
+                              <label>Depreciation</label>
+                              <IonText className="cost-value">
+                                {formatCurrency(machineData.depreciation)}
+                              </IonText>
                             </div>
                             <div className="info-item">
                               <label>Freight</label>

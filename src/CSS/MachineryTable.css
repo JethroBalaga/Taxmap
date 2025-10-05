@@ -1,3 +1,248 @@
+.machinery-container {
+  padding: 16px;
+  height: 100%;
+  width: 100%;
+}
+
+.machine-card {
+  width: 100%;
+  margin: 16px auto;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.machine-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+}
+
+.card-header-with-update {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 8px 0;
+  gap: 16px;
+}
+
+.card-title {
+  display: flex;
+  align-items: center;
+  text-align: left;
+  font-size: 1.4em;
+  font-weight: 600;
+  flex: 1;
+}
+
+.card-title-icon {
+  margin-right: 12px;
+  color: var(--ion-color-primary);
+  font-size: 1.6em;
+}
+
+/* Update Button Styling - Fixed text cutoff on mobile */
+.update-button {
+  --background: transparent;
+  --background-hover: rgba(var(--ion-color-primary-rgb, 56, 128, 255), 0.1);
+  --background-activated: rgba(var(--ion-color-primary-rgb, 56, 128, 255), 0.2);
+  --border-radius: 8px;
+  --padding-start: 12px;
+  --padding-end: 12px;
+  margin: 0;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  overflow: visible;
+  position: relative;
+}
+
+.update-icon {
+  font-size: 24px;
+  color: var(--ion-color-primary);
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+
+.update-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ion-color-primary);
+  white-space: nowrap;
+  transition: all 0.3s ease;
+  /* Prevent text cutoff */
+  overflow: visible;
+  text-overflow: clip;
+  max-width: none;
+}
+
+.update-button:hover {
+  --background: rgba(var(--ion-color-primary-rgb, 56, 128, 255), 0.1);
+  transform: translateY(-1px);
+}
+
+.update-button:hover .update-icon {
+  transform: scale(1.1);
+}
+
+.icon-blue {
+  color: var(--ion-color-primary);
+}
+
+/* PC Mode - Show both icon and text with proper spacing */
+@media (min-width: 769px) {
+  .update-button {
+    --padding-start: 16px;
+    --padding-end: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 200px; /* Ensure enough space for full text */
+  }
+  
+  .update-icon {
+    display: inline;
+    opacity: 1;
+    width: 24px;
+    flex-shrink: 0;
+  }
+  
+  .update-text {
+    display: inline;
+    opacity: 1;
+    white-space: nowrap;
+    overflow: visible;
+    /* Ensure full text is visible */
+    min-width: 150px;
+    text-align: left;
+  }
+}
+
+/* Mobile Mode - Icon only by default, full text appears on hover without cutoff */
+@media (max-width: 768px) {
+  .update-button {
+    --padding-start: 12px;
+    --padding-end: 12px;
+    display: flex;
+    align-items: center;
+    gap: 0;
+    min-width: 48px;
+    max-width: 48px;
+    transition: all 0.3s ease;
+    overflow: visible;
+  }
+  
+  .update-icon {
+    display: inline;
+    opacity: 1;
+    width: 24px;
+    flex-shrink: 0;
+    transition: all 0.3s ease;
+  }
+  
+  .update-text {
+    display: inline;
+    opacity: 0;
+    white-space: nowrap;
+    overflow: visible;
+    width: 0;
+    min-width: 0;
+    transition: all 0.3s ease;
+    /* Prevent text cutoff */
+    text-overflow: clip;
+    max-width: none;
+  }
+  
+  .update-button:hover {
+    max-width: 220px; /* Increased to ensure full text fits */
+    --padding-end: 16px;
+    gap: 8px;
+  }
+  
+  .update-button:hover .update-text {
+    opacity: 1;
+    width: auto;
+    min-width: 150px; /* Ensure enough space for full text */
+    overflow: visible;
+  }
+  
+  .update-button:hover .update-icon {
+    transform: scale(1.1);
+  }
+  
+  .card-header-with-update {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .update-button {
+    align-self: flex-start;
+  }
+}
+
+/* Rest of your existing CSS styles */
+.card-section {
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--ion-color-light-shade);
+}
+
+.card-section:last-of-type {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.section-title h4 {
+  margin: 0;
+  font-size: 1.2em;
+  font-weight: 600;
+}
+
+.section-icon {
+  margin-right: 10px;
+  font-size: 1.3em;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.info-item.full-width {
+  grid-column: 1 / -1;
+}
+
+.info-item label {
+  font-size: 0.85em;
+  font-weight: 600;
+  color: var(--ion-color-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.info-item ion-text {
+  font-size: 1em;
+  word-break: break-word;
+}
+
+.cost-value {
+  font-weight: 600;
+  color: var(--ion-color-primary);
+}
+
 .calculated-value {
   font-weight: 600;
   color: var(--ion-color-primary);
@@ -19,7 +264,74 @@
   background-color: rgba(45, 211, 111, 0.1);
 }
 
-.info-item .calculated-value {
-  margin-top: 2px;
-  display: inline-block;
+.details-text {
+  background: var(--ion-color-light);
+  padding: 16px;
+  border-radius: 8px;
+  border-left: 4px solid var(--ion-color-primary);
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  gap: 16px;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 24px;
+  text-align: center;
+  color: var(--ion-color-medium);
+  height: 60vh;
+}
+
+.empty-state ion-icon {
+  font-size: 64px;
+  margin-bottom: 16px;
+  opacity: 0.5;
+  color: var(--ion-color-primary);
+}
+
+/* Responsive Design for info grid */
+@media (max-width: 768px) {
+  .machinery-container {
+    padding: 8px;
+  }
+  
+  .info-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .card-title {
+    font-size: 1.2em;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .info-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+}
+
+@media (min-width: 1025px) {
+  .machinery-container {
+    padding: 24px;
+  }
+  
+  .info-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+  }
+  
+  .machine-card {
+    padding: 8px;
+  }
 }
