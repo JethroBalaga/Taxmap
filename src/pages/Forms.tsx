@@ -144,25 +144,24 @@ const Forms: React.FC = () => {
   };
 
   const handleInfoClick = () => {
-    if (selectedForm) {
-      const kind = typeof selectedForm.kind === 'string'
-        ? parseInt(selectedForm.kind)
-        : selectedForm.kind;
+  if (selectedForm) {
+    const kind = selectedForm.kind?.toString().toUpperCase();
 
-      if (kind === 2) {
-        // Just navigate normally without passing state
-        history.push(`/menu/forms/buildingtable/${selectedForm.id}`);
-      } else {
-        setToastMessage('Building details are only available for forms with kind = 2');
-        setToastButtons([{ text: 'OK', role: 'cancel' }]);
-        setShowToast(true);
-      }
+    if (kind === '2' || kind === 'BUILDING') {
+      history.push(`/menu/forms/buildingtable/${selectedForm.id}`);
+    } else if (kind === 'MACHINERY' || kind === '3') {
+      history.push(`/menu/forms/machinerytable/${selectedForm.id}`);
     } else {
-      setToastMessage('Please select a form to view details');
+      setToastMessage('Details are only available for Building or Machinery forms');
       setToastButtons([{ text: 'OK', role: 'cancel' }]);
       setShowToast(true);
     }
-  };
+  } else {
+    setToastMessage('Please select a form to view details');
+    setToastButtons([{ text: 'OK', role: 'cancel' }]);
+    setShowToast(true);
+  }
+};
 
   const deleteRelatedData = async (formId: string): Promise<void> => {
     console.log(`Deleting related data for form ID: ${formId}`);
