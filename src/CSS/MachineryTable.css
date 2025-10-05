@@ -1,33 +1,15 @@
 .machinery-container {
   padding: 16px;
-  max-width: 1400px;
-  margin: 0 auto;
-}
-
-.centered-row {
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-}
-
-.centered-card {
-  margin: 0 auto;
-  max-width: 600px;
-}
-
-.card-title-centered {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  text-align: center;
+  height: 100%;
+  width: 100%;
 }
 
 .machine-card {
-  margin-bottom: 20px;
+  width: 100%;
+  margin: 16px auto;
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
-  height: fit-content;
 }
 
 .machine-card:hover {
@@ -35,13 +17,22 @@
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
 }
 
+.card-title {
+  display: flex;
+  align-items: center;
+  text-align: left;
+  font-size: 1.4em;
+  font-weight: 600;
+}
+
 .card-title-icon {
-  margin-right: 8px;
+  margin-right: 12px;
   color: var(--ion-color-primary);
+  font-size: 1.6em;
 }
 
 .card-section {
-  margin-bottom: 20px;
+  margin-bottom: 24px;
   padding-bottom: 16px;
   border-bottom: 1px solid var(--ion-color-light-shade);
 }
@@ -54,30 +45,30 @@
 .section-title {
   display: flex;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
 }
 
 .section-title h4 {
   margin: 0;
-  font-size: 1.1em;
+  font-size: 1.2em;
   font-weight: 600;
 }
 
 .section-icon {
-  margin-right: 8px;
-  font-size: 1.2em;
+  margin-right: 10px;
+  font-size: 1.3em;
 }
 
 .info-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
 }
 
 .info-item {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 
 .info-item.full-width {
@@ -85,7 +76,7 @@
 }
 
 .info-item label {
-  font-size: 0.8em;
+  font-size: 0.85em;
   font-weight: 600;
   color: var(--ion-color-medium);
   text-transform: uppercase;
@@ -93,7 +84,7 @@
 }
 
 .info-item ion-text {
-  font-size: 0.95em;
+  font-size: 1em;
   word-break: break-word;
 }
 
@@ -104,7 +95,7 @@
 
 .details-text {
   background: var(--ion-color-light);
-  padding: 12px;
+  padding: 16px;
   border-radius: 8px;
   border-left: 4px solid var(--ion-color-primary);
 }
@@ -126,6 +117,7 @@
   padding: 60px 24px;
   text-align: center;
   color: var(--ion-color-medium);
+  height: 60vh;
 }
 
 .empty-state ion-icon {
@@ -143,16 +135,32 @@
   
   .info-grid {
     grid-template-columns: 1fr;
-    gap: 8px;
+    gap: 12px;
   }
   
-  .centered-card {
-    max-width: 100%;
+  .card-title {
+    font-size: 1.2em;
   }
 }
 
-@media (min-width: 992px) {
+@media (min-width: 769px) and (max-width: 1024px) {
+  .info-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+}
+
+@media (min-width: 1025px) {
   .machinery-container {
     padding: 24px;
+  }
+  
+  .info-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+  }
+  
+  .machine-card {
+    padding: 8px;
   }
 }

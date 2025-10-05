@@ -19,12 +19,12 @@ import {
   IonCardTitle,
   IonCardContent,
   IonChip,
-  IonBadge,
 } from '@ionic/react';
 import { useParams, useHistory } from 'react-router-dom';
 import { arrowBack, construct, calendar, cash, cube } from 'ionicons/icons';
 import { MachineDataLocalStorage, MachineData } from '../../utils/tablestorages/MachineDataLocalStorage';
 import { ValueInfoLocalStorage } from '../../utils/tablestorages/ValueInfoLocalStorage';
+import '../../CSS/MachineryTable.css';
 
 interface RouteParams {
   formId: string;
@@ -43,11 +43,9 @@ const MachineryTable: React.FC = () => {
   const loadMachineryData = () => {
     setIsLoading(true);
     try {
-      // Get all value info for this form
       const allValueInfo = ValueInfoLocalStorage.getAllValueInfo();
       const formValueInfo = allValueInfo.filter(info => info.formDataId === formId);
       
-      // Get machine data for each value info that has machinery data
       const machineryWithValueInfo: {machineData: MachineData, valueInfoId: string}[] = [];
       
       formValueInfo.forEach(valueInfo => {
@@ -122,9 +120,6 @@ const MachineryTable: React.FC = () => {
             </IonButton>
           </IonButtons>
           <IonTitle>Machinery - Form {formId}</IonTitle>
-          <IonBadge slot="end" color="primary">
-            {machineryData.length} items
-          </IonBadge>
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>
@@ -139,20 +134,15 @@ const MachineryTable: React.FC = () => {
             </div>
           ) : (
             <IonGrid>
-              <IonRow>
+              <IonRow class="ion-justify-content-center">
                 {machineryData.map(({ machineData, valueInfoId }, index) => (
-                  <IonCol size="12" size-lg="6" key={valueInfoId}>
+                  <IonCol size="12" size-lg="10" size-xl="8" key={valueInfoId}>
                     <IonCard className="machine-card">
                       <IonCardHeader>
-                        <div className="card-header">
-                          <IonCardTitle>
-                            <IonIcon icon={construct} className="card-title-icon" />
-                            {machineData.selectedEquipment || `Equipment ${index + 1}`}
-                          </IonCardTitle>
-                          <IonChip color="primary">
-                            Item {index + 1}
-                          </IonChip>
-                        </div>
+                        <IonCardTitle className="card-title">
+                          <IonIcon icon={construct} className="card-title-icon" />
+                          {machineData.selectedEquipment || `Equipment ${index + 1}`}
+                        </IonCardTitle>
                       </IonCardHeader>
 
                       <IonCardContent>
