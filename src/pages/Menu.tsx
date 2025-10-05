@@ -22,6 +22,7 @@ import { clearSession } from '../utils/localStorage';
 import { supabase } from '../utils/supaBaseClient';
 import Forms from './Forms';
 import BuildingTable from './Formstabs/BuildingTable';
+import MachineryTable from './Formstabs/MachineryTable';
 
 const Menu: React.FC = () => {
     const router = useIonRouter();
@@ -82,6 +83,7 @@ const Menu: React.FC = () => {
                         <Route exact path="/menu/map" component={Map} />
                         <Route exact path="/menu/forms" component={Forms} />
                         <Route exact path="/menu/forms/buildingtable/:formId" component={BuildingTable} />
+                        <Route exact path="/menu/forms/machinerytable/:formId" component={MachineryTable} />
                         <Route exact path="/menu">
                             <Redirect to="/menu/map" />
                         </Route>
