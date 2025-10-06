@@ -24,6 +24,7 @@ import { useParams, useHistory } from 'react-router-dom';
 import { arrowBack, construct, calendar, cash, cube, arrowUpCircleOutline } from 'ionicons/icons';
 import { MachineDataLocalStorage, MachineData } from '../../utils/tablestorages/MachineDataLocalStorage';
 import { ValueInfoLocalStorage } from '../../utils/tablestorages/ValueInfoLocalStorage';
+import MachineUpdateModal from '../../components/Modals/MachineUpdateModal'; // Import the update modal
 import '../../CSS/MachineryTable.css';
 
 interface RouteParams {
@@ -41,6 +42,11 @@ const MachineryTable: React.FC = () => {
   const history = useHistory();
   const [machineryData, setMachineryData] = useState<{machineData: CalculatedMachineData, valueInfoId: string}[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // State for update modal
+  const [updateModalOpen, setUpdateModalOpen] = useState(false);
+  const [selectedMachineData, setSelectedMachineData] = useState<CalculatedMachineData | null>(null);
+  const [selectedValueInfoId, setSelectedValueInfoId] = useState<string>('');
 
   useEffect(() => {
     loadMachineryData();
@@ -131,10 +137,29 @@ const MachineryTable: React.FC = () => {
     history.goBack();
   };
 
+  // Updated handleUpdateClick to open the modal
   const handleUpdateClick = (machineData: CalculatedMachineData, valueInfoId: string) => {
-    console.log('Update clicked for:', machineData.selectedEquipment);
-    console.log('ValueInfo ID:', valueInfoId);
-    // Update functionality will be added later
+    setSelectedMachineData(machineData);
+    setSelectedValueInfoId(valueInfoId);
+    setUpdateModalOpen(true);
+  };
+
+  // Handle the update from the modal
+  const handleMachineUpdate = async (updatedData: MachineData, valueInfoId: string) => {
+    try {
+      // Update the machine data in localStorage
+      const success = MachineDataLocalStorage.updateMachineData(valueInfoId, updatedData);
+      
+      if (success) {
+        console.log('Machine data updated successfully');
+        setUpdateModalOpen(false);
+        loadMachineryData(); // Refresh the data to show updated values
+      } else {
+        console.error('Failed to update machine data');
+      }
+    } catch (error) {
+      console.error('Error updating machine data:', error);
+    }
   };
 
   const formatCurrency = (value: string): string => {
@@ -412,6 +437,15 @@ const MachineryTable: React.FC = () => {
             </IonGrid>
           )}
         </div>
+
+        {/* Machine Update Modal */}
+        <MachineUpdateModal
+          isOpen={updateModalOpen}
+          onClose={() => setUpdateModalOpen(false)}
+          onUpdate={handleMachineUpdate}
+          existingData={selectedMachineData || undefined}
+          valueInfoId={selectedValueInfoId}
+        />
       </IonContent>
     </IonPage>
   );
