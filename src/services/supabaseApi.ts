@@ -41,6 +41,70 @@ export interface GeneralDescriptionData {
   depreciation_rate: string | null;
 }
 
+export interface MachineData {
+  selected_equipment: string | null;
+  serial_no: string | null;
+  machine_description: string | null;
+  brand_model: string | null;
+  condition: string | null;
+  machine_details: string | null;
+  purchase_type: string | null;
+  date_acquired: string | null;
+  date_installed: string | null;
+  date_operated: string | null;
+  years_used: number | null;
+  estimated_life: number | null;
+  number_of_units: number | null;
+  original_cost: number | null;
+  freight: number | null;
+  insurance: number | null;
+  installation: number | null;
+  others: number | null;
+  depreciation: number | null;
+}
+
+// Fixed helper function to validate and convert dates
+const validateDate = (dateString: string | null | undefined): string | null => {
+  if (dateString == null || dateString === '') return null;
+  
+  // Handle both string and other types
+  const dateToValidate = typeof dateString === 'string' ? dateString : String(dateString);
+  
+  try {
+    const date = new Date(dateToValidate);
+    return isNaN(date.getTime()) ? null : date.toISOString().split('T')[0];
+  } catch {
+    return null;
+  }
+};
+
+// Fixed helper function to validate numbers - handles both strings and numbers
+const validateNumber = (value: any): number | null => {
+  // Handle null, undefined, empty strings, and invalid values
+  if (value == null || value === '') return null;
+  
+  // If it's already a valid number, return it
+  if (typeof value === 'number') {
+    return isNaN(value) ? null : value;
+  }
+  
+  // If it's a string, trim and parse
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (trimmed === '') return null;
+    const num = parseFloat(trimmed);
+    return isNaN(num) ? null : num;
+  }
+  
+  // For any other type, attempt conversion
+  try {
+    const num = parseFloat(String(value));
+    return isNaN(num) ? null : num;
+  } catch {
+    return null;
+  }
+};
+
 export const supabaseApi = {
   /**
    * Insert a form and return the new form_id (UUID)
@@ -103,9 +167,9 @@ export const supabaseApi = {
       p_bld_age: data.bld_age,
       p_bldg_permit: data.bldg_permit,
       p_construction_percent: data.construction_percent,
-      p_date_constructed: data.date_constructed,
-      p_date_occupied: data.date_occupied,
-      p_date_completed: data.date_completed,
+      p_date_constructed: validateDate(data.date_constructed),
+      p_date_occupied: validateDate(data.date_occupied),
+      p_date_completed: validateDate(data.date_completed),
       p_depreciation_rate: data.depreciation_rate
     });
 
@@ -128,6 +192,53 @@ export const supabaseApi = {
 
       if (error) throw error;
     }
+  },
+
+  /**
+   * Insert machine data and return the new machinedata_id (UUID)
+   */
+  async insertMachineData(value_info_id: string, machineData: any): Promise<string> {
+    // Validate and transform the data before sending to Supabase
+    const validatedData = {
+      p_value_info_id: value_info_id,
+      p_selected_equipment: machineData.selected_equipment || null,
+      p_serial_no: machineData.serial_no || null,
+      p_machine_description: machineData.machine_description || null,
+      p_brand_model: machineData.brand_model || null,
+      p_condition: machineData.condition || null,
+      p_machine_details: machineData.machine_details || null,
+      p_purchase_type: machineData.purchase_type || null,
+      p_date_acquired: validateDate(machineData.date_acquired),
+      p_date_installed: validateDate(machineData.date_installed),
+      p_date_operated: validateDate(machineData.date_operated),
+      p_years_used: validateNumber(machineData.years_used),
+      p_estimated_life: validateNumber(machineData.estimated_life),
+      p_number_of_units: validateNumber(machineData.number_of_units),
+      p_original_cost: validateNumber(machineData.original_cost),
+      p_freight: validateNumber(machineData.freight),
+      p_insurance: validateNumber(machineData.insurance),
+      p_installation: validateNumber(machineData.installation),
+      p_others: validateNumber(machineData.others),
+      p_depreciation: validateNumber(machineData.depreciation)
+    };
+
+    const { data, error } = await supabase.rpc('insert_machine_data', validatedData);
+
+    if (error) {
+      console.error('RPC Error:', {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint
+      });
+      throw new Error(`Failed to insert machine data: ${error.message}`);
+    }
+    
+    if (!data) {
+      throw new Error('No data returned from insert_machine_data function');
+    }
+    
+    return data; // UUID as string
   },
 
   /**
