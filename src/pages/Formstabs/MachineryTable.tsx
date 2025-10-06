@@ -24,7 +24,7 @@ import { useParams, useHistory } from 'react-router-dom';
 import { arrowBack, construct, calendar, cash, cube, arrowUpCircleOutline } from 'ionicons/icons';
 import { MachineDataLocalStorage, MachineData } from '../../utils/tablestorages/MachineDataLocalStorage';
 import { ValueInfoLocalStorage } from '../../utils/tablestorages/ValueInfoLocalStorage';
-import MachineUpdateModal from '../../components/Modals/MachineUpdateModal'; // Import the update modal
+import MachineUpdateModal from '../../components/Modals/MachineUpdateModal';
 import '../../CSS/MachineryTable.css';
 
 interface RouteParams {
@@ -45,7 +45,7 @@ const MachineryTable: React.FC = () => {
   
   // State for update modal
   const [updateModalOpen, setUpdateModalOpen] = useState(false);
-  const [selectedMachineData, setSelectedMachineData] = useState<CalculatedMachineData | null>(null);
+  const [selectedMachineData, setSelectedMachineData] = useState<MachineData | null>(null);
   const [selectedValueInfoId, setSelectedValueInfoId] = useState<string>('');
 
   useEffect(() => {
@@ -137,9 +137,33 @@ const MachineryTable: React.FC = () => {
     history.goBack();
   };
 
-  // Updated handleUpdateClick to open the modal
+  // FIXED: Extract only base MachineData fields before passing to modal
   const handleUpdateClick = (machineData: CalculatedMachineData, valueInfoId: string) => {
-    setSelectedMachineData(machineData);
+    // Create base MachineData object without calculated fields
+    const baseMachineData: MachineData = {
+      valueInfoId: machineData.valueInfoId,
+      selectedEquipment: machineData.selectedEquipment,
+      serialNo: machineData.serialNo,
+      machineDescription: machineData.machineDescription,
+      brandModel: machineData.brandModel,
+      condition: machineData.condition,
+      machineDetails: machineData.machineDetails,
+      purchaseType: machineData.purchaseType,
+      dateAcquired: machineData.dateAcquired,
+      dateInstalled: machineData.dateInstalled,
+      dateOperated: machineData.dateOperated,
+      yearsUsed: machineData.yearsUsed,
+      estimatedLife: machineData.estimatedLife,
+      numberOfUnits: machineData.numberOfUnits,
+      originalCost: machineData.originalCost,
+      freight: machineData.freight,
+      insurance: machineData.insurance,
+      installation: machineData.installation,
+      others: machineData.others,
+      depreciation: machineData.depreciation
+    };
+    
+    setSelectedMachineData(baseMachineData);
     setSelectedValueInfoId(valueInfoId);
     setUpdateModalOpen(true);
   };
