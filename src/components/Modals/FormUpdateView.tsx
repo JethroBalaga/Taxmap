@@ -86,8 +86,9 @@ const FormUpdateView: React.FC<FormUpdateViewProps> = ({
 
   if (!isOpen) return null;
 
-  // Check if kind is BUILDING (ID 2)
+  // Check if kind is BUILDING (ID 2) or MACHINERY (ID 3)
   const isBuildingKind = formData?.kind === "2";
+  const isMachineryKind = formData?.kind === "3";
 
   // Filter declarants based on search text
   const filteredDeclarants = declarants.filter(declarant =>
@@ -259,10 +260,9 @@ const FormUpdateView: React.FC<FormUpdateViewProps> = ({
                   </IonCol>
                 </IonRow>
 
-                {/* Hide subclass when kind is BUILDING but keep actual_used visible */}
-                <IonRow>
-                  {/* Subclass - only show if not BUILDING kind */}
-                  {!isBuildingKind && (
+                {/* Subclass - only show if not BUILDING kind and not MACHINERY kind */}
+                {!isBuildingKind && !isMachineryKind && (
+                  <IonRow>
                     <IonCol size="12" size-md="6">
                       <IonItem className="custom-input" lines="none">
                         <IonLabel position="stacked" className="input-label">
@@ -297,60 +297,103 @@ const FormUpdateView: React.FC<FormUpdateViewProps> = ({
                         </IonSelect>
                       </IonItem>
                     </IonCol>
-                  )}
-                  
-                  {/* Actual Use - always show regardless of kind */}
-                  <IonCol size="12" size-md={isBuildingKind ? "12" : "6"}>
-                    <IonItem className="custom-input" lines="none">
-                      <IonLabel position="stacked" className="input-label">
-                        Actual Use
-                      </IonLabel>
-                      <IonSelect
-                        value={formData.actualUse}
-                        placeholder="Select Actual Use"
-                        onIonChange={e => onInputChange('actualUse', e.detail.value)}
-                        interface="popover"
-                        className="modal-input"
-                        disabled={isLoadingActualUses}
-                      >
-                        {isLoadingActualUses ? (
-                          <IonSelectOption value="" disabled>
-                            Loading actual uses...
-                          </IonSelectOption>
-                        ) : actualUses.length === 0 ? (
-                          <IonSelectOption value="" disabled>
-                            No actual uses available
-                          </IonSelectOption>
-                        ) : (
-                          actualUses.map((useItem) => (
-                            <IonSelectOption
-                              key={useItem.actual_used_id}
-                              value={useItem.actual_used_id}
-                            >
-                              {useItem.actual_used_id} - {useItem.description}
+                    
+                    {/* Actual Use - show next to subclass when not MACHINERY */}
+                    <IonCol size="12" size-md="6">
+                      <IonItem className="custom-input" lines="none">
+                        <IonLabel position="stacked" className="input-label">
+                          Actual Use
+                        </IonLabel>
+                        <IonSelect
+                          value={formData.actualUse}
+                          placeholder="Select Actual Use"
+                          onIonChange={e => onInputChange('actualUse', e.detail.value)}
+                          interface="popover"
+                          className="modal-input"
+                          disabled={isLoadingActualUses}
+                        >
+                          {isLoadingActualUses ? (
+                            <IonSelectOption value="" disabled>
+                              Loading actual uses...
                             </IonSelectOption>
-                          ))
-                        )}
-                      </IonSelect>
-                    </IonItem>
-                  </IonCol>
-                </IonRow>
+                          ) : actualUses.length === 0 ? (
+                            <IonSelectOption value="" disabled>
+                              No actual uses available
+                            </IonSelectOption>
+                          ) : (
+                            actualUses.map((useItem) => (
+                              <IonSelectOption
+                                key={useItem.actual_used_id}
+                                value={useItem.actual_used_id}
+                              >
+                                {useItem.actual_used_id} - {useItem.description}
+                              </IonSelectOption>
+                            ))
+                          )}
+                        </IonSelect>
+                      </IonItem>
+                    </IonCol>
+                  </IonRow>
+                )}
 
-                <IonRow>
-                  <IonCol size="12">
-                    <IonItem className="custom-input" lines="none">
-                      <IonLabel position="stacked" className="input-label">
-                        Area
-                      </IonLabel>
-                      <IonInput
-                        type="number"
-                        value={formData.area}
-                        onIonInput={e => onInputChange('area', parseFloat(e.detail.value!))}
-                        className="modal-input"
-                      />
-                    </IonItem>
-                  </IonCol>
-                </IonRow>
+                {/* When kind is MACHINERY, show only actual use in full width */}
+                {isMachineryKind && (
+                  <IonRow>
+                    <IonCol size="12">
+                      <IonItem className="custom-input" lines="none">
+                        <IonLabel position="stacked" className="input-label">
+                          Actual Use
+                        </IonLabel>
+                        <IonSelect
+                          value={formData.actualUse}
+                          placeholder="Select Actual Use"
+                          onIonChange={e => onInputChange('actualUse', e.detail.value)}
+                          interface="popover"
+                          className="modal-input"
+                          disabled={isLoadingActualUses}
+                        >
+                          {isLoadingActualUses ? (
+                            <IonSelectOption value="" disabled>
+                              Loading actual uses...
+                            </IonSelectOption>
+                          ) : actualUses.length === 0 ? (
+                            <IonSelectOption value="" disabled>
+                              No actual uses available
+                            </IonSelectOption>
+                          ) : (
+                            actualUses.map((useItem) => (
+                              <IonSelectOption
+                                key={useItem.actual_used_id}
+                                value={useItem.actual_used_id}
+                              >
+                                {useItem.actual_used_id} - {useItem.description}
+                              </IonSelectOption>
+                            ))
+                          )}
+                        </IonSelect>
+                      </IonItem>
+                    </IonCol>
+                  </IonRow>
+                )}
+
+                {/* Area - only show if not MACHINERY kind */}
+                {!isMachineryKind && (
+                  <IonRow>
+                    <IonCol size="12">
+                      <IonItem className="custom-input" lines="none">
+                        <IonLabel position="stacked" className="input-label">
+                          Area
+                        </IonLabel>
+                        <IonInput
+                          type="number"
+                          value={formData.area}
+                          onIonInput={e => onInputChange('area', parseFloat(e.detail.value!))}
+                          className="modal-input"
+                        />
+                      </IonItem>
+                    </IonCol>
+                  </IonRow>
+                )}
 
                 <IonRow>
                   <IonCol className="ion-text-center">
