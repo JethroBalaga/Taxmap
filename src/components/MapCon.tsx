@@ -7,7 +7,9 @@ import localforage from 'localforage';
 import { useIonViewWillEnter } from '@ionic/react';
 import Form from './Modals/Form';
 import { PhotoTagLocalStorage, PhotoTagData } from '../utils/tablestorages/PhotoTagLocalStorage';
-import { createBlueMarkerIcon } from '../utils/markerIcons';
+import { FormDataLocalStorage } from '../utils/tablestorages/FormDataLocalStorage';
+import { ValueInfoLocalStorage } from '../utils/tablestorages/ValueInfoLocalStorage';
+import { getMarkerIconByKind } from '../utils/markerIcons';
 import MapMarkerPopup from './MapMarkerPopup';
 
 const TILE_LAYER_URL = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
@@ -61,13 +63,26 @@ const PhotoMarkers: React.FC<{
   photoTags: PhotoTagData[];
   onMarkerClick: (photoTagId: string) => void;
 }> = ({ photoTags, onMarkerClick }) => {
+  // Preload form data to determine marker icons
+  const getMarkerIcon = (photoTag: PhotoTagData) => {
+    const valueInfo = ValueInfoLocalStorage.getValueInfoByPhotoTagId(photoTag.id);
+    if (valueInfo) {
+      const formData = FormDataLocalStorage.getFormData(valueInfo.formDataId);
+      if (formData && formData.kind) {
+        return getMarkerIconByKind(formData.kind);
+      }
+    }
+    // Default icon if no form data or kind found
+    return getMarkerIconByKind('LAND');
+  };
+
   return (
     <>
       {photoTags.map((tag) => (
         <Marker
           key={tag.id}
           position={[tag.latitude, tag.longitude]}
-          icon={createBlueMarkerIcon()}
+          icon={getMarkerIcon(tag)}
           eventHandlers={{
             click: () => {
               onMarkerClick(tag.id);
@@ -223,7 +238,7 @@ const MapCon: React.FC = () => {
           background: transparent !important;
         }
         
-        /* Make blue markers more interactive */
+        /* Make markers more interactive */
         .leaflet-marker-icon:hover {
           transform: scale(1.2);
           transition: transform 0.2s ease;
