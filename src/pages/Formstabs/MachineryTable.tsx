@@ -25,6 +25,7 @@ import { arrowBack, construct, calendar, cash, cube, arrowUpCircleOutline } from
 import { MachineDataLocalStorage, MachineData } from '../../utils/tablestorages/MachineDataLocalStorage';
 import { ValueInfoLocalStorage } from '../../utils/tablestorages/ValueInfoLocalStorage';
 import MachineUpdateModal from '../../components/Modals/MachineUpdateModal';
+import SubmitButton from '../../components/GlobalComponent/SubmitButton'; // Import the custom SubmitButton
 import '../../CSS/MachineryTable.css';
 
 interface RouteParams {
@@ -42,6 +43,7 @@ const MachineryTable: React.FC = () => {
   const history = useHistory();
   const [machineryData, setMachineryData] = useState<{machineData: CalculatedMachineData, valueInfoId: string}[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   // State for update modal
   const [updateModalOpen, setUpdateModalOpen] = useState(false);
@@ -186,6 +188,18 @@ const MachineryTable: React.FC = () => {
     }
   };
 
+  // Submit button handler (no functionality yet)
+  const handleSubmit = () => {
+    console.log('Submit button clicked - functionality to be implemented');
+    setIsSubmitting(true);
+    
+    // Simulate API call or processing
+    setTimeout(() => {
+      console.log('Submit functionality would go here');
+      setIsSubmitting(false);
+    }, 2000);
+  };
+
   const formatCurrency = (value: string): string => {
     if (!value || value === 'N/A') return 'N/A';
     const number = parseFloat(value);
@@ -241,6 +255,15 @@ const MachineryTable: React.FC = () => {
             </IonButton>
           </IonButtons>
           <IonTitle>Machinery - Form {formId}</IonTitle>
+          <IonButtons slot="end">
+            <SubmitButton
+              label="Submit Form"
+              onClick={handleSubmit}
+              loading={isSubmitting}
+              disabled={machineryData.length === 0 || isSubmitting}
+              className="header-submit-button"
+            />
+          </IonButtons>
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>
