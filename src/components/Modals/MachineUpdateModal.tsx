@@ -1,13 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
-  IonModal,
-  IonHeader,
-  IonToolbar,
-  IonTitle,
-  IonContent,
-  IonButtons,
-  IonButton,
-  IonIcon
+  IonModal, IonHeader, IonToolbar, IonTitle, IonContent,
+  IonButtons, IonButton, IonIcon
 } from '@ionic/react';
 import { closeOutline } from 'ionicons/icons';
 import { EquipmentData, getEquipmentData } from '../../utils/equipmentLocalStorage';
@@ -49,126 +43,50 @@ export interface FormData {
 }
 
 const MachineUpdateModal: React.FC<MachineUpdateModalProps> = ({ 
-  isOpen, 
-  onClose, 
-  onUpdate, 
-  existingData,
-  valueInfoId 
+  isOpen, onClose, onUpdate, existingData, valueInfoId 
 }) => {
   const [equipmentOptions, setEquipmentOptions] = useState<EquipmentData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
   const [formData, setFormData] = useState<FormData>({
-    selectedEquipment: '',
-    serialNo: '',
-    machineDescription: '',
-    brandModel: '',
-    condition: '',
-    machineDetails: '',
-    purchaseType: '',
-    dateAcquired: '',
-    dateInstalled: '',
-    dateOperated: '',
-    yearsUsed: '',
-    estimatedLife: '',
-    remainingLife: '',
-    numberOfUnits: '',
-    originalCost: '',
-    freight: '',
-    insurance: '',
-    installation: '',
-    others: '',
-    totalCost: '',
-    depreciation: '',
-    adjustedMarketValue: ''
+    selectedEquipment: '', serialNo: '', machineDescription: '', brandModel: '',
+    condition: '', machineDetails: '', purchaseType: '', dateAcquired: '',
+    dateInstalled: '', dateOperated: '', yearsUsed: '', estimatedLife: '',
+    remainingLife: '', numberOfUnits: '', originalCost: '', freight: '',
+    insurance: '', installation: '', others: '', totalCost: '',
+    depreciation: '', adjustedMarketValue: ''
   });
 
   // Load existing data when modal opens
   useEffect(() => {
     if (isOpen && existingData) {
-      setFormData({
-        selectedEquipment: existingData.selectedEquipment || '',
-        serialNo: existingData.serialNo || '',
-        machineDescription: existingData.machineDescription || '',
-        brandModel: existingData.brandModel || '',
-        condition: existingData.condition || '',
-        machineDetails: existingData.machineDetails || '',
-        purchaseType: existingData.purchaseType || '',
-        dateAcquired: existingData.dateAcquired || '',
-        dateInstalled: existingData.dateInstalled || '',
-        dateOperated: existingData.dateOperated || '',
-        yearsUsed: existingData.yearsUsed || '',
-        estimatedLife: existingData.estimatedLife || '',
+      setFormData(prev => ({
+        ...prev,
+        ...existingData,
         remainingLife: '',
-        numberOfUnits: existingData.numberOfUnits || '',
-        originalCost: existingData.originalCost || '',
-        freight: existingData.freight || '',
-        insurance: existingData.insurance || '',
-        installation: existingData.installation || '',
-        others: existingData.others || '',
         totalCost: '',
-        depreciation: existingData.depreciation || '',
         adjustedMarketValue: ''
-      });
+      }));
     }
   }, [isOpen, existingData]);
 
-  // Fetch equipment data when modal opens
+  // Fetch equipment data
   useEffect(() => {
     const fetchEquipmentData = async () => {
       if (!isOpen) return;
-
       setIsLoading(true);
       setError(null);
-
       try {
         const equipmentData = await getEquipmentData();
-        if (equipmentData) {
-          setEquipmentOptions(equipmentData);
-        } else {
-          setError('No equipment data available');
-        }
+        setEquipmentOptions(equipmentData || []);
       } catch (err) {
-        console.error('Error fetching equipment data:', err);
         setError('Failed to load equipment data');
       } finally {
         setIsLoading(false);
       }
     };
-
     fetchEquipmentData();
-  }, [isOpen]);
-
-  // Reset form when modal closes
-  useEffect(() => {
-    if (!isOpen) {
-      setFormData({
-        selectedEquipment: '',
-        serialNo: '',
-        machineDescription: '',
-        brandModel: '',
-        condition: '',
-        machineDetails: '',
-        purchaseType: '',
-        dateAcquired: '',
-        dateInstalled: '',
-        dateOperated: '',
-        yearsUsed: '',
-        estimatedLife: '',
-        remainingLife: '',
-        numberOfUnits: '',
-        originalCost: '',
-        freight: '',
-        insurance: '',
-        installation: '',
-        others: '',
-        totalCost: '',
-        depreciation: '',
-        adjustedMarketValue: ''
-      });
-      setError(null);
-    }
   }, [isOpen]);
 
   const handleFormChange = (field: keyof FormData, value: string) => {
@@ -178,7 +96,9 @@ const MachineUpdateModal: React.FC<MachineUpdateModalProps> = ({
   const handleUpdateClick = () => {
     if (!isFormValid || !valueInfoId) return;
 
+    // Extract only MachineData fields (exclude calculated fields)
     const machineData: MachineData = {
+      valueInfoId: valueInfoId, // ✅ Added the missing required property
       selectedEquipment: formData.selectedEquipment,
       serialNo: formData.serialNo,
       machineDescription: formData.machineDescription,
@@ -208,11 +128,7 @@ const MachineUpdateModal: React.FC<MachineUpdateModalProps> = ({
                      formData.originalCost.trim() !== '';
 
   return (
-    <IonModal
-      isOpen={isOpen}
-      onDidDismiss={onClose}
-      className="custom-wide-modal"
-    >
+    <IonModal isOpen={isOpen} onDidDismiss={onClose} className="custom-wide-modal">
       <IonHeader>
         <IonToolbar className="fancy-header">
           <IonTitle className="fancy-title">
@@ -226,7 +142,6 @@ const MachineUpdateModal: React.FC<MachineUpdateModalProps> = ({
           </IonButtons>
         </IonToolbar>
       </IonHeader>
-
       <IonContent className="modal-content">
         <EquipmentUpdateForm
           formData={formData}
@@ -236,7 +151,6 @@ const MachineUpdateModal: React.FC<MachineUpdateModalProps> = ({
           error={error}
           onUpdateClick={handleUpdateClick}
           isFormValid={isFormValid}
-          existingData={existingData}
         />
       </IonContent>
     </IonModal>
