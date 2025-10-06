@@ -1,8 +1,7 @@
 import React, { useEffect } from 'react';
-import { IonContent } from '@ionic/react';
+import {IonButton} from '@ionic/react';
 import { EquipmentData } from '../../utils/equipmentLocalStorage';
 import EquipmentUpdateFormSection from './EquipmentUpdateFormSection';
-import SubmitButton from '../../components/GlobalComponent/SubmitButton'; // Use your existing SubmitButton
 import { FormData } from './MachineUpdateModal';
 
 interface EquipmentUpdateFormProps {
@@ -126,21 +125,21 @@ const EquipmentUpdateForm: React.FC<EquipmentUpdateFormProps> = ({
             placeholder="Enter serial number"
             onChange={(value) => onFormChange('serialNo', value)}
           />
-          
+
           <EquipmentUpdateFormSection.Input
             label="Machine Type"
             value={formData.machineDescription}
             placeholder="Select equipment to auto-fill type"
             readonly={true}
           />
-          
+
           <EquipmentUpdateFormSection.Input
             label="Brand/Model"
             value={formData.brandModel}
             placeholder="Enter brand and model"
             onChange={(value) => onFormChange('brandModel', value)}
           />
-          
+
           <EquipmentUpdateFormSection.Select
             label="Condition"
             value={formData.condition}
@@ -181,7 +180,7 @@ const EquipmentUpdateForm: React.FC<EquipmentUpdateFormProps> = ({
             placeholder="Enter machine details"
             onChange={(value) => onFormChange('machineDetails', value)}
           />
-          
+
           <EquipmentUpdateFormSection.Select
             label="Purchase Type"
             value={formData.purchaseType}
@@ -201,13 +200,13 @@ const EquipmentUpdateForm: React.FC<EquipmentUpdateFormProps> = ({
             value={formData.dateAcquired}
             onChange={(value) => onFormChange('dateAcquired', value)}
           />
-          
+
           <EquipmentUpdateFormSection.DateTime
             label="Date Installed"
             value={formData.dateInstalled}
             onChange={(value) => onFormChange('dateInstalled', value)}
           />
-          
+
           <EquipmentUpdateFormSection.DateTime
             label="Date Operated"
             value={formData.dateOperated}
@@ -306,13 +305,15 @@ const EquipmentUpdateForm: React.FC<EquipmentUpdateFormProps> = ({
       </div>
 
       {/* Submit Button (using your existing SubmitButton) */}
-      <div className="submit-btn-container">
-        <SubmitButton 
-          label="Update Equipment" 
-          onClick={onUpdateClick} 
+      <div className="next-btn-container">
+        <IonButton
+          className="next-button"
+          onClick={onUpdateClick}
           disabled={!isFormValid}
-          loading={false} // You can set this based on your update state
-        />
+          expand="block"
+        >
+          Update Equipment
+        </IonButton>
       </div>
     </>
   );
