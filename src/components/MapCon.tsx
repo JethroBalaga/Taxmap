@@ -69,11 +69,17 @@ const PhotoMarkers: React.FC<{
     if (valueInfo) {
       const formData = FormDataLocalStorage.getFormData(valueInfo.formDataId);
       if (formData && formData.kind) {
+        console.log(`PhotoTag ${photoTag.id}: Found form data with kind:`, formData.kind, 'type:', typeof formData.kind);
         return getMarkerIconByKind(formData.kind);
+      } else {
+        console.log(`PhotoTag ${photoTag.id}: No form data or kind found`);
       }
+    } else {
+      console.log(`PhotoTag ${photoTag.id}: No value info found`);
     }
     // Default icon if no form data or kind found
-    return getMarkerIconByKind('1'); // Default to Land
+    console.log(`PhotoTag ${photoTag.id}: Using default Land icon`);
+    return getMarkerIconByKind('1');
   };
 
   return (
@@ -173,6 +179,7 @@ const MapCon: React.FC = () => {
   // Use a useCallback to memoize the loading function
   const loadPhotoTags = useCallback(() => {
     const tags = PhotoTagLocalStorage.getAllPhotoTags();
+    console.log('Loaded photo tags:', tags.length, 'tags:', tags);
     setPhotoTags(tags);
   }, []);
 

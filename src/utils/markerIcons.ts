@@ -41,15 +41,32 @@ export const createLandMarkerIcon = () => {
 };
 
 // Helper function to get the appropriate icon based on kind
-export const getMarkerIconByKind = (kind: string) => {
-  switch (kind?.toUpperCase()) {
-    case 'BUILDING':
-      return createBuildingMarkerIcon();
-    case 'MACHINERY':
-      return createEquipmentMarkerIcon();
+export const getMarkerIconByKind = (kind: string | number): L.Icon => {
+  // Convert to string and trim any whitespace
+  const kindStr = String(kind).trim();
+  
+  console.log(`getMarkerIconByKind received: "${kindStr}" (type: ${typeof kind})`); // Debug log
+  
+  switch (kindStr) {
+    case '1':
     case 'LAND':
+    case 'land':
+      console.log('Using Land icon');
       return createLandMarkerIcon();
+    case '2':
+    case 'BUILDING':
+    case 'building':
+      console.log('Using Building icon');
+      return createBuildingMarkerIcon();
+    case '3':
+    case 'MACHINERY':
+    case 'machinery':
+    case 'EQUIPMENT':
+    case 'equipment':
+      console.log('Using Equipment icon');
+      return createEquipmentMarkerIcon();
     default:
+      console.log(`Unknown kind "${kindStr}", using default Land icon`);
       return createLandMarkerIcon(); // Default fallback
   }
 };
