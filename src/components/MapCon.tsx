@@ -21,7 +21,7 @@ const manoloFortichBounds = L.latLngBounds(
 const DEFAULT_ZOOM = 14;
 const MIN_ZOOM_LOCKED = 14;
 const MIN_ZOOM_UNLOCKED = 12;
-const MAX_ZOOM = 18;
+const MAX_ZOOM = 22;
 const CREATE_OUTLINE_PATH = "M384 224v184a40 40 0 0 1-40 40H104a40 40 0 0 1-40-40V168a40 40 0 0 1 40-40h167.48M336 64h112v112M224 288L440 72";
 
 // Create Button Component
@@ -119,7 +119,8 @@ const MapLogic = ({ onOpenForm }: { onOpenForm: () => void }) => {
       attribution: 'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics',
       noWrap: true,
       minZoom: MIN_ZOOM_LOCKED,
-      maxZoom: MAX_ZOOM
+      maxZoom: MAX_ZOOM,
+      maxNativeZoom: 18
     });
 
     offlineLayer.on('tileloadend', (e: any) => {
@@ -304,6 +305,8 @@ const MapCon: React.FC = () => {
             <TileLayer
               url={TILE_LAYER_URL}
               attribution='Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics'
+              maxNativeZoom={18}
+              maxZoom={MAX_ZOOM}
             />
             
             {/* Display photo markers */}
