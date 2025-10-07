@@ -73,7 +73,7 @@ const PhotoMarkers: React.FC<{
       }
     }
     // Default icon if no form data or kind found
-    return getMarkerIconByKind('LAND');
+    return getMarkerIconByKind('1'); // Default to Land
   };
 
   return (
