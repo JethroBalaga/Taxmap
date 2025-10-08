@@ -151,8 +151,7 @@ const Forms: React.FC = () => {
       if (kind === '2') {
         history.push(`/menu/forms/buildingtable/${selectedForm.id}`);
       } else if (kind === '3') {
-        // Make sure selectedForm.id contains the actual form ID, not the word "id"
-        console.log('Navigating with form ID:', selectedForm.id); // Debug log
+        console.log('Navigating with form ID:', selectedForm.id);
         history.push(`/menu/forms/machinerytable/${selectedForm.id}`);
       } else {
         setToastMessage('Details are only available for Building or Machinery forms');
@@ -167,73 +166,67 @@ const Forms: React.FC = () => {
   };
 
   const deleteRelatedData = async (formId: string): Promise<void> => {
-  console.log(`Deleting related data for form ID: ${formId}`);
+    console.log(`Deleting related data for form ID: ${formId}`);
 
-  // Get the form to check its kind
-  const formToDelete = FormDataLocalStorage.getFormData(formId);
-  const isMachineryForm = formToDelete?.kind === "3";
+    const formToDelete = FormDataLocalStorage.getFormData(formId);
+    const isMachineryForm = formToDelete?.kind === "3";
 
-  const allValueInfo = ValueInfoLocalStorage.getAllValueInfo();
-  const relatedValueInfo = allValueInfo.filter(info => info.formDataId === formId);
+    const allValueInfo = ValueInfoLocalStorage.getAllValueInfo();
+    const relatedValueInfo = allValueInfo.filter(info => info.formDataId === formId);
 
-  console.log(`Found ${relatedValueInfo.length} value info entries to delete`);
+    console.log(`Found ${relatedValueInfo.length} value info entries to delete`);
 
-  for (const valueInfo of relatedValueInfo) {
-    console.log(`Processing value info ID: ${valueInfo.id}`);
+    for (const valueInfo of relatedValueInfo) {
+      console.log(`Processing value info ID: ${valueInfo.id}`);
 
-    // Delete photo tag if exists
-    if (valueInfo.photoTagId) {
+      if (valueInfo.photoTagId) {
+        try {
+          PhotoTagLocalStorage.deletePhotoTag(valueInfo.photoTagId);
+          console.log(`Deleted photo tag: ${valueInfo.photoTagId}`);
+        } catch (error) {
+          console.error(`Error deleting photo tag for value info ${valueInfo.id}:`, error);
+        }
+      }
+
+      if (isMachineryForm) {
+        try {
+          MachineDataLocalStorage.deleteMachineData(valueInfo.id);
+          console.log(`Deleted machine data for value info: ${valueInfo.id}`);
+        } catch (error) {
+          console.error(`Error deleting machine data for value info ${valueInfo.id}:`, error);
+        }
+      } else {
+        try {
+          BuildingDataLocalStorage.deleteBuildingData(valueInfo.id);
+          BuildingAdjustmentLocalStorage.deleteBuildingAdjustmentsByValueInfoId(valueInfo.id);
+          console.log(`Deleted building data for value info: ${valueInfo.id}`);
+        } catch (error) {
+          console.error(`Error deleting building data for value info ${valueInfo.id}:`, error);
+        }
+      }
+
       try {
-        PhotoTagLocalStorage.deletePhotoTag(valueInfo.photoTagId);
-        console.log(`Deleted photo tag: ${valueInfo.photoTagId}`);
+        ValueInfoLocalStorage.deleteValueInfo(valueInfo.id);
+        console.log(`Deleted value info: ${valueInfo.id}`);
       } catch (error) {
-        console.error(`Error deleting photo tag for value info ${valueInfo.id}:`, error);
+        console.error(`Error deleting value info ${valueInfo.id}:`, error);
       }
     }
 
-    // Delete machine data if this is a machinery form
-    if (isMachineryForm) {
-      try {
-        MachineDataLocalStorage.deleteMachineData(valueInfo.id);
-        console.log(`Deleted machine data for value info: ${valueInfo.id}`);
-      } catch (error) {
-        console.error(`Error deleting machine data for value info ${valueInfo.id}:`, error);
-      }
-    } else {
-      // Delete building data for non-machinery forms
-      try {
-        BuildingDataLocalStorage.deleteBuildingData(valueInfo.id);
-        BuildingAdjustmentLocalStorage.deleteBuildingAdjustmentsByValueInfoId(valueInfo.id);
-        console.log(`Deleted building data for value info: ${valueInfo.id}`);
-      } catch (error) {
-        console.error(`Error deleting building data for value info ${valueInfo.id}:`, error);
-      }
+    const remainingValueInfo = ValueInfoLocalStorage.getAllValueInfo();
+    const orphanedValueInfo = remainingValueInfo.filter(info => info.formDataId === formId);
+    if (orphanedValueInfo.length > 0) {
+      orphanedValueInfo.forEach(info => {
+        try {
+          ValueInfoLocalStorage.deleteValueInfo(info.id);
+        } catch (error) {
+          console.error(`Error deleting orphaned value info ${info.id}:`, error);
+        }
+      });
     }
 
-    // Delete the value info entry
-    try {
-      ValueInfoLocalStorage.deleteValueInfo(valueInfo.id);
-      console.log(`Deleted value info: ${valueInfo.id}`);
-    } catch (error) {
-      console.error(`Error deleting value info ${valueInfo.id}:`, error);
-    }
-  }
-
-  // Clean up any orphaned data
-  const remainingValueInfo = ValueInfoLocalStorage.getAllValueInfo();
-  const orphanedValueInfo = remainingValueInfo.filter(info => info.formDataId === formId);
-  if (orphanedValueInfo.length > 0) {
-    orphanedValueInfo.forEach(info => {
-      try {
-        ValueInfoLocalStorage.deleteValueInfo(info.id);
-      } catch (error) {
-        console.error(`Error deleting orphaned value info ${info.id}:`, error);
-      }
-    });
-  }
-
-  console.log(`Completed deletion of related data for form: ${formId}`);
-};
+    console.log(`Completed deletion of related data for form: ${formId}`);
+  };
 
   const confirmDelete = async () => {
     if (selectedForm) {
@@ -269,12 +262,10 @@ const Forms: React.FC = () => {
     loadFormData();
     setSelectedForm(updatedData);
 
-    // Dispatch custom event to notify other components WITHOUT navigating
     window.dispatchEvent(new CustomEvent('formUpdated', {
       detail: { formId: updatedData.id }
     }));
 
-    // Also trigger a storage event for cross-tab compatibility
     localStorage.setItem('formUpdateTrigger', Date.now().toString());
   };
 
