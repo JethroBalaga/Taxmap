@@ -1,4 +1,3 @@
-// src/pages/MachineryTable/MachineryHeader.tsx
 import React from 'react';
 import {
   IonHeader,
@@ -12,7 +11,14 @@ import {
 } from '@ionic/react';
 import { arrowBack, location, person, business, hammer } from 'ionicons/icons';
 import SubmitButton from '../../components/GlobalComponent/SubmitButton';
-import { CalculatedMachineData } from './MachineryTable';
+import { MachineData } from '../../utils/tablestorages/MachineDataLocalStorage';
+
+// Define the interfaces locally
+interface CalculatedMachineData extends MachineData {
+  remainingLife: string;
+  totalCost: string;
+  adjustedMarketValue: string;
+}
 
 interface FormContextData {
   districtName: string;
@@ -77,7 +83,7 @@ const MachineryHeader: React.FC<MachineryHeaderProps> = ({
           
           {isLoadingContext && (
             <div className="context-loading">
-              <IonSpinner name="crescent" size="small" />
+              <IonSpinner name="crescent"/>
               <IonText color="medium">Loading form details...</IonText>
             </div>
           )}

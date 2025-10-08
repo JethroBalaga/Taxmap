@@ -1,3 +1,4 @@
+// src/pages/MachineryTable/MachineryTable.tsx
 import React, { useState, useEffect } from 'react';
 import {
   IonPage,
@@ -16,6 +17,8 @@ import { MachineDataLocalStorage, MachineData } from '../../utils/tablestorages/
 import { ValueInfoLocalStorage } from '../../utils/tablestorages/ValueInfoLocalStorage';
 import { FormDataLocalStorage } from '../../utils/tablestorages/FormDataLocalStorage';
 import { PhotoTagLocalStorage } from '../../utils/tablestorages/PhotoTagLocalStorage';
+import { getDistrictById } from '../../utils/districtLocalStorage';
+import { getDeclarantById } from '../../utils/DeclarantLocalStorage';
 import { supabaseApi } from '../../services/supabaseApi';
 import { supabase } from '../../utils/supaBaseClient';
 import { Directory, Filesystem } from '@capacitor/filesystem';
@@ -23,10 +26,18 @@ import { Capacitor } from '@capacitor/core';
 import MachineUpdateModal from '../../components/Modals/MachineUpdateModal';
 import MachineryHeader from './MachineryHeader';
 import MachineryCard from './MachineryCard';
+import { validateDate, validateNumber } from '../../utils/MachineryUtils';
 import '../../CSS/MachineryTable.css';
 
 interface RouteParams {
   formId: string;
+}
+
+interface FormContextData {
+  districtName: string;
+  declarantName: string;
+  classification: string;
+  actualUse: string;
 }
 
 interface CalculatedMachineData extends MachineData {
@@ -35,49 +46,14 @@ interface CalculatedMachineData extends MachineData {
   adjustedMarketValue: string;
 }
 
-// Helper function to validate and convert dates
-const validateDate = (dateString: string | null): string | null => {
-  if (dateString == null || dateString === '') return null;
-  
-  const dateToValidate = typeof dateString === 'string' ? dateString : String(dateString);
-  
-  try {
-    const date = new Date(dateToValidate);
-    return isNaN(date.getTime()) ? null : date.toISOString().split('T')[0];
-  } catch {
-    return null;
-  }
-};
-
-// Helper function to validate numbers
-const validateNumber = (value: any): number | null => {
-  if (value == null || value === '') return null;
-  
-  if (typeof value === 'number') {
-    return isNaN(value) ? null : value;
-  }
-  
-  if (typeof value === 'string') {
-    const trimmed = value.trim();
-    if (trimmed === '') return null;
-    const num = parseFloat(trimmed);
-    return isNaN(num) ? null : num;
-  }
-  
-  try {
-    const num = parseFloat(String(value));
-    return isNaN(num) ? null : num;
-  } catch {
-    return null;
-  }
-};
-
 const MachineryTable: React.FC = () => {
   const { formId } = useParams<RouteParams>();
   const history = useHistory();
   const [machineryData, setMachineryData] = useState<{machineData: CalculatedMachineData, valueInfoId: string}[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formContext, setFormContext] = useState<FormContextData | null>(null);
+  const [isLoadingContext, setIsLoadingContext] = useState(true);
   
   // State for update modal
   const [updateModalOpen, setUpdateModalOpen] = useState(false);
@@ -91,7 +67,38 @@ const MachineryTable: React.FC = () => {
 
   useEffect(() => {
     loadMachineryData();
+    loadFormContext();
   }, [formId]);
+
+  const loadFormContext = async () => {
+    if (!formId) return;
+    
+    try {
+      const formData = FormDataLocalStorage.getFormData(formId);
+      if (!formData) return;
+
+      // Fetch district name
+      const districtData = await getDistrictById(formData.district);
+      const districtName = districtData?.district_name || 'Unknown District';
+
+      // Fetch declarant name
+      const declarantData = await getDeclarantById(formData.declarantId);
+      const declarantName = declarantData 
+        ? `${declarantData.firstname} ${declarantData.lastname}`
+        : 'Unknown Declarant';
+
+      setFormContext({
+        districtName,
+        declarantName,
+        classification: formData.classification || 'Not specified',
+        actualUse: formData.actualUse || 'Not specified'
+      });
+    } catch (error) {
+      console.error('Error loading form context:', error);
+    } finally {
+      setIsLoadingContext(false);
+    }
+  };
 
   const calculateRemainingLife = (yearsUsed: string, estimatedLife: string): string => {
     if (!yearsUsed || !estimatedLife) return 'N/A';
@@ -237,18 +244,15 @@ const MachineryTable: React.FC = () => {
         const blob = await (await fetch(`data:image/jpeg;base64,${file.data}`)).blob();
         return blob;
       } else {
-        // For web - check multiple possible storage locations
         const photoData = localStorage.getItem(photoTag.photoName);
         if (photoData && photoData.startsWith('data:')) {
           return await (await fetch(photoData)).blob();
         }
         
-        // Additional fallback: check if there's a base64 data field
         if (photoTag.photoData) {
           return await (await fetch(photoTag.photoData)).blob();
         }
         
-        // Final fallback: check if photoName is actually a data URL
         if (photoTag.photoName && photoTag.photoName.startsWith('data:image')) {
           return await (await fetch(photoTag.photoName)).blob();
         }
@@ -296,7 +300,6 @@ const MachineryTable: React.FC = () => {
       if (!formData) throw new Error('Form data not found');
       if (formData.uploaded) throw new Error('Form already uploaded');
 
-      // Process each machinery item
       for (const { machineData, valueInfoId } of machineryData) {
         const valueInfo = ValueInfoLocalStorage.getValueInfo(valueInfoId);
         if (!valueInfo) throw new Error(`ValueInfo not found for ${valueInfoId}`);
@@ -304,7 +307,6 @@ const MachineryTable: React.FC = () => {
         const photoTag = PhotoTagLocalStorage.getPhotoTag(valueInfo.photoTagId);
         if (!photoTag) throw new Error('Photo tag not found');
 
-        // Insert photo record into database
         const databaseTagId = await supabaseApi.insertPhoto({
           photo: photoTag.photoName,
           longitude: photoTag.longitude,
@@ -315,7 +317,6 @@ const MachineryTable: React.FC = () => {
         });
         if (!databaseTagId) throw new Error('Failed to insert photo record');
 
-        // Upload the actual photo file
         const photoFile = await getPhotoFile(photoTag);
         if (photoFile) {
           const folderPath = `${databaseTagId}/${photoTag.photoName}`;
@@ -333,7 +334,6 @@ const MachineryTable: React.FC = () => {
           showToastMessage('Form submitted but could not retrieve photo', 'warning');
         }
 
-        // Insert form record (only once per form)
         let databaseFormId = formData.synced_id;
         if (!databaseFormId) {
           databaseFormId = await supabaseApi.insertForm({
@@ -349,10 +349,8 @@ const MachineryTable: React.FC = () => {
           if (!databaseFormId) throw new Error('Failed to insert form');
         }
 
-        // Insert value info
         const databaseValueInfoId = await supabaseApi.insertValueInfo(databaseFormId, databaseTagId);
 
-        // Insert machinery data with proper validation
         await supabaseApi.insertMachineData(databaseValueInfoId, {
           selected_equipment: machineData.selectedEquipment || null,
           serial_no: machineData.serialNo || null,
@@ -375,7 +373,6 @@ const MachineryTable: React.FC = () => {
           depreciation: validateNumber(machineData.depreciation)
         });
 
-        // Mark form as uploaded after first successful machinery item
         if (!formData.synced_id) {
           FormDataLocalStorage.markFormAsUploaded(formId, databaseFormId);
         }
@@ -400,6 +397,8 @@ const MachineryTable: React.FC = () => {
           onSubmit={handleSubmit}
           isSubmitting={isSubmitting}
           machineryData={machineryData}
+          formContext={formContext}
+          isLoadingContext={isLoadingContext}
         />
         <IonContent>
           <div className="loading-container">
@@ -419,6 +418,8 @@ const MachineryTable: React.FC = () => {
         onSubmit={handleSubmit}
         isSubmitting={isSubmitting}
         machineryData={machineryData}
+        formContext={formContext}
+        isLoadingContext={isLoadingContext}
       />
       
       <IonContent fullscreen>
@@ -448,7 +449,6 @@ const MachineryTable: React.FC = () => {
           )}
         </div>
 
-        {/* Machine Update Modal */}
         <MachineUpdateModal
           isOpen={updateModalOpen}
           onClose={() => setUpdateModalOpen(false)}
@@ -457,7 +457,6 @@ const MachineryTable: React.FC = () => {
           valueInfoId={selectedValueInfoId}
         />
 
-        {/* Toast Component */}
         <IonToast
           isOpen={showToast}
           onDidDismiss={() => setShowToast(false)}
