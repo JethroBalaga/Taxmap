@@ -1,4 +1,3 @@
-// src/pages/MachineryTable/MachineryCard.tsx
 import React from 'react';
 import {
   IonCard,
