@@ -46,6 +46,8 @@ export interface FormContextData {
     value_info_id: string;
     classification: string;
     actual_used: string;
+    base_market_value: string;
+    adjusted_market_value: string;
   }>;
 }
 
@@ -110,10 +112,24 @@ const MachineryTable: React.FC = () => {
   const [toastMessage, setToastMessage] = useState('');
   const [toastColor, setToastColor] = useState<'success' | 'danger' | 'warning' | undefined>(undefined);
 
+  // Format number function - no currency symbol
+  const formatNumber = (value: string): string => {
+    if (!value || value === 'N/A') return 'N/A';
+    const number = parseFloat(value);
+    if (isNaN(number)) return value;
+    return new Intl.NumberFormat('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(number);
+  };
+
   useEffect(() => {
     loadMachineryData();
-    loadFormContext();
   }, [formId]);
+
+  useEffect(() => {
+    loadFormContext();
+  }, [formId, machineryData]);
 
   const loadFormContext = async () => {
     if (!formId) return;
@@ -122,26 +138,28 @@ const MachineryTable: React.FC = () => {
       const formData = FormDataLocalStorage.getFormData(formId);
       if (!formData) return;
 
-      // Fix: Check for null values before lookup
       const districtData = formData.district ? await getDistrictById(formData.district) : null;
       const districtName = districtData?.district_name || 'Unknown District';
 
-      // Fix: Check for null values before lookup  
       const declarantData = formData.declarantId ? await getDeclarantById(formData.declarantId) : null;
       const declarantName = declarantData 
         ? `${declarantData.firstname} ${declarantData.lastname}`
         : 'Unknown Declarant';
 
-      // Get Value Info data for this form
       const allValueInfo = ValueInfoLocalStorage.getAllValueInfo();
       const formValueInfo = allValueInfo.filter(info => info.formDataId === formId);
       
-      // Create table data with actual Value Info IDs
-      const tableData = formValueInfo.map(valueInfo => ({
-        value_info_id: valueInfo.id, // Use the actual Value Info ID
-        classification: formData.classification || 'Not specified',
-        actual_used: formData.actualUse || 'Not specified'
-      }));
+      const tableData = formValueInfo.map(valueInfo => {
+        const machineEntry = machineryData.find(item => item.valueInfoId === valueInfo.id);
+        
+        return {
+          value_info_id: valueInfo.id,
+          classification: formData.classification || 'Not specified',
+          actual_used: formData.actualUse || 'Not specified',
+          base_market_value: machineEntry ? formatNumber(machineEntry.machineData.totalCost) : 'N/A',
+          adjusted_market_value: machineEntry ? formatNumber(machineEntry.machineData.adjustedMarketValue) : 'N/A'
+        };
+      });
 
       setFormContext({
         districtName,
@@ -287,7 +305,6 @@ const MachineryTable: React.FC = () => {
     }
   };
 
-  // Enhanced photo handling function
   const getPhotoFile = async (photoTag: any): Promise<Blob | null> => {
     try {
       const photoPath = `phototags/${photoTag.photoName}`;
@@ -347,7 +364,6 @@ const MachineryTable: React.FC = () => {
     setShowToast(true);
   };
 
-  // Main submit function with proper error handling
   const handleSubmit = async () => {
     setIsSubmitting(true);
     showToastMessage('Starting machinery upload process...', 'warning');
@@ -481,12 +497,10 @@ const MachineryTable: React.FC = () => {
       
       <IonContent fullscreen>
         <div className="machinery-container">
-          {/* Form Context Cards - District and Declarant */}
           {formContext && !isLoadingContext && (
             <FormInfoCards formContext={formContext} />
           )}
           
-          {/* Classification and Actual Use in DynamicTable with actual Value Info IDs */}
           {formContext && !isLoadingContext && formContext.valueInfoTableData.length > 0 && (
             <div className="form-details-section">
               <DynamicTable
@@ -497,7 +511,6 @@ const MachineryTable: React.FC = () => {
             </div>
           )}
           
-          {/* Show message if no value info entries */}
           {formContext && !isLoadingContext && formContext.valueInfoTableData.length === 0 && (
             <div className="no-value-info">
               <IonText color="medium">
@@ -506,7 +519,6 @@ const MachineryTable: React.FC = () => {
             </div>
           )}
           
-          {/* Loading State */}
           {isLoadingContext && (
             <div className="context-loading-full">
               <IonSpinner name="crescent" />
@@ -514,7 +526,6 @@ const MachineryTable: React.FC = () => {
             </div>
           )}
 
-          {/* Machinery Equipment Cards */}
           {machineryData.length === 0 ? (
             <div className="empty-state">
               <IonIcon icon={construct} size="large" />
