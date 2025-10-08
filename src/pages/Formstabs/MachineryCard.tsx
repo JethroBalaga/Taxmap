@@ -11,7 +11,13 @@ import {
   IonIcon,
 } from '@ionic/react';
 import { construct, cube, calendar, cash, arrowUpCircleOutline } from 'ionicons/icons';
-import { CalculatedMachineData } from './MachineryTable';
+import { MachineData } from '../../utils/tablestorages/MachineDataLocalStorage';
+
+interface CalculatedMachineData extends MachineData {
+  remainingLife: string;
+  totalCost: string;
+  adjustedMarketValue: string;
+}
 
 interface MachineryCardProps {
   machineData: CalculatedMachineData;
