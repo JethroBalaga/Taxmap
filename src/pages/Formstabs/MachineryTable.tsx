@@ -53,6 +53,7 @@ export interface FormContextData {
     base_market_value: string;
     adjusted_market_value: string;
     assessment_level: string;
+    assessed_value: string;
   }>;
 }
 
@@ -135,9 +136,6 @@ const MachineryTable: React.FC = () => {
       const data = await getAssessmentLevelData();
       if (data) {
         setAssessmentLevels(data);
-        console.log('Loaded assessment levels:', data);
-      } else {
-        console.log('No assessment level data found');
       }
     } catch (error) {
       console.error('Error loading assessment levels:', error);
@@ -145,35 +143,58 @@ const MachineryTable: React.FC = () => {
   };
 
   // Get assessment level rate for a given adjusted market value, kind_id, and classification
-  const getAssessmentLevelRate = (adjustedMarketValue: string, kindId: number, classification: string): string => {
-    if (!adjustedMarketValue || adjustedMarketValue === 'N/A') return 'N/A';
+  const getAssessmentLevelRate = (adjustedMarketValue: string, kindId: number, classification: string): { rate: string, rawRate: number } => {
+    if (!adjustedMarketValue || adjustedMarketValue === 'N/A') return { rate: 'N/A', rawRate: 0 };
     
     const value = parseFloat(adjustedMarketValue);
-    if (isNaN(value)) return 'N/A';
+    if (isNaN(value)) return { rate: 'N/A', rawRate: 0 };
     
-    console.log('Looking for assessment level with:', {
-      value,
-      kindId,
-      classification,
-      totalAssessmentLevels: assessmentLevels.length
-    });
-
     // Filter for the specific kind_id and class_id (classification)
     const relevantAssessmentLevels = assessmentLevels.filter(level => 
       level.kind_id === kindId && 
       level.class_id === classification
     );
 
-    console.log('Relevant assessment levels:', relevantAssessmentLevels);
+    if (relevantAssessmentLevels.length === 0) {
+      return { rate: 'N/A', rawRate: 0 };
+    }
 
     // Find the assessment level where the value falls within range1 and range2
     const matchingLevel = relevantAssessmentLevels.find(level => 
       value >= level.range1 && value <= level.range2
     );
 
-    console.log('Matching level:', matchingLevel);
+    // If no exact match found, use the first available assessment level for this kind/class
+    if (!matchingLevel && relevantAssessmentLevels.length > 0) {
+      const rate = relevantAssessmentLevels[0].rate_percent;
+      const rawRate = parseFloat(rate.replace('%', '')) || 0;
+      return { 
+        rate: rate.includes('%') ? rate : `${rate}%`, 
+        rawRate 
+      };
+    }
 
-    return matchingLevel ? `${matchingLevel.rate_percent}` : 'N/A';
+    if (matchingLevel) {
+      const rate = matchingLevel.rate_percent;
+      const rawRate = parseFloat(rate.replace('%', '')) || 0;
+      return { 
+        rate: rate.includes('%') ? rate : `${rate}%`, 
+        rawRate 
+      };
+    }
+
+    return { rate: 'N/A', rawRate: 0 };
+  };
+
+  // Calculate assessed value: Adjusted Market Value x Assessment Level Rate
+  const calculateAssessedValue = (adjustedMarketValue: string, rawRate: number): string => {
+    if (!adjustedMarketValue || adjustedMarketValue === 'N/A' || rawRate === 0) return 'N/A';
+    
+    const value = parseFloat(adjustedMarketValue);
+    if (isNaN(value)) return 'N/A';
+    
+    const assessedValue = value * (rawRate / 100);
+    return assessedValue.toFixed(2);
   };
 
   useEffect(() => {
@@ -192,8 +213,6 @@ const MachineryTable: React.FC = () => {
       const formData = FormDataLocalStorage.getFormData(formId);
       if (!formData) return;
 
-      console.log('Form data:', formData);
-
       const districtData = formData.district ? await getDistrictById(formData.district) : null;
       const districtName = districtData?.district_name || 'Unknown District';
 
@@ -210,11 +229,14 @@ const MachineryTable: React.FC = () => {
         const adjustedMarketValue = machineEntry ? machineEntry.machineData.adjustedMarketValue : 'N/A';
         
         // Get the assessment level using kind_id and classification from formData
-        const assessmentLevel = getAssessmentLevelRate(
+        const { rate: assessmentLevel, rawRate } = getAssessmentLevelRate(
           adjustedMarketValue, 
-          parseInt(formData.kind) || 3, // Default to 3 (Machinery) if not available
-          formData.classification || '' // Use classification from form data
+          parseInt(formData.kind) || 3,
+          formData.classification || ''
         );
+
+        // Calculate assessed value
+        const assessedValue = calculateAssessedValue(adjustedMarketValue, rawRate);
         
         return {
           value_info_id: valueInfo.id,
@@ -222,7 +244,8 @@ const MachineryTable: React.FC = () => {
           actual_used: formData.actualUse || 'Not specified',
           base_market_value: machineEntry ? formatNumber(machineEntry.machineData.totalCost) : 'N/A',
           adjusted_market_value: machineEntry ? formatNumber(adjustedMarketValue) : 'N/A',
-          assessment_level: assessmentLevel
+          assessment_level: assessmentLevel,
+          assessed_value: formatNumber(assessedValue)
         };
       });
 
