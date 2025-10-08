@@ -593,7 +593,6 @@ const MachineryTable: React.FC = () => {
             <div className="form-details-section">
               <DynamicTable
                 data={formContext.valueInfoTableData}
-                title={`Form Details (${formContext.valueInfoTableData.length} Value Info Entries)`}
                 keyField="value_info_id"
               />
             </div>
