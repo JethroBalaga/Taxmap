@@ -32,13 +32,13 @@ const MachineryCard: React.FC<MachineryCardProps> = ({
   index,
   onUpdateClick,
 }) => {
-  const formatCurrency = (value: string): string => {
+  const formatNumber = (value: string): string => {
     if (!value || value === 'N/A') return 'N/A';
     const number = parseFloat(value);
     if (isNaN(number)) return value;
     return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
     }).format(number);
   };
 
@@ -190,34 +190,34 @@ const MachineryCard: React.FC<MachineryCardProps> = ({
             <div className="info-grid">
               <div className="info-item">
                 <label>Original Cost</label>
-                <IonText>{formatCurrency(machineData.originalCost)}</IonText>
+                <IonText>{formatNumber(machineData.originalCost)}</IonText>
               </div>
               <div className="info-item">
                 <label>Depreciation</label>
                 <IonText className="cost-value">
-                  {formatCurrency(machineData.depreciation)}
+                  {formatNumber(machineData.depreciation)}
                 </IonText>
               </div>
               <div className="info-item">
                 <label>Freight</label>
-                <IonText>{formatCurrency(machineData.freight)}</IonText>
+                <IonText>{formatNumber(machineData.freight)}</IonText>
               </div>
               <div className="info-item">
                 <label>Insurance</label>
-                <IonText>{formatCurrency(machineData.insurance)}</IonText>
+                <IonText>{formatNumber(machineData.insurance)}</IonText>
               </div>
               <div className="info-item">
                 <label>Installation</label>
-                <IonText>{formatCurrency(machineData.installation)}</IonText>
+                <IonText>{formatNumber(machineData.installation)}</IonText>
               </div>
               <div className="info-item">
                 <label>Other Costs</label>
-                <IonText>{formatCurrency(machineData.others)}</IonText>
+                <IonText>{formatNumber(machineData.others)}</IonText>
               </div>
               <div className="info-item full-width">
-                <label>Total Cost</label>
+                <label>Base Market Value</label>
                 <IonText className="calculated-value total-cost">
-                  {formatCurrency(machineData.totalCost)}
+                  {formatNumber(machineData.totalCost)}
                 </IonText>
               </div>
             </div>
@@ -236,7 +236,7 @@ const MachineryCard: React.FC<MachineryCardProps> = ({
               <div className="info-item">
                 <label>Adjusted Market Value</label>
                 <IonText className="calculated-value market-value">
-                  {formatCurrency(machineData.adjustedMarketValue)}
+                  {formatNumber(machineData.adjustedMarketValue)}
                 </IonText>
               </div>
             </div>
