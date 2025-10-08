@@ -1,3 +1,4 @@
+// src/utils/MachineryUtils.ts
 // Helper function to validate and convert dates
 export const validateDate = (dateString: string | null): string | null => {
   if (dateString == null || dateString === '') return null;
