@@ -42,6 +42,11 @@ export interface FormContextData {
   declarantName: string;
   classification: string;
   actualUse: string;
+  valueInfoTableData: Array<{
+    value_info_id: string;
+    classification: string;
+    actual_used: string;
+  }>;
 }
 
 export interface CalculatedMachineData extends MachineData {
@@ -127,11 +132,23 @@ const MachineryTable: React.FC = () => {
         ? `${declarantData.firstname} ${declarantData.lastname}`
         : 'Unknown Declarant';
 
+      // Get Value Info data for this form
+      const allValueInfo = ValueInfoLocalStorage.getAllValueInfo();
+      const formValueInfo = allValueInfo.filter(info => info.formDataId === formId);
+      
+      // Create table data with actual Value Info IDs
+      const tableData = formValueInfo.map(valueInfo => ({
+        value_info_id: valueInfo.id, // Use the actual Value Info ID
+        classification: formData.classification || 'Not specified',
+        actual_used: formData.actualUse || 'Not specified'
+      }));
+
       setFormContext({
         districtName,
         declarantName,
         classification: formData.classification || 'Not specified',
-        actualUse: formData.actualUse || 'Not specified'
+        actualUse: formData.actualUse || 'Not specified',
+        valueInfoTableData: tableData
       });
     } catch (error) {
       console.error('Error loading form context:', error);
@@ -469,20 +486,23 @@ const MachineryTable: React.FC = () => {
             <FormInfoCards formContext={formContext} />
           )}
           
-          {/* Classification and Actual Use in DynamicTable */}
-          {formContext && !isLoadingContext && (
+          {/* Classification and Actual Use in DynamicTable with actual Value Info IDs */}
+          {formContext && !isLoadingContext && formContext.valueInfoTableData.length > 0 && (
             <div className="form-details-section">
               <DynamicTable
-                data={[
-                  {
-                    value_info_id: formId, // Using formId as value_info_id
-                    classification: formContext.classification,
-                    actual_used: formContext.actualUse
-                  }
-                ]}
-                title="Form Details"
+                data={formContext.valueInfoTableData}
+                title={`Form Details (${formContext.valueInfoTableData.length} Value Info Entries)`}
                 keyField="value_info_id"
               />
+            </div>
+          )}
+          
+          {/* Show message if no value info entries */}
+          {formContext && !isLoadingContext && formContext.valueInfoTableData.length === 0 && (
+            <div className="no-value-info">
+              <IonText color="medium">
+                <p>No Value Info entries found for this form.</p>
+              </IonText>
             </div>
           )}
           
