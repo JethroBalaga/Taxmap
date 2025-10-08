@@ -1,28 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import {
   IonPage,
-  IonHeader,
-  IonToolbar,
-  IonTitle,
   IonContent,
   IonGrid,
   IonRow,
   IonCol,
   IonText,
   IonSpinner,
-  IonButton,
   IonIcon,
-  IonBackButton,
-  IonButtons,
-  IonCard,
-  IonCardHeader,
-  IonCardTitle,
-  IonCardContent,
-  IonChip,
   IonToast,
 } from '@ionic/react';
 import { useParams, useHistory } from 'react-router-dom';
-import { arrowBack, construct, calendar, cash, cube, arrowUpCircleOutline } from 'ionicons/icons';
+import { construct } from 'ionicons/icons';
 import { MachineDataLocalStorage, MachineData } from '../../utils/tablestorages/MachineDataLocalStorage';
 import { ValueInfoLocalStorage } from '../../utils/tablestorages/ValueInfoLocalStorage';
 import { FormDataLocalStorage } from '../../utils/tablestorages/FormDataLocalStorage';
@@ -32,7 +21,8 @@ import { supabase } from '../../utils/supaBaseClient';
 import { Directory, Filesystem } from '@capacitor/filesystem';
 import { Capacitor } from '@capacitor/core';
 import MachineUpdateModal from '../../components/Modals/MachineUpdateModal';
-import SubmitButton from '../../components/GlobalComponent/SubmitButton';
+import MachineryHeader from './MachineryHeader';
+import MachineryCard from './MachineryCard';
 import '../../CSS/MachineryTable.css';
 
 interface RouteParams {
@@ -59,7 +49,7 @@ const validateDate = (dateString: string | null): string | null => {
   }
 };
 
-// Helper function to validate numbers - FIXED VERSION
+// Helper function to validate numbers
 const validateNumber = (value: any): number | null => {
   if (value == null || value === '') return null;
   
@@ -401,41 +391,16 @@ const MachineryTable: React.FC = () => {
     }
   };
 
-  const formatCurrency = (value: string): string => {
-    if (!value || value === 'N/A') return 'N/A';
-    const number = parseFloat(value);
-    if (isNaN(number)) return value;
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(number);
-  };
-
-  const formatDate = (dateString: string): string => {
-    if (!dateString) return 'N/A';
-    try {
-      return new Date(dateString).toLocaleDateString();
-    } catch {
-      return dateString;
-    }
-  };
-
-  const formatDepreciation = (depreciation: string): string => {
-    if (!depreciation) return 'N/A';
-    return `${depreciation}%`;
-  };
-
   if (isLoading) {
     return (
       <IonPage>
-        <IonHeader>
-          <IonToolbar>
-            <IonButtons slot="start">
-              <IonBackButton defaultHref="/menu/forms" />
-            </IonButtons>
-            <IonTitle>Loading Machinery...</IonTitle>
-          </IonToolbar>
-        </IonHeader>
+        <MachineryHeader 
+          formId={formId}
+          onBack={handleBack}
+          onSubmit={handleSubmit}
+          isSubmitting={isSubmitting}
+          machineryData={machineryData}
+        />
         <IonContent>
           <div className="loading-container">
             <IonSpinner name="crescent" />
@@ -448,25 +413,14 @@ const MachineryTable: React.FC = () => {
 
   return (
     <IonPage>
-      <IonHeader>
-        <IonToolbar>
-          <IonButtons slot="start">
-            <IonButton onClick={handleBack}>
-              <IonIcon slot="icon-only" icon={arrowBack} />
-            </IonButton>
-          </IonButtons>
-          <IonTitle>Machinery - Form {formId}</IonTitle>
-          <IonButtons slot="end">
-            <SubmitButton
-              label="Submit Form"
-              onClick={handleSubmit}
-              loading={isSubmitting}
-              disabled={machineryData.length === 0 || isSubmitting}
-              className="header-submit-button"
-            />
-          </IonButtons>
-        </IonToolbar>
-      </IonHeader>
+      <MachineryHeader 
+        formId={formId}
+        onBack={handleBack}
+        onSubmit={handleSubmit}
+        isSubmitting={isSubmitting}
+        machineryData={machineryData}
+      />
+      
       <IonContent fullscreen>
         <div className="machinery-container">
           {machineryData.length === 0 ? (
@@ -481,206 +435,13 @@ const MachineryTable: React.FC = () => {
             <IonGrid>
               <IonRow class="ion-justify-content-center">
                 {machineryData.map(({ machineData, valueInfoId }, index) => (
-                  <IonCol size="12" size-lg="10" size-xl="8" key={valueInfoId}>
-                    <IonCard className="machine-card">
-                      <IonCardHeader>
-                        <div className="card-header-with-update">
-                          <IonCardTitle className="card-title">
-                            <IonIcon icon={construct} className="card-title-icon" />
-                            {machineData.selectedEquipment || `Equipment ${index + 1}`}
-                          </IonCardTitle>
-                          <IonButton 
-                            fill="clear" 
-                            className="icon-blue update-button"
-                            onClick={() => handleUpdateClick(machineData, valueInfoId)}
-                          >
-                            <IonIcon icon={arrowUpCircleOutline} className="update-icon" />
-                            <span className="update-text">Update Machinery Data</span>
-                          </IonButton>
-                        </div>
-                      </IonCardHeader>
-
-                      <IonCardContent>
-                        {/* Rest of your card content remains the same */}
-                        {/* Basic Information Section */}
-                        <div className="card-section">
-                          <IonText color="medium" className="section-title">
-                            <h4>Basic Information</h4>
-                          </IonText>
-                          <div className="info-grid">
-                            <div className="info-item">
-                              <label>Serial Number</label>
-                              <IonText>{machineData.serialNo || 'N/A'}</IonText>
-                            </div>
-                            <div className="info-item">
-                              <label>Brand & Model</label>
-                              <IonText>{machineData.brandModel || 'N/A'}</IonText>
-                            </div>
-                            <div className="info-item">
-                              <label>Condition</label>
-                              <IonChip 
-                                color={
-                                  machineData.condition === 'Excellent' ? 'success' :
-                                  machineData.condition === 'Good' ? 'warning' :
-                                  machineData.condition === 'Poor' ? 'danger' : 'medium'
-                                }
-                              >
-                                {machineData.condition || 'Unknown'}
-                              </IonChip>
-                            </div>
-                            <div className="info-item full-width">
-                              <label>Description</label>
-                              <IonText>{machineData.machineDescription || 'No description provided'}</IonText>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Specifications Section */}
-                        <div className="card-section">
-                          <IonText color="medium" className="section-title">
-                            <IonIcon icon={cube} className="section-icon" />
-                            <h4>Specifications</h4>
-                          </IonText>
-                          <div className="info-grid">
-                            <div className="info-item">
-                              <label>Units</label>
-                              <IonText>{machineData.numberOfUnits || 'N/A'}</IonText>
-                            </div>
-                            <div className="info-item">
-                              <label>Purchase Type</label>
-                              <IonText>{machineData.purchaseType || 'N/A'}</IonText>
-                            </div>
-                            <div className="info-item">
-                              <label>Years Used</label>
-                              <IonText>{machineData.yearsUsed || 'N/A'}</IonText>
-                            </div>
-                            <div className="info-item">
-                              <label>Estimated Life</label>
-                              <IonText>{machineData.estimatedLife ? `${machineData.estimatedLife} years` : 'N/A'}</IonText>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Life Metrics Section */}
-                        <div className="card-section">
-                          <IonText color="medium" className="section-title">
-                            <h4>Life Metrics</h4>
-                          </IonText>
-                          <div className="info-grid">
-                            <div className="info-item">
-                              <label>Years Used</label>
-                              <IonText>{machineData.yearsUsed || 'N/A'}</IonText>
-                            </div>
-                            <div className="info-item">
-                              <label>Estimated Life</label>
-                              <IonText>{machineData.estimatedLife ? `${machineData.estimatedLife} years` : 'N/A'}</IonText>
-                            </div>
-                            <div className="info-item">
-                              <label>Remaining Life</label>
-                              <IonText className="calculated-value">
-                                {machineData.remainingLife ? `${machineData.remainingLife} years` : 'N/A'}
-                              </IonText>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Timeline Section */}
-                        <div className="card-section">
-                          <IonText color="medium" className="section-title">
-                            <IonIcon icon={calendar} className="section-icon" />
-                            <h4>Timeline</h4>
-                          </IonText>
-                          <div className="info-grid">
-                            <div className="info-item">
-                              <label>Date Acquired</label>
-                              <IonText>{formatDate(machineData.dateAcquired)}</IonText>
-                            </div>
-                            <div className="info-item">
-                              <label>Date Installed</label>
-                              <IonText>{formatDate(machineData.dateInstalled)}</IonText>
-                            </div>
-                            <div className="info-item">
-                              <label>Date Operated</label>
-                              <IonText>{formatDate(machineData.dateOperated)}</IonText>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Cost Information Section */}
-                        <div className="card-section">
-                          <IonText color="medium" className="section-title">
-                            <IonIcon icon={cash} className="section-icon" />
-                            <h4>Cost Information</h4>
-                          </IonText>
-                          <div className="info-grid">
-                            <div className="info-item">
-                              <label>Original Cost</label>
-                              <IonText>{formatCurrency(machineData.originalCost)}</IonText>
-                            </div>
-                            <div className="info-item">
-                              <label>Depreciation</label>
-                              <IonText className="cost-value">
-                                {formatCurrency(machineData.depreciation)}
-                              </IonText>
-                            </div>
-                            <div className="info-item">
-                              <label>Freight</label>
-                              <IonText>{formatCurrency(machineData.freight)}</IonText>
-                            </div>
-                            <div className="info-item">
-                              <label>Insurance</label>
-                              <IonText>{formatCurrency(machineData.insurance)}</IonText>
-                            </div>
-                            <div className="info-item">
-                              <label>Installation</label>
-                              <IonText>{formatCurrency(machineData.installation)}</IonText>
-                            </div>
-                            <div className="info-item">
-                              <label>Other Costs</label>
-                              <IonText>{formatCurrency(machineData.others)}</IonText>
-                            </div>
-                            <div className="info-item full-width">
-                              <label>Total Cost</label>
-                              <IonText className="calculated-value total-cost">
-                                {formatCurrency(machineData.totalCost)}
-                              </IonText>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Depreciation Section */}
-                        <div className="card-section">
-                          <IonText color="medium" className="section-title">
-                            <h4>Depreciation & Value</h4>
-                          </IonText>
-                          <div className="info-grid">
-                            <div className="info-item">
-                              <label>Depreciation Rate</label>
-                              <IonText>{formatDepreciation(machineData.depreciation)}</IonText>
-                            </div>
-                            <div className="info-item">
-                              <label>Adjusted Market Value</label>
-                              <IonText className="calculated-value market-value">
-                                {formatCurrency(machineData.adjustedMarketValue)}
-                              </IonText>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Additional Details */}
-                        {machineData.machineDetails && (
-                          <div className="card-section">
-                            <IonText color="medium" className="section-title">
-                              <h4>Additional Details</h4>
-                            </IonText>
-                            <div className="details-text">
-                              <IonText>{machineData.machineDetails}</IonText>
-                            </div>
-                          </div>
-                        )}
-                      </IonCardContent>
-                    </IonCard>
-                  </IonCol>
+                  <MachineryCard
+                    key={valueInfoId}
+                    machineData={machineData}
+                    valueInfoId={valueInfoId}
+                    index={index}
+                    onUpdateClick={handleUpdateClick}
+                  />
                 ))}
               </IonRow>
             </IonGrid>
