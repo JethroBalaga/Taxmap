@@ -6,14 +6,11 @@ import {
   IonButtons,
   IonButton,
   IonIcon,
-  IonText,
-  IonSpinner,
 } from '@ionic/react';
-import { arrowBack, location, person, business, hammer } from 'ionicons/icons';
+import { arrowBack } from 'ionicons/icons';
 import SubmitButton from '../../components/GlobalComponent/SubmitButton';
 import { MachineData } from '../../utils/tablestorages/MachineDataLocalStorage';
 
-// Define the interfaces locally
 interface CalculatedMachineData extends MachineData {
   remainingLife: string;
   totalCost: string;
@@ -43,8 +40,6 @@ const MachineryHeader: React.FC<MachineryHeaderProps> = ({
   onSubmit,
   isSubmitting,
   machineryData,
-  formContext,
-  isLoadingContext,
 }) => {
   return (
     <IonHeader>
@@ -55,39 +50,7 @@ const MachineryHeader: React.FC<MachineryHeaderProps> = ({
           </IonButton>
         </IonButtons>
         
-        <div className="header-content">
-          <IonTitle className="page-title">
-            Machinery - Form {formId}
-          </IonTitle>
-          
-          {formContext && !isLoadingContext && (
-            <div className="form-context-info">
-              <IonText color="medium" className="context-item">
-                <IonIcon icon={location} className="context-icon" />
-                <strong>District:</strong> {formContext.districtName}
-              </IonText>
-              <IonText color="medium" className="context-item">
-                <IonIcon icon={person} className="context-icon" />
-                <strong>Declarant:</strong> {formContext.declarantName}
-              </IonText>
-              <IonText color="medium" className="context-item">
-                <IonIcon icon={business} className="context-icon" />
-                <strong>Classification:</strong> {formContext.classification}
-              </IonText>
-              <IonText color="medium" className="context-item">
-                <IonIcon icon={hammer} className="context-icon" />
-                <strong>Actual Use:</strong> {formContext.actualUse}
-              </IonText>
-            </div>
-          )}
-          
-          {isLoadingContext && (
-            <div className="context-loading">
-              <IonSpinner name="crescent"/>
-              <IonText color="medium">Loading form details...</IonText>
-            </div>
-          )}
-        </div>
+        <IonTitle>Machinery - Form {formId}</IonTitle>
 
         <IonButtons slot="end">
           <SubmitButton
