@@ -9,9 +9,13 @@ import {
   IonSpinner,
   IonIcon,
   IonToast,
+  IonCard,
+  IonCardHeader,
+  IonCardTitle,
+  IonCardContent,
 } from '@ionic/react';
 import { useParams, useHistory } from 'react-router-dom';
-import { construct } from 'ionicons/icons';
+import { construct, location, person } from 'ionicons/icons';
 import { MachineDataLocalStorage, MachineData } from '../../utils/tablestorages/MachineDataLocalStorage';
 import { ValueInfoLocalStorage } from '../../utils/tablestorages/ValueInfoLocalStorage';
 import { FormDataLocalStorage } from '../../utils/tablestorages/FormDataLocalStorage';
@@ -25,6 +29,7 @@ import { Capacitor } from '@capacitor/core';
 import MachineUpdateModal from '../../components/Modals/MachineUpdateModal';
 import MachineryHeader from './MachineryHeader';
 import MachineryCard from './MachineryCard';
+import DynamicTable from '../../components/GlobalComponent/DynamicTable';
 import { validateDate, validateNumber } from '../../utils/MachineryUtils';
 import '../../CSS/MachineryTable.css';
 
@@ -44,6 +49,42 @@ export interface CalculatedMachineData extends MachineData {
   totalCost: string;
   adjustedMarketValue: string;
 }
+
+const FormInfoCards: React.FC<{ formContext: FormContextData }> = ({ formContext }) => {
+  return (
+    <div className="form-info-cards">
+      <IonRow class="ion-justify-content-center">
+        <IonCol size="12" size-md="6" size-lg="3">
+          <IonCard className="info-card district-card">
+            <IonCardHeader>
+              <IonCardTitle>
+                <IonIcon icon={location} className="card-icon" />
+                District
+              </IonCardTitle>
+            </IonCardHeader>
+            <IonCardContent>
+              <IonText className="card-value">{formContext.districtName}</IonText>
+            </IonCardContent>
+          </IonCard>
+        </IonCol>
+        
+        <IonCol size="12" size-md="6" size-lg="3">
+          <IonCard className="info-card declarant-card">
+            <IonCardHeader>
+              <IonCardTitle>
+                <IonIcon icon={person} className="card-icon" />
+                Declarant
+              </IonCardTitle>
+            </IonCardHeader>
+            <IonCardContent>
+              <IonText className="card-value">{formContext.declarantName}</IonText>
+            </IonCardContent>
+          </IonCard>
+        </IonCol>
+      </IonRow>
+    </div>
+  );
+};
 
 const MachineryTable: React.FC = () => {
   const { formId } = useParams<RouteParams>();
@@ -423,6 +464,37 @@ const MachineryTable: React.FC = () => {
       
       <IonContent fullscreen>
         <div className="machinery-container">
+          {/* Form Context Cards - District and Declarant */}
+          {formContext && !isLoadingContext && (
+            <FormInfoCards formContext={formContext} />
+          )}
+          
+          {/* Classification and Actual Use in DynamicTable */}
+          {formContext && !isLoadingContext && (
+            <div className="form-details-section">
+              <DynamicTable
+                data={[
+                  {
+                    value_info_id: formId, // Using formId as value_info_id
+                    classification: formContext.classification,
+                    actual_used: formContext.actualUse
+                  }
+                ]}
+                title="Form Details"
+                keyField="value_info_id"
+              />
+            </div>
+          )}
+          
+          {/* Loading State */}
+          {isLoadingContext && (
+            <div className="context-loading-full">
+              <IonSpinner name="crescent" />
+              <IonText>Loading form details...</IonText>
+            </div>
+          )}
+
+          {/* Machinery Equipment Cards */}
           {machineryData.length === 0 ? (
             <div className="empty-state">
               <IonIcon icon={construct} size="large" />
