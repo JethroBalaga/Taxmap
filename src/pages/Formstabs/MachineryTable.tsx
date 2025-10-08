@@ -1,4 +1,3 @@
-// src/pages/MachineryTable/MachineryTable.tsx
 import React, { useState, useEffect } from 'react';
 import {
   IonPage,
@@ -33,14 +32,14 @@ interface RouteParams {
   formId: string;
 }
 
-interface FormContextData {
+export interface FormContextData {
   districtName: string;
   declarantName: string;
   classification: string;
   actualUse: string;
 }
 
-interface CalculatedMachineData extends MachineData {
+export interface CalculatedMachineData extends MachineData {
   remainingLife: string;
   totalCost: string;
   adjustedMarketValue: string;
@@ -77,12 +76,12 @@ const MachineryTable: React.FC = () => {
       const formData = FormDataLocalStorage.getFormData(formId);
       if (!formData) return;
 
-      // Fetch district name
-      const districtData = await getDistrictById(formData.district);
+      // Fix: Check for null values before lookup
+      const districtData = formData.district ? await getDistrictById(formData.district) : null;
       const districtName = districtData?.district_name || 'Unknown District';
 
-      // Fetch declarant name
-      const declarantData = await getDeclarantById(formData.declarantId);
+      // Fix: Check for null values before lookup  
+      const declarantData = formData.declarantId ? await getDeclarantById(formData.declarantId) : null;
       const declarantName = declarantData 
         ? `${declarantData.firstname} ${declarantData.lastname}`
         : 'Unknown Declarant';
