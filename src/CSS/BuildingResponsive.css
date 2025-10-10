@@ -14,34 +14,6 @@
   padding: 12px;
 }
 
-/* Table Styles - SMALLER TEXT */
-.table-header {
-  background-color: var(--ion-color-primary);
-  color: white;
-  font-weight: bold;
-  font-size: 10px; /* Reduced from 12px */
-}
-
-.table-header ion-col {
-  padding: 6px 3px; /* Reduced padding */
-  text-align: center;
-}
-
-.table-row {
-  border-bottom: 1px solid var(--ion-color-light-shade);
-  font-size: 10px; /* Reduced from 12px */
-}
-
-.table-row ion-col {
-  padding: 8px 3px; /* Reduced padding */
-  text-align: center;
-  word-break: break-word;
-}
-
-.table-row.selected {
-  background-color: var(--ion-color-primary-tint);
-}
-
 /* Search and Icon Container */
 .search-and-icon-container {
   margin: 5px 0;
@@ -115,20 +87,6 @@
     padding: 8px;
   }
   
-  /* Even smaller text for mobile tables */
-  .table-header {
-    font-size: 9px;
-  }
-  
-  .table-row {
-    font-size: 9px;
-  }
-  
-  .table-header ion-col,
-  .table-row ion-col {
-    padding: 5px 2px;
-  }
-  
   .search-container {
     padding: 0 8px;
     margin-bottom: 8px;
@@ -199,20 +157,6 @@
   /* Global mobile text size reduction */
   * {
     font-size: 11px; /* Even smaller base font size */
-  }
-  
-  /* Smallest text for very small screens */
-  .table-header {
-    font-size: 8px;
-  }
-  
-  .table-row {
-    font-size: 8px;
-  }
-  
-  .table-header ion-col,
-  .table-row ion-col {
-    padding: 4px 1px;
   }
   
   .form-summary-card ion-grid {
@@ -332,20 +276,9 @@
     font-size: 10px !important;
   }
   
-  .table-header, .table-row {
-    font-size: 7px !important;
-  }
-  
   ion-toolbar ion-title {
     font-size: 0.8rem !important;
   }
-}
-
-/* Ensure text doesn't overflow */
-ion-col {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 /* Building Details Card */
@@ -390,28 +323,11 @@ ion-toast {
     --padding-start: 12px;
     --padding-end: 12px;
   }
-  
-  /* Ensure table doesn't cause horizontal scrolling */
-  .table-container {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-  
-  /* Make all numbers in tables smaller */
-  .dynamic-table-container .number-cell {
-    font-size: 10px !important;
-  }
 }
 
 /* High contrast for better mobile visibility */
 @media (prefers-color-scheme: dark) {
-  .table-row {
-    border-bottom-color: var(--ion-color-dark-shade);
-  }
-  
-  .table-row.selected {
-    background-color: var(--ion-color-primary-shade);
-  }
+  /* Dark mode styles for building-specific components */
 }
 
 /* Force smaller text in all modals on mobile */
@@ -425,11 +341,4 @@ ion-toast {
   .modal-content ion-datetime-button {
     font-size: 11px !important;
   }
-}
-
-/* Additional specificity for table text */
-.dynamic-table-container ion-grid,
-.dynamic-table-container ion-row,
-.dynamic-table-container ion-col {
-  font-size: inherit !important;
 }
