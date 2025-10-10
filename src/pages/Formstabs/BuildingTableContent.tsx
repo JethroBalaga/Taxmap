@@ -22,6 +22,7 @@ import {
     useBuildingTableLogic
 } from './BuildingTableLogic';
 import "../../CSS/BuildingResponsive.css";
+import SubmitButton from "../../components/GlobalComponent/SubmitButton";
 
 interface BuildingTableProps {
     form_id: string;
@@ -106,20 +107,13 @@ const BuildingTableContent: React.FC<BuildingTableProps> = ({
                     </IonButtons>
                     <IonTitle>Building Assessment</IonTitle>
                     <IonButtons slot="end">
-                        <IonButton
+                        <SubmitButton
                             onClick={handleSubmit}
-                            color="primary"
-                            fill="solid"
                             disabled={isSubmitting}
-                            style={{
-                                fontWeight: 'bold',
-                                borderRadius: '4px',
-                                padding: '0 16px',
-                                height: '36px'
-                            }}
-                        >
-                            {isSubmitting ? <IonSpinner name="crescent" /> : 'Submit'}
-                        </IonButton>
+                            loading={isSubmitting}
+                            label="Submit"
+                            className="header-submit-button"
+                        />
                     </IonButtons>
                 </IonToolbar>
             </IonHeader>
