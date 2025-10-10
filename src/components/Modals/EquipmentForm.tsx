@@ -75,13 +75,9 @@ const EquipmentForm: React.FC<EquipmentFormProps> = ({
   };
 
   const handleDepreciationChange = (value: string) => {
+    // Remove any non-numeric characters except decimal point
     const numericValue = value.replace(/[^0-9.]/g, '');
     onFormChange('depreciation', numericValue);
-  };
-
-  const getDepreciationDisplayValue = () => {
-    if (!formData.depreciation) return '';
-    return `${formData.depreciation}%`;
   };
 
   // Enhanced form validation - require original cost
@@ -287,9 +283,10 @@ const EquipmentForm: React.FC<EquipmentFormProps> = ({
           <EquipmentFormSection.Grid>
             <EquipmentFormSection.Input
               label="Depreciation (%)"
-              value={getDepreciationDisplayValue()}
+              value={formData.depreciation}
               placeholder="Enter percentage"
               onChange={handleDepreciationChange}
+              type="number"
             />
             <EquipmentFormSection.Input
               label="Adjusted Market Value ($)"
