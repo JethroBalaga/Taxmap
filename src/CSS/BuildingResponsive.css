@@ -49,7 +49,7 @@
 }
 
 .icon-group ion-icon {
-  font-size: 18px; /* Ensure icon size is consistent */
+  font-size: 20px; /* Increased base icon size */
 }
 
 /* Loading and No Data States */
@@ -97,16 +97,16 @@
     gap: 3px;
   }
   
-  /* Ensure mobile icons remain visible */
+  /* Ensure mobile icons remain visible - INCREASED SIZES */
   .icon-group ion-button {
-    --padding-start: 6px;
-    --padding-end: 6px;
-    min-width: 32px;
-    min-height: 32px;
+    --padding-start: 8px;
+    --padding-end: 8px;
+    min-width: 44px; /* Increased for better touch targets */
+    min-height: 44px; /* Increased for better touch targets */
   }
   
   .icon-group ion-icon {
-    font-size: 16px;
+    font-size: 22px !important; /* Increased from 16px */
   }
 
   /* Reduce title size on smaller screens */
@@ -195,17 +195,17 @@
     gap: 2px;
   }
   
-  /* Extra small mobile icon adjustments */
+  /* Extra small mobile icon adjustments - INCREASED SIZES */
   .icon-group ion-button {
-    --padding-start: 6px;
-    --padding-end: 6px;
-    min-width: 32px;
-    min-height: 32px;
+    --padding-start: 8px;
+    --padding-end: 8px;
+    min-width: 42px; /* Increased from 32px */
+    min-height: 42px; /* Increased from 32px */
     font-size: 10px !important;
   }
   
   .icon-group ion-icon {
-    font-size: 16px;
+    font-size: 20px !important; /* Increased from 16px */
   }
 
   /* Even smaller title size for tiny screens */
@@ -274,6 +274,16 @@
   /* Smallest possible text for extremely narrow screens */
   * {
     font-size: 10px !important;
+  }
+  
+  /* Keep icons readable even on very small screens */
+  .icon-group ion-icon {
+    font-size: 18px !important; /* Ensure icons remain visible */
+  }
+  
+  .icon-group ion-button {
+    min-width: 40px;
+    min-height: 40px;
   }
   
   ion-toolbar ion-title {
