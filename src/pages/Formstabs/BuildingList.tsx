@@ -13,6 +13,7 @@ import {
 import { informationCircle } from "ionicons/icons";
 import BuildingDetailsCard from "./BuildingDetailsCard";
 import "../../CSS/BuildingResponsive.css";
+import DynamicTable from "../../components/GlobalComponent/DynamicTable";
 
 interface BuildingListProps {
     form_id: string;
@@ -33,6 +34,17 @@ interface BuildingListProps {
     totalAdjustments: Map<string, number>;
     onViewDetails: (buildingId: string) => void;
     onUpdateClick: (buildingId: string, buildingData: any) => void;
+}
+
+// Interface for the table data (only what we want to display)
+interface BuildingTableData {
+    id: string;
+    building_id: string;
+    structure_type: string;
+    base_market_value: string;
+    adjusted_market_value: string;
+    assessment_level: string;
+    assessed_value: string;
 }
 
 const BuildingList: React.FC<BuildingListProps> = ({
@@ -89,14 +101,37 @@ const BuildingList: React.FC<BuildingListProps> = ({
         return Math.round(assessedValue);
     };
 
-    const filteredBuildingIds = buildingInfoIds.filter(id => {
-        if (!searchTerm) return true;
+    // Prepare clean data for DynamicTable (only display columns)
+    const tableData: BuildingTableData[] = buildingInfoIds.map((id) => {
         const buildingData = buildingDataList.get(id);
-        if (!buildingData) return false;
-        return Object.values(buildingData).some((value: any) =>
+        const baseMarketValue = baseMarketValues.get(id) || 0;
+        const originalAdjustedValue = adjustedMarketValues.get(id) || 0;
+        const adjustmentValue = totalAdjustments.get(id) || 0;
+        const finalAdjustedValue = originalAdjustedValue + adjustmentValue;
+        const assessmentLevel = assessmentLevels.get(id);
+        const assessedValue = calculateAssessedValue(finalAdjustedValue, assessmentLevel);
+
+        return {
+            id,
+            building_id: id,
+            structure_type: buildingData?.structureType || 'N/A',
+            base_market_value: baseMarketValue !== undefined ? `₱${baseMarketValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'N/A',
+            adjusted_market_value: finalAdjustedValue !== undefined ? `₱${finalAdjustedValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'N/A',
+            assessment_level: assessmentLevel ? `${assessmentLevel.rate_percent}` : 'N/A',
+            assessed_value: assessedValue !== undefined ? `₱${assessedValue.toLocaleString()}` : 'N/A',
+        };
+    });
+
+    const filteredTableData = tableData.filter(item => {
+        if (!searchTerm) return true;
+        return Object.values(item).some((value: any) =>
             value && value.toString().toLowerCase().includes(searchTerm.toLowerCase())
         );
     });
+
+    const handleTableRowClick = (rowData: BuildingTableData) => {
+        handleRowClick(rowData.id);
+    };
 
     if (loading) {
         return (
@@ -141,56 +176,30 @@ const BuildingList: React.FC<BuildingListProps> = ({
                             <IonIcon icon={informationCircle} color="primary" size="small" />
                         </IonButton>
                     </div>
-                    <IonGrid>
-                        <IonRow className="table-header">
-                            <IonCol size="2">Building ID</IonCol>
-                            <IonCol size="2">Structure Type</IonCol>
-                            <IonCol size="2">Base Market Value</IonCol>
-                            <IonCol size="2">Adjusted Market Value</IonCol>
-                            <IonCol size="2">Assessment Level</IonCol>
-                            <IonCol size="2">Assessed Value</IonCol>
-                        </IonRow>
+                    
+                    <DynamicTable
+                        data={filteredTableData}
+                        title="Building Information"
+                        keyField="id"
+                        onRowClick={handleTableRowClick}
+                        selectedRow={selectedBuildingId ? filteredTableData.find(item => item.id === selectedBuildingId) : undefined}
+                    />
 
-                        {filteredBuildingIds.map((id) => {
-                            const buildingData = buildingDataList.get(id);
-                            const baseMarketValue = baseMarketValues.get(id) || 0;
-                            const originalAdjustedValue = adjustedMarketValues.get(id) || 0;
-                            const adjustmentValue = totalAdjustments.get(id) || 0;
-                            const finalAdjustedValue = originalAdjustedValue + adjustmentValue;
-                            const assessmentLevel = assessmentLevels.get(id);
-                            const assessedValue = calculateAssessedValue(finalAdjustedValue, assessmentLevel);
-                            const isSelected = id === selectedBuildingId;
-
-                            return (
-                                <React.Fragment key={id}>
-                                    <IonRow
-                                        className={`table-row ${isSelected ? 'selected' : ''}`}
-                                        onClick={() => handleRowClick(id)}
-                                        style={{ cursor: 'pointer' }}
-                                    >
-                                        <IonCol size="2">{id}</IonCol>
-                                        <IonCol size="2">{buildingData?.structureType || 'N/A'}</IonCol>
-                                        <IonCol size="2">{baseMarketValue !== undefined ? `₱${baseMarketValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'N/A'}</IonCol>
-                                        <IonCol size="2">{finalAdjustedValue !== undefined ? `₱${finalAdjustedValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'N/A'}</IonCol>
-                                        <IonCol size="2">{assessmentLevel ? `${assessmentLevel.rate_percent}` : 'N/A'}</IonCol>
-                                        <IonCol size="2">{assessedValue !== undefined ? `₱${assessedValue.toLocaleString()}` : 'N/A'}</IonCol>
-                                    </IonRow>
-
-                                    {isSelected && buildingData && (
-                                        <IonRow>
-                                            <IonCol size="12">
-                                                <BuildingDetailsCard
-                                                    buildingData={{ ...buildingData, id }}
-                                                    buildingRate={buildingCodeRates.get(id)}
-                                                    onUpdateClick={onUpdateClick}
-                                                />
-                                            </IonCol>
-                                        </IonRow>
-                                    )}
-                                </React.Fragment>
-                            );
-                        })}
-                    </IonGrid>
+                    {/* Show Building Details Card for selected building */}
+                    {selectedBuildingId && (() => {
+                        const selectedBuilding = buildingDataList.get(selectedBuildingId);
+                        return selectedBuilding && (
+                            <IonRow>
+                                <IonCol size="12">
+                                    <BuildingDetailsCard
+                                        buildingData={{ ...selectedBuilding, id: selectedBuildingId }}
+                                        buildingRate={buildingCodeRates.get(selectedBuildingId)}
+                                        onUpdateClick={onUpdateClick}
+                                    />
+                                </IonCol>
+                            </IonRow>
+                        );
+                    })()}
                 </>
             ) : (
                 <div className="no-data">
