@@ -1,3 +1,4 @@
+/* src/components/GlobalComponent/DynamicTable.css */
 .dynamic-table {
   width: 100%;
 }
@@ -5,11 +6,13 @@
 .header-row {
   background-color: #151616;
   font-weight: bold;
+  color: white;
 }
 
 .data-row {
   cursor: pointer;
   transition: background-color 0.2s ease;
+  border-bottom: 1px solid var(--ion-color-light-shade);
 }
 
 .data-row:hover {
@@ -17,10 +20,104 @@
 }
 
 .data-row.selected {
-  background-color: #007bff;
+  background-color: var(--ion-color-primary);
   color: white;
 }
 
 .data-row.selected:hover {
-  background-color: #0069d9;
+  background-color: var(--ion-color-primary-shade);
+}
+
+/* Table Styles - SMALLER TEXT */
+.dynamic-table .header-row {
+  background-color: var(--ion-color-primary);
+  color: white;
+  font-weight: bold;
+  font-size: 10px; /* Reduced from 12px */
+}
+
+.dynamic-table .header-row ion-col {
+  padding: 6px 3px; /* Reduced padding */
+  text-align: center;
+}
+
+.dynamic-table .data-row {
+  border-bottom: 1px solid var(--ion-color-light-shade);
+  font-size: 10px; /* Reduced from 12px */
+}
+
+.dynamic-table .data-row ion-col {
+  padding: 8px 3px; /* Reduced padding */
+  text-align: center;
+  word-break: break-word;
+}
+
+.dynamic-table .data-row.selected {
+  background-color: var(--ion-color-primary-tint);
+}
+
+/* Ensure text doesn't overflow */
+.dynamic-table ion-col {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Responsive adjustments for mobile */
+@media (max-width: 768px) {
+  /* Even smaller text for mobile tables */
+  .dynamic-table .header-row {
+    font-size: 9px;
+  }
+  
+  .dynamic-table .data-row {
+    font-size: 9px;
+  }
+  
+  .dynamic-table .header-row ion-col,
+  .dynamic-table .data-row ion-col {
+    padding: 5px 2px;
+  }
+  
+  /* Make table container scrollable on mobile */
+  .dynamic-table {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Smallest text for very small screens */
+  .dynamic-table .header-row {
+    font-size: 8px;
+  }
+  
+  .dynamic-table .data-row {
+    font-size: 8px;
+  }
+  
+  .dynamic-table .header-row ion-col,
+  .dynamic-table .data-row ion-col {
+    padding: 4px 1px;
+  }
+}
+
+/* Special handling for very narrow screens */
+@media (max-width: 320px) {
+  /* Smallest possible text for extremely narrow screens */
+  .dynamic-table .header-row,
+  .dynamic-table .data-row {
+    font-size: 7px !important;
+  }
+}
+
+/* High contrast for better mobile visibility */
+@media (prefers-color-scheme: dark) {
+  .dynamic-table .data-row {
+    border-bottom-color: var(--ion-color-dark-shade);
+  }
+  
+  .dynamic-table .data-row.selected {
+    background-color: var(--ion-color-primary-shade);
+  }
 }
