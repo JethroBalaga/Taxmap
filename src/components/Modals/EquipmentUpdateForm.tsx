@@ -84,11 +84,6 @@ const EquipmentUpdateForm: React.FC<EquipmentUpdateFormProps> = ({
     onFormChange('depreciation', numericValue);
   };
 
-  const getDepreciationDisplayValue = () => {
-    if (!formData.depreciation) return '';
-    return `${formData.depreciation}%`;
-  };
-
   return (
     <>
       <div style={{
@@ -289,9 +284,10 @@ const EquipmentUpdateForm: React.FC<EquipmentUpdateFormProps> = ({
           <EquipmentUpdateFormSection.Grid>
             <EquipmentUpdateFormSection.Input
               label="Depreciation (%)"
-              value={getDepreciationDisplayValue()}
+              value={formData.depreciation}
               placeholder="Enter percentage"
               onChange={handleDepreciationChange}
+              type="number"
             />
             <EquipmentUpdateFormSection.Input
               label="Adjusted Market Value ($)"
