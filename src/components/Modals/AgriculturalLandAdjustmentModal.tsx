@@ -36,6 +36,7 @@ export interface AgriculturalLandAdjustmentData {
   frontageFactor: string;
   weatherRoadFactor: string;
   marketFactor: string;
+  totalAdjustment: string;
 }
 
 const AgriculturalLandAdjustmentModal: React.FC<AgriculturalLandAdjustmentModalProps> = ({
@@ -50,22 +51,39 @@ const AgriculturalLandAdjustmentModal: React.FC<AgriculturalLandAdjustmentModalP
   const [frontageFactor, setFrontageFactor] = useState<string>('');
   const [weatherRoadFactor, setWeatherRoadFactor] = useState<string>('');
   const [marketFactor, setMarketFactor] = useState<string>('');
-  
-  const [frontageOptions, setFrontageOptions] = useState<Array<{value: string, label: string}>>([]);
-  const [weatherRoadOptions, setWeatherRoadOptions] = useState<Array<{value: string, label: string}>>([]);
-  const [marketOptions, setMarketOptions] = useState<Array<{value: string, label: string}>>([]);
+  const [totalAdjustment, setTotalAdjustment] = useState<string>('0');
+
+  const [frontageOptions, setFrontageOptions] = useState<Array<{ value: string, label: string }>>([]);
+  const [weatherRoadOptions, setWeatherRoadOptions] = useState<Array<{ value: string, label: string }>>([]);
+  const [marketOptions, setMarketOptions] = useState<Array<{ value: string, label: string }>>([]);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Calculate total adjustment whenever any factor changes
+  useEffect(() => {
+    const calculateTotal = () => {
+      const frontageNum = parseFloat(frontageFactor) || 0;
+      const weatherRoadNum = parseFloat(weatherRoadFactor) || 0;
+      const marketNum = parseFloat(marketFactor) || 0;
+
+      const total = frontageNum + weatherRoadNum + marketNum;
+      // Make the total negative
+      const negativeTotal = total > 0 ? -total : total;
+      setTotalAdjustment(negativeTotal.toString());
+    };
+
+    calculateTotal();
+  }, [frontageFactor, weatherRoadFactor, marketFactor]);
+
   // Local functions to get options
-  const getFrontageOptions = async (): Promise<Array<{value: string, label: string}>> => {
+  const getFrontageOptions = async (): Promise<Array<{ value: string, label: string }>> => {
     try {
       const allData = await getLandAdjustmentData();
       if (!allData) return [];
-      
+
       const frontageData = allData.filter(item => item.adjustment_type === 'Agricultural Frontage');
       return frontageData.map(item => ({
-        value: item.adjustment_factor, // Use adjustment_factor as value
-        label: item.description // Use description as label
+        value: item.adjustment_factor,
+        label: item.description
       }));
     } catch (error) {
       console.error('Error getting frontage options:', error);
@@ -73,15 +91,15 @@ const AgriculturalLandAdjustmentModal: React.FC<AgriculturalLandAdjustmentModalP
     }
   };
 
-  const getWeatherRoadOptions = async (): Promise<Array<{value: string, label: string}>> => {
+  const getWeatherRoadOptions = async (): Promise<Array<{ value: string, label: string }>> => {
     try {
       const allData = await getLandAdjustmentData();
       if (!allData) return [];
-      
+
       const weatherRoadData = allData.filter(item => item.adjustment_type === 'Weather Road');
       return weatherRoadData.map(item => ({
-        value: item.adjustment_factor, // Use adjustment_factor as value
-        label: item.description // Use description as label
+        value: item.adjustment_factor,
+        label: item.description
       }));
     } catch (error) {
       console.error('Error getting weather road options:', error);
@@ -89,15 +107,15 @@ const AgriculturalLandAdjustmentModal: React.FC<AgriculturalLandAdjustmentModalP
     }
   };
 
-  const getMarketOptions = async (): Promise<Array<{value: string, label: string}>> => {
+  const getMarketOptions = async (): Promise<Array<{ value: string, label: string }>> => {
     try {
       const allData = await getLandAdjustmentData();
       if (!allData) return [];
-      
+
       const marketData = allData.filter(item => item.adjustment_type === 'Market');
       return marketData.map(item => ({
-        value: item.adjustment_factor, // Use adjustment_factor as value
-        label: item.description // Use description as label
+        value: item.adjustment_factor,
+        label: item.description
       }));
     } catch (error) {
       console.error('Error getting market options:', error);
@@ -116,11 +134,7 @@ const AgriculturalLandAdjustmentModal: React.FC<AgriculturalLandAdjustmentModalP
             getWeatherRoadOptions(),
             getMarketOptions()
           ]);
-          
-          console.log('Frontage options:', frontageData);
-          console.log('Weather Road options:', weatherRoadData);
-          console.log('Market options:', marketData);
-          
+
           setFrontageOptions(frontageData);
           setWeatherRoadOptions(weatherRoadData);
           setMarketOptions(marketData);
@@ -131,23 +145,23 @@ const AgriculturalLandAdjustmentModal: React.FC<AgriculturalLandAdjustmentModalP
         }
       }
     };
-    
+
     loadOptions();
   }, [isOpen]);
 
   const handleFrontageChange = (value: string) => {
     setFrontage(value);
-    setFrontageFactor(value); // Since value IS the adjustment_factor
+    setFrontageFactor(value);
   };
 
   const handleWeatherRoadChange = (value: string) => {
     setWeatherRoad(value);
-    setWeatherRoadFactor(value); // Since value IS the adjustment_factor
+    setWeatherRoadFactor(value);
   };
 
   const handleMarketChange = (value: string) => {
     setMarket(value);
-    setMarketFactor(value); // Since value IS the adjustment_factor
+    setMarketFactor(value);
   };
 
   const handleSubmit = () => {
@@ -158,8 +172,9 @@ const AgriculturalLandAdjustmentModal: React.FC<AgriculturalLandAdjustmentModalP
       frontageFactor,
       weatherRoadFactor,
       marketFactor,
+      totalAdjustment,
     };
-    
+
     console.log('Agricultural Land Adjustment Data:', adjustmentData);
     onSuccess(adjustmentData);
   };
@@ -172,12 +187,13 @@ const AgriculturalLandAdjustmentModal: React.FC<AgriculturalLandAdjustmentModalP
     setFrontageFactor('');
     setWeatherRoadFactor('');
     setMarketFactor('');
+    setTotalAdjustment('0');
     onDismiss();
   };
 
-  const isFormValid = frontage.trim() !== '' && 
-                     weatherRoad.trim() !== '' && 
-                     market.trim() !== '';
+  const isFormValid = frontage.trim() !== '' &&
+    weatherRoad.trim() !== '' &&
+    market.trim() !== '';
 
   return (
     <IonModal isOpen={isOpen} onDidDismiss={handleClose} className="custom-wide-modal">
@@ -320,6 +336,38 @@ const AgriculturalLandAdjustmentModal: React.FC<AgriculturalLandAdjustmentModalP
             </IonCol>
           </IonRow>
 
+          {/* Total Adjustments */}
+          {/* Total Adjustments - SINGLE ROW */}
+          <IonRow>
+            <IonCol size="12">
+              <IonItem className="custom-input" lines="none">
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  width: '100%',
+                  height: '48px'
+                }}>
+                  <span style={{
+                    fontSize: '16px',
+                    fontWeight: 'bold',
+                    color: '#2d3748'
+                  }}>
+                    Total Adjustments
+                  </span>
+                  <span style={{
+                    fontSize: '16px',
+                    fontWeight: 'bold',
+                    color: totalAdjustment.startsWith('-') ? '#e53e3e' : '#2d3748',
+                    minWidth: '60px',
+                    textAlign: 'right'
+                  }}>
+                    {totalAdjustment}
+                  </span>
+                </div>
+              </IonItem>
+            </IonCol>
+          </IonRow>
           {/* Next Button */}
           <div className="next-btn-container" style={{ marginTop: '30px' }}>
             <Next onClick={handleSubmit} disabled={!isFormValid || isLoading} />
