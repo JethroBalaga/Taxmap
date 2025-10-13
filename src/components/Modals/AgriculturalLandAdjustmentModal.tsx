@@ -1,5 +1,5 @@
 // src/components/Modals/AgriculturalLandAdjustmentModal.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   IonModal,
   IonHeader,
@@ -20,6 +20,7 @@ import {
 import { closeOutline } from 'ionicons/icons';
 import { FormData } from './Form';
 import Next from '../GlobalComponent/Next';
+import { getLandAdjustmentData } from '../../utils/landAdjustmentLocalStorage';
 
 interface AgriculturalLandAdjustmentModalProps {
   isOpen: boolean;
@@ -32,6 +33,9 @@ export interface AgriculturalLandAdjustmentData {
   frontage: string;
   weatherRoad: string;
   market: string;
+  frontageFactor: string;
+  weatherRoadFactor: string;
+  marketFactor: string;
 }
 
 const AgriculturalLandAdjustmentModal: React.FC<AgriculturalLandAdjustmentModalProps> = ({
@@ -43,12 +47,117 @@ const AgriculturalLandAdjustmentModal: React.FC<AgriculturalLandAdjustmentModalP
   const [frontage, setFrontage] = useState<string>('');
   const [weatherRoad, setWeatherRoad] = useState<string>('');
   const [market, setMarket] = useState<string>('');
+  const [frontageFactor, setFrontageFactor] = useState<string>('');
+  const [weatherRoadFactor, setWeatherRoadFactor] = useState<string>('');
+  const [marketFactor, setMarketFactor] = useState<string>('');
+  
+  const [frontageOptions, setFrontageOptions] = useState<Array<{value: string, label: string}>>([]);
+  const [weatherRoadOptions, setWeatherRoadOptions] = useState<Array<{value: string, label: string}>>([]);
+  const [marketOptions, setMarketOptions] = useState<Array<{value: string, label: string}>>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Local functions to get options
+  const getFrontageOptions = async (): Promise<Array<{value: string, label: string}>> => {
+    try {
+      const allData = await getLandAdjustmentData();
+      if (!allData) return [];
+      
+      const frontageData = allData.filter(item => item.adjustment_type === 'Agricultural Frontage');
+      return frontageData.map(item => ({
+        value: item.adjustment_factor, // Use adjustment_factor as value
+        label: item.description // Use description as label
+      }));
+    } catch (error) {
+      console.error('Error getting frontage options:', error);
+      return [];
+    }
+  };
+
+  const getWeatherRoadOptions = async (): Promise<Array<{value: string, label: string}>> => {
+    try {
+      const allData = await getLandAdjustmentData();
+      if (!allData) return [];
+      
+      const weatherRoadData = allData.filter(item => item.adjustment_type === 'Weather Road');
+      return weatherRoadData.map(item => ({
+        value: item.adjustment_factor, // Use adjustment_factor as value
+        label: item.description // Use description as label
+      }));
+    } catch (error) {
+      console.error('Error getting weather road options:', error);
+      return [];
+    }
+  };
+
+  const getMarketOptions = async (): Promise<Array<{value: string, label: string}>> => {
+    try {
+      const allData = await getLandAdjustmentData();
+      if (!allData) return [];
+      
+      const marketData = allData.filter(item => item.adjustment_type === 'Market');
+      return marketData.map(item => ({
+        value: item.adjustment_factor, // Use adjustment_factor as value
+        label: item.description // Use description as label
+      }));
+    } catch (error) {
+      console.error('Error getting market options:', error);
+      return [];
+    }
+  };
+
+  // Load adjustment options when modal opens
+  useEffect(() => {
+    const loadOptions = async () => {
+      if (isOpen) {
+        setIsLoading(true);
+        try {
+          const [frontageData, weatherRoadData, marketData] = await Promise.all([
+            getFrontageOptions(),
+            getWeatherRoadOptions(),
+            getMarketOptions()
+          ]);
+          
+          console.log('Frontage options:', frontageData);
+          console.log('Weather Road options:', weatherRoadData);
+          console.log('Market options:', marketData);
+          
+          setFrontageOptions(frontageData);
+          setWeatherRoadOptions(weatherRoadData);
+          setMarketOptions(marketData);
+        } catch (error) {
+          console.error('Error loading adjustment options:', error);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+    
+    loadOptions();
+  }, [isOpen]);
+
+  const handleFrontageChange = (value: string) => {
+    setFrontage(value);
+    setFrontageFactor(value); // Since value IS the adjustment_factor
+  };
+
+  const handleWeatherRoadChange = (value: string) => {
+    setWeatherRoad(value);
+    setWeatherRoadFactor(value); // Since value IS the adjustment_factor
+  };
+
+  const handleMarketChange = (value: string) => {
+    setMarket(value);
+    setMarketFactor(value); // Since value IS the adjustment_factor
+  };
 
   const handleSubmit = () => {
     const adjustmentData: AgriculturalLandAdjustmentData = {
       frontage,
       weatherRoad,
       market,
+      frontageFactor,
+      weatherRoadFactor,
+      marketFactor,
     };
     
     console.log('Agricultural Land Adjustment Data:', adjustmentData);
@@ -60,6 +169,9 @@ const AgriculturalLandAdjustmentModal: React.FC<AgriculturalLandAdjustmentModalP
     setFrontage('');
     setWeatherRoad('');
     setMarket('');
+    setFrontageFactor('');
+    setWeatherRoadFactor('');
+    setMarketFactor('');
     onDismiss();
   };
 
@@ -100,12 +212,17 @@ const AgriculturalLandAdjustmentModal: React.FC<AgriculturalLandAdjustmentModalP
                 </IonLabel>
                 <IonSelect
                   value={frontage}
-                  placeholder="Select Frontage"
-                  onIonChange={(e) => setFrontage(e.detail.value)}
+                  placeholder={isLoading ? "Loading..." : "Select Frontage"}
+                  onIonChange={(e) => handleFrontageChange(e.detail.value)}
                   interface="popover"
                   className="modal-input"
+                  disabled={isLoading}
                 >
-                  {/* Empty for now - no options */}
+                  {frontageOptions.map(option => (
+                    <IonSelectOption key={option.value} value={option.value}>
+                      {option.label}
+                    </IonSelectOption>
+                  ))}
                 </IonSelect>
               </IonItem>
             </IonCol>
@@ -115,8 +232,8 @@ const AgriculturalLandAdjustmentModal: React.FC<AgriculturalLandAdjustmentModalP
                   &nbsp;
                 </IonLabel>
                 <IonInput
-                  value=""
-                  placeholder="Value"
+                  value={frontageFactor}
+                  placeholder="Factor"
                   disabled
                   className="modal-input"
                   style={{ fontSize: '14px', height: '48px' }}
@@ -134,12 +251,17 @@ const AgriculturalLandAdjustmentModal: React.FC<AgriculturalLandAdjustmentModalP
                 </IonLabel>
                 <IonSelect
                   value={weatherRoad}
-                  placeholder="Select Weather Road"
-                  onIonChange={(e) => setWeatherRoad(e.detail.value)}
+                  placeholder={isLoading ? "Loading..." : "Select Weather Road"}
+                  onIonChange={(e) => handleWeatherRoadChange(e.detail.value)}
                   interface="popover"
                   className="modal-input"
+                  disabled={isLoading}
                 >
-                  {/* Empty for now - no options */}
+                  {weatherRoadOptions.map(option => (
+                    <IonSelectOption key={option.value} value={option.value}>
+                      {option.label}
+                    </IonSelectOption>
+                  ))}
                 </IonSelect>
               </IonItem>
             </IonCol>
@@ -149,8 +271,8 @@ const AgriculturalLandAdjustmentModal: React.FC<AgriculturalLandAdjustmentModalP
                   &nbsp;
                 </IonLabel>
                 <IonInput
-                  value=""
-                  placeholder="Value"
+                  value={weatherRoadFactor}
+                  placeholder="Factor"
                   disabled
                   className="modal-input"
                   style={{ fontSize: '14px', height: '48px' }}
@@ -168,12 +290,17 @@ const AgriculturalLandAdjustmentModal: React.FC<AgriculturalLandAdjustmentModalP
                 </IonLabel>
                 <IonSelect
                   value={market}
-                  placeholder="Select Market"
-                  onIonChange={(e) => setMarket(e.detail.value)}
+                  placeholder={isLoading ? "Loading..." : "Select Market"}
+                  onIonChange={(e) => handleMarketChange(e.detail.value)}
                   interface="popover"
                   className="modal-input"
+                  disabled={isLoading}
                 >
-                  {/* Empty for now - no options */}
+                  {marketOptions.map(option => (
+                    <IonSelectOption key={option.value} value={option.value}>
+                      {option.label}
+                    </IonSelectOption>
+                  ))}
                 </IonSelect>
               </IonItem>
             </IonCol>
@@ -183,8 +310,8 @@ const AgriculturalLandAdjustmentModal: React.FC<AgriculturalLandAdjustmentModalP
                   &nbsp;
                 </IonLabel>
                 <IonInput
-                  value=""
-                  placeholder="Value"
+                  value={marketFactor}
+                  placeholder="Factor"
                   disabled
                   className="modal-input"
                   style={{ fontSize: '14px', height: '48px' }}
@@ -195,7 +322,7 @@ const AgriculturalLandAdjustmentModal: React.FC<AgriculturalLandAdjustmentModalP
 
           {/* Next Button */}
           <div className="next-btn-container" style={{ marginTop: '30px' }}>
-            <Next onClick={handleSubmit} disabled={!isFormValid} />
+            <Next onClick={handleSubmit} disabled={!isFormValid || isLoading} />
           </div>
         </div>
       </IonContent>
