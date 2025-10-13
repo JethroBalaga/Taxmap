@@ -1,3 +1,4 @@
+// src/components/Modals/AgriculturalLandAdjustmentModal.tsx
 import React, { useState } from 'react';
 import {
   IonModal,
@@ -11,11 +12,17 @@ import {
   IonItem,
   IonLabel,
   IonSelect,
-  IonSelectOption
+  IonSelectOption,
 } from '@ionic/react';
 import { closeOutline } from 'ionicons/icons';
-import { FormData } from '../Form';
-import '../../CSS/modal.css';
+import { FormData } from './Form';
+
+interface AgriculturalLandAdjustmentModalProps {
+  isOpen: boolean;
+  onDismiss: () => void;
+  onSuccess: (adjustmentData: AgriculturalLandAdjustmentData) => void;
+  formData: FormData;
+}
 
 export interface AgriculturalLandAdjustmentData {
   frontage: string;
@@ -23,54 +30,45 @@ export interface AgriculturalLandAdjustmentData {
   market: string;
 }
 
-interface AgriculturalLandAdjustmentModalProps {
-  isOpen: boolean;
-  onDismiss: () => void;
-  onSuccess: (data: AgriculturalLandAdjustmentData) => void;
-  formData: FormData;
-}
-
 const AgriculturalLandAdjustmentModal: React.FC<AgriculturalLandAdjustmentModalProps> = ({
   isOpen,
   onDismiss,
   onSuccess,
-  formData
+  formData,
 }) => {
-  const [frontage, setFrontage] = useState('');
-  const [weatherRoad, setWeatherRoad] = useState('');
-  const [market, setMarket] = useState('');
+  const [frontage, setFrontage] = useState<string>('');
+  const [weatherRoad, setWeatherRoad] = useState<string>('');
+  const [market, setMarket] = useState<string>('');
 
   const handleSubmit = () => {
     const adjustmentData: AgriculturalLandAdjustmentData = {
       frontage,
       weatherRoad,
-      market
+      market,
     };
     
     console.log('Agricultural Land Adjustment Data:', adjustmentData);
     onSuccess(adjustmentData);
-    resetForm();
-  };
-
-  const resetForm = () => {
-    setFrontage('');
-    setWeatherRoad('');
-    setMarket('');
   };
 
   const handleClose = () => {
-    resetForm();
+    // Reset form when closing
+    setFrontage('');
+    setWeatherRoad('');
+    setMarket('');
     onDismiss();
   };
 
-  const isFormValid = frontage !== '' && weatherRoad !== '' && market !== '';
+  const isFormValid = frontage.trim() !== '' && 
+                     weatherRoad.trim() !== '' && 
+                     market.trim() !== '';
 
   return (
     <IonModal isOpen={isOpen} onDidDismiss={handleClose} className="custom-wide-modal">
       <IonHeader>
         <IonToolbar className="fancy-header">
           <IonTitle className="fancy-title">
-            <i className="icon-adjustment" style={{ marginRight: '10px' }}></i>
+            <i className="icon-agriculture" style={{ marginRight: '10px' }}></i>
             Agricultural Land Adjustments
           </IonTitle>
           <IonButtons slot="end">
@@ -83,88 +81,78 @@ const AgriculturalLandAdjustmentModal: React.FC<AgriculturalLandAdjustmentModalP
 
       <IonContent className="modal-content">
         <div className="form-container">
-          {/* Form Information */}
-          <div className="form-info-section">
-            <h3 style={{ color: '#2d3748', marginBottom: '10px' }}>Property Information</h3>
-            <p style={{ color: '#718096', fontSize: '14px', marginBottom: '20px' }}>
-              Kind: <strong>LAND</strong> | Classification: <strong>AGRICULTURAL</strong>
+          <div style={{ marginBottom: '20px', padding: '0 16px' }}>
+            <p style={{ color: '#666', fontSize: '14px', margin: 0 }}>
+              Please provide additional details for agricultural land classification.
             </p>
           </div>
 
-          {/* Frontage Dropdown */}
+          {/* Frontage Dropdown - Empty for now */}
           <IonItem className="custom-input" lines="none">
             <IonLabel position="stacked" className="input-label">
-              Frontage Adjustment <span style={{ color: 'red' }}>*</span>
+              Frontage <span style={{ color: 'red' }}>*</span>
             </IonLabel>
             <IonSelect
               value={frontage}
-              placeholder="Select Frontage Adjustment"
+              placeholder="Select Frontage"
               onIonChange={(e) => setFrontage(e.detail.value)}
               interface="popover"
               className="modal-input"
             >
-              <IonSelectOption value="">Select Frontage</IonSelectOption>
-              {/* Options will be populated from database later */}
-              <IonSelectOption value="frontage-1">Frontage Option 1</IonSelectOption>
-              <IonSelectOption value="frontage-2">Frontage Option 2</IonSelectOption>
+              {/* Empty for now - no options */}
             </IonSelect>
           </IonItem>
 
-          {/* Weather Road Dropdown */}
+          {/* Weather Road Dropdown - Empty for now */}
           <IonItem className="custom-input" lines="none">
             <IonLabel position="stacked" className="input-label">
-              Weather Road Adjustment <span style={{ color: 'red' }}>*</span>
+              Weather Road <span style={{ color: 'red' }}>*</span>
             </IonLabel>
             <IonSelect
               value={weatherRoad}
-              placeholder="Select Weather Road Adjustment"
+              placeholder="Select Weather Road"
               onIonChange={(e) => setWeatherRoad(e.detail.value)}
               interface="popover"
               className="modal-input"
             >
-              <IonSelectOption value="">Select Weather Road</IonSelectOption>
-              {/* Options will be populated from database later */}
-              <IonSelectOption value="weather-1">Weather Road Option 1</IonSelectOption>
-              <IonSelectOption value="weather-2">Weather Road Option 2</IonSelectOption>
+              {/* Empty for now - no options */}
             </IonSelect>
           </IonItem>
 
-          {/* Market Dropdown */}
+          {/* Market Dropdown - Empty for now */}
           <IonItem className="custom-input" lines="none">
             <IonLabel position="stacked" className="input-label">
-              Market Adjustment <span style={{ color: 'red' }}>*</span>
+              Market <span style={{ color: 'red' }}>*</span>
             </IonLabel>
             <IonSelect
               value={market}
-              placeholder="Select Market Adjustment"
+              placeholder="Select Market"
               onIonChange={(e) => setMarket(e.detail.value)}
               interface="popover"
               className="modal-input"
             >
-              <IonSelectOption value="">Select Market</IonSelectOption>
-              {/* Options will be populated from database later */}
-              <IonSelectOption value="market-1">Market Option 1</IonSelectOption>
-              <IonSelectOption value="market-2">Market Option 2</IonSelectOption>
+              {/* Empty for now - no options */}
             </IonSelect>
           </IonItem>
 
-          {/* Action Buttons */}
-          <div className="button-group" style={{ marginTop: '30px' }}>
-            <IonButton 
-              expand="block" 
-              onClick={handleClose}
-              className="cancel-btn"
-              fill="outline"
-            >
-              Cancel
-            </IonButton>
-            <IonButton 
-              expand="block" 
+          {/* Submit Button */}
+          <div className="next-btn-container" style={{ marginTop: '30px' }}>
+            <IonButton
               onClick={handleSubmit}
               disabled={!isFormValid}
-              className="submit-btn"
+              expand="block"
+              className="fancy-button"
+              style={{
+                '--background': isFormValid ? 'var(--ion-color-primary)' : '#cbd5e0',
+                '--background-hover': isFormValid ? 'var(--ion-color-primary-shade)' : '#cbd5e0',
+                margin: '0 16px',
+                borderRadius: '12px',
+                height: '50px',
+                fontSize: '16px',
+                fontWeight: '600'
+              }}
             >
-              Apply Adjustments
+              Continue to Photos
             </IonButton>
           </div>
         </div>
