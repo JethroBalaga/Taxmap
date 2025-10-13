@@ -11,6 +11,7 @@ import { BuildingDataLocalStorage } from '../../utils/tablestorages/BuildingData
 import { MachineDataLocalStorage } from '../../utils/tablestorages/MachineDataLocalStorage';
 import { PhotoTagLocalStorage } from '../../utils/tablestorages/PhotoTagLocalStorage';
 import { ValueInfoLocalStorage } from '../../utils/tablestorages/ValueInfoLocalStorage';
+import { AgriculturalDataLocalStorage } from '../../utils/tablestorages/AgriculturalDataLocalStorage';
 import { generateFileName, saveImageToStorage, adjustCoordinates } from '../../utils/photoModalUtils';
 
 interface UsePhotoModalProps {
@@ -203,6 +204,7 @@ export const usePhotoModal = ({
       let photoTag = null;
       let valueInfo = null;
 
+      // Save Form Data
       if (formData) {
         savedFormData = FormDataLocalStorage.saveFormData(formData);
         console.log('Form data saved:', savedFormData);
@@ -211,6 +213,7 @@ export const usePhotoModal = ({
       const finalLatitude = adjustedLocation?.latitude || currentLocation?.latitude || 0;
       const finalLongitude = adjustedLocation?.longitude || currentLocation?.longitude || 0;
 
+      // Save Photo Tag
       photoTag = PhotoTagLocalStorage.addPhotoTag({
         photoName,
         longitude: finalLongitude,
@@ -221,23 +224,25 @@ export const usePhotoModal = ({
       console.log('Photo tag saved:', photoTag);
 
       if (savedFormData && photoTag) {
+        // Save Value Info
         valueInfo = ValueInfoLocalStorage.addValueInfo({
           formDataId: savedFormData.id,
           photoTagId: photoTag.id,
         });
         console.log('ValueInfo created:', valueInfo);
 
-        // Log agricultural data
-        if (agriculturalData) {
-          console.log('Agricultural data for storage:', {
+        // Save Agricultural Data if available
+        if (agriculturalData && valueInfo) {
+          savedAgriculturalData = AgriculturalDataLocalStorage.saveAgriculturalData({
             frontage: agriculturalData.frontage,
-            weatherRoad: agriculturalData.weatherRoad,
-            market: agriculturalData.market
+            weather_road: agriculturalData.weatherRoad,
+            market: agriculturalData.market,
+            value_info_id: valueInfo.id.toString()
           });
-          // Store agricultural data reference here if needed
-          savedAgriculturalData = agriculturalData;
+          console.log('Agricultural data saved:', savedAgriculturalData);
         }
 
+        // Save Building Data if available
         if (buildingData && valueInfo) {
           savedBuildingData = BuildingDataLocalStorage.saveBuildingData({
             ...buildingData,
@@ -246,6 +251,7 @@ export const usePhotoModal = ({
           console.log('Building data saved:', savedBuildingData);
         }
 
+        // Save Machine Data if available
         if (machineData && valueInfo) {
           savedMachineData = MachineDataLocalStorage.saveMachineData({
             ...machineData,
