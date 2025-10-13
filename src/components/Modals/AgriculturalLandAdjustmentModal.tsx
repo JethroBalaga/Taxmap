@@ -37,6 +37,7 @@ export interface AgriculturalLandAdjustmentData {
   weatherRoadFactor: string;
   marketFactor: string;
   totalAdjustment: string;
+  adjustedMarketValue: string;
 }
 
 const AgriculturalLandAdjustmentModal: React.FC<AgriculturalLandAdjustmentModalProps> = ({
@@ -52,15 +53,16 @@ const AgriculturalLandAdjustmentModal: React.FC<AgriculturalLandAdjustmentModalP
   const [weatherRoadFactor, setWeatherRoadFactor] = useState<string>('');
   const [marketFactor, setMarketFactor] = useState<string>('');
   const [totalAdjustment, setTotalAdjustment] = useState<string>('0');
+  const [adjustedMarketValue, setAdjustedMarketValue] = useState<string>('100');
 
   const [frontageOptions, setFrontageOptions] = useState<Array<{ value: string, label: string }>>([]);
   const [weatherRoadOptions, setWeatherRoadOptions] = useState<Array<{ value: string, label: string }>>([]);
   const [marketOptions, setMarketOptions] = useState<Array<{ value: string, label: string }>>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Calculate total adjustment whenever any factor changes
+  // Calculate total adjustment and adjusted market value whenever any factor changes
   useEffect(() => {
-    const calculateTotal = () => {
+    const calculateValues = () => {
       const frontageNum = parseFloat(frontageFactor) || 0;
       const weatherRoadNum = parseFloat(weatherRoadFactor) || 0;
       const marketNum = parseFloat(marketFactor) || 0;
@@ -69,9 +71,14 @@ const AgriculturalLandAdjustmentModal: React.FC<AgriculturalLandAdjustmentModalP
       // Make the total negative
       const negativeTotal = total > 0 ? -total : total;
       setTotalAdjustment(negativeTotal.toString());
+
+      // Calculate adjusted market value: 100 - total adjustment
+      const adjustmentValue = Math.abs(negativeTotal);
+      const adjustedValue = 100 - adjustmentValue;
+      setAdjustedMarketValue(adjustedValue.toString());
     };
 
-    calculateTotal();
+    calculateValues();
   }, [frontageFactor, weatherRoadFactor, marketFactor]);
 
   // Local functions to get options
@@ -173,6 +180,7 @@ const AgriculturalLandAdjustmentModal: React.FC<AgriculturalLandAdjustmentModalP
       weatherRoadFactor,
       marketFactor,
       totalAdjustment,
+      adjustedMarketValue,
     };
 
     console.log('Agricultural Land Adjustment Data:', adjustmentData);
@@ -188,6 +196,7 @@ const AgriculturalLandAdjustmentModal: React.FC<AgriculturalLandAdjustmentModalP
     setWeatherRoadFactor('');
     setMarketFactor('');
     setTotalAdjustment('0');
+    setAdjustedMarketValue('100');
     onDismiss();
   };
 
@@ -337,7 +346,6 @@ const AgriculturalLandAdjustmentModal: React.FC<AgriculturalLandAdjustmentModalP
           </IonRow>
 
           {/* Total Adjustments */}
-          {/* Total Adjustments - SINGLE ROW */}
           <IonRow>
             <IonCol size="12">
               <IonItem className="custom-input" lines="none">
@@ -368,6 +376,39 @@ const AgriculturalLandAdjustmentModal: React.FC<AgriculturalLandAdjustmentModalP
               </IonItem>
             </IonCol>
           </IonRow>
+
+          {/* Adjusted Market Value */}
+          <IonRow>
+            <IonCol size="12">
+              <IonItem className="custom-input" lines="none">
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  width: '100%',
+                  height: '48px'
+                }}>
+                  <span style={{
+                    fontSize: '16px',
+                    fontWeight: 'bold',
+                    color: '#2d3748'
+                  }}>
+                    Adjusted Market Value
+                  </span>
+                  <span style={{
+                    fontSize: '16px',
+                    fontWeight: 'bold',
+                    color: '#2d3748',
+                    minWidth: '60px',
+                    textAlign: 'right'
+                  }}>
+                    {adjustedMarketValue}
+                  </span>
+                </div>
+              </IonItem>
+            </IonCol>
+          </IonRow>
+
           {/* Next Button */}
           <div className="next-btn-container" style={{ marginTop: '30px' }}>
             <Next onClick={handleSubmit} disabled={!isFormValid || isLoading} />
