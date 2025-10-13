@@ -301,7 +301,11 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
 
   const handleAgriculturalModalSuccess = useCallback((adjustmentData: AgriculturalLandAdjustmentData) => {
     console.log('🌾 Form: Received agricultural land adjustment data');
-    console.log('Agricultural data:', adjustmentData);
+    console.log('Agricultural data (only 3 values):', {
+      frontage: adjustmentData.frontage,
+      weatherRoad: adjustmentData.weatherRoad,
+      market: adjustmentData.market
+    });
     
     setAgriculturalData(adjustmentData);
     setShowAgriculturalModal(false);
@@ -419,6 +423,7 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
         formData={formData}
         buildingData={buildingData}
         machineData={machineData}
+        agriculturalData={agriculturalData}
         onCompleteSubmission={handlePhotoModalSuccess}
       />
     </>
