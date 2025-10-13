@@ -9,6 +9,7 @@ import FormView from './FormView';
 import BuildingModal from './BuildingModal';
 import MachineModal, { MachineData } from './MachineModal';
 import PhotoModal from './PhotoModal';
+import AgriculturalLandAdjustmentModal, { AgriculturalLandAdjustmentData } from './AgriculturalLandAdjustmentModal';
 
 export interface FormData {
   district: number | null;
@@ -54,8 +55,10 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
   const [showBuildingModal, setShowBuildingModal] = useState(false);
   const [showMachineModal, setShowMachineModal] = useState(false);
   const [showPhotoModal, setShowPhotoModal] = useState(false);
+  const [showAgriculturalModal, setShowAgriculturalModal] = useState(false);
   const [buildingData, setBuildingData] = useState<any>(null);
   const [machineData, setMachineData] = useState<MachineData | null>(null);
+  const [agriculturalData, setAgriculturalData] = useState<AgriculturalLandAdjustmentData | null>(null);
 
   // Memoized values to prevent unnecessary recalculations
   const isBuilding = useMemo((): boolean => {
@@ -75,6 +78,16 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
     const selectedKind = kinds.find(k => k.kind_id.toString() === kind);
     return selectedKind?.description?.toLowerCase().includes('machinery') || false;
   }, [kind, isLoadingKinds, kinds]);
+
+  const isAgriculturalLand = useMemo((): boolean => {
+    if (!kind || !classification || isLoadingKinds || isLoadingClassifications) return false;
+    
+    const selectedKind = kinds.find(k => k.kind_id.toString() === kind);
+    const selectedClassification = classifications.find(c => c.class_id === classification);
+    
+    return (selectedKind?.description?.toLowerCase().includes('land') || false) && 
+           (selectedClassification?.classification?.toLowerCase().includes('agricultural') || false);
+  }, [kind, classification, isLoadingKinds, isLoadingClassifications, kinds, classifications]);
 
   const formattedActualUses = useMemo((): Array<{value: string, label: string}> => {
     return actualUses.map(actualUse => ({
@@ -238,6 +251,7 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
     setSearchText('');
     setBuildingData(null);
     setMachineData(null);
+    setAgriculturalData(null);
   }, []);
 
   const handleNextClick = useCallback(() => {
@@ -247,12 +261,15 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
       setShowBuildingModal(true);
     } else if (isMachineryKind) {
       setShowMachineModal(true);
+    } else if (isAgriculturalLand) {
+      // Show agricultural land adjustment modal for agricultural land
+      setShowAgriculturalModal(true);
     } else {
       console.log('Form data:', { district, declarantId, kind, classification, subclass, actualUse, area });
-      // For land kind, directly open photo modal
+      // For non-agricultural land kind, directly open photo modal
       setShowPhotoModal(true);
     }
-  }, [isFormValid, isBuilding, isMachineryKind, district, declarantId, kind, classification, subclass, actualUse, area]);
+  }, [isFormValid, isBuilding, isMachineryKind, isAgriculturalLand, district, declarantId, kind, classification, subclass, actualUse, area]);
 
   // FIXED: Updated handleBuildingModalSuccess to properly open PhotoModal
   const handleBuildingModalSuccess = useCallback((buildingData: any) => {
@@ -282,6 +299,20 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
     setShowMachineModal(false);
   }, []);
 
+  const handleAgriculturalModalSuccess = useCallback((adjustmentData: AgriculturalLandAdjustmentData) => {
+    console.log('🌾 Form: Received agricultural land adjustment data');
+    console.log('Agricultural data:', adjustmentData);
+    
+    setAgriculturalData(adjustmentData);
+    setShowAgriculturalModal(false);
+    // Open PhotoModal after agricultural data is received
+    setShowPhotoModal(true);
+  }, []);
+
+  const handleAgriculturalModalDismiss = useCallback(() => {
+    setShowAgriculturalModal(false);
+  }, []);
+
   const handlePhotoModalClose = useCallback(() => {
     setShowPhotoModal(false);
     resetForm();
@@ -293,11 +324,12 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
     console.log('Form data:', formData);
     console.log('Building data:', buildingData);
     console.log('Machine data:', machineData);
+    console.log('Agricultural data:', agriculturalData);
     
     setShowPhotoModal(false);
     resetForm();
     onSuccess();
-  }, [formData, buildingData, machineData, resetForm, onSuccess]);
+  }, [formData, buildingData, machineData, agriculturalData, resetForm, onSuccess]);
 
   const handleSelectDeclarant = useCallback((id: number) => {
     setDeclarantId(id);
@@ -371,6 +403,13 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
         isOpen={showMachineModal}
         onClose={handleMachineModalClose}
         onSuccess={handleMachineModalSuccess}
+      />
+
+      <AgriculturalLandAdjustmentModal
+        isOpen={showAgriculturalModal}
+        onDismiss={handleAgriculturalModalDismiss}
+        onSuccess={handleAgriculturalModalSuccess}
+        formData={formData}
       />
 
       <PhotoModal

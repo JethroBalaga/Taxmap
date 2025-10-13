@@ -16,6 +16,7 @@ import {
 } from '@ionic/react';
 import { closeOutline } from 'ionicons/icons';
 import { FormData } from './Form';
+import Next from '../GlobalComponent/Next';
 
 interface AgriculturalLandAdjustmentModalProps {
   isOpen: boolean;
@@ -135,25 +136,9 @@ const AgriculturalLandAdjustmentModal: React.FC<AgriculturalLandAdjustmentModalP
             </IonSelect>
           </IonItem>
 
-          {/* Submit Button */}
+          {/* Next Button */}
           <div className="next-btn-container" style={{ marginTop: '30px' }}>
-            <IonButton
-              onClick={handleSubmit}
-              disabled={!isFormValid}
-              expand="block"
-              className="fancy-button"
-              style={{
-                '--background': isFormValid ? 'var(--ion-color-primary)' : '#cbd5e0',
-                '--background-hover': isFormValid ? 'var(--ion-color-primary-shade)' : '#cbd5e0',
-                margin: '0 16px',
-                borderRadius: '12px',
-                height: '50px',
-                fontSize: '16px',
-                fontWeight: '600'
-              }}
-            >
-              Continue to Photos
-            </IonButton>
+            <Next onClick={handleSubmit} disabled={!isFormValid} />
           </div>
         </div>
       </IonContent>
