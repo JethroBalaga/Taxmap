@@ -5,6 +5,7 @@ import { Filesystem, Directory } from '@capacitor/filesystem';
 import { FormData } from './Form';
 import { BuildingData } from './BuildingModal';
 import { MachineData } from './MachineModal';
+import { AgriculturalLandAdjustmentData } from './AgriculturalLandAdjustmentModal';
 import { FormDataLocalStorage } from '../../utils/tablestorages/FormDataLocalStorage';
 import { BuildingDataLocalStorage } from '../../utils/tablestorages/BuildingDataLocalStorage';
 import { MachineDataLocalStorage } from '../../utils/tablestorages/MachineDataLocalStorage';
@@ -19,7 +20,8 @@ interface UsePhotoModalProps {
   formData?: FormData;
   buildingData?: BuildingData;
   machineData?: MachineData | null;
-  onSubmit?: (photo: string, formData: FormData, buildingData: BuildingData, machineData: MachineData) => Promise<void>;
+  agriculturalData?: AgriculturalLandAdjustmentData | null;
+  onSubmit?: (photo: string, formData: FormData, buildingData: BuildingData, machineData: MachineData, agriculturalData: AgriculturalLandAdjustmentData) => Promise<void>;
   onCompleteSubmission?: () => void;
 }
 
@@ -30,6 +32,7 @@ export const usePhotoModal = ({
   formData,
   buildingData,
   machineData,
+  agriculturalData,
   onSubmit,
   onCompleteSubmission
 }: UsePhotoModalProps) => {
@@ -44,6 +47,7 @@ export const usePhotoModal = ({
     formData: any;
     buildingData: any;
     machineData: any;
+    agriculturalData: any;
     photoTag: any;
     valueInfo: any;
   } | null>(null);
@@ -82,6 +86,7 @@ export const usePhotoModal = ({
       console.log('PhotoModal opened with formData:', formData);
       console.log('PhotoModal opened with buildingData:', buildingData);
       console.log('PhotoModal opened with machineData:', machineData);
+      console.log('PhotoModal opened with agriculturalData:', agriculturalData);
       setStoredData(null);
       setPhotoName(generateFileName());
       setHasAttemptedLocation(false);
@@ -89,7 +94,7 @@ export const usePhotoModal = ({
 
       checkAndCreateDirectory().catch(console.error);
     }
-  }, [isOpen, formData, buildingData, machineData, checkAndCreateDirectory]);
+  }, [isOpen, formData, buildingData, machineData, agriculturalData, checkAndCreateDirectory]);
 
   const takePhoto = useCallback(async () => {
     try {
@@ -194,6 +199,7 @@ export const usePhotoModal = ({
       let savedFormData = null;
       let savedBuildingData = null;
       let savedMachineData = null;
+      let savedAgriculturalData = null;
       let photoTag = null;
       let valueInfo = null;
 
@@ -221,6 +227,17 @@ export const usePhotoModal = ({
         });
         console.log('ValueInfo created:', valueInfo);
 
+        // Log agricultural data
+        if (agriculturalData) {
+          console.log('Agricultural data for storage:', {
+            frontage: agriculturalData.frontage,
+            weatherRoad: agriculturalData.weatherRoad,
+            market: agriculturalData.market
+          });
+          // Store agricultural data reference here if needed
+          savedAgriculturalData = agriculturalData;
+        }
+
         if (buildingData && valueInfo) {
           savedBuildingData = BuildingDataLocalStorage.saveBuildingData({
             ...buildingData,
@@ -242,12 +259,13 @@ export const usePhotoModal = ({
         formData: savedFormData,
         buildingData: savedBuildingData,
         machineData: savedMachineData,
+        agriculturalData: savedAgriculturalData,
         photoTag: photoTag,
         valueInfo: valueInfo
       });
 
-      if (onSubmit && formData) {
-        await onSubmit(photo, formData, buildingData!, machineData!);
+      if (onSubmit && formData && agriculturalData) {
+        await onSubmit(photo, formData, buildingData!, machineData!, agriculturalData);
       } else {
         onPhotoTaken(photo);
       }
@@ -270,7 +288,7 @@ export const usePhotoModal = ({
     } finally {
       setIsSubmitting(false);
     }
-  }, [photo, photoName, formData, buildingData, machineData, currentLocation, adjustedLocation, onSubmit, onPhotoTaken, onCompleteSubmission]);
+  }, [photo, photoName, formData, buildingData, machineData, agriculturalData, currentLocation, adjustedLocation, onSubmit, onPhotoTaken, onCompleteSubmission]);
 
   const handleSubmit = useCallback(async () => {
     if (!photo) {

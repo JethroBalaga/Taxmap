@@ -24,6 +24,7 @@ import { close, camera, informationCircle, location, locationOutline, warning, c
 import { FormData } from './Form';
 import { BuildingData } from './BuildingModal';
 import { MachineData } from './MachineModal';
+import { AgriculturalLandAdjustmentData } from './AgriculturalLandAdjustmentModal';
 import SubmitButton from '../../components/GlobalComponent/SubmitButton';
 import { usePhotoModal } from './usePhotoModal';
 import { formatCoordinates, formatDataForDisplay, getFileSize } from '../../utils/photoModalUtils';
@@ -36,7 +37,8 @@ interface PhotoModalProps {
   formData?: FormData;
   buildingData?: BuildingData;
   machineData?: MachineData | null;
-  onSubmit?: (photo: string, formData: FormData, buildingData: BuildingData, machineData: MachineData) => Promise<void>;
+  agriculturalData?: AgriculturalLandAdjustmentData | null;
+  onSubmit?: (photo: string, formData: FormData, buildingData: BuildingData, machineData: MachineData, agriculturalData: AgriculturalLandAdjustmentData) => Promise<void>;
   onCompleteSubmission?: () => void;
 }
 
@@ -47,6 +49,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
   formData,
   buildingData,
   machineData,
+  agriculturalData,
   onSubmit,
   onCompleteSubmission
 }) => {
@@ -78,6 +81,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
     formData,
     buildingData,
     machineData,
+    agriculturalData,
     onSubmit,
     onCompleteSubmission
   });
@@ -87,7 +91,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
       <IonHeader>
         <IonToolbar className="fancy-header">
           <IonTitle className="fancy-title">
-            {machineData ? 'Take Machine Photo' : buildingData ? 'Take Building Photo' : 'Take Photo'}
+            {machineData ? 'Take Machine Photo' : buildingData ? 'Take Building Photo' : agriculturalData ? 'Take Agricultural Land Photo' : 'Take Photo'}
           </IonTitle>
           <IonButtons slot="end">
             <IonButton onClick={handleClose} disabled={isSubmitting} className="fancy-close-btn">
@@ -145,6 +149,17 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                   </IonItem>
                 )}
 
+                {storedData.agriculturalData && (
+                  <IonItem lines="none">
+                    <IonLabel>
+                      <strong>Agricultural Data:</strong>
+                      <pre style={{ fontSize: '10px', overflow: 'auto' }}>
+                        {formatDataForDisplay(storedData.agriculturalData)}
+                      </pre>
+                    </IonLabel>
+                  </IonItem>
+                )}
+
                 <IonItem lines="none">
                   <IonLabel>
                     <strong>Photo Tag:</strong>
@@ -168,7 +183,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
           {!photo ? (
             <div className="photo-placeholder" style={{ textAlign: 'center', padding: '40px 0' }}>
               <p className="input-label">
-                {machineData ? 'Machine Photo' : buildingData ? 'Building Photo' : 'Photo'} <span style={{ color: 'red' }}>*</span>
+                {machineData ? 'Machine Photo' : buildingData ? 'Building Photo' : agriculturalData ? 'Agricultural Land Photo' : 'Photo'} <span style={{ color: 'red' }}>*</span>
               </p>
 
               <IonButton
@@ -186,7 +201,9 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                   ? 'Tap to take a photo of the machine'
                   : buildingData
                     ? 'Tap to take a photo of the building'
-                    : 'Tap to take a photo'
+                    : agriculturalData
+                      ? 'Tap to take a photo of the agricultural land'
+                      : 'Tap to take a photo'
                 }
               </p>
             </div>
