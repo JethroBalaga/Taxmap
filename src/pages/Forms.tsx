@@ -144,18 +144,18 @@ const Forms: React.FC = () => {
     }
   };
 
-  const handleInfoClick = () => {
+const handleInfoClick = () => {
   if (selectedForm) {
-    const kind = selectedForm.kind?.toString().toUpperCase();
-    const classification = selectedForm.classification?.toString().toLowerCase();
+    const kind = selectedForm.kind?.toString();
+    const classification = selectedForm.classification?.toString();
 
     if (kind === '2') {
       history.push(`/menu/forms/buildingtable/${selectedForm.id}`);
     } else if (kind === '3') {
       console.log('Navigating with form ID:', selectedForm.id);
       history.push(`/menu/forms/machinerytable/${selectedForm.id}`);
-    } else if (kind === '1' && classification?.includes('agricultural')) {
-      // Navigate to Agricultural Adjustment Table for Land + Agricultural
+    } else if (kind === '1' && classification === 'A') {
+      // Navigate to Agricultural Adjustment Table for Land + Agricultural (kind 1, classification A)
       history.push(`/menu/forms/agriculturaltable/${selectedForm.id}`);
     } else {
       setToastMessage('Details are only available for Building, Machinery, or Agricultural Land forms');

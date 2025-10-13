@@ -14,7 +14,7 @@ import {
     IonList,
     IonLabel
 } from '@ionic/react'
-import {mapOutline, logOutOutline, documentTextOutline } from 'ionicons/icons';
+import { mapOutline, logOutOutline, documentTextOutline } from 'ionicons/icons';
 import { Redirect, Route } from 'react-router';
 import { useIonRouter } from '@ionic/react';
 import Map from './Map';
@@ -23,12 +23,13 @@ import { supabase } from '../utils/supaBaseClient';
 import Forms from './Forms';
 import BuildingTable from './Formstabs/BuildingTable';
 import MachineryTable from './Formstabs/MachineryTable';
+import AgriculturalAdjustmentTable from './Formstabs/AgriculturalAdjustmentTable';
 
 const Menu: React.FC = () => {
     const router = useIonRouter();
     const path = [
-        { name: 'Map', url: '/menu/map', icon: mapOutline},
-        { name: 'Forms', url: '/menu/forms', icon: documentTextOutline},
+        { name: 'Map', url: '/menu/map', icon: mapOutline },
+        { name: 'Forms', url: '/menu/forms', icon: documentTextOutline },
     ]
 
     const handleLogout = async () => {
@@ -59,7 +60,7 @@ const Menu: React.FC = () => {
                                 </IonItem>
                             </IonMenuToggle>
                         ))}
-                        
+
                         <IonMenuToggle autoHide={false}>
                             <IonItem button onClick={handleLogout} lines="none">
                                 <IonIcon icon={logOutOutline} slot="start" color="danger"></IonIcon>
@@ -84,6 +85,7 @@ const Menu: React.FC = () => {
                         <Route exact path="/menu/forms" component={Forms} />
                         <Route exact path="/menu/forms/buildingtable/:formId" component={BuildingTable} />
                         <Route exact path="/menu/forms/machinerytable/:formId" component={MachineryTable} />
+                        <Route path="/menu/forms/agriculturaltable/:formId" component={AgriculturalAdjustmentTable} />
                         <Route exact path="/menu">
                             <Redirect to="/menu/map" />
                         </Route>

@@ -18,7 +18,7 @@ import {
 import { arrowBack } from 'ionicons/icons';
 import { useParams, useHistory } from 'react-router-dom';
 import { FormDataLocalStorage } from '../../utils/tablestorages/FormDataLocalStorage';
-import './../CSS/Forms.css';
+import '../../CSS/Forms.css';
 
 interface RouteParams {
   formId: string;
@@ -40,9 +40,9 @@ const AgriculturalAdjustmentTable: React.FC = () => {
         if (form) {
           setFormData(form);
           
-          // Check if form is Land kind and AGRICULTURAL classification
-          const isLandKind = form.kind?.toString().toLowerCase().includes('land') || false;
-          const isAgricultural = form.classification?.toString().toLowerCase().includes('agricultural') || false;
+          // Check if form is Land kind (1) and AGRICULTURAL classification (A)
+          const isLandKind = form.kind?.toString() === '1';
+          const isAgricultural = form.classification?.toString() === 'A';
           
           setIsValidForm(isLandKind && isAgricultural);
         } else {
@@ -99,7 +99,7 @@ const AgriculturalAdjustmentTable: React.FC = () => {
           <div className="empty-state">
             <IonText>
               <h3>Invalid Form Type</h3>
-              <p>This page is only accessible for Land forms with AGRICULTURAL classification.</p>
+              <p>This page is only accessible for Land forms (kind 1) with AGRICULTURAL classification (A).</p>
               <IonButton onClick={handleBack} color="primary">
                 Return to Forms
               </IonButton>
@@ -132,8 +132,8 @@ const AgriculturalAdjustmentTable: React.FC = () => {
                   <IonText>
                     <h2>Agricultural Adjustment Data</h2>
                     <p>Form ID: {formId}</p>
-                    <p>Kind: {formData.kind}</p>
-                    <p>Classification: {formData.classification}</p>
+                    <p>Kind: {formData.kind} (Land)</p>
+                    <p>Classification: {formData.classification} (AGRICULTURAL)</p>
                     <p style={{ marginTop: '20px', color: 'var(--ion-color-medium)' }}>
                       Agricultural adjustment table content will be displayed here.
                     </p>
