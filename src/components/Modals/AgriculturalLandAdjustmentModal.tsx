@@ -33,11 +33,6 @@ export interface AgriculturalLandAdjustmentData {
   frontage: string;
   weatherRoad: string;
   market: string;
-  frontageFactor: string;
-  weatherRoadFactor: string;
-  marketFactor: string;
-  totalAdjustment: string;
-  adjustedMarketValue: string;
 }
 
 const AgriculturalLandAdjustmentModal: React.FC<AgriculturalLandAdjustmentModalProps> = ({
@@ -172,18 +167,14 @@ const AgriculturalLandAdjustmentModal: React.FC<AgriculturalLandAdjustmentModalP
   };
 
   const handleSubmit = () => {
+    // Only pass the three dropdown values
     const adjustmentData: AgriculturalLandAdjustmentData = {
       frontage,
       weatherRoad,
       market,
-      frontageFactor,
-      weatherRoadFactor,
-      marketFactor,
-      totalAdjustment,
-      adjustedMarketValue,
     };
 
-    console.log('Agricultural Land Adjustment Data:', adjustmentData);
+    console.log('Agricultural Land Adjustment Data (simplified):', adjustmentData);
     onSuccess(adjustmentData);
   };
 
