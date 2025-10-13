@@ -13,6 +13,9 @@ import {
   IonLabel,
   IonSelect,
   IonSelectOption,
+  IonInput,
+  IonRow,
+  IonCol,
 } from '@ionic/react';
 import { closeOutline } from 'ionicons/icons';
 import { FormData } from './Form';
@@ -88,53 +91,107 @@ const AgriculturalLandAdjustmentModal: React.FC<AgriculturalLandAdjustmentModalP
             </p>
           </div>
 
-          {/* Frontage Dropdown - Empty for now */}
-          <IonItem className="custom-input" lines="none">
-            <IonLabel position="stacked" className="input-label">
-              Frontage <span style={{ color: 'red' }}>*</span>
-            </IonLabel>
-            <IonSelect
-              value={frontage}
-              placeholder="Select Frontage"
-              onIonChange={(e) => setFrontage(e.detail.value)}
-              interface="popover"
-              className="modal-input"
-            >
-              {/* Empty for now - no options */}
-            </IonSelect>
-          </IonItem>
+          {/* Frontage Dropdown with Input */}
+          <IonRow>
+            <IonCol size="8">
+              <IonItem className="custom-input" lines="none">
+                <IonLabel position="stacked" className="input-label">
+                  Frontage <span style={{ color: 'red' }}>*</span>
+                </IonLabel>
+                <IonSelect
+                  value={frontage}
+                  placeholder="Select Frontage"
+                  onIonChange={(e) => setFrontage(e.detail.value)}
+                  interface="popover"
+                  className="modal-input"
+                >
+                  {/* Empty for now - no options */}
+                </IonSelect>
+              </IonItem>
+            </IonCol>
+            <IonCol size="4">
+              <IonItem className="custom-input" lines="none">
+                <IonLabel position="stacked" className="input-label">
+                  &nbsp;
+                </IonLabel>
+                <IonInput
+                  value=""
+                  placeholder="Value"
+                  disabled
+                  className="modal-input"
+                  style={{ fontSize: '14px', height: '48px' }}
+                />
+              </IonItem>
+            </IonCol>
+          </IonRow>
 
-          {/* Weather Road Dropdown - Empty for now */}
-          <IonItem className="custom-input" lines="none">
-            <IonLabel position="stacked" className="input-label">
-              Weather Road <span style={{ color: 'red' }}>*</span>
-            </IonLabel>
-            <IonSelect
-              value={weatherRoad}
-              placeholder="Select Weather Road"
-              onIonChange={(e) => setWeatherRoad(e.detail.value)}
-              interface="popover"
-              className="modal-input"
-            >
-              {/* Empty for now - no options */}
-            </IonSelect>
-          </IonItem>
+          {/* Weather Road Dropdown with Input */}
+          <IonRow>
+            <IonCol size="8">
+              <IonItem className="custom-input" lines="none">
+                <IonLabel position="stacked" className="input-label">
+                  Weather Road <span style={{ color: 'red' }}>*</span>
+                </IonLabel>
+                <IonSelect
+                  value={weatherRoad}
+                  placeholder="Select Weather Road"
+                  onIonChange={(e) => setWeatherRoad(e.detail.value)}
+                  interface="popover"
+                  className="modal-input"
+                >
+                  {/* Empty for now - no options */}
+                </IonSelect>
+              </IonItem>
+            </IonCol>
+            <IonCol size="4">
+              <IonItem className="custom-input" lines="none">
+                <IonLabel position="stacked" className="input-label">
+                  &nbsp;
+                </IonLabel>
+                <IonInput
+                  value=""
+                  placeholder="Value"
+                  disabled
+                  className="modal-input"
+                  style={{ fontSize: '14px', height: '48px' }}
+                />
+              </IonItem>
+            </IonCol>
+          </IonRow>
 
-          {/* Market Dropdown - Empty for now */}
-          <IonItem className="custom-input" lines="none">
-            <IonLabel position="stacked" className="input-label">
-              Market <span style={{ color: 'red' }}>*</span>
-            </IonLabel>
-            <IonSelect
-              value={market}
-              placeholder="Select Market"
-              onIonChange={(e) => setMarket(e.detail.value)}
-              interface="popover"
-              className="modal-input"
-            >
-              {/* Empty for now - no options */}
-            </IonSelect>
-          </IonItem>
+          {/* Market Dropdown with Input */}
+          <IonRow>
+            <IonCol size="8">
+              <IonItem className="custom-input" lines="none">
+                <IonLabel position="stacked" className="input-label">
+                  Market <span style={{ color: 'red' }}>*</span>
+                </IonLabel>
+                <IonSelect
+                  value={market}
+                  placeholder="Select Market"
+                  onIonChange={(e) => setMarket(e.detail.value)}
+                  interface="popover"
+                  className="modal-input"
+                >
+                  {/* Empty for now - no options */}
+                </IonSelect>
+              </IonItem>
+            </IonCol>
+            <IonCol size="4">
+              <IonItem className="custom-input" lines="none">
+                <IonLabel position="stacked" className="input-label">
+                  &nbsp;
+                </IonLabel>
+                <IonInput
+                  value=""
+                  placeholder="Value"
+                  disabled
+                  className="modal-input"
+                  style={{ fontSize: '14px', height: '48px' }}
+                />
+              </IonItem>
+            </IonCol>
+          </IonRow>
 
           {/* Next Button */}
           <div className="next-btn-container" style={{ marginTop: '30px' }}>
