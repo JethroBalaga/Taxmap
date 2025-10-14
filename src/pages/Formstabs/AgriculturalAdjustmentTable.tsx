@@ -24,6 +24,7 @@ import { useParams, useHistory } from 'react-router-dom';
 import { FormDataLocalStorage } from '../../utils/tablestorages/FormDataLocalStorage';
 import { ValueInfoLocalStorage } from '../../utils/tablestorages/ValueInfoLocalStorage';
 import { AgriculturalDataLocalStorage } from '../../utils//tablestorages/AgriculturalDataLocalStorage';
+import AgricultureLandUpdateModal from '../../components/Modals/AgricultureLandUpdateModal';
 import '../../CSS/Forms.css';
 import '../../CSS/AgriculturalCard.css';
 
@@ -39,6 +40,7 @@ const AgriculturalAdjustmentTable: React.FC = () => {
   const [valueInfoId, setValueInfoId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isValidForm, setIsValidForm] = useState(false);
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
 
   const loadData = () => {
     setIsLoading(true);
@@ -100,10 +102,8 @@ const AgriculturalAdjustmentTable: React.FC = () => {
     history.push('/menu/forms');
   };
 
-  // Placeholder function for update button (no functionality yet)
   const handleUpdateClick = () => {
-    console.log('Update agricultural data clicked - functionality not implemented yet');
-    // TODO: Add update functionality later
+    setShowUpdateModal(true);
   };
 
   // Calculate total adjustment
@@ -337,6 +337,26 @@ const AgriculturalAdjustmentTable: React.FC = () => {
             )}
           </IonGrid>
         </div>
+
+        {/* Update Modal */}
+        {agriculturalData && (
+          <AgricultureLandUpdateModal
+            isOpen={showUpdateModal}
+            onDismiss={() => setShowUpdateModal(false)}
+            onSuccess={(updatedData) => {
+              console.log('Agricultural data updated successfully:', updatedData);
+              setShowUpdateModal(false);
+              // Reload the data to show updates
+              loadData();
+              // Dispatch event to notify other components
+              window.dispatchEvent(new CustomEvent('agriculturalDataUpdated', {
+                detail: { formId, valueInfoId }
+              }));
+            }}
+            valueInfoId={valueInfoId || ''}
+            currentData={agriculturalData}
+          />
+        )}
       </IonContent>
     </IonPage>
   );
