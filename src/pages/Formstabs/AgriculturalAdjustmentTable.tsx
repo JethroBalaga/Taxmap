@@ -14,11 +14,14 @@ import {
   IonCol,
   IonText,
   IonSpinner,
+  IonCard,
+  IonCardContent,
 } from '@ionic/react';
 import { arrowBack } from 'ionicons/icons';
 import { useParams, useHistory } from 'react-router-dom';
 import { FormDataLocalStorage } from '../../utils/tablestorages/FormDataLocalStorage';
 import '../../CSS/Forms.css';
+import '../../CSS/BuildingResponsive.css';
 
 interface RouteParams {
   formId: string;
@@ -63,6 +66,16 @@ const AgriculturalAdjustmentTable: React.FC = () => {
     history.push('/menu/forms');
   };
 
+  // Filter out the fields we don't want to display
+  const getDisplayableFormData = () => {
+    if (!formData) return {};
+    
+    const { id, kind, status, uploaded, ...displayableData } = formData;
+    return displayableData;
+  };
+
+  const displayableData = getDisplayableFormData();
+
   if (isLoading) {
     return (
       <IonPage>
@@ -72,7 +85,7 @@ const AgriculturalAdjustmentTable: React.FC = () => {
           </IonToolbar>
         </IonHeader>
         <IonContent>
-          <div className="loading-indicator">
+          <div className="loading-container">
             <IonSpinner name="crescent" />
             <IonText>Loading agricultural data...</IonText>
           </div>
@@ -96,7 +109,7 @@ const AgriculturalAdjustmentTable: React.FC = () => {
           </IonToolbar>
         </IonHeader>
         <IonContent>
-          <div className="empty-state">
+          <div className="no-data">
             <IonText>
               <h3>Invalid Form Type</h3>
               <p>This page is only accessible for Land forms (kind 1) with AGRICULTURAL classification (A).</p>
@@ -128,12 +141,46 @@ const AgriculturalAdjustmentTable: React.FC = () => {
           <IonGrid>
             <IonRow>
               <IonCol size="12">
+                {/* Form Summary Card - Same styling as BuildingList */}
+                <IonCard className="form-summary-card">
+                  <IonCardContent>
+                    <IonGrid style={{ margin: '0', padding: '0' }}>
+                      {Object.entries(displayableData).map(([key, value], index, array) => {
+                        // Create rows with 4 columns each
+                        if (index % 4 === 0) {
+                          const rowItems = array.slice(index, index + 4);
+                          return (
+                            <IonRow key={`row-${index}`} style={{ marginBottom: '4px' }}>
+                              {rowItems.map(([itemKey, itemValue], colIndex) => (
+                                <IonCol key={itemKey} size="3" style={{ padding: '4px' }}>
+                                  <IonText>
+                                    <strong>
+                                      {itemKey.charAt(0).toUpperCase() + itemKey.slice(1).replace(/([A-Z])/g, ' $1')}:
+                                    </strong> {itemValue !== null && itemValue !== undefined ? itemValue.toString() : 'N/A'}
+                                  </IonText>
+                                </IonCol>
+                              ))}
+                              {/* Fill empty columns if needed */}
+                              {rowItems.length < 4 && 
+                                Array.from({ length: 4 - rowItems.length }).map((_, emptyIndex) => (
+                                  <IonCol key={`empty-${emptyIndex}`} size="3" style={{ padding: '4px' }}></IonCol>
+                                ))
+                              }
+                            </IonRow>
+                          );
+                        }
+                        return null;
+                      })}
+                    </IonGrid>
+                  </IonCardContent>
+                </IonCard>
+              </IonCol>
+            </IonRow>
+            <IonRow>
+              <IonCol size="12">
                 <div style={{ padding: '20px', textAlign: 'center' }}>
                   <IonText>
                     <h2>Agricultural Adjustment Data</h2>
-                    <p>Form ID: {formId}</p>
-                    <p>Kind: {formData.kind} (Land)</p>
-                    <p>Classification: {formData.classification} (AGRICULTURAL)</p>
                     <p style={{ marginTop: '20px', color: 'var(--ion-color-medium)' }}>
                       Agricultural adjustment table content will be displayed here.
                     </p>
