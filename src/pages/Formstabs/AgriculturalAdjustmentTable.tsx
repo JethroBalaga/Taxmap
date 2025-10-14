@@ -31,6 +31,7 @@ import {
 } from '../../utils/assessmentLevelLocalStorage';
 import AgricultureLandUpdateModal from '../../components/Modals/AgricultureLandUpdateModal';
 import DynamicTable from '../../components/GlobalComponent/DynamicTable';
+import SubmitButton from '../../components/GlobalComponent/SubmitButton'; // Add this import
 import '../../CSS/Forms.css';
 import '../../CSS/AgriculturalCard.css';
 
@@ -58,6 +59,12 @@ const AgriculturalAdjustmentTable: React.FC = () => {
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [subclassRates, setSubclassRates] = useState<SubclassRateData[]>([]);
   const [isLoadingRates, setIsLoadingRates] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false); // Add this state
+
+  // Add empty onSubmit function for now
+  const onSubmit = () => {
+    console.log('Submit functionality not implemented yet');
+  };
 
   const loadData = () => {
     setIsLoading(true);
@@ -297,6 +304,15 @@ const AgriculturalAdjustmentTable: React.FC = () => {
             </IonButton>
           </IonButtons>
           <IonTitle>Agricultural Adjustments</IonTitle>
+          <IonButtons slot="end">
+            <SubmitButton
+              label="Submit Form"
+              onClick={onSubmit}
+              loading={isSubmitting}
+              disabled={!agriculturalData || isSubmitting}
+              className="header-submit-button"
+            />
+          </IonButtons>
         </IonToolbar>
       </IonHeader>
       <IonContent>
