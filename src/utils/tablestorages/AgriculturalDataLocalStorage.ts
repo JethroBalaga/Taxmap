@@ -4,7 +4,6 @@ export interface AgriculturalData {
   weather_road: string;
   market: string;
   value_info_id: string;
-  created_at?: string;
 }
 
 const AGRICULTURAL_DATA_KEY = 'agriculturalData';
@@ -49,16 +48,10 @@ export const AgriculturalDataLocalStorage = {
       if (existingIndex >= 0) {
         // Update existing entry
         updatedAgriculturalData = [...allAgriculturalData];
-        updatedAgriculturalData[existingIndex] = {
-          ...agriculturalData,
-          created_at: agriculturalData.created_at || new Date().toISOString()
-        };
+        updatedAgriculturalData[existingIndex] = agriculturalData;
       } else {
         // Add new entry
-        updatedAgriculturalData = [...allAgriculturalData, {
-          ...agriculturalData,
-          created_at: agriculturalData.created_at || new Date().toISOString()
-        }];
+        updatedAgriculturalData = [...allAgriculturalData, agriculturalData];
       }
 
       localStorage.setItem(AGRICULTURAL_DATA_KEY, JSON.stringify(updatedAgriculturalData));
