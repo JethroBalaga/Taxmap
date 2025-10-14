@@ -138,3 +138,12 @@
   font-weight: bold;
   color: var(--ion-color-primary);
 }
+.agricultural-value.adjusted-market-value {
+  font-size: 1.3em;
+  font-weight: bold;
+  color: var(--ion-color-success);
+  background-color: rgba(var(--ion-color-success-rgb), 0.1);
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 2px solid var(--ion-color-success);
+}

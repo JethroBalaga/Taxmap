@@ -19,7 +19,7 @@ import {
   IonCardHeader,
   IonCardTitle,
 } from '@ionic/react';
-import { arrowBack, leaf, trendingUp, calculator } from 'ionicons/icons';
+import { arrowBack, leaf, trendingUp, calculator, cash } from 'ionicons/icons';
 import { useParams, useHistory } from 'react-router-dom';
 import { FormDataLocalStorage } from '../../utils/tablestorages/FormDataLocalStorage';
 import { ValueInfoLocalStorage } from '../../utils/tablestorages/ValueInfoLocalStorage';
@@ -96,7 +96,19 @@ const AgriculturalAdjustmentTable: React.FC = () => {
     return frontage + weatherRoad + market;
   };
 
+  // Calculate adjusted market value (100 - total adjustment)
+  const calculateAdjustedMarketValue = () => {
+    const totalAdjustment = calculateTotalAdjustment();
+    // If adjustments are negative, it means we subtract from 100
+    // So -21 adjustment means 100 - 21 = 79
+    if (totalAdjustment < 0) {
+      return 100 + totalAdjustment; // 100 + (-21) = 79
+    }
+    return 100 - totalAdjustment;
+  };
+
   const totalAdjustment = calculateTotalAdjustment();
+  const adjustedMarketValue = calculateAdjustedMarketValue();
 
   // Filter out the fields we don't want to display (only remove status and uploaded)
   const getDisplayableFormData = () => {
@@ -252,17 +264,23 @@ const AgriculturalAdjustmentTable: React.FC = () => {
                         </div>
                       </div>
 
-                      {/* Total Adjustment Section */}
+                      {/* Total Adjustment and Adjusted Market Value Section */}
                       <div className="agricultural-section">
                         <IonText className="agricultural-section-title">
                           <IonIcon icon={calculator} className="agricultural-section-icon" />
-                          <h4>Total Adjustment</h4>
+                          <h4>Calculations</h4>
                         </IonText>
                         <div className="agricultural-grid">
-                          <div className="agricultural-item full-width">
-                            <label>Sum of All Adjustments</label>
+                          <div className="agricultural-item">
+                            <label>Total Adjustment</label>
                             <IonText className="agricultural-value total-adjustment">
                               {totalAdjustment}
+                            </IonText>
+                          </div>
+                          <div className="agricultural-item">
+                            <label>Adjusted Market Value</label>
+                            <IonText className="agricultural-value adjusted-market-value">
+                              {adjustedMarketValue}
                             </IonText>
                           </div>
                         </div>
