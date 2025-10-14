@@ -25,6 +25,10 @@ import { FormDataLocalStorage } from '../../utils/tablestorages/FormDataLocalSto
 import { ValueInfoLocalStorage } from '../../utils/tablestorages/ValueInfoLocalStorage';
 import { AgriculturalDataLocalStorage } from '../../utils//tablestorages/AgriculturalDataLocalStorage';
 import { getCurrentRateForSubclass } from '../../utils/subclassRateLocalStorage';
+import { 
+  getAssessmentLevelsInRange,
+  AssessmentLevelData 
+} from '../../utils/assessmentLevelLocalStorage';
 import AgricultureLandUpdateModal from '../../components/Modals/AgricultureLandUpdateModal';
 import DynamicTable from '../../components/GlobalComponent/DynamicTable';
 import '../../CSS/Forms.css';
@@ -39,6 +43,8 @@ interface SubclassRateData {
   subclass_id: string;
   rate: number;
   baseMarketValue?: number;
+  assessmentLevel?: AssessmentLevelData;
+  adjustedMarketValue?: number;
 }
 
 const AgriculturalAdjustmentTable: React.FC = () => {
@@ -87,6 +93,22 @@ const AgriculturalAdjustmentTable: React.FC = () => {
     }
   };
 
+  // Function to get assessment level for adjusted market value
+  const getAssessmentLevel = async (adjustedMarketValue: number, kindId: number, classId: string): Promise<AssessmentLevelData | null> => {
+    try {
+      // Get assessment levels based on value and kind_id
+      const assessmentLevels = await getAssessmentLevelsInRange(adjustedMarketValue, kindId, new Date().getFullYear());
+      
+      // Filter by class_id to get the exact match
+      const matchingLevel = assessmentLevels.find(level => level.class_id === classId);
+      
+      return matchingLevel || null;
+    } catch (error) {
+      console.error('Error getting assessment level:', error);
+      return null;
+    }
+  };
+
   const loadSubclassRates = async () => {
     if (!formData?.subclass || !valueInfoId) return;
     
@@ -105,11 +127,26 @@ const AgriculturalAdjustmentTable: React.FC = () => {
             const area = parseFloat(formData.area) || 0;
             const baseMarketValue = area * rate;
             
+            // Calculate adjusted market value percentage
+            const totalAdjustment = calculateTotalAdjustment();
+            const adjustedMarketValuePercentage = totalAdjustment < 0 ? 
+              100 + totalAdjustment : 100 - totalAdjustment;
+            
+            // Calculate actual adjusted market value
+            const adjustedMarketValue = baseMarketValue * (adjustedMarketValuePercentage / 100);
+            
+            // Get assessment level for this adjusted market value
+            const kindId = parseInt(formData.kind) || 1;
+            const classId = formData.classification || 'A';
+            const assessmentLevel = await getAssessmentLevel(adjustedMarketValue, kindId, classId);
+            
             ratesData.push({
               value_info_id: valueInfoId,
               subclass_id: subclassId,
               rate: rate,
-              baseMarketValue: baseMarketValue
+              baseMarketValue: baseMarketValue,
+              assessmentLevel: assessmentLevel || undefined,
+              adjustedMarketValue: adjustedMarketValue
             });
           }
         }
@@ -172,7 +209,7 @@ const AgriculturalAdjustmentTable: React.FC = () => {
   };
 
   const totalAdjustment = calculateTotalAdjustment();
-  const adjustedMarketValue = calculateAdjustedMarketValue();
+  const adjustedMarketValuePercentage = calculateAdjustedMarketValue();
 
   const getDisplayableFormData = () => {
     if (!formData) return {};
@@ -183,15 +220,14 @@ const AgriculturalAdjustmentTable: React.FC = () => {
 
   const displayableFormData = getDisplayableFormData();
 
-  // Updated tableData with Adjusted Market Value calculation
+  // Updated tableData with Assessment Level (only rate_percent without % sign)
   const tableData = subclassRates.map(rate => ({
     value_info_id: rate.value_info_id,
     subclass_id: rate.subclass_id,
     rate: rate.rate.toFixed(4),
     base_market_value: rate.baseMarketValue?.toFixed(2) || 'N/A',
-    // Add Adjusted Market Value calculation (Base Market Value x Adjusted Market Value %)
-    adjusted_market_value: rate.baseMarketValue ? 
-      (rate.baseMarketValue * (adjustedMarketValue / 100)).toFixed(2) : 'N/A'
+    adjusted_market_value: rate.adjustedMarketValue?.toFixed(2) || 'N/A',
+    assessment_level: rate.assessmentLevel?.rate_percent || 'N/A' // Just the value, no % sign
   }));
 
   if (isLoading) {
@@ -298,13 +334,13 @@ const AgriculturalAdjustmentTable: React.FC = () => {
                   <div style={{ marginBottom: '20px' }}>
                     <IonText>
                       <h3 style={{ margin: '0 0 16px 0', padding: '0 16px' }}>
-                        Agricultural Land Information
+                        Agricultural Land Information with Assessment Levels
                       </h3>
                     </IonText>
                     {isLoadingRates ? (
                       <div className="loading-container">
                         <IonSpinner name="crescent" />
-                        <IonText>Loading subclass rates...</IonText>
+                        <IonText>Loading subclass rates and assessment levels...</IonText>
                       </div>
                     ) : tableData.length > 0 ? (
                       <DynamicTable
@@ -385,9 +421,9 @@ const AgriculturalAdjustmentTable: React.FC = () => {
                             </IonText>
                           </div>
                           <div className="agricultural-item">
-                            <label>Adjusted Market Value</label>
+                            <label>Adjusted Market Value %</label>
                             <IonText className="agricultural-value adjusted-market-value">
-                              {adjustedMarketValue}%
+                              {adjustedMarketValuePercentage}%
                             </IonText>
                           </div>
                         </div>
