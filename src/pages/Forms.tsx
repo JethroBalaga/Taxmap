@@ -144,30 +144,30 @@ const Forms: React.FC = () => {
     }
   };
 
-const handleInfoClick = () => {
-  if (selectedForm) {
-    const kind = selectedForm.kind?.toString();
-    const classification = selectedForm.classification?.toString();
+  const handleInfoClick = () => {
+    if (selectedForm) {
+      const kind = selectedForm.kind?.toString();
+      const classification = selectedForm.classification?.toString();
 
-    if (kind === '2') {
-      history.push(`/menu/forms/buildingtable/${selectedForm.id}`);
-    } else if (kind === '3') {
-      console.log('Navigating with form ID:', selectedForm.id);
-      history.push(`/menu/forms/machinerytable/${selectedForm.id}`);
-    } else if (kind === '1' && classification === 'A') {
-      // Navigate to Agricultural Adjustment Table for Land + Agricultural (kind 1, classification A)
-      history.push(`/menu/forms/agriculturaltable/${selectedForm.id}`);
+      if (kind === '2') {
+        history.push(`/menu/forms/buildingtable/${selectedForm.id}`);
+      } else if (kind === '3') {
+        console.log('Navigating with form ID:', selectedForm.id);
+        history.push(`/menu/forms/machinerytable/${selectedForm.id}`);
+      } else if (kind === '1' && classification === 'A') {
+        // Navigate to Agricultural Adjustment Table for Land + Agricultural (kind 1, classification A)
+        history.push(`/menu/forms/agriculturaltable/${selectedForm.id}`);
+      } else {
+        setToastMessage('Details are only available for Building, Machinery, or Agricultural Land forms');
+        setToastButtons([{ text: 'OK', role: 'cancel' }]);
+        setShowToast(true);
+      }
     } else {
-      setToastMessage('Details are only available for Building, Machinery, or Agricultural Land forms');
+      setToastMessage('Please select a form to view details');
       setToastButtons([{ text: 'OK', role: 'cancel' }]);
       setShowToast(true);
     }
-  } else {
-    setToastMessage('Please select a form to view details');
-    setToastButtons([{ text: 'OK', role: 'cancel' }]);
-    setShowToast(true);
-  }
-};
+  };
 
   const deleteRelatedData = async (formId: string): Promise<void> => {
     console.log(`Deleting related data for form ID: ${formId}`);
@@ -266,8 +266,12 @@ const handleInfoClick = () => {
     loadFormData();
     setSelectedForm(updatedData);
 
-    window.dispatchEvent(new CustomEvent('formUpdated', {
-      detail: { formId: updatedData.id }
+    // Dispatch a custom event to notify all components about the form data update
+    window.dispatchEvent(new CustomEvent('formDataUpdated', {
+      detail: { 
+        formId: updatedData.id,
+        timestamp: Date.now()
+      }
     }));
 
     localStorage.setItem('formUpdateTrigger', Date.now().toString());

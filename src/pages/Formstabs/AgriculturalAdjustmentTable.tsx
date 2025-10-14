@@ -40,46 +40,61 @@ const AgriculturalAdjustmentTable: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isValidForm, setIsValidForm] = useState(false);
 
-  useEffect(() => {
-    const loadData = () => {
-      setIsLoading(true);
-      try {
-        const form = FormDataLocalStorage.getFormData(formId);
+  const loadData = () => {
+    setIsLoading(true);
+    try {
+      const form = FormDataLocalStorage.getFormData(formId);
+      
+      if (form) {
+        setFormData(form);
         
-        if (form) {
-          setFormData(form);
-          
-          // Check if form is Land kind (1) and AGRICULTURAL classification (A)
-          const isLandKind = form.kind?.toString() === '1';
-          const isAgricultural = form.classification?.toString() === 'A';
-          
-          setIsValidForm(isLandKind && isAgricultural);
+        // Check if form is Land kind (1) and AGRICULTURAL classification (A)
+        const isLandKind = form.kind?.toString() === '1';
+        const isAgricultural = form.classification?.toString() === 'A';
+        
+        setIsValidForm(isLandKind && isAgricultural);
 
-          if (isLandKind && isAgricultural) {
-            // Fetch ValueInfo ID using form ID
-            const valueInfo = ValueInfoLocalStorage.getValueInfoByFormDataId(formId);
+        if (isLandKind && isAgricultural) {
+          // Fetch ValueInfo ID using form ID
+          const valueInfo = ValueInfoLocalStorage.getValueInfoByFormDataId(formId);
+          
+          if (valueInfo) {
+            setValueInfoId(valueInfo.id);
             
-            if (valueInfo) {
-              setValueInfoId(valueInfo.id);
-              
-              // Fetch AgriculturalData using ValueInfo ID
-              const agriData = AgriculturalDataLocalStorage.getAgriculturalDataByValueInfoId(valueInfo.id);
-              setAgriculturalData(agriData);
-            }
+            // Fetch AgriculturalData using ValueInfo ID
+            const agriData = AgriculturalDataLocalStorage.getAgriculturalDataByValueInfoId(valueInfo.id);
+            setAgriculturalData(agriData);
           }
-        } else {
-          setIsValidForm(false);
         }
-      } catch (error) {
-        console.error('Error loading data:', error);
+      } else {
         setIsValidForm(false);
-      } finally {
-        setIsLoading(false);
+      }
+    } catch (error) {
+      console.error('Error loading data:', error);
+      setIsValidForm(false);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData(); // Initial load
+
+    // Listen for form update events
+    const handleFormDataUpdated = (event: CustomEvent) => {
+      if (event.detail.formId === formId) {
+        loadData(); // Reload data when this form is updated
       }
     };
 
-    loadData();
-  }, [formId]);
+    // Add event listener
+    window.addEventListener('formDataUpdated', handleFormDataUpdated as EventListener);
+    
+    // Cleanup: remove event listener when component unmounts
+    return () => {
+      window.removeEventListener('formDataUpdated', handleFormDataUpdated as EventListener);
+    };
+  }, [formId]); // Re-run when formId changes
 
   const handleBack = () => {
     history.push('/menu/forms');
