@@ -19,7 +19,7 @@ import {
   IonCardHeader,
   IonCardTitle,
 } from '@ionic/react';
-import { arrowBack, leaf, trendingUp, calculator, cash } from 'ionicons/icons';
+import { arrowBack, leaf, trendingUp, calculator, cash, arrowUpCircleOutline } from 'ionicons/icons';
 import { useParams, useHistory } from 'react-router-dom';
 import { FormDataLocalStorage } from '../../utils/tablestorages/FormDataLocalStorage';
 import { ValueInfoLocalStorage } from '../../utils/tablestorages/ValueInfoLocalStorage';
@@ -98,6 +98,12 @@ const AgriculturalAdjustmentTable: React.FC = () => {
 
   const handleBack = () => {
     history.push('/menu/forms');
+  };
+
+  // Placeholder function for update button (no functionality yet)
+  const handleUpdateClick = () => {
+    console.log('Update agricultural data clicked - functionality not implemented yet');
+    // TODO: Add update functionality later
   };
 
   // Calculate total adjustment
@@ -242,11 +248,19 @@ const AgriculturalAdjustmentTable: React.FC = () => {
                 <IonCol size="12">
                   <IonCard className="agricultural-card">
                     <IonCardHeader>
-                      <div className="agricultural-header">
+                      <div className="card-header-with-update">
                         <IonCardTitle className="agricultural-title">
                           <IonIcon icon={leaf} className="agricultural-title-icon" />
                           Agricultural Adjustment Data
                         </IonCardTitle>
+                        <IonButton 
+                          fill="clear" 
+                          className="icon-blue update-button"
+                          onClick={handleUpdateClick}
+                        >
+                          <IonIcon icon={arrowUpCircleOutline} className="update-icon" />
+                          <span className="update-text">Update Agricultural Data</span>
+                        </IonButton>
                       </div>
                     </IonCardHeader>
 
