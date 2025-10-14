@@ -183,11 +183,15 @@ const AgriculturalAdjustmentTable: React.FC = () => {
 
   const displayableFormData = getDisplayableFormData();
 
+  // Updated tableData with Adjusted Market Value calculation
   const tableData = subclassRates.map(rate => ({
     value_info_id: rate.value_info_id,
     subclass_id: rate.subclass_id,
     rate: rate.rate.toFixed(4),
-    base_market_value: rate.baseMarketValue?.toFixed(2) || 'N/A'
+    base_market_value: rate.baseMarketValue?.toFixed(2) || 'N/A',
+    // Add Adjusted Market Value calculation (Base Market Value x Adjusted Market Value %)
+    adjusted_market_value: rate.baseMarketValue ? 
+      (rate.baseMarketValue * (adjustedMarketValue / 100)).toFixed(2) : 'N/A'
   }));
 
   if (isLoading) {
@@ -383,7 +387,7 @@ const AgriculturalAdjustmentTable: React.FC = () => {
                           <div className="agricultural-item">
                             <label>Adjusted Market Value</label>
                             <IonText className="agricultural-value adjusted-market-value">
-                              {adjustedMarketValue}
+                              {adjustedMarketValue}%
                             </IonText>
                           </div>
                         </div>
