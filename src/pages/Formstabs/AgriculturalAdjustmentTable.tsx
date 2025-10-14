@@ -18,20 +18,28 @@ import {
   IonCardContent,
   IonCardHeader,
   IonCardTitle,
+  IonToast,
 } from '@ionic/react';
 import { arrowBack, leaf, trendingUp, calculator, cash, arrowUpCircleOutline } from 'ionicons/icons';
 import { useParams, useHistory } from 'react-router-dom';
 import { FormDataLocalStorage } from '../../utils/tablestorages/FormDataLocalStorage';
 import { ValueInfoLocalStorage } from '../../utils/tablestorages/ValueInfoLocalStorage';
-import { AgriculturalDataLocalStorage } from '../../utils//tablestorages/AgriculturalDataLocalStorage';
+import { AgriculturalDataLocalStorage } from '../../utils/tablestorages/AgriculturalDataLocalStorage';
+import { PhotoTagLocalStorage } from '../../utils/tablestorages/PhotoTagLocalStorage';
 import { getCurrentRateForSubclass } from '../../utils/subclassRateLocalStorage';
 import { 
   getAssessmentLevelsInRange,
   AssessmentLevelData 
 } from '../../utils/assessmentLevelLocalStorage';
+import { getDistrictById } from '../../utils/districtLocalStorage';
+import { getDeclarantById } from '../../utils/DeclarantLocalStorage';
 import AgricultureLandUpdateModal from '../../components/Modals/AgricultureLandUpdateModal';
 import DynamicTable from '../../components/GlobalComponent/DynamicTable';
-import SubmitButton from '../../components/GlobalComponent/SubmitButton'; // Add this import
+import SubmitButton from '../../components/GlobalComponent/SubmitButton';
+import { supabaseApi } from '../../services/supabaseApi';
+import { supabase } from '../../utils/supaBaseClient';
+import { Directory, Filesystem } from '@capacitor/filesystem';
+import { Capacitor } from '@capacitor/core';
 import '../../CSS/Forms.css';
 import '../../CSS/AgriculturalCard.css';
 
@@ -48,6 +56,13 @@ interface SubclassRateData {
   adjustedMarketValue?: number;
 }
 
+interface FormContextData {
+  districtName: string;
+  declarantName: string;
+  classification: string;
+  actualUse: string;
+}
+
 const AgriculturalAdjustmentTable: React.FC = () => {
   const { formId } = useParams<RouteParams>();
   const history = useHistory();
@@ -59,11 +74,207 @@ const AgriculturalAdjustmentTable: React.FC = () => {
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [subclassRates, setSubclassRates] = useState<SubclassRateData[]>([]);
   const [isLoadingRates, setIsLoadingRates] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false); // Add this state
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formContext, setFormContext] = useState<FormContextData | null>(null);
+  
+  // Toast state
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastColor, setToastColor] = useState<'success' | 'danger' | 'warning' | undefined>(undefined);
 
-  // Add empty onSubmit function for now
-  const onSubmit = () => {
-    console.log('Submit functionality not implemented yet');
+  // Photo handling functions
+  const getPhotoFile = async (photoTag: any): Promise<Blob | null> => {
+    try {
+      const photoPath = `phototags/${photoTag.photoName}`;
+
+      if (Capacitor.isNativePlatform()) {
+        const file = await Filesystem.readFile({
+          path: photoPath,
+          directory: Directory.Data
+        });
+        const blob = await (await fetch(`data:image/jpeg;base64,${file.data}`)).blob();
+        return blob;
+      } else {
+        const photoData = localStorage.getItem(photoTag.photoName);
+        if (photoData && photoData.startsWith('data:')) {
+          return await (await fetch(photoData)).blob();
+        }
+        if (photoTag.photoData) {
+          return await (await fetch(photoTag.photoData)).blob();
+        }
+        if (photoTag.photoName && photoTag.photoName.startsWith('data:image')) {
+          return await (await fetch(photoTag.photoName)).blob();
+        }
+      }
+
+      console.warn('Photo not found for upload in any storage location', photoTag);
+      return null;
+    } catch (error) {
+      console.error('Error getting photo file:', error);
+      return null;
+    }
+  };
+
+  const cleanupLocalPhotos = async (photoTag: any) => {
+    try {
+      const photoPath = `phototags/${photoTag.photoName}`;
+
+      if (Capacitor.isNativePlatform()) {
+        await Filesystem.deleteFile({
+          path: photoPath,
+          directory: Directory.Data
+        });
+        console.log('Local photo cleaned up successfully');
+      } else {
+        localStorage.removeItem(photoTag.photoName);
+      }
+    } catch (error) {
+      console.warn('Could not clean up local photo:', error);
+    }
+  };
+
+  // Validation functions
+  const validateNumber = (value: string | null): number | null => {
+    if (!value || value === 'N/A') return null;
+    const num = parseFloat(value);
+    return isNaN(num) ? null : num;
+  };
+
+  const validateDate = (dateString: string | null): string | null => {
+    if (!dateString) return null;
+    try {
+      const date = new Date(dateString);
+      return isNaN(date.getTime()) ? null : date.toISOString().split('T')[0];
+    } catch {
+      return null;
+    }
+  };
+
+  // Toast function
+  const showToastMessage = (message: string, color: 'success' | 'danger' | 'warning' = 'success') => {
+    setToastMessage(message);
+    setToastColor(color);
+    setShowToast(true);
+  };
+
+  // Load form context
+  const loadFormContext = async () => {
+    if (!formData) return;
+
+    try {
+      const districtData = formData.district ? await getDistrictById(formData.district) : null;
+      const districtName = districtData?.district_name || 'Unknown District';
+
+      const declarantData = formData.declarantId ? await getDeclarantById(formData.declarantId) : null;
+      const declarantName = declarantData
+        ? `${declarantData.firstname} ${declarantData.lastname}`
+        : 'Unknown Declarant';
+
+      setFormContext({
+        districtName,
+        declarantName,
+        classification: formData.classification || 'Not specified',
+        actualUse: formData.actualUse || 'Not specified'
+      });
+    } catch (error) {
+      console.error('Error loading form context:', error);
+    }
+  };
+
+  // Main submission function
+  const onSubmit = async () => {
+    setIsSubmitting(true);
+    showToastMessage('Starting agricultural form upload process...', 'warning');
+
+    try {
+      const formData = FormDataLocalStorage.getFormData(formId);
+      if (!formData) throw new Error('Form data not found');
+      if (formData.uploaded) throw new Error('Form already uploaded');
+
+      // Get value info
+      const valueInfo = ValueInfoLocalStorage.getValueInfoByFormDataId(formId);
+      if (!valueInfo) throw new Error('Value info not found');
+
+      // Get agricultural data
+      const agriData = AgriculturalDataLocalStorage.getAgriculturalDataByValueInfoId(valueInfo.id);
+      if (!agriData) throw new Error('Agricultural adjustment data not found');
+
+      // Get photo tag
+      const photoTag = PhotoTagLocalStorage.getPhotoTag(valueInfo.photoTagId);
+      if (!photoTag) throw new Error('Photo tag not found');
+
+      // Upload photo to Supabase storage
+      const databaseTagId = await supabaseApi.insertPhoto({
+        photo: photoTag.photoName,
+        longitude: photoTag.longitude,
+        latitude: photoTag.latitude,
+        accuracy: photoTag.accuracy || null,
+        altitude: photoTag.altitude || null,
+        date_taken: validateDate(photoTag.timestamp ? photoTag.timestamp.toISOString().split('T')[0] : null)
+      });
+      
+      if (!databaseTagId) throw new Error('Failed to insert photo record');
+
+      // Upload photo file to storage
+      const photoFile = await getPhotoFile(photoTag);
+      if (photoFile) {
+        const folderPath = `${databaseTagId}/${photoTag.photoName}`;
+        const { error: uploadError } = await supabase.storage.from('tag-photos').upload(folderPath, photoFile, {
+          contentType: 'image/jpeg',
+          upsert: false
+        });
+        if (uploadError) {
+          console.warn('Photo upload failed', uploadError);
+          showToastMessage('Form submitted but photo upload failed', 'warning');
+        } else {
+          await cleanupLocalPhotos(photoTag);
+        }
+      } else {
+        showToastMessage('Form submitted but could not retrieve photo', 'warning');
+      }
+
+      // Insert or get form ID
+      let databaseFormId = formData.synced_id;
+      if (!databaseFormId) {
+        databaseFormId = await supabaseApi.insertForm({
+          declarant_id: formData.declarantId || 0,
+          kind_id: parseInt(formData.kind),
+          class_id: formData.classification,
+          area: formData.area.toString(),
+          district_id: formData.district,
+          actual_used_id: formData.actualUse,
+          subclass_id: formData.subclass || null,
+          status: 'New'
+        });
+        if (!databaseFormId) throw new Error('Failed to insert form');
+      }
+
+      // Insert value info
+      const databaseValueInfoId = await supabaseApi.insertValueInfo(databaseFormId, databaseTagId);
+      if (!databaseValueInfoId) throw new Error('Failed to insert value info');
+
+      // Insert agricultural adjustment data
+      const adjustmentSuccess = await supabaseApi.insertAgriLandAdjustment(databaseValueInfoId, {
+        frontage: validateNumber(agriData.frontage),
+        weather_road: validateNumber(agriData.weather_road),
+        market: validateNumber(agriData.market)
+      });
+
+      if (!adjustmentSuccess) throw new Error('Failed to insert agricultural adjustment data');
+
+      // Mark form as uploaded
+      if (!formData.synced_id) {
+        FormDataLocalStorage.markFormAsUploaded(formId, databaseFormId);
+      }
+
+      showToastMessage('Agricultural data submitted successfully! All data synchronized with server.', 'success');
+
+    } catch (error: any) {
+      console.error('Agricultural form upload failed:', error);
+      showToastMessage(`Upload failed: ${error.message || 'Unknown error'}`, 'danger');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const loadData = () => {
@@ -188,6 +399,12 @@ const AgriculturalAdjustmentTable: React.FC = () => {
       loadSubclassRates();
     }
   }, [formData, valueInfoId]);
+
+  useEffect(() => {
+    if (formData) {
+      loadFormContext();
+    }
+  }, [formData]);
 
   const handleBack = () => {
     history.push('/menu/forms');
@@ -353,6 +570,41 @@ const AgriculturalAdjustmentTable: React.FC = () => {
               </IonCol>
             </IonRow>
 
+            {formContext && (
+              <IonRow>
+                <IonCol size="12">
+                  <IonCard className="info-card">
+                    <IonCardContent>
+                      <IonGrid>
+                        <IonRow>
+                          <IonCol size="6" size-md="3">
+                            <IonText>
+                              <strong>District:</strong> {formContext.districtName}
+                            </IonText>
+                          </IonCol>
+                          <IonCol size="6" size-md="3">
+                            <IonText>
+                              <strong>Declarant:</strong> {formContext.declarantName}
+                            </IonText>
+                          </IonCol>
+                          <IonCol size="6" size-md="3">
+                            <IonText>
+                              <strong>Classification:</strong> {formContext.classification}
+                            </IonText>
+                          </IonCol>
+                          <IonCol size="6" size-md="3">
+                            <IonText>
+                              <strong>Actual Use:</strong> {formContext.actualUse}
+                            </IonText>
+                          </IonCol>
+                        </IonRow>
+                      </IonGrid>
+                    </IonCardContent>
+                  </IonCard>
+                </IonCol>
+              </IonRow>
+            )}
+
             {formData?.subclass && (
               <IonRow>
                 <IonCol size="12">
@@ -492,6 +744,15 @@ const AgriculturalAdjustmentTable: React.FC = () => {
             currentData={agriculturalData}
           />
         )}
+
+        <IonToast
+          isOpen={showToast}
+          onDidDismiss={() => setShowToast(false)}
+          message={toastMessage}
+          position="middle"
+          color={toastColor}
+          duration={3000}
+        />
       </IonContent>
     </IonPage>
   );
