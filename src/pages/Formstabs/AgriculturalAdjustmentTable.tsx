@@ -66,11 +66,11 @@ const AgriculturalAdjustmentTable: React.FC = () => {
     history.push('/menu/forms');
   };
 
-  // Filter out the fields we don't want to display
+  // Filter out the fields we don't want to display (only remove status and uploaded)
   const getDisplayableFormData = () => {
     if (!formData) return {};
     
-    const { id, kind, status, uploaded, ...displayableData } = formData;
+    const { status, uploaded, ...displayableData } = formData;
     return displayableData;
   };
 
@@ -133,7 +133,7 @@ const AgriculturalAdjustmentTable: React.FC = () => {
               Back
             </IonButton>
           </IonButtons>
-          <IonTitle>Agricultural Adjustments - Form {formId}</IonTitle>
+          <IonTitle>Agricultural Adjustments</IonTitle>
         </IonToolbar>
       </IonHeader>
       <IonContent>
