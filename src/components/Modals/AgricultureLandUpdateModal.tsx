@@ -22,6 +22,7 @@ import {
 import { closeOutline } from 'ionicons/icons';
 import { getLandAdjustmentData } from '../../utils/landAdjustmentLocalStorage';
 import { AgriculturalDataLocalStorage } from '../../utils/tablestorages/AgriculturalDataLocalStorage';
+import SubmitButton from '../GlobalComponent/SubmitButton';
 
 interface AgricultureLandUpdateModalProps {
   isOpen: boolean;
@@ -436,28 +437,19 @@ const AgricultureLandUpdateModal: React.FC<AgricultureLandUpdateModalProps> = ({
                 </IonCol>
               </IonRow>
 
-              {/* Update Button */}
-              <div className="next-btn-container" style={{ marginTop: '30px' }}>
-                <IonButton 
-                  expand="block" 
-                  onClick={handleSubmit} 
+              {/* Submit Button - Centered below */}
+              <div style={{ 
+                display: 'flex', 
+                justifyContent: 'center', 
+                marginTop: '30px',
+                padding: '0 16px'
+              }}>
+                <SubmitButton
+                  label="Update Agricultural Data"
+                  onClick={handleSubmit}
                   disabled={!isFormValid || isSubmitting}
-                  className="submit-button"
-                  style={{
-                    height: '50px',
-                    fontSize: '16px',
-                    fontWeight: 'bold'
-                  }}
-                >
-                  {isSubmitting ? (
-                    <>
-                      <IonSpinner name="crescent" style={{ marginRight: '8px' }} />
-                      Updating...
-                    </>
-                  ) : (
-                    'Update Agricultural Data'
-                  )}
-                </IonButton>
+                  loading={isSubmitting}
+                />
               </div>
             </>
           )}
