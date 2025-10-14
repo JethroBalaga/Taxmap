@@ -24,12 +24,21 @@ import { useParams, useHistory } from 'react-router-dom';
 import { FormDataLocalStorage } from '../../utils/tablestorages/FormDataLocalStorage';
 import { ValueInfoLocalStorage } from '../../utils/tablestorages/ValueInfoLocalStorage';
 import { AgriculturalDataLocalStorage } from '../../utils//tablestorages/AgriculturalDataLocalStorage';
+import { getCurrentRateForSubclass } from '../../utils/subclassRateLocalStorage';
 import AgricultureLandUpdateModal from '../../components/Modals/AgricultureLandUpdateModal';
+import DynamicTable from '../../components/GlobalComponent/DynamicTable';
 import '../../CSS/Forms.css';
 import '../../CSS/AgriculturalCard.css';
 
 interface RouteParams {
   formId: string;
+}
+
+interface SubclassRateData {
+  value_info_id: string;
+  subclass_id: string;
+  rate: number;
+  baseMarketValue?: number;
 }
 
 const AgriculturalAdjustmentTable: React.FC = () => {
@@ -41,6 +50,8 @@ const AgriculturalAdjustmentTable: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isValidForm, setIsValidForm] = useState(false);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [subclassRates, setSubclassRates] = useState<SubclassRateData[]>([]);
+  const [isLoadingRates, setIsLoadingRates] = useState(false);
 
   const loadData = () => {
     setIsLoading(true);
@@ -50,20 +61,17 @@ const AgriculturalAdjustmentTable: React.FC = () => {
       if (form) {
         setFormData(form);
         
-        // Check if form is Land kind (1) and AGRICULTURAL classification (A)
         const isLandKind = form.kind?.toString() === '1';
         const isAgricultural = form.classification?.toString() === 'A';
         
         setIsValidForm(isLandKind && isAgricultural);
 
         if (isLandKind && isAgricultural) {
-          // Fetch ValueInfo ID using form ID
           const valueInfo = ValueInfoLocalStorage.getValueInfoByFormDataId(formId);
           
           if (valueInfo) {
             setValueInfoId(valueInfo.id);
             
-            // Fetch AgriculturalData using ValueInfo ID
             const agriData = AgriculturalDataLocalStorage.getAgriculturalDataByValueInfoId(valueInfo.id);
             setAgriculturalData(agriData);
           }
@@ -79,24 +87,63 @@ const AgriculturalAdjustmentTable: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    loadData(); // Initial load
+  const loadSubclassRates = async () => {
+    if (!formData?.subclass || !valueInfoId) return;
+    
+    setIsLoadingRates(true);
+    try {
+      const subclassIds = Array.isArray(formData.subclass) 
+        ? formData.subclass 
+        : [formData.subclass];
+      
+      const ratesData: SubclassRateData[] = [];
+      
+      for (const subclassId of subclassIds) {
+        if (subclassId) {
+          const rate = await getCurrentRateForSubclass(subclassId);
+          if (rate !== null) {
+            const area = parseFloat(formData.area) || 0;
+            const baseMarketValue = area * rate;
+            
+            ratesData.push({
+              value_info_id: valueInfoId,
+              subclass_id: subclassId,
+              rate: rate,
+              baseMarketValue: baseMarketValue
+            });
+          }
+        }
+      }
+      
+      setSubclassRates(ratesData);
+    } catch (error) {
+      console.error('Error loading subclass rates:', error);
+    } finally {
+      setIsLoadingRates(false);
+    }
+  };
 
-    // Listen for form update events
+  useEffect(() => {
+    loadData();
+
     const handleFormDataUpdated = (event: CustomEvent) => {
       if (event.detail.formId === formId) {
-        loadData(); // Reload data when this form is updated
+        loadData();
       }
     };
 
-    // Add event listener
     window.addEventListener('formDataUpdated', handleFormDataUpdated as EventListener);
     
-    // Cleanup: remove event listener when component unmounts
     return () => {
       window.removeEventListener('formDataUpdated', handleFormDataUpdated as EventListener);
     };
-  }, [formId]); // Re-run when formId changes
+  }, [formId]);
+
+  useEffect(() => {
+    if (formData && valueInfoId) {
+      loadSubclassRates();
+    }
+  }, [formData, valueInfoId]);
 
   const handleBack = () => {
     history.push('/menu/forms');
@@ -106,7 +153,6 @@ const AgriculturalAdjustmentTable: React.FC = () => {
     setShowUpdateModal(true);
   };
 
-  // Calculate total adjustment
   const calculateTotalAdjustment = () => {
     if (!agriculturalData) return 0;
     
@@ -117,13 +163,10 @@ const AgriculturalAdjustmentTable: React.FC = () => {
     return frontage + weatherRoad + market;
   };
 
-  // Calculate adjusted market value (100 - total adjustment)
   const calculateAdjustedMarketValue = () => {
     const totalAdjustment = calculateTotalAdjustment();
-    // If adjustments are negative, it means we subtract from 100
-    // So -21 adjustment means 100 - 21 = 79
     if (totalAdjustment < 0) {
-      return 100 + totalAdjustment; // 100 + (-21) = 79
+      return 100 + totalAdjustment;
     }
     return 100 - totalAdjustment;
   };
@@ -131,7 +174,6 @@ const AgriculturalAdjustmentTable: React.FC = () => {
   const totalAdjustment = calculateTotalAdjustment();
   const adjustedMarketValue = calculateAdjustedMarketValue();
 
-  // Filter out the fields we don't want to display (only remove status and uploaded)
   const getDisplayableFormData = () => {
     if (!formData) return {};
     
@@ -140,6 +182,13 @@ const AgriculturalAdjustmentTable: React.FC = () => {
   };
 
   const displayableFormData = getDisplayableFormData();
+
+  const tableData = subclassRates.map(rate => ({
+    value_info_id: rate.value_info_id,
+    subclass_id: rate.subclass_id,
+    rate: rate.rate.toFixed(4),
+    base_market_value: rate.baseMarketValue?.toFixed(2) || 'N/A'
+  }));
 
   if (isLoading) {
     return (
@@ -206,12 +255,10 @@ const AgriculturalAdjustmentTable: React.FC = () => {
           <IonGrid>
             <IonRow>
               <IonCol size="12">
-                {/* Form Summary Card */}
                 <IonCard className="form-summary-card">
                   <IonCardContent>
                     <IonGrid style={{ margin: '0', padding: '0' }}>
                       {Object.entries(displayableFormData).map(([key, value], index, array) => {
-                        // Create rows with 4 columns each
                         if (index % 4 === 0) {
                           const rowItems = array.slice(index, index + 4);
                           return (
@@ -225,7 +272,6 @@ const AgriculturalAdjustmentTable: React.FC = () => {
                                   </IonText>
                                 </IonCol>
                               ))}
-                              {/* Fill empty columns if needed */}
                               {rowItems.length < 4 && 
                                 Array.from({ length: 4 - rowItems.length }).map((_, emptyIndex) => (
                                   <IonCol key={`empty-${emptyIndex}`} size="3" style={{ padding: '4px' }}></IonCol>
@@ -242,7 +288,37 @@ const AgriculturalAdjustmentTable: React.FC = () => {
               </IonCol>
             </IonRow>
 
-            {/* Agricultural Data Card - Simplified Design */}
+            {formData?.subclass && (
+              <IonRow>
+                <IonCol size="12">
+                  <div style={{ marginBottom: '20px' }}>
+                    <IonText>
+                      <h3 style={{ margin: '0 0 16px 0', padding: '0 16px' }}>
+                        Agricultural Land Information
+                      </h3>
+                    </IonText>
+                    {isLoadingRates ? (
+                      <div className="loading-container">
+                        <IonSpinner name="crescent" />
+                        <IonText>Loading subclass rates...</IonText>
+                      </div>
+                    ) : tableData.length > 0 ? (
+                      <DynamicTable
+                        data={tableData}
+                        keyField="value_info_id"
+                      />
+                    ) : (
+                      <div style={{ textAlign: 'center', padding: '20px' }}>
+                        <IonText color="medium">
+                          <p>No subclass rates found for the provided subclass IDs.</p>
+                        </IonText>
+                      </div>
+                    )}
+                  </div>
+                </IonCol>
+              </IonRow>
+            )}
+
             {agriculturalData && (
               <IonRow>
                 <IonCol size="12">
@@ -265,7 +341,6 @@ const AgriculturalAdjustmentTable: React.FC = () => {
                     </IonCardHeader>
 
                     <IonCardContent>
-                      {/* Adjustment Factors Section */}
                       <div className="agricultural-section">
                         <IonText className="agricultural-section-title">
                           <IonIcon icon={trendingUp} className="agricultural-section-icon" />
@@ -293,7 +368,6 @@ const AgriculturalAdjustmentTable: React.FC = () => {
                         </div>
                       </div>
 
-                      {/* Total Adjustment and Adjusted Market Value Section */}
                       <div className="agricultural-section">
                         <IonText className="agricultural-section-title">
                           <IonIcon icon={calculator} className="agricultural-section-icon" />
@@ -320,7 +394,6 @@ const AgriculturalAdjustmentTable: React.FC = () => {
               </IonRow>
             )}
 
-            {/* No Agricultural Data Message */}
             {!agriculturalData && (
               <IonRow>
                 <IonCol size="12">
@@ -338,7 +411,6 @@ const AgriculturalAdjustmentTable: React.FC = () => {
           </IonGrid>
         </div>
 
-        {/* Update Modal */}
         {agriculturalData && (
           <AgricultureLandUpdateModal
             isOpen={showUpdateModal}
@@ -346,9 +418,7 @@ const AgriculturalAdjustmentTable: React.FC = () => {
             onSuccess={(updatedData) => {
               console.log('Agricultural data updated successfully:', updatedData);
               setShowUpdateModal(false);
-              // Reload the data to show updates
               loadData();
-              // Dispatch event to notify other components
               window.dispatchEvent(new CustomEvent('agriculturalDataUpdated', {
                 detail: { formId, valueInfoId }
               }));
