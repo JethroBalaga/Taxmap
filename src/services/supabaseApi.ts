@@ -63,6 +63,12 @@ export interface MachineData {
   depreciation: number | null;
 }
 
+export interface AgriLandAdjustmentData {
+  frontage: number | null;
+  weather_road: number | null;
+  market: number | null;
+}
+
 // Fixed helper function to validate and convert dates
 const validateDate = (dateString: string | null | undefined): string | null => {
   if (dateString == null || dateString === '') return null;
@@ -236,6 +242,34 @@ export const supabaseApi = {
     
     if (!data) {
       throw new Error('No data returned from insert_machine_data function');
+    }
+    
+    return data; // UUID as string
+  },
+
+  /**
+   * Insert agricultural land adjustment data and return the agrilandadjustment_id (UUID)
+   */
+  async insertAgriLandAdjustment(value_info_id: string, adjustmentData: AgriLandAdjustmentData): Promise<string> {
+    const { data, error } = await supabase.rpc('insert_agriland_adjustment', {
+      p_value_info_id: value_info_id,
+      p_frontage: adjustmentData.frontage,
+      p_weather_road: adjustmentData.weather_road,
+      p_market: adjustmentData.market
+    });
+
+    if (error) {
+      console.error('RPC Error inserting agricultural adjustment:', {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint
+      });
+      throw new Error(`Failed to insert agricultural adjustment data: ${error.message}`);
+    }
+    
+    if (!data) {
+      throw new Error('No data returned from insert_agriland_adjustment function');
     }
     
     return data; // UUID as string
