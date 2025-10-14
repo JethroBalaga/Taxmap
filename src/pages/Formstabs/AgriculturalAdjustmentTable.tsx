@@ -19,13 +19,13 @@ import {
   IonCardHeader,
   IonCardTitle,
 } from '@ionic/react';
-import { arrowBack } from 'ionicons/icons';
+import { arrowBack, leaf, trendingUp } from 'ionicons/icons';
 import { useParams, useHistory } from 'react-router-dom';
 import { FormDataLocalStorage } from '../../utils/tablestorages/FormDataLocalStorage';
 import { ValueInfoLocalStorage } from '../../utils/tablestorages/ValueInfoLocalStorage';
-import { AgriculturalDataLocalStorage } from '../../utils/tablestorages/AgriculturalDataLocalStorage';
+import { AgriculturalDataLocalStorage } from '../../utils//tablestorages/AgriculturalDataLocalStorage';
 import '../../CSS/Forms.css';
-import '../../CSS/BuildingResponsive.css';
+import '../../CSS/AgriculturalCard.css';
 
 interface RouteParams {
   formId: string;
@@ -196,35 +196,48 @@ const AgriculturalAdjustmentTable: React.FC = () => {
               </IonCol>
             </IonRow>
 
-            {/* Agricultural Data Card */}
+            {/* Agricultural Data Card - Simplified Design */}
             {agriculturalData && (
               <IonRow>
                 <IonCol size="12">
-                  <IonCard className="form-summary-card">
+                  <IonCard className="agricultural-card">
                     <IonCardHeader>
-                      <IonCardTitle>Agricultural Adjustment Data</IonCardTitle>
+                      <div className="agricultural-header">
+                        <IonCardTitle className="agricultural-title">
+                          <IonIcon icon={leaf} className="agricultural-title-icon" />
+                          Agricultural Adjustment Data
+                        </IonCardTitle>
+                      </div>
                     </IonCardHeader>
+
                     <IonCardContent>
-                      <IonGrid style={{ margin: '0', padding: '0' }}>
-                        <IonRow style={{ marginBottom: '4px' }}>
-                          <IonCol size="4" style={{ padding: '4px' }}>
-                            <IonText><strong>Frontage:</strong> {agriculturalData.frontage || 'N/A'}</IonText>
-                          </IonCol>
-                          <IonCol size="4" style={{ padding: '4px' }}>
-                            <IonText><strong>Weather Road:</strong> {agriculturalData.weather_road || 'N/A'}</IonText>
-                          </IonCol>
-                          <IonCol size="4" style={{ padding: '4px' }}>
-                            <IonText><strong>Market:</strong> {agriculturalData.market || 'N/A'}</IonText>
-                          </IonCol>
-                        </IonRow>
-                        {valueInfoId && (
-                          <IonRow style={{ marginBottom: '4px' }}>
-                            <IonCol size="12" style={{ padding: '4px' }}>
-                              <IonText><strong>Value Info ID:</strong> {valueInfoId}</IonText>
-                            </IonCol>
-                          </IonRow>
-                        )}
-                      </IonGrid>
+                      {/* Adjustment Factors Section */}
+                      <div className="agricultural-section">
+                        <IonText className="agricultural-section-title">
+                          <IonIcon icon={trendingUp} className="agricultural-section-icon" />
+                          <h4>Adjustment Factors</h4>
+                        </IonText>
+                        <div className="agricultural-grid">
+                          <div className="agricultural-item">
+                            <label>Frontage</label>
+                            <IonText className="agricultural-value">
+                              {agriculturalData.frontage || 'N/A'}
+                            </IonText>
+                          </div>
+                          <div className="agricultural-item">
+                            <label>Weather Road</label>
+                            <IonText className="agricultural-value">
+                              {agriculturalData.weather_road || 'N/A'}
+                            </IonText>
+                          </div>
+                          <div className="agricultural-item">
+                            <label>Market</label>
+                            <IonText className="agricultural-value">
+                              {agriculturalData.market || 'N/A'}
+                            </IonText>
+                          </div>
+                        </div>
+                      </div>
                     </IonCardContent>
                   </IonCard>
                 </IonCol>
