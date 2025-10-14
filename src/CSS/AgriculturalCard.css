@@ -133,3 +133,8 @@
     gap: 24px;
   }
 }
+.agricultural-value.total-adjustment {
+  font-size: 1.2em;
+  font-weight: bold;
+  color: var(--ion-color-primary);
+}
