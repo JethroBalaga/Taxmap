@@ -220,15 +220,24 @@ const AgriculturalAdjustmentTable: React.FC = () => {
 
   const displayableFormData = getDisplayableFormData();
 
-  // Updated tableData with Assessment Level (only rate_percent without % sign)
-  const tableData = subclassRates.map(rate => ({
-    value_info_id: rate.value_info_id,
-    subclass_id: rate.subclass_id,
-    rate: rate.rate.toFixed(4),
-    base_market_value: rate.baseMarketValue?.toFixed(2) || 'N/A',
-    adjusted_market_value: rate.adjustedMarketValue?.toFixed(2) || 'N/A',
-    assessment_level: rate.assessmentLevel?.rate_percent || 'N/A' // Just the value, no % sign
-  }));
+  // Updated tableData with Assessed Value (fixed for % sign)
+  const tableData = subclassRates.map(rate => {
+    // Remove % sign and convert to decimal
+    const ratePercent = rate.assessmentLevel?.rate_percent || '0';
+    const assessmentRate = parseFloat(ratePercent.replace('%', '')) / 100;
+    const assessedValue = rate.adjustedMarketValue ? 
+      rate.adjustedMarketValue * assessmentRate : 0;
+
+    return {
+      value_info_id: rate.value_info_id,
+      subclass_id: rate.subclass_id,
+      rate: rate.rate.toFixed(4),
+      base_market_value: rate.baseMarketValue?.toFixed(2) || 'N/A',
+      adjusted_market_value: rate.adjustedMarketValue?.toFixed(2) || 'N/A',
+      assessment_level: rate.assessmentLevel?.rate_percent || 'N/A',
+      assessed_value: assessedValue.toFixed(2)
+    };
+  });
 
   if (isLoading) {
     return (
