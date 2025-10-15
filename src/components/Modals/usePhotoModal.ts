@@ -12,7 +12,7 @@ import { MachineDataLocalStorage } from '../../utils/tablestorages/MachineDataLo
 import { PhotoTagLocalStorage } from '../../utils/tablestorages/PhotoTagLocalStorage';
 import { ValueInfoLocalStorage } from '../../utils/tablestorages/ValueInfoLocalStorage';
 import { AgriculturalDataLocalStorage } from '../../utils/tablestorages/AgriculturalDataLocalStorage';
-import { generateFileName, saveImageToStorage, adjustCoordinates } from '../../utils/photoModalUtils';
+import { generateFileName, saveImageToStorage } from '../../utils/photoModalUtils';
 
 interface UsePhotoModalProps {
   isOpen: boolean;
@@ -142,12 +142,12 @@ export const usePhotoModal = ({
 
       setCurrentLocation(originalLocation);
 
-      const adjustedCoords = adjustCoordinates(
-        originalLocation.latitude,
-        originalLocation.longitude
-      );
-
-      setAdjustedLocation(adjustedCoords);
+      // Use original coordinates directly without adjustment
+      setAdjustedLocation({
+        latitude: originalLocation.latitude,
+        longitude: originalLocation.longitude
+      });
+      
       setHasAttemptedLocation(true);
 
     } catch (err: any) {
@@ -210,8 +210,9 @@ export const usePhotoModal = ({
         console.log('Form data saved:', savedFormData);
       }
 
-      const finalLatitude = adjustedLocation?.latitude || currentLocation?.latitude || 0;
-      const finalLongitude = adjustedLocation?.longitude || currentLocation?.longitude || 0;
+      // Use currentLocation directly without adjustedLocation
+      const finalLatitude = currentLocation?.latitude || 0;
+      const finalLongitude = currentLocation?.longitude || 0;
 
       // Save Photo Tag
       photoTag = PhotoTagLocalStorage.addPhotoTag({
@@ -294,7 +295,7 @@ export const usePhotoModal = ({
     } finally {
       setIsSubmitting(false);
     }
-  }, [photo, photoName, formData, buildingData, machineData, agriculturalData, currentLocation, adjustedLocation, onSubmit, onPhotoTaken, onCompleteSubmission]);
+  }, [photo, photoName, formData, buildingData, machineData, agriculturalData, currentLocation, onSubmit, onPhotoTaken, onCompleteSubmission]);
 
   const handleSubmit = useCallback(async () => {
     if (!photo) {
