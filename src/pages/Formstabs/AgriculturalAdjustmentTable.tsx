@@ -34,7 +34,7 @@ import '../../CSS/AgriculturalCard.css';
 const AgriculturalAdjustmentTable: React.FC = () => {
   const { formId } = useParams<{ formId: string }>();
   const history = useHistory();
-  
+
   const {
     formData,
     agriculturalData,
@@ -54,14 +54,15 @@ const AgriculturalAdjustmentTable: React.FC = () => {
     showToast,
     toastMessage,
     toastColor,
-    onSubmit
+    onSubmit,
+    handleToastDismiss
   } = useAgriculturalSubmission(formId);
 
-  const { 
-    totalAdjustment, 
-    adjustedMarketValuePercentage, 
-    displayableFormData, 
-    tableData 
+  const {
+    totalAdjustment,
+    adjustedMarketValuePercentage,
+    displayableFormData,
+    tableData
   } = agriculturalUtils(formData, agriculturalData, subclassRates);
 
   const handleBack = () => {
@@ -163,7 +164,7 @@ const AgriculturalAdjustmentTable: React.FC = () => {
                                   </IonText>
                                 </IonCol>
                               ))}
-                              {rowItems.length < 4 && 
+                              {rowItems.length < 4 &&
                                 Array.from({ length: 4 - rowItems.length }).map((_, emptyIndex) => (
                                   <IonCol key={`empty-${emptyIndex}`} size="3" style={{ padding: '4px' }}></IonCol>
                                 ))
@@ -255,8 +256,8 @@ const AgriculturalAdjustmentTable: React.FC = () => {
                           <IonIcon icon={leaf} className="agricultural-title-icon" />
                           Agricultural Adjustment Data
                         </IonCardTitle>
-                        <IonButton 
-                          fill="clear" 
+                        <IonButton
+                          fill="clear"
                           className="icon-blue update-button"
                           onClick={handleUpdateClick}
                         >
@@ -356,7 +357,7 @@ const AgriculturalAdjustmentTable: React.FC = () => {
 
         <IonToast
           isOpen={showToast}
-          onDidDismiss={() => setShowToast(false)}
+          onDidDismiss={handleToastDismiss}
           message={toastMessage}
           position="middle"
           color={toastColor}

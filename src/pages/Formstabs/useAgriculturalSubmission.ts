@@ -87,6 +87,10 @@ export const useAgriculturalSubmission = (formId: string) => {
     setShowToast(true);
   };
 
+  const handleToastDismiss = () => {
+    setShowToast(false);
+  };
+
   const onSubmit = async () => {
     setIsSubmitting(true);
     showToastMessage('Starting agricultural form upload process...', 'warning');
@@ -179,6 +183,6 @@ export const useAgriculturalSubmission = (formId: string) => {
     toastMessage,
     toastColor,
     onSubmit,
-    setShowToast
+    handleToastDismiss
   };
 };
