@@ -35,9 +35,9 @@ const NonAgriLandTable: React.FC = () => {
     
     // Icons configuration array
     const adjustmentIcons = [
-        { icon: cutOutline, label: "Add Stripping" },
-        { icon: resizeOutline, label: "Add Corner Influence" },
-        { icon: trailSignOutline, label: "Add Frontage" }
+        { icon: cutOutline, label: "Add Stripping", hideFor: ['C', 'I'] },
+        { icon: resizeOutline, label: "Add Corner Influence", hideFor: ['I'] },
+        { icon: trailSignOutline, label: "Add Frontage", hideFor: ['R', 'I'] }
     ];
     
     const loadFormData = () => {
@@ -61,6 +61,14 @@ const NonAgriLandTable: React.FC = () => {
     
     const handleBack = () => {
         history.push('/menu/forms');
+    };
+
+    // Filter icons based on classification
+    const getVisibleIcons = () => {
+        const classification = formData?.classification;
+        if (!classification) return adjustmentIcons;
+        
+        return adjustmentIcons.filter(icon => !icon.hideFor.includes(classification));
     };
     
     if (isLoading) {
@@ -109,6 +117,8 @@ const NonAgriLandTable: React.FC = () => {
             </IonPage>
         );
     }
+
+    const visibleIcons = getVisibleIcons();
     
     return (
         <IonPage>
@@ -161,28 +171,30 @@ const NonAgriLandTable: React.FC = () => {
                     </IonCardContent>
                 </IonCard>
 
-                {/* Icons Section - Centered */}
-                <div style={{ 
-                    display: 'flex', 
-                    justifyContent: 'center', 
-                    alignItems: 'center', 
-                    gap: '2rem', 
-                    margin: '2rem 0',
-                    padding: '1rem'
-                }}>
-                    {adjustmentIcons.map((item, index) => (
-                        <div key={index} style={{ textAlign: 'center' }}>
-                            <IonIcon 
-                                icon={item.icon} 
-                                size="large" 
-                                style={{ cursor: 'pointer', color: '#3880ff' }}
-                            />
-                            <div style={{ marginTop: '0.5rem' }}>
-                                <IonText color="medium">{item.label}</IonText>
+                {/* Icons Section - Centered - Only show if there are visible icons */}
+                {visibleIcons.length > 0 && (
+                    <div style={{ 
+                        display: 'flex', 
+                        justifyContent: 'center', 
+                        alignItems: 'center', 
+                        gap: '2rem', 
+                        margin: '2rem 0',
+                        padding: '1rem'
+                    }}>
+                        {visibleIcons.map((item, index) => (
+                            <div key={index} style={{ textAlign: 'center' }}>
+                                <IonIcon 
+                                    icon={item.icon} 
+                                    size="large" 
+                                    style={{ cursor: 'pointer', color: '#3880ff' }}
+                                />
+                                <div style={{ marginTop: '0.5rem' }}>
+                                    <IonText color="medium">{item.label}</IonText>
+                                </div>
                             </div>
-                        </div>
-                    ))}
-                </div>
+                        ))}
+                    </div>
+                )}
                 
                 <IonToast
                     isOpen={showToast}
