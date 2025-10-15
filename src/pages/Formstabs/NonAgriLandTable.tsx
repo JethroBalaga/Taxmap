@@ -40,6 +40,22 @@ const NonAgriLandTable: React.FC = () => {
         { icon: trailSignOutline, label: "Add Frontage", hideFor: ['R', 'I'] }
     ];
     
+    // Grid data configuration array
+    const gridData = [
+        [
+            { label: "District:", value: formData?.district || 'N/A' },
+            { label: "Declarant ID:", value: formData?.declarantId || 'N/A' },
+            { label: "Kind:", value: formData?.kind || 'N/A' },
+            { label: "Classification:", value: formData?.classification || 'N/A' }
+        ],
+        [
+            { label: "Subclass:", value: formData?.subclass || 'N/A' },
+            { label: "Actual Use:", value: formData?.actualUse || 'N/A' },
+            { label: "Area:", value: formData?.area ? formData.area.toLocaleString() : 'N/A' },
+            { label: "", value: "" } // Empty column for alignment
+        ]
+    ];
+    
     const loadFormData = () => {
         if (formId) {
             setIsLoading(true);
@@ -139,34 +155,17 @@ const NonAgriLandTable: React.FC = () => {
                 <IonCard className="form-summary-card">
                     <IonCardContent>
                         <IonGrid style={{ margin: '0', padding: '0' }}>
-                            <IonRow style={{ marginBottom: '4px' }}>
-                                <IonCol size="3" style={{ padding: '4px' }}>
-                                    <IonText><strong>District:</strong> {formData.district || 'N/A'}</IonText>
-                                </IonCol>
-                                <IonCol size="3" style={{ padding: '4px' }}>
-                                    <IonText><strong>Declarant ID:</strong> {formData.declarantId || 'N/A'}</IonText>
-                                </IonCol>
-                                <IonCol size="3" style={{ padding: '4px' }}>
-                                    <IonText><strong>Kind:</strong> {formData.kind || 'N/A'}</IonText>
-                                </IonCol>
-                                <IonCol size="3" style={{ padding: '4px' }}>
-                                    <IonText><strong>Classification:</strong> {formData.classification || 'N/A'}</IonText>
-                                </IonCol>
-                            </IonRow>
-                            <IonRow style={{ marginBottom: '4px' }}>
-                                <IonCol size="3" style={{ padding: '4px' }}>
-                                    <IonText><strong>Subclass:</strong> {formData.subclass || 'N/A'}</IonText>
-                                </IonCol>
-                                <IonCol size="3" style={{ padding: '4px' }}>
-                                    <IonText><strong>Actual Use:</strong> {formData.actualUse || 'N/A'}</IonText>
-                                </IonCol>
-                                <IonCol size="3" style={{ padding: '4px' }}>
-                                    <IonText><strong>Area:</strong> {formData.area ? formData.area.toLocaleString() : 'N/A'}</IonText>
-                                </IonCol>
-                                <IonCol size="3" style={{ padding: '4px' }}>
-                                    {/* Empty column for alignment */}
-                                </IonCol>
-                            </IonRow>
+                            {gridData.map((row, rowIndex) => (
+                                <IonRow key={rowIndex} style={{ marginBottom: '4px' }}>
+                                    {row.map((col, colIndex) => (
+                                        <IonCol key={colIndex} size="3" style={{ padding: '4px' }}>
+                                            <IonText>
+                                                {col.label && <strong>{col.label}</strong>} {col.value}
+                                            </IonText>
+                                        </IonCol>
+                                    ))}
+                                </IonRow>
+                            ))}
                         </IonGrid>
                     </IonCardContent>
                 </IonCard>
