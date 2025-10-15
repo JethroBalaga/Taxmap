@@ -4,7 +4,7 @@ import { Filesystem, Directory } from '@capacitor/filesystem';
 export const generateFileName = (): string => {
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
   const random = Math.random().toString(36).substr(2, 6);
-  return `building_${timestamp}_${random}.jpg`;
+  return `photo_${timestamp}_${random}.jpg`;
 };
 
 // Calculate file size from data URL
@@ -45,18 +45,13 @@ export const formatCoordinates = (lat: number, lng: number): string => {
   return `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
 };
 
-// Adjust coordinates to fix inaccuracy (subtract 50 from lat, 15 from lng)
+// Return original coordinates without adjustment
 export const adjustCoordinates = (lat: number, lng: number): {latitude: number; longitude: number} => {
-  // Convert to decimal degrees, adjust, then convert back
-  const adjustedLat = parseFloat((lat - 0.000050).toFixed(6));
-  const adjustedLng = parseFloat((lng - 0.000050).toFixed(6));
-  
-  console.log(`Original coordinates: ${lat}, ${lng}`);
-  console.log(`Adjusted coordinates: ${adjustedLat}, ${adjustedLng}`);
+  console.log(`Using original coordinates: ${lat}, ${lng}`);
   
   return {
-    latitude: adjustedLat,
-    longitude: adjustedLng
+    latitude: lat,
+    longitude: lng
   };
 };
 
