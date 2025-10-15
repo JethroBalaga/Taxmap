@@ -262,23 +262,17 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
     } else if (isMachineryKind) {
       setShowMachineModal(true);
     } else if (isAgriculturalLand) {
-      // Show agricultural land adjustment modal for agricultural land
       setShowAgriculturalModal(true);
     } else {
-      console.log('Form data:', { district, declarantId, kind, classification, subclass, actualUse, area });
-      // For non-agricultural land kind, directly open photo modal
+      // For non-agricultural land and other kinds, directly open photo modal
+      console.log('Opening PhotoModal for non-agricultural land/other kind');
       setShowPhotoModal(true);
     }
-  }, [isFormValid, isBuilding, isMachineryKind, isAgriculturalLand, district, declarantId, kind, classification, subclass, actualUse, area]);
+  }, [isFormValid, isBuilding, isMachineryKind, isAgriculturalLand]);
 
-  // FIXED: Updated handleBuildingModalSuccess to properly open PhotoModal
   const handleBuildingModalSuccess = useCallback((buildingData: any) => {
-    console.log('✅ Form: Received building data, opening PhotoModal');
-    console.log('🏗️ Form: Building data state updated:', buildingData);
-    
     setBuildingData(buildingData);
     setShowBuildingModal(false);
-    // Open PhotoModal after building data is received
     setShowPhotoModal(true);
   }, []);
 
@@ -287,9 +281,6 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
   }, []);
 
   const handleMachineModalSuccess = useCallback((machineData: MachineData) => {
-    console.log('=== MACHINE DATA RECEIVED ===');
-    console.log('Machine data:', machineData);
-    
     setMachineData(machineData);
     setShowMachineModal(false);
     setShowPhotoModal(true);
@@ -300,16 +291,8 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
   }, []);
 
   const handleAgriculturalModalSuccess = useCallback((adjustmentData: AgriculturalLandAdjustmentData) => {
-    console.log('🌾 Form: Received agricultural land adjustment data');
-    console.log('Agricultural data (only 3 values):', {
-      frontage: adjustmentData.frontage,
-      weatherRoad: adjustmentData.weatherRoad,
-      market: adjustmentData.market
-    });
-    
     setAgriculturalData(adjustmentData);
     setShowAgriculturalModal(false);
-    // Open PhotoModal after agricultural data is received
     setShowPhotoModal(true);
   }, []);
 
@@ -324,12 +307,12 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
   }, [resetForm, onSuccess]);
 
   const handlePhotoModalSuccess = useCallback(() => {
-    console.log('=== FINAL SUBMISSION COMPLETE ===');
-    console.log('Form data:', formData);
-    console.log('Building data:', buildingData);
-    console.log('Machine data:', machineData);
-    console.log('Agricultural data:', agriculturalData);
-    
+    console.log('Final submission complete with data:', {
+      formData,
+      buildingData,
+      machineData,
+      agriculturalData
+    });
     setShowPhotoModal(false);
     resetForm();
     onSuccess();
