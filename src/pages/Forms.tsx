@@ -51,7 +51,7 @@ const Forms: React.FC = () => {
   const iconActions = [
     { icon: arrowUpCircle, className: selectedForm ? "icon-blue" : "icon-blue icon-disabled", onClick: () => handleUpdateClick(), title: "Update Selected Form", enabled: !!selectedForm },
     { icon: trash, className: selectedForm ? "icon-blue" : "icon-blue icon-disabled", onClick: () => handleDeleteClick(), title: "Delete Selected Form", enabled: !!selectedForm },
-    { icon: informationCircleOutline, className: selectedForm ? "icon-blue" : "icon-blue icon-disabled", onClick: () => handleInfoClick(), title: "View Building Details", enabled: !!selectedForm },
+    { icon: informationCircleOutline, className: selectedForm ? "icon-blue" : "icon-blue icon-disabled", onClick: () => handleInfoClick(), title: "View Form Details", enabled: !!selectedForm },
   ];
 
   const loadFormData = useCallback(() => {
@@ -156,10 +156,12 @@ const Forms: React.FC = () => {
         console.log('Navigating with form ID:', selectedForm.id);
         history.push(`/menu/forms/machinerytable/${selectedForm.id}`);
       } else if (kind === '1' && classification === 'A') {
-        // Navigate to Agricultural Adjustment Table for Land + Agricultural (kind 1, classification A)
         history.push(`/menu/forms/agriculturaltable/${selectedForm.id}`);
+      } else if (kind === '1' && classification === 'N') {
+        // Navigate to Non-Agricultural Land Table for Land + Non-Agricultural (kind 1, classification N)
+        history.push(`/menu/forms/nonagriltable/${selectedForm.id}`);
       } else {
-        setToastMessage('Details are only available for Building, Machinery, or Agricultural Land forms');
+        setToastMessage('Details are only available for Building, Machinery, Agricultural Land, or Non-Agricultural Land forms');
         setToastButtons([{ text: 'OK', role: 'cancel' }]);
         setShowToast(true);
       }
@@ -176,6 +178,7 @@ const Forms: React.FC = () => {
     const formToDelete = FormDataLocalStorage.getFormData(formId);
     const isMachineryForm = formToDelete?.kind === "3";
     const isAgriculturalLandForm = formToDelete?.kind === "1" && formToDelete?.classification === "A";
+    const isNonAgriculturalLandForm = formToDelete?.kind === "1" && formToDelete?.classification === "N";
 
     const allValueInfo = ValueInfoLocalStorage.getAllValueInfo();
     const relatedValueInfo = allValueInfo.filter(info => info.formDataId === formId);
@@ -203,11 +206,19 @@ const Forms: React.FC = () => {
         }
       } else if (isAgriculturalLandForm) {
         try {
-          // Delete agricultural adjustment data for agricultural land forms
           AgriculturalDataLocalStorage.deleteAgriculturalData(valueInfo.id);
           console.log(`Deleted agricultural data for value info: ${valueInfo.id}`);
         } catch (error) {
           console.error(`Error deleting agricultural data for value info ${valueInfo.id}:`, error);
+        }
+      } else if (isNonAgriculturalLandForm) {
+        try {
+          // For non-agricultural land, we might have different data storage
+          // Currently using the same as agricultural for consistency
+          AgriculturalDataLocalStorage.deleteAgriculturalData(valueInfo.id);
+          console.log(`Deleted non-agricultural land data for value info: ${valueInfo.id}`);
+        } catch (error) {
+          console.error(`Error deleting non-agricultural land data for value info ${valueInfo.id}:`, error);
         }
       } else {
         try {
@@ -276,7 +287,6 @@ const Forms: React.FC = () => {
     loadFormData();
     setSelectedForm(updatedData);
 
-    // Dispatch a custom event to notify all components about the form data update
     window.dispatchEvent(new CustomEvent('formDataUpdated', {
       detail: { 
         formId: updatedData.id,
