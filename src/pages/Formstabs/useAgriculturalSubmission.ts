@@ -113,8 +113,6 @@ export const useAgriculturalSubmission = (formId: string) => {
         photo: photoTag.photoName,
         longitude: photoTag.longitude,
         latitude: photoTag.latitude,
-        accuracy: photoTag.accuracy || null,
-        altitude: photoTag.altitude || null,
         date_taken: validateDate(photoTag.timestamp ? photoTag.timestamp.toISOString().split('T')[0] : null)
       });
       
