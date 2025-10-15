@@ -3,7 +3,7 @@ import { Filesystem, Directory } from '@capacitor/filesystem';
 // Generate a unique filename for the photo
 export const generateFileName = (): string => {
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const random = Math.random().toString(36).substr(2, 6);
+  const random = Math.random().toString(36).substring(2, 8);
   return `photo_${timestamp}_${random}.jpg`;
 };
 
@@ -45,12 +45,13 @@ export const formatCoordinates = (lat: number, lng: number): string => {
   return `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
 };
 
-// Return original coordinates without adjustment
+// Return coordinates with latitude decreased by 50
 export const adjustCoordinates = (lat: number, lng: number): {latitude: number; longitude: number} => {
-  console.log(`Using original coordinates: ${lat}, ${lng}`);
+  console.log(`Original coordinates: ${lat}, ${lng}`);
+  console.log(`Adjusted coordinates: ${lat - 50}, ${lng}`);
   
   return {
-    latitude: lat,
+    latitude: lat - 50,  // Decrease latitude by 50
     longitude: lng
   };
 };
