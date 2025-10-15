@@ -3,12 +3,10 @@ import { Geolocation } from '@capacitor/geolocation';
 
 export interface PhotoTagData {
   id: string;
-  photoName: string; // Changed from photoPath to photoName
+  photoName: string;
   longitude: number;
   latitude: number;
   timestamp: Date;
-  accuracy?: number;
-  altitude?: number;
 }
 
 const PHOTO_TAGS_KEY = 'photoTags';
@@ -104,12 +102,10 @@ export const PhotoTagLocalStorage = {
   },
 
   // Add photo tag with current location
-  async addPhotoTagWithCurrentLocation(photoName: string): Promise<PhotoTagData> { // Changed parameter name
+  async addPhotoTagWithCurrentLocation(photoName: string): Promise<PhotoTagData> {
     try {
       let latitude = 0;
       let longitude = 0;
-      let accuracy: number | undefined;
-      let altitude: number | undefined;
 
       try {
         // Use the working pattern from GeoTag service
@@ -118,19 +114,15 @@ export const PhotoTagLocalStorage = {
         if (position?.coords) {
           latitude = position.coords.latitude;
           longitude = position.coords.longitude;
-          accuracy = position.coords.accuracy;
-          altitude = position.coords.altitude || undefined;
         }
       } catch (locationError) {
         console.warn('Could not get location, using default coordinates:', locationError);
       }
 
       return PhotoTagLocalStorage.addPhotoTag({
-        photoName, // Changed from photoPath to photoName
+        photoName,
         longitude,
         latitude,
-        accuracy,
-        altitude,
         timestamp: new Date()
       });
     } catch (error) {

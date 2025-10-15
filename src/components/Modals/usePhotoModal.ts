@@ -41,7 +41,7 @@ export const usePhotoModal = ({
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
-  const [currentLocation, setCurrentLocation] = useState<{ latitude: number; longitude: number; accuracy: number } | null>(null);
+  const [currentLocation, setCurrentLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [adjustedLocation, setAdjustedLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [storedData, setStoredData] = useState<{
@@ -136,8 +136,7 @@ export const usePhotoModal = ({
 
       const originalLocation = {
         latitude: position.coords.latitude,
-        longitude: position.coords.longitude,
-        accuracy: position.coords.accuracy
+        longitude: position.coords.longitude
       };
 
       setCurrentLocation(originalLocation);
@@ -219,7 +218,6 @@ export const usePhotoModal = ({
         photoName,
         longitude: finalLongitude,
         latitude: finalLatitude,
-        accuracy: currentLocation?.accuracy,
         timestamp: new Date()
       });
       console.log('Photo tag saved:', photoTag);

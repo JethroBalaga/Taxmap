@@ -241,9 +241,6 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                           <IonIcon icon={location} color="medium" style={{ fontSize: '14px' }} />
                           <span>{formatCoordinates(currentLocation.latitude, currentLocation.longitude)}</span>
-                          <IonText color="medium" style={{ fontSize: '12px' }}>
-                            (±{currentLocation.accuracy?.toFixed(1)}m)
-                          </IonText>
                         </div>
                       ) : locationError ? (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
