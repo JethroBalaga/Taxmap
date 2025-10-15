@@ -25,6 +25,7 @@ import { PhotoTagLocalStorage } from '../utils/tablestorages/PhotoTagLocalStorag
 import { BuildingDataLocalStorage } from '../utils/tablestorages/BuildingDataLocalStorage';
 import { MachineDataLocalStorage } from '../utils/tablestorages/MachineDataLocalStorage';
 import { BuildingAdjustmentLocalStorage } from '../utils/tablestorages/BuildingAdjustmentLocalStorage';
+import { AgriculturalDataLocalStorage } from '../utils/tablestorages/AgriculturalDataLocalStorage';
 import './../CSS/Forms.css';
 import DynamicTable from '../components/GlobalComponent/DynamicTable';
 import FormUpdateModal from '../components/Modals/FormUpdateModal';
@@ -174,6 +175,7 @@ const Forms: React.FC = () => {
 
     const formToDelete = FormDataLocalStorage.getFormData(formId);
     const isMachineryForm = formToDelete?.kind === "3";
+    const isAgriculturalLandForm = formToDelete?.kind === "1" && formToDelete?.classification === "A";
 
     const allValueInfo = ValueInfoLocalStorage.getAllValueInfo();
     const relatedValueInfo = allValueInfo.filter(info => info.formDataId === formId);
@@ -198,6 +200,14 @@ const Forms: React.FC = () => {
           console.log(`Deleted machine data for value info: ${valueInfo.id}`);
         } catch (error) {
           console.error(`Error deleting machine data for value info ${valueInfo.id}:`, error);
+        }
+      } else if (isAgriculturalLandForm) {
+        try {
+          // Delete agricultural adjustment data for agricultural land forms
+          AgriculturalDataLocalStorage.deleteAgriculturalData(valueInfo.id);
+          console.log(`Deleted agricultural data for value info: ${valueInfo.id}`);
+        } catch (error) {
+          console.error(`Error deleting agricultural data for value info ${valueInfo.id}:`, error);
         }
       } else {
         try {
