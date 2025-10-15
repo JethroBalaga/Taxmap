@@ -18,7 +18,7 @@ import {
     IonCol,
     IonText
 } from "@ionic/react";
-import { arrowBack } from "ionicons/icons";
+import { arrowBack, cutOutline, resizeOutline, trailSignOutline } from "ionicons/icons";
 import { useHistory, useParams } from 'react-router-dom';
 import { FormDataLocalStorage } from '../../utils/tablestorages/FormDataLocalStorage';
 import { useState, useEffect } from "react";
@@ -32,6 +32,13 @@ const NonAgriLandTable: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [showToast, setShowToast] = useState(false);
     const [toastMessage, setToastMessage] = useState('');
+    
+    // Icons configuration array
+    const adjustmentIcons = [
+        { icon: cutOutline, label: "Add Stripping" },
+        { icon: resizeOutline, label: "Add Corner Influence" },
+        { icon: trailSignOutline, label: "Add Frontage" }
+    ];
     
     const loadFormData = () => {
         if (formId) {
@@ -153,6 +160,29 @@ const NonAgriLandTable: React.FC = () => {
                         </IonGrid>
                     </IonCardContent>
                 </IonCard>
+
+                {/* Icons Section - Centered */}
+                <div style={{ 
+                    display: 'flex', 
+                    justifyContent: 'center', 
+                    alignItems: 'center', 
+                    gap: '2rem', 
+                    margin: '2rem 0',
+                    padding: '1rem'
+                }}>
+                    {adjustmentIcons.map((item, index) => (
+                        <div key={index} style={{ textAlign: 'center' }}>
+                            <IonIcon 
+                                icon={item.icon} 
+                                size="large" 
+                                style={{ cursor: 'pointer', color: '#3880ff' }}
+                            />
+                            <div style={{ marginTop: '0.5rem' }}>
+                                <IonText color="medium">{item.label}</IonText>
+                            </div>
+                        </div>
+                    ))}
+                </div>
                 
                 <IonToast
                     isOpen={showToast}
