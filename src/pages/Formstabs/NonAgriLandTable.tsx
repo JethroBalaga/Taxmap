@@ -22,7 +22,7 @@ import { arrowBack } from "ionicons/icons";
 import { useHistory, useParams } from 'react-router-dom';
 import { FormDataLocalStorage } from '../../utils/tablestorages/FormDataLocalStorage';
 import { useState, useEffect } from "react";
-import "./../CSS/Forms.css";
+import "../../CSS/Forms.css";
 
 const NonAgriLandTable: React.FC = () => {
     const { formId } = useParams<{ formId: string }>();

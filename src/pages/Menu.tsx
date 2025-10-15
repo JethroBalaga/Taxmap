@@ -24,6 +24,7 @@ import Forms from './Forms';
 import BuildingTable from './Formstabs/BuildingTable';
 import MachineryTable from './Formstabs/MachineryTable';
 import AgriculturalAdjustmentTable from './Formstabs/AgriculturalAdjustmentTable';
+import NonAgriLandTable from './Formstabs/NonAgriLandTable';
 
 const Menu: React.FC = () => {
     const router = useIonRouter();
@@ -86,6 +87,7 @@ const Menu: React.FC = () => {
                         <Route exact path="/menu/forms/buildingtable/:formId" component={BuildingTable} />
                         <Route exact path="/menu/forms/machinerytable/:formId" component={MachineryTable} />
                         <Route path="/menu/forms/agriculturaltable/:formId" component={AgriculturalAdjustmentTable} />
+                        <Route path="/menu/forms/nonagriltable/:formId" component={NonAgriLandTable} />
                         <Route exact path="/menu">
                             <Redirect to="/menu/map" />
                         </Route>
