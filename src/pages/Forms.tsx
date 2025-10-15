@@ -146,31 +146,31 @@ const Forms: React.FC = () => {
   };
 
   const handleInfoClick = () => {
-    if (selectedForm) {
-      const kind = selectedForm.kind?.toString();
-      const classification = selectedForm.classification?.toString();
+  if (selectedForm) {
+    const kind = selectedForm.kind?.toString();
+    const classification = selectedForm.classification?.toString();
 
-      if (kind === '2') {
-        history.push(`/menu/forms/buildingtable/${selectedForm.id}`);
-      } else if (kind === '3') {
-        console.log('Navigating with form ID:', selectedForm.id);
-        history.push(`/menu/forms/machinerytable/${selectedForm.id}`);
-      } else if (kind === '1' && classification === 'A') {
-        history.push(`/menu/forms/agriculturaltable/${selectedForm.id}`);
-      } else if (kind === '1' && classification === 'N') {
-        // Navigate to Non-Agricultural Land Table for Land + Non-Agricultural (kind 1, classification N)
-        history.push(`/menu/forms/nonagriltable/${selectedForm.id}`);
-      } else {
-        setToastMessage('Details are only available for Building, Machinery, Agricultural Land, or Non-Agricultural Land forms');
-        setToastButtons([{ text: 'OK', role: 'cancel' }]);
-        setShowToast(true);
-      }
+    if (kind === '2') {
+      history.push(`/menu/forms/buildingtable/${selectedForm.id}`);
+    } else if (kind === '3') {
+      console.log('Navigating with form ID:', selectedForm.id);
+      history.push(`/menu/forms/machinerytable/${selectedForm.id}`);
+    } else if (kind === '1' && classification === 'A') {
+      history.push(`/menu/forms/agriculturaltable/${selectedForm.id}`);
+    } else if (kind === '1' && classification !== 'A') {
+      // Navigate to Non-Agricultural Land Table for Land + Non-Agricultural (kind 1, classification not A)
+      history.push(`/menu/forms/nonagriltable/${selectedForm.id}`);
     } else {
-      setToastMessage('Please select a form to view details');
+      setToastMessage('Details are only available for Building, Machinery, or Land forms');
       setToastButtons([{ text: 'OK', role: 'cancel' }]);
       setShowToast(true);
     }
-  };
+  } else {
+    setToastMessage('Please select a form to view details');
+    setToastButtons([{ text: 'OK', role: 'cancel' }]);
+    setShowToast(true);
+  }
+};
 
   const deleteRelatedData = async (formId: string): Promise<void> => {
     console.log(`Deleting related data for form ID: ${formId}`);

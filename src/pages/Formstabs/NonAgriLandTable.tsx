@@ -113,19 +113,16 @@ const NonAgriLandTable: React.FC = () => {
                             Back
                         </IonButton>
                     </IonButtons>
-                    <IonTitle>Non-Agricultural Land - {formData.id}</IonTitle>
+                    <IonTitle>Non-Agricultural Land - Form {formData.id}</IonTitle>
                 </IonToolbar>
             </IonHeader>
             
             <IonContent className="forms-container">
-                {/* Form Summary Card - Similar to Building */}
+                {/* Form Summary Card Only */}
                 <IonCard className="form-summary-card">
                     <IonCardContent>
                         <IonGrid style={{ margin: '0', padding: '0' }}>
                             <IonRow style={{ marginBottom: '4px' }}>
-                                <IonCol size="3" style={{ padding: '4px' }}>
-                                    <IonText><strong>Form ID:</strong> {formData.id}</IonText>
-                                </IonCol>
                                 <IonCol size="3" style={{ padding: '4px' }}>
                                     <IonText><strong>District:</strong> {formData.district || 'N/A'}</IonText>
                                 </IonCol>
@@ -135,11 +132,11 @@ const NonAgriLandTable: React.FC = () => {
                                 <IonCol size="3" style={{ padding: '4px' }}>
                                     <IonText><strong>Kind:</strong> {formData.kind || 'N/A'}</IonText>
                                 </IonCol>
-                            </IonRow>
-                            <IonRow style={{ marginBottom: '4px' }}>
                                 <IonCol size="3" style={{ padding: '4px' }}>
                                     <IonText><strong>Classification:</strong> {formData.classification || 'N/A'}</IonText>
                                 </IonCol>
+                            </IonRow>
+                            <IonRow style={{ marginBottom: '4px' }}>
                                 <IonCol size="3" style={{ padding: '4px' }}>
                                     <IonText><strong>Subclass:</strong> {formData.subclass || 'N/A'}</IonText>
                                 </IonCol>
@@ -147,28 +144,13 @@ const NonAgriLandTable: React.FC = () => {
                                     <IonText><strong>Actual Use:</strong> {formData.actualUse || 'N/A'}</IonText>
                                 </IonCol>
                                 <IonCol size="3" style={{ padding: '4px' }}>
-                                    <IonText><strong>Area:</strong> {formData.area ? `${formData.area.toLocaleString()} sq ft` : 'N/A'}</IonText>
+                                    <IonText><strong>Area:</strong> {formData.area ? formData.area.toLocaleString() : 'N/A'}</IonText>
                                 </IonCol>
-                            </IonRow>
-                            <IonRow>
-                                <IonCol size="12" style={{ padding: '4px' }}>
-                                    <IonText><strong>Property Type:</strong> Non-Agricultural Land</IonText>
+                                <IonCol size="3" style={{ padding: '4px' }}>
+                                    {/* Empty column for alignment */}
                                 </IonCol>
                             </IonRow>
                         </IonGrid>
-                    </IonCardContent>
-                </IonCard>
-                
-                {/* Additional Content Placeholder */}
-                <IonCard>
-                    <IonCardContent>
-                        <div style={{ textAlign: 'center', padding: '20px' }}>
-                            <IonText color="medium">
-                                <h3>Non-Agricultural Land Assessment</h3>
-                                <p>This section is for non-agricultural land property assessment.</p>
-                                <p>Form ID: <strong>{formData.id}</strong></p>
-                            </IonText>
-                        </div>
                     </IonCardContent>
                 </IonCard>
                 
