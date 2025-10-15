@@ -58,7 +58,6 @@ export const usePhotoModal = ({
   const [photoName, setPhotoName] = useState<string>('');
   const [hasAttemptedLocation, setHasAttemptedLocation] = useState(false);
 
-  // Check and create phototags directory when modal opens
   const checkAndCreateDirectory = useCallback(async () => {
     try {
       await Filesystem.readdir({
@@ -81,7 +80,6 @@ export const usePhotoModal = ({
     }
   }, []);
 
-  // Log the data when modal opens
   useEffect(() => {
     if (isOpen) {
       console.log('PhotoModal opened with formData:', formData);
@@ -140,8 +138,6 @@ export const usePhotoModal = ({
       };
 
       setCurrentLocation(originalLocation);
-
-      // Use original coordinates directly without adjustment
       setAdjustedLocation({
         latitude: originalLocation.latitude,
         longitude: originalLocation.longitude
@@ -203,17 +199,14 @@ export const usePhotoModal = ({
       let photoTag = null;
       let valueInfo = null;
 
-      // Save Form Data
       if (formData) {
         savedFormData = FormDataLocalStorage.saveFormData(formData);
         console.log('Form data saved:', savedFormData);
       }
 
-      // Use currentLocation directly without adjustedLocation
       const finalLatitude = currentLocation?.latitude || 0;
       const finalLongitude = currentLocation?.longitude || 0;
 
-      // Save Photo Tag
       photoTag = PhotoTagLocalStorage.addPhotoTag({
         photoName,
         longitude: finalLongitude,
@@ -223,14 +216,12 @@ export const usePhotoModal = ({
       console.log('Photo tag saved:', photoTag);
 
       if (savedFormData && photoTag) {
-        // Save Value Info
         valueInfo = ValueInfoLocalStorage.addValueInfo({
           formDataId: savedFormData.id,
           photoTagId: photoTag.id,
         });
         console.log('ValueInfo created:', valueInfo);
 
-        // Save Agricultural Data if available
         if (agriculturalData && valueInfo) {
           savedAgriculturalData = AgriculturalDataLocalStorage.saveAgriculturalData({
             frontage: agriculturalData.frontage,
@@ -241,7 +232,6 @@ export const usePhotoModal = ({
           console.log('Agricultural data saved:', savedAgriculturalData);
         }
 
-        // Save Building Data if available
         if (buildingData && valueInfo) {
           savedBuildingData = BuildingDataLocalStorage.saveBuildingData({
             ...buildingData,
@@ -250,7 +240,6 @@ export const usePhotoModal = ({
           console.log('Building data saved:', savedBuildingData);
         }
 
-        // Save Machine Data if available
         if (machineData && valueInfo) {
           savedMachineData = MachineDataLocalStorage.saveMachineData({
             ...machineData,
@@ -258,6 +247,8 @@ export const usePhotoModal = ({
           });
           console.log('Machine data saved:', savedMachineData);
         }
+
+        console.log('Non-agricultural land submission completed with basic data');
       }
 
       setStoredData({
@@ -269,8 +260,8 @@ export const usePhotoModal = ({
         valueInfo: valueInfo
       });
 
-      if (onSubmit && formData && agriculturalData) {
-        await onSubmit(photo, formData, buildingData!, machineData!, agriculturalData);
+      if (onSubmit && formData && buildingData && machineData && agriculturalData) {
+        await onSubmit(photo, formData, buildingData, machineData, agriculturalData);
       } else {
         onPhotoTaken(photo);
       }
