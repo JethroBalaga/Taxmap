@@ -15,8 +15,6 @@ export interface PhotoData {
   photo: string | null;
   longitude: number;
   latitude: number;
-  accuracy: number | null;
-  altitude: number | null;
   date_taken: string | null;
 }
 
@@ -139,8 +137,6 @@ export const supabaseApi = {
       p_photo: photoData.photo,
       p_longitude: photoData.longitude,
       p_latitude: photoData.latitude,
-      p_accuracy: photoData.accuracy,
-      p_altitude: photoData.altitude,
       p_date_taken: photoData.date_taken
     });
 
