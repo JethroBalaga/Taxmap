@@ -22,6 +22,8 @@ import { arrowBack, cutOutline, resizeOutline, trailSignOutline } from "ionicons
 import { useHistory, useParams } from 'react-router-dom';
 import { FormDataLocalStorage } from '../../utils/tablestorages/FormDataLocalStorage';
 import { useState, useEffect } from "react";
+import NonAgriAdjustment from '../../components/Modals/NonAgriAdjustment';
+import { LandAdjustmentData, getLandAdjustmentData } from '../../utils/landAdjustmentLocalStorage';
 import "../../CSS/Forms.css";
 
 const NonAgriLandTable: React.FC = () => {
@@ -33,11 +35,36 @@ const NonAgriLandTable: React.FC = () => {
     const [showToast, setShowToast] = useState(false);
     const [toastMessage, setToastMessage] = useState('');
     
+    // Modal states
+    const [showAdjustmentModal, setShowAdjustmentModal] = useState(false);
+    const [selectedAdjustmentType, setSelectedAdjustmentType] = useState('');
+    const [description, setDescription] = useState('');
+    const [adjustmentFactor, setAdjustmentFactor] = useState('');
+    
+    // Land adjustments data
+    const [landAdjustments, setLandAdjustments] = useState<LandAdjustmentData[]>([]);
+    const [isLoadingAdjustments, setIsLoadingAdjustments] = useState(false);
+    
     // Icons configuration array
     const adjustmentIcons = [
-        { icon: cutOutline, label: "Add Stripping", hideFor: ['C', 'I'] },
-        { icon: resizeOutline, label: "Add Corner Influence", hideFor: ['I'] },
-        { icon: trailSignOutline, label: "Add Frontage", hideFor: ['R', 'I'] }
+        { 
+            icon: cutOutline, 
+            label: "Add Stripping", 
+            hideFor: ['C', 'I'],
+            adjustmentType: 'Stripping'
+        },
+        { 
+            icon: resizeOutline, 
+            label: "Add Corner Influence", 
+            hideFor: ['I'],
+            adjustmentType: 'Corner Influence'
+        },
+        { 
+            icon: trailSignOutline, 
+            label: "Add Frontage", 
+            hideFor: ['R', 'I'],
+            adjustmentType: 'Frontage'
+        }
     ];
     
     // Grid data configuration array
@@ -70,13 +97,44 @@ const NonAgriLandTable: React.FC = () => {
             }
         }
     };
+
+    const loadLandAdjustments = async () => {
+        setIsLoadingAdjustments(true);
+        try {
+            const adjustments = await getLandAdjustmentData();
+            if (adjustments) {
+                setLandAdjustments(adjustments);
+            }
+        } catch (error) {
+            console.error('Error loading land adjustments:', error);
+            setToastMessage('Error loading adjustment data');
+            setShowToast(true);
+        } finally {
+            setIsLoadingAdjustments(false);
+        }
+    };
     
     useEffect(() => {
         loadFormData();
+        loadLandAdjustments();
     }, [formId]);
     
     const handleBack = () => {
         history.push('/menu/forms');
+    };
+
+    const handleIconClick = (adjustmentType: string) => {
+        setSelectedAdjustmentType(adjustmentType);
+        setDescription('');
+        setAdjustmentFactor('');
+        setShowAdjustmentModal(true);
+    };
+
+    const handleModalDismiss = () => {
+        setShowAdjustmentModal(false);
+        setSelectedAdjustmentType('');
+        setDescription('');
+        setAdjustmentFactor('');
     };
 
     // Filter icons based on classification
@@ -186,6 +244,7 @@ const NonAgriLandTable: React.FC = () => {
                                     icon={item.icon} 
                                     size="large" 
                                     style={{ cursor: 'pointer', color: '#3880ff' }}
+                                    onClick={() => handleIconClick(item.adjustmentType)}
                                 />
                                 <div style={{ marginTop: '0.5rem' }}>
                                     <IonText color="medium">{item.label}</IonText>
@@ -194,6 +253,19 @@ const NonAgriLandTable: React.FC = () => {
                         ))}
                     </div>
                 )}
+
+                {/* Non-Agri Adjustment Modal */}
+                <NonAgriAdjustment
+                    isOpen={showAdjustmentModal}
+                    onDismiss={handleModalDismiss}
+                    adjustmentType={selectedAdjustmentType}
+                    description={description}
+                    setDescription={setDescription}
+                    adjustmentFactor={adjustmentFactor}
+                    setAdjustmentFactor={setAdjustmentFactor}
+                    landAdjustments={landAdjustments}
+                    isLoadingAdjustments={isLoadingAdjustments}
+                />
                 
                 <IonToast
                     isOpen={showToast}
