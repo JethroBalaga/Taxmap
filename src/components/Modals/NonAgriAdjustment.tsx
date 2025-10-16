@@ -116,70 +116,97 @@ const NonAgriAdjustment: React.FC<NonAgriAdjustmentProps> = ({
       </IonHeader>
 
       <IonContent className="modal-content">
-        <div className="form-container">
+        <div className="form-container" style={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          alignItems: 'center', 
+          justifyContent: 'center',
+          minHeight: '60vh'
+        }}>
           {/* Adjustment Type Display */}
-          <IonItem className="custom-input" lines="none">
-            <IonLabel position="stacked" className="input-label">
-              Adjustment Type
-            </IonLabel>
-            <div className="adjustment-type-display">
-              {adjustmentType}
-            </div>
-          </IonItem>
+          <div style={{ width: '100%', maxWidth: '400px', marginBottom: '24px', textAlign: 'center' }}>
+            <IonItem className="custom-input" lines="none">
+              <IonLabel position="stacked" className="input-label">
+                Adjustment Type
+              </IonLabel>
+              <div style={{ 
+                padding: '12px', 
+                backgroundColor: '#f8f9fa', 
+                border: '1px solid #e2e8f0', 
+                borderRadius: '8px', 
+                marginTop: '8px',
+                textAlign: 'center',
+                fontWeight: '600'
+              }}>
+                {adjustmentType}
+              </div>
+            </IonItem>
+          </div>
 
           {/* Description Dropdown */}
-          <IonItem className="custom-input" lines="none">
-            <IonLabel position="stacked" className="input-label">
-              Description <span style={{ color: 'red' }}>*</span>
-            </IonLabel>
-            <IonSelect
-              value={description}
-              placeholder={
-                isLoadingAdjustments 
-                  ? "Loading descriptions..." 
-                  : "Select Description"
-              }
-              onIonChange={(e) => handleDescriptionChange(e.detail.value)}
-              interface="popover"
-              className="modal-input"
-              disabled={isLoadingAdjustments}
-            >
-              {isLoadingAdjustments ? (
-                <IonSelectOption value="" disabled>
-                  Loading descriptions...
-                </IonSelectOption>
-              ) : filteredAdjustments.length === 0 ? (
-                <IonSelectOption value="" disabled>
-                  No {adjustmentType.toLowerCase()} adjustments available
-                </IonSelectOption>
-              ) : (
-                filteredAdjustments.map((adjustment) => (
-                  <IonSelectOption
-                    key={adjustment.adjustment_id}
-                    value={adjustment.description}
-                  >
-                    {adjustment.description}
+          <div style={{ width: '100%', maxWidth: '400px', marginBottom: '24px', textAlign: 'center' }}>
+            <IonItem className="custom-input" lines="none">
+              <IonLabel position="stacked" className="input-label">
+                Description <span style={{ color: 'red' }}>*</span>
+              </IonLabel>
+              <IonSelect
+                value={description}
+                placeholder={
+                  isLoadingAdjustments 
+                    ? "Loading descriptions..." 
+                    : "Select Description"
+                }
+                onIonChange={(e) => handleDescriptionChange(e.detail.value)}
+                interface="popover"
+                className="modal-input"
+                disabled={isLoadingAdjustments}
+              >
+                {isLoadingAdjustments ? (
+                  <IonSelectOption value="" disabled>
+                    Loading descriptions...
                   </IonSelectOption>
-                ))
-              )}
-            </IonSelect>
-          </IonItem>
+                ) : filteredAdjustments.length === 0 ? (
+                  <IonSelectOption value="" disabled>
+                    No {adjustmentType.toLowerCase()} adjustments available
+                  </IonSelectOption>
+                ) : (
+                  filteredAdjustments.map((adjustment) => (
+                    <IonSelectOption
+                      key={adjustment.adjustment_id}
+                      value={adjustment.description}
+                    >
+                      {adjustment.description}
+                    </IonSelectOption>
+                  ))
+                )}
+              </IonSelect>
+            </IonItem>
+          </div>
 
           {/* Adjustment Factor Input (Disabled) */}
-          <IonItem className="custom-input" lines="none">
-            <IonLabel position="stacked" className="input-label">
-              Adjustment Factor
-            </IonLabel>
-            <IonInput
-              value={adjustmentFactor}
-              placeholder="Select description to see factor"
-              className="modal-input"
-              disabled={true}
-            />
-          </IonItem>
+          <div style={{ width: '100%', maxWidth: '400px', marginBottom: '24px', textAlign: 'center' }}>
+            <IonItem className="custom-input" lines="none">
+              <IonLabel position="stacked" className="input-label">
+                Adjustment Factor
+              </IonLabel>
+              <IonInput
+                value={adjustmentFactor}
+                placeholder="Select description to see factor"
+                className="modal-input"
+                disabled={true}
+              />
+            </IonItem>
+          </div>
 
           {/* Submit Button at Bottom Center */}
-          <div className="submit-button-container">
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'center', 
+            alignItems: 'center', 
+            marginTop: '32px', 
+            width: '100%',
+            maxWidth: '400px'
+          }}>
             <SubmitButton 
               label="Save Adjustment"
               onClick={handleSubmit}
