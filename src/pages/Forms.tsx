@@ -147,31 +147,31 @@ const Forms: React.FC = () => {
   };
 
   const handleInfoClick = () => {
-  if (selectedForm) {
-    const kind = selectedForm.kind?.toString();
-    const classification = selectedForm.classification?.toString();
+    if (selectedForm) {
+      const kind = selectedForm.kind?.toString();
+      const classification = selectedForm.classification?.toString();
 
-    if (kind === '2') {
-      history.push(`/menu/forms/buildingtable/${selectedForm.id}`);
-    } else if (kind === '3') {
-      console.log('Navigating with form ID:', selectedForm.id);
-      history.push(`/menu/forms/machinerytable/${selectedForm.id}`);
-    } else if (kind === '1' && classification === 'A') {
-      history.push(`/menu/forms/agriculturaltable/${selectedForm.id}`);
-    } else if (kind === '1' && classification !== 'A') {
-      // Navigate to Non-Agricultural Land Table for Land + Non-Agricultural (kind 1, classification not A)
-      history.push(`/menu/forms/nonagriltable/${selectedForm.id}`);
+      if (kind === '2') {
+        history.push(`/menu/forms/buildingtable/${selectedForm.id}`);
+      } else if (kind === '3') {
+        console.log('Navigating with form ID:', selectedForm.id);
+        history.push(`/menu/forms/machinerytable/${selectedForm.id}`);
+      } else if (kind === '1' && classification === 'A') {
+        history.push(`/menu/forms/agriculturaltable/${selectedForm.id}`);
+      } else if (kind === '1' && classification !== 'A') {
+        // Navigate to Non-Agricultural Land Table for Land + Non-Agricultural (kind 1, classification not A)
+        history.push(`/menu/forms/nonagriltable/${selectedForm.id}`);
+      } else {
+        setToastMessage('Details are only available for Building, Machinery, or Land forms');
+        setToastButtons([{ text: 'OK', role: 'cancel' }]);
+        setShowToast(true);
+      }
     } else {
-      setToastMessage('Details are only available for Building, Machinery, or Land forms');
+      setToastMessage('Please select a form to view details');
       setToastButtons([{ text: 'OK', role: 'cancel' }]);
       setShowToast(true);
     }
-  } else {
-    setToastMessage('Please select a form to view details');
-    setToastButtons([{ text: 'OK', role: 'cancel' }]);
-    setShowToast(true);
-  }
-};
+  };
 
   const deleteRelatedData = async (formId: string): Promise<void> => {
     console.log(`Deleting related data for form ID: ${formId}`);
@@ -214,7 +214,7 @@ const Forms: React.FC = () => {
         }
       } else if (isNonAgriculturalLandForm) {
         try {
-          // Delete non-agricultural land adjustments
+          // Delete non-agricultural land adjustments only
           NonAgriAdjustmentLocalStorage.deleteAllAdjustmentsByValueInfoId(valueInfo.id);
           console.log(`DELETED NON-AGRICULTURAL ADJUSTMENTS for value info: ${valueInfo.id}`, {
             valueInfoId: valueInfo.id,
@@ -223,10 +223,8 @@ const Forms: React.FC = () => {
             formClassification: formToDelete?.classification,
             timestamp: new Date().toISOString()
           });
-          
-          // Also delete agricultural data if it exists (for consistency)
-          AgriculturalDataLocalStorage.deleteAgriculturalData(valueInfo.id);
-          console.log(`Deleted agricultural data for non-agricultural land value info: ${valueInfo.id}`);
+
+          console.log(`Completed deletion for non-agricultural land value info: ${valueInfo.id}`);
         } catch (error) {
           console.error(`Error deleting non-agricultural land data for value info ${valueInfo.id}:`, error);
         }
@@ -298,7 +296,7 @@ const Forms: React.FC = () => {
     setSelectedForm(updatedData);
 
     window.dispatchEvent(new CustomEvent('formDataUpdated', {
-      detail: { 
+      detail: {
         formId: updatedData.id,
         timestamp: Date.now()
       }
