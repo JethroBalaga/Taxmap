@@ -21,6 +21,7 @@ import {
 import { arrowBack, cutOutline, resizeOutline, trailSignOutline } from "ionicons/icons";
 import { useHistory, useParams } from 'react-router-dom';
 import { FormDataLocalStorage } from '../../utils/tablestorages/FormDataLocalStorage';
+import { ValueInfoLocalStorage } from '../../utils/tablestorages/ValueInfoLocalStorage';
 import { useState, useEffect } from "react";
 import NonAgriAdjustment from '../../components/Modals/NonAgriAdjustment';
 import { LandAdjustmentData, getLandAdjustmentData } from '../../utils/landAdjustmentLocalStorage';
@@ -31,6 +32,7 @@ const NonAgriLandTable: React.FC = () => {
     const history = useHistory();
     
     const [formData, setFormData] = useState<any>(null);
+    const [valueInfoId, setValueInfoId] = useState<string>(''); // Added valueInfoId state
     const [isLoading, setIsLoading] = useState(true);
     const [showToast, setShowToast] = useState(false);
     const [toastMessage, setToastMessage] = useState('');
@@ -89,6 +91,20 @@ const NonAgriLandTable: React.FC = () => {
             console.log('Loading non-agricultural land form data for ID:', formId);
             const data = FormDataLocalStorage.getFormData(formId);
             setFormData(data);
+            
+            // Fetch or create ValueInfo for this formId
+            if (data) {
+                let valueInfo = ValueInfoLocalStorage.getValueInfoByFormDataId(formId);
+                if (!valueInfo) {
+                    // Create new ValueInfo entry if it doesn't exist
+                    valueInfo = ValueInfoLocalStorage.addValueInfo({
+                        formDataId: formId,
+                        photoTagId: '' // You can set this later if needed
+                    });
+                }
+                setValueInfoId(valueInfo.id);
+            }
+            
             setIsLoading(false);
             
             if (!data) {
@@ -265,6 +281,7 @@ const NonAgriLandTable: React.FC = () => {
                     setAdjustmentFactor={setAdjustmentFactor}
                     landAdjustments={landAdjustments}
                     isLoadingAdjustments={isLoadingAdjustments}
+                    valueInfoId={valueInfoId} // Pass valueInfoId to modal
                 />
                 
                 <IonToast
