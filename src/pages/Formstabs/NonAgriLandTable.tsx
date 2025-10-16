@@ -34,13 +34,13 @@ import "../../CSS/Forms.css";
 const NonAgriLandTable: React.FC = () => {
     const { formId } = useParams<{ formId: string }>();
     const history = useHistory();
-    
+
     const [formData, setFormData] = useState<any>(null);
     const [valueInfoId, setValueInfoId] = useState<string>('');
     const [isLoading, setIsLoading] = useState(true);
     const [showToast, setShowToast] = useState(false);
     const [toastMessage, setToastMessage] = useState('');
-    
+
     // Modal states
     const [showAdjustmentModal, setShowAdjustmentModal] = useState(false);
     const [showUpdateAdjustmentModal, setShowUpdateAdjustmentModal] = useState(false);
@@ -48,46 +48,46 @@ const NonAgriLandTable: React.FC = () => {
     const [description, setDescription] = useState('');
     const [adjustmentFactor, setAdjustmentFactor] = useState('');
     const [selectedAdjustmentForUpdate, setSelectedAdjustmentForUpdate] = useState<any>(null);
-    
+
     // Alert state for delete confirmation
     const [showDeleteAlert, setShowDeleteAlert] = useState(false);
     const [adjustmentToDelete, setAdjustmentToDelete] = useState<any>(null);
-    
+
     // Selected row state
     const [selectedRow, setSelectedRow] = useState<any>(null);
-    
+
     // Land adjustments data
     const [landAdjustments, setLandAdjustments] = useState<LandAdjustmentData[]>([]);
     const [isLoadingAdjustments, setIsLoadingAdjustments] = useState(false);
-    
+
     // Icons configuration array
     const adjustmentIcons = [
-        { 
-            icon: cutOutline, 
-            label: "Add Stripping", 
+        {
+            icon: cutOutline,
+            label: "Add Stripping",
             hideFor: ['C', 'I'],
             adjustmentType: 'Stripping'
         },
-        { 
-            icon: resizeOutline, 
-            label: "Add Corner Influence", 
+        {
+            icon: resizeOutline,
+            label: "Add Corner Influence",
             hideFor: ['I'],
             adjustmentType: 'Corner Influence'
         },
-        { 
-            icon: trailSignOutline, 
-            label: "Add Frontage", 
+        {
+            icon: trailSignOutline,
+            label: "Add Frontage",
             hideFor: ['R', 'I'],
             adjustmentType: 'Commercial Frontage'
         },
-        { 
-            icon: trashOutline, 
-            label: "Delete Selected", 
+        {
+            icon: trashOutline,
+            label: "Delete Selected",
             hideFor: ['I'], // Hide for Industrial
             adjustmentType: 'Delete'
         }
     ];
-    
+
     // Grid data configuration array
     const gridData = [
         [
@@ -103,14 +103,14 @@ const NonAgriLandTable: React.FC = () => {
             { label: "", value: "" } // Empty column for alignment
         ]
     ];
-    
+
     const loadFormData = () => {
         if (formId) {
             setIsLoading(true);
             console.log('Loading non-agricultural land form data for ID:', formId);
             const data = FormDataLocalStorage.getFormData(formId);
             setFormData(data);
-            
+
             // Fetch or create ValueInfo for this formId
             if (data) {
                 let valueInfo = ValueInfoLocalStorage.getValueInfoByFormDataId(formId);
@@ -123,9 +123,9 @@ const NonAgriLandTable: React.FC = () => {
                 }
                 setValueInfoId(valueInfo.id);
             }
-            
+
             setIsLoading(false);
-            
+
             if (!data) {
                 setToastMessage('Form not found');
                 setShowToast(true);
@@ -148,7 +148,7 @@ const NonAgriLandTable: React.FC = () => {
             setIsLoadingAdjustments(false);
         }
     };
-    
+
     useEffect(() => {
         loadFormData();
         loadLandAdjustments();
@@ -159,11 +159,11 @@ const NonAgriLandTable: React.FC = () => {
         if (!valueInfoId || landAdjustments.length === 0) return [];
 
         const nonAgriAdjustments = NonAgriAdjustmentLocalStorage.getAdjustmentsByValueInfoId(valueInfoId);
-        
+
         return nonAgriAdjustments.map(nonAgriAdj => {
             // Find the corresponding land adjustment data
             const landAdj = landAdjustments.find(adj => adj.adjustment_id === nonAgriAdj.adjustmentId);
-            
+
             return {
                 valueInfoId: nonAgriAdj.valueInfoId,
                 adjustmentId: nonAgriAdj.adjustmentId,
@@ -175,7 +175,7 @@ const NonAgriLandTable: React.FC = () => {
     };
 
     const currentAdjustments = getCombinedAdjustmentData();
-    
+
     const handleBack = () => {
         history.push('/menu/forms');
     };
@@ -240,13 +240,30 @@ const NonAgriLandTable: React.FC = () => {
                 adjustmentToDelete.valueInfoId,
                 adjustmentToDelete.adjustmentId
             );
-            
+
             if (success) {
+                console.log('DELETION SUCCESSFUL:', {
+                    adjustmentType: adjustmentToDelete.adjustment_type,
+                    valueInfoId: adjustmentToDelete.valueInfoId,
+                    adjustmentId: adjustmentToDelete.adjustmentId,
+                    description: adjustmentToDelete.description,
+                    adjustmentFactor: adjustmentToDelete.adjustment_factor,
+                    timestamp: new Date().toISOString()
+                });
+
                 setToastMessage(`${adjustmentToDelete.adjustment_type} adjustment deleted successfully`);
                 setShowToast(true);
                 setSelectedRow(null);
                 loadLandAdjustments(); // Refresh data
             } else {
+                console.error('DELETION FAILED:', {
+                    adjustmentType: adjustmentToDelete.adjustment_type,
+                    valueInfoId: adjustmentToDelete.valueInfoId,
+                    adjustmentId: adjustmentToDelete.adjustmentId,
+                    error: 'Failed to delete from NonAgriAdjustmentLocalStorage',
+                    timestamp: new Date().toISOString()
+                });
+
                 setToastMessage('Error deleting adjustment');
                 setShowToast(true);
             }
@@ -259,7 +276,7 @@ const NonAgriLandTable: React.FC = () => {
     const getVisibleIcons = () => {
         const classification = formData?.classification;
         if (!classification) return adjustmentIcons;
-        
+
         return adjustmentIcons.filter(icon => !icon.hideFor.includes(classification));
     };
 
@@ -276,13 +293,13 @@ const NonAgriLandTable: React.FC = () => {
         if (adjustmentType === 'Delete') {
             return selectedRow ? '#eb445a' : '#92949c'; // Red when enabled, gray when disabled
         }
-        
+
         const hasExistingAdjustment = currentAdjustments.some(
             adj => adj.adjustment_type === adjustmentType
         );
         return hasExistingAdjustment ? '#ffce00' : '#3880ff'; // Yellow for update, blue for add
     };
-    
+
     if (isLoading) {
         return (
             <IonPage>
@@ -306,7 +323,7 @@ const NonAgriLandTable: React.FC = () => {
             </IonPage>
         );
     }
-    
+
     if (!formData) {
         return (
             <IonPage>
@@ -331,7 +348,7 @@ const NonAgriLandTable: React.FC = () => {
     }
 
     const visibleIcons = getVisibleIcons();
-    
+
     return (
         <IonPage>
             <IonHeader>
@@ -345,7 +362,7 @@ const NonAgriLandTable: React.FC = () => {
                     <IonTitle>Non-Agricultural Land - Form {formData.id}</IonTitle>
                 </IonToolbar>
             </IonHeader>
-            
+
             <IonContent className="forms-container">
                 {/* Form Summary Card Only */}
                 <IonCard className="form-summary-card">
@@ -368,11 +385,11 @@ const NonAgriLandTable: React.FC = () => {
 
                 {/* Icons Section - Centered - Only show if there are visible icons */}
                 {visibleIcons.length > 0 && (
-                    <div style={{ 
-                        display: 'flex', 
-                        justifyContent: 'center', 
-                        alignItems: 'center', 
-                        gap: '2rem', 
+                    <div style={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        gap: '2rem',
                         margin: '2rem 0',
                         padding: '1rem'
                     }}>
@@ -380,14 +397,14 @@ const NonAgriLandTable: React.FC = () => {
                             const hasExistingAdjustment = currentAdjustments.some(
                                 adj => adj.adjustment_type === item.adjustmentType
                             );
-                            
+
                             return (
                                 <div key={index} style={{ textAlign: 'center' }}>
-                                    <IonIcon 
-                                        icon={item.icon} 
-                                        size="large" 
-                                        style={{ 
-                                            cursor: item.adjustmentType === 'Delete' ? (selectedRow ? 'pointer' : 'not-allowed') : 'pointer', 
+                                    <IonIcon
+                                        icon={item.icon}
+                                        size="large"
+                                        style={{
+                                            cursor: item.adjustmentType === 'Delete' ? (selectedRow ? 'pointer' : 'not-allowed') : 'pointer',
                                             color: getIconColor(item.adjustmentType),
                                             opacity: item.adjustmentType === 'Delete' && !selectedRow ? 0.5 : 1
                                         }}
@@ -407,8 +424,8 @@ const NonAgriLandTable: React.FC = () => {
                                     />
                                     <div style={{ marginTop: '0.5rem' }}>
                                         <IonText color="medium">
-                                            {item.adjustmentType === 'Delete' ? 
-                                                (selectedRow ? 'Delete Selected' : 'Select to Delete') : 
+                                            {item.adjustmentType === 'Delete' ?
+                                                (selectedRow ? 'Delete Selected' : 'Select to Delete') :
                                                 getIconLabel(item.adjustmentType)
                                             }
                                         </IonText>
@@ -496,7 +513,7 @@ const NonAgriLandTable: React.FC = () => {
                         }
                     ]}
                 />
-                
+
                 <IonToast
                     isOpen={showToast}
                     onDidDismiss={() => setShowToast(false)}
