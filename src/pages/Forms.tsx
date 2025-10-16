@@ -26,6 +26,7 @@ import { BuildingDataLocalStorage } from '../utils/tablestorages/BuildingDataLoc
 import { MachineDataLocalStorage } from '../utils/tablestorages/MachineDataLocalStorage';
 import { BuildingAdjustmentLocalStorage } from '../utils/tablestorages/BuildingAdjustmentLocalStorage';
 import { AgriculturalDataLocalStorage } from '../utils/tablestorages/AgriculturalDataLocalStorage';
+import { NonAgriAdjustmentLocalStorage } from '../utils/tablestorages/NonAgriAdjustmentLocalStorage';
 import './../CSS/Forms.css';
 import DynamicTable from '../components/GlobalComponent/DynamicTable';
 import FormUpdateModal from '../components/Modals/FormUpdateModal';
@@ -178,7 +179,7 @@ const Forms: React.FC = () => {
     const formToDelete = FormDataLocalStorage.getFormData(formId);
     const isMachineryForm = formToDelete?.kind === "3";
     const isAgriculturalLandForm = formToDelete?.kind === "1" && formToDelete?.classification === "A";
-    const isNonAgriculturalLandForm = formToDelete?.kind === "1" && formToDelete?.classification === "N";
+    const isNonAgriculturalLandForm = formToDelete?.kind === "1" && formToDelete?.classification !== "A";
 
     const allValueInfo = ValueInfoLocalStorage.getAllValueInfo();
     const relatedValueInfo = allValueInfo.filter(info => info.formDataId === formId);
@@ -213,10 +214,19 @@ const Forms: React.FC = () => {
         }
       } else if (isNonAgriculturalLandForm) {
         try {
-          // For non-agricultural land, we might have different data storage
-          // Currently using the same as agricultural for consistency
+          // Delete non-agricultural land adjustments
+          NonAgriAdjustmentLocalStorage.deleteAllAdjustmentsByValueInfoId(valueInfo.id);
+          console.log(`DELETED NON-AGRICULTURAL ADJUSTMENTS for value info: ${valueInfo.id}`, {
+            valueInfoId: valueInfo.id,
+            formId: formId,
+            formKind: formToDelete?.kind,
+            formClassification: formToDelete?.classification,
+            timestamp: new Date().toISOString()
+          });
+          
+          // Also delete agricultural data if it exists (for consistency)
           AgriculturalDataLocalStorage.deleteAgriculturalData(valueInfo.id);
-          console.log(`Deleted non-agricultural land data for value info: ${valueInfo.id}`);
+          console.log(`Deleted agricultural data for non-agricultural land value info: ${valueInfo.id}`);
         } catch (error) {
           console.error(`Error deleting non-agricultural land data for value info ${valueInfo.id}:`, error);
         }
