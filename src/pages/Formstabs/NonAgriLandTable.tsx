@@ -25,6 +25,7 @@ import { ValueInfoLocalStorage } from '../../utils/tablestorages/ValueInfoLocalS
 import { NonAgriAdjustmentLocalStorage } from '../../utils/tablestorages/NonAgriAdjustmentLocalStorage';
 import { useState, useEffect } from "react";
 import NonAgriAdjustment from '../../components/Modals/NonAgriAdjustment';
+import NonAgriAdjustmentUpdate from '../../components/Modals/NonAgriAdjustmentUpdate';
 import { LandAdjustmentData, getLandAdjustmentData } from '../../utils/landAdjustmentLocalStorage';
 import DynamicTable from '../../components/GlobalComponent/DynamicTable';
 import "../../CSS/Forms.css";
@@ -41,9 +42,11 @@ const NonAgriLandTable: React.FC = () => {
     
     // Modal states
     const [showAdjustmentModal, setShowAdjustmentModal] = useState(false);
+    const [showUpdateAdjustmentModal, setShowUpdateAdjustmentModal] = useState(false);
     const [selectedAdjustmentType, setSelectedAdjustmentType] = useState('');
     const [description, setDescription] = useState('');
     const [adjustmentFactor, setAdjustmentFactor] = useState('');
+    const [selectedAdjustmentForUpdate, setSelectedAdjustmentForUpdate] = useState<any>(null);
     
     // Land adjustments data
     const [landAdjustments, setLandAdjustments] = useState<LandAdjustmentData[]>([]);
@@ -67,7 +70,7 @@ const NonAgriLandTable: React.FC = () => {
             icon: trailSignOutline, 
             label: "Add Frontage", 
             hideFor: ['R', 'I'],
-            adjustmentType: 'Frontage'
+            adjustmentType: 'Commercial Frontage'
         }
     ];
     
@@ -170,6 +173,18 @@ const NonAgriLandTable: React.FC = () => {
         setShowAdjustmentModal(true);
     };
 
+    const handleUpdateIconClick = (adjustmentType: string) => {
+        // Find the existing adjustment for this type
+        const existingAdj = currentAdjustments.find(
+            adj => adj.adjustment_type === adjustmentType
+        );
+        setSelectedAdjustmentForUpdate(existingAdj);
+        setSelectedAdjustmentType(adjustmentType);
+        setDescription(existingAdj?.description || '');
+        setAdjustmentFactor(existingAdj?.adjustment_factor || '');
+        setShowUpdateAdjustmentModal(true);
+    };
+
     const handleModalDismiss = () => {
         setShowAdjustmentModal(false);
         setSelectedAdjustmentType('');
@@ -179,9 +194,23 @@ const NonAgriLandTable: React.FC = () => {
         loadLandAdjustments();
     };
 
+    const handleUpdateModalDismiss = () => {
+        setShowUpdateAdjustmentModal(false);
+        setSelectedAdjustmentForUpdate(null);
+        setSelectedAdjustmentType('');
+        setDescription('');
+        setAdjustmentFactor('');
+        // Reload adjustments when modal is dismissed to get latest data
+        loadLandAdjustments();
+    };
+
     const handleRowClick = (rowData: any) => {
-        // Handle row click if needed
-        console.log('Row clicked:', rowData);
+        // Handle row click to open update modal
+        setSelectedAdjustmentForUpdate(rowData);
+        setSelectedAdjustmentType(rowData.adjustment_type);
+        setDescription(rowData.description);
+        setAdjustmentFactor(rowData.adjustment_factor);
+        setShowUpdateAdjustmentModal(true);
     };
 
     // Filter icons based on classification
@@ -190,6 +219,22 @@ const NonAgriLandTable: React.FC = () => {
         if (!classification) return adjustmentIcons;
         
         return adjustmentIcons.filter(icon => !icon.hideFor.includes(classification));
+    };
+
+    // Get icon label based on whether adjustment already exists
+    const getIconLabel = (adjustmentType: string) => {
+        const hasExistingAdjustment = currentAdjustments.some(
+            adj => adj.adjustment_type === adjustmentType
+        );
+        return hasExistingAdjustment ? `Update ${adjustmentType}` : `Add ${adjustmentType}`;
+    };
+
+    // Get icon color based on whether adjustment already exists
+    const getIconColor = (adjustmentType: string) => {
+        const hasExistingAdjustment = currentAdjustments.some(
+            adj => adj.adjustment_type === adjustmentType
+        );
+        return hasExistingAdjustment ? '#ffce00' : '#3880ff'; // Yellow for update, blue for add
     };
     
     if (isLoading) {
@@ -285,19 +330,36 @@ const NonAgriLandTable: React.FC = () => {
                         margin: '2rem 0',
                         padding: '1rem'
                     }}>
-                        {visibleIcons.map((item, index) => (
-                            <div key={index} style={{ textAlign: 'center' }}>
-                                <IonIcon 
-                                    icon={item.icon} 
-                                    size="large" 
-                                    style={{ cursor: 'pointer', color: '#3880ff' }}
-                                    onClick={() => handleIconClick(item.adjustmentType)}
-                                />
-                                <div style={{ marginTop: '0.5rem' }}>
-                                    <IonText color="medium">{item.label}</IonText>
+                        {visibleIcons.map((item, index) => {
+                            const hasExistingAdjustment = currentAdjustments.some(
+                                adj => adj.adjustment_type === item.adjustmentType
+                            );
+                            
+                            return (
+                                <div key={index} style={{ textAlign: 'center' }}>
+                                    <IonIcon 
+                                        icon={item.icon} 
+                                        size="large" 
+                                        style={{ 
+                                            cursor: 'pointer', 
+                                            color: getIconColor(item.adjustmentType)
+                                        }}
+                                        onClick={() => {
+                                            if (hasExistingAdjustment) {
+                                                handleUpdateIconClick(item.adjustmentType);
+                                            } else {
+                                                handleIconClick(item.adjustmentType);
+                                            }
+                                        }}
+                                    />
+                                    <div style={{ marginTop: '0.5rem' }}>
+                                        <IonText color="medium">
+                                            {getIconLabel(item.adjustmentType)}
+                                        </IonText>
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 )}
 
@@ -332,6 +394,21 @@ const NonAgriLandTable: React.FC = () => {
                     landAdjustments={landAdjustments}
                     isLoadingAdjustments={isLoadingAdjustments}
                     valueInfoId={valueInfoId}
+                />
+
+                {/* Non-Agri Adjustment Update Modal */}
+                <NonAgriAdjustmentUpdate
+                    isOpen={showUpdateAdjustmentModal}
+                    onDismiss={handleUpdateModalDismiss}
+                    adjustmentType={selectedAdjustmentType}
+                    description={description}
+                    setDescription={setDescription}
+                    adjustmentFactor={adjustmentFactor}
+                    setAdjustmentFactor={setAdjustmentFactor}
+                    landAdjustments={landAdjustments}
+                    isLoadingAdjustments={isLoadingAdjustments}
+                    valueInfoId={valueInfoId}
+                    existingAdjustment={selectedAdjustmentForUpdate}
                 />
                 
                 <IonToast
