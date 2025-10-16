@@ -16,9 +16,10 @@ import {
     IonGrid,
     IonRow,
     IonCol,
-    IonText
+    IonText,
+    IonAlert
 } from "@ionic/react";
-import { arrowBack, cutOutline, resizeOutline, trailSignOutline } from "ionicons/icons";
+import { arrowBack, cutOutline, resizeOutline, trailSignOutline, trashOutline } from "ionicons/icons";
 import { useHistory, useParams } from 'react-router-dom';
 import { FormDataLocalStorage } from '../../utils/tablestorages/FormDataLocalStorage';
 import { ValueInfoLocalStorage } from '../../utils/tablestorages/ValueInfoLocalStorage';
@@ -48,6 +49,13 @@ const NonAgriLandTable: React.FC = () => {
     const [adjustmentFactor, setAdjustmentFactor] = useState('');
     const [selectedAdjustmentForUpdate, setSelectedAdjustmentForUpdate] = useState<any>(null);
     
+    // Alert state for delete confirmation
+    const [showDeleteAlert, setShowDeleteAlert] = useState(false);
+    const [adjustmentToDelete, setAdjustmentToDelete] = useState<any>(null);
+    
+    // Selected row state
+    const [selectedRow, setSelectedRow] = useState<any>(null);
+    
     // Land adjustments data
     const [landAdjustments, setLandAdjustments] = useState<LandAdjustmentData[]>([]);
     const [isLoadingAdjustments, setIsLoadingAdjustments] = useState(false);
@@ -71,6 +79,12 @@ const NonAgriLandTable: React.FC = () => {
             label: "Add Frontage", 
             hideFor: ['R', 'I'],
             adjustmentType: 'Commercial Frontage'
+        },
+        { 
+            icon: trashOutline, 
+            label: "Delete Selected", 
+            hideFor: ['I'], // Hide for Industrial
+            adjustmentType: 'Delete'
         }
     ];
     
@@ -167,10 +181,22 @@ const NonAgriLandTable: React.FC = () => {
     };
 
     const handleIconClick = (adjustmentType: string) => {
-        setSelectedAdjustmentType(adjustmentType);
-        setDescription('');
-        setAdjustmentFactor('');
-        setShowAdjustmentModal(true);
+        if (adjustmentType === 'Delete') {
+            // Handle delete action
+            if (selectedRow) {
+                setAdjustmentToDelete(selectedRow);
+                setShowDeleteAlert(true);
+            } else {
+                setToastMessage('Please select an adjustment to delete');
+                setShowToast(true);
+            }
+        } else {
+            // Handle normal adjustment types
+            setSelectedAdjustmentType(adjustmentType);
+            setDescription('');
+            setAdjustmentFactor('');
+            setShowAdjustmentModal(true);
+        }
     };
 
     const handleUpdateIconClick = (adjustmentType: string) => {
@@ -205,12 +231,28 @@ const NonAgriLandTable: React.FC = () => {
     };
 
     const handleRowClick = (rowData: any) => {
-        // Handle row click to open update modal
-        setSelectedAdjustmentForUpdate(rowData);
-        setSelectedAdjustmentType(rowData.adjustment_type);
-        setDescription(rowData.description);
-        setAdjustmentFactor(rowData.adjustment_factor);
-        setShowUpdateAdjustmentModal(true);
+        setSelectedRow(rowData);
+    };
+
+    const handleDeleteConfirm = () => {
+        if (adjustmentToDelete) {
+            const success = NonAgriAdjustmentLocalStorage.deleteNonAgriAdjustment(
+                adjustmentToDelete.valueInfoId,
+                adjustmentToDelete.adjustmentId
+            );
+            
+            if (success) {
+                setToastMessage(`${adjustmentToDelete.adjustment_type} adjustment deleted successfully`);
+                setShowToast(true);
+                setSelectedRow(null);
+                loadLandAdjustments(); // Refresh data
+            } else {
+                setToastMessage('Error deleting adjustment');
+                setShowToast(true);
+            }
+        }
+        setShowDeleteAlert(false);
+        setAdjustmentToDelete(null);
     };
 
     // Filter icons based on classification
@@ -231,6 +273,10 @@ const NonAgriLandTable: React.FC = () => {
 
     // Get icon color based on whether adjustment already exists
     const getIconColor = (adjustmentType: string) => {
+        if (adjustmentType === 'Delete') {
+            return selectedRow ? '#eb445a' : '#92949c'; // Red when enabled, gray when disabled
+        }
+        
         const hasExistingAdjustment = currentAdjustments.some(
             adj => adj.adjustment_type === adjustmentType
         );
@@ -341,20 +387,30 @@ const NonAgriLandTable: React.FC = () => {
                                         icon={item.icon} 
                                         size="large" 
                                         style={{ 
-                                            cursor: 'pointer', 
-                                            color: getIconColor(item.adjustmentType)
+                                            cursor: item.adjustmentType === 'Delete' ? (selectedRow ? 'pointer' : 'not-allowed') : 'pointer', 
+                                            color: getIconColor(item.adjustmentType),
+                                            opacity: item.adjustmentType === 'Delete' && !selectedRow ? 0.5 : 1
                                         }}
                                         onClick={() => {
-                                            if (hasExistingAdjustment) {
-                                                handleUpdateIconClick(item.adjustmentType);
+                                            if (item.adjustmentType === 'Delete') {
+                                                if (selectedRow) {
+                                                    handleIconClick(item.adjustmentType);
+                                                }
                                             } else {
-                                                handleIconClick(item.adjustmentType);
+                                                if (hasExistingAdjustment) {
+                                                    handleUpdateIconClick(item.adjustmentType);
+                                                } else {
+                                                    handleIconClick(item.adjustmentType);
+                                                }
                                             }
                                         }}
                                     />
                                     <div style={{ marginTop: '0.5rem' }}>
                                         <IonText color="medium">
-                                            {getIconLabel(item.adjustmentType)}
+                                            {item.adjustmentType === 'Delete' ? 
+                                                (selectedRow ? 'Delete Selected' : 'Select to Delete') : 
+                                                getIconLabel(item.adjustmentType)
+                                            }
                                         </IonText>
                                     </div>
                                 </div>
@@ -372,12 +428,22 @@ const NonAgriLandTable: React.FC = () => {
                                 <p>Loading adjustments...</p>
                             </div>
                         ) : (
-                            <DynamicTable
-                                data={currentAdjustments}
-                                title="Land Adjustments"
-                                keyField="adjustmentId"
-                                onRowClick={handleRowClick}
-                            />
+                            <>
+                                <DynamicTable
+                                    data={currentAdjustments}
+                                    title="Land Adjustments"
+                                    keyField="adjustmentId"
+                                    onRowClick={handleRowClick}
+                                    selectedRow={selectedRow}
+                                />
+                                {selectedRow && (
+                                    <div style={{ textAlign: 'center', marginTop: '16px' }}>
+                                        <IonText color="medium">
+                                            <small>Selected: {selectedRow.adjustment_type}</small>
+                                        </IonText>
+                                    </div>
+                                )}
+                            </>
                         )}
                     </IonCardContent>
                 </IonCard>
@@ -409,6 +475,26 @@ const NonAgriLandTable: React.FC = () => {
                     isLoadingAdjustments={isLoadingAdjustments}
                     valueInfoId={valueInfoId}
                     existingAdjustment={selectedAdjustmentForUpdate}
+                />
+
+                {/* Delete Confirmation Alert */}
+                <IonAlert
+                    isOpen={showDeleteAlert}
+                    onDidDismiss={() => setShowDeleteAlert(false)}
+                    header={'Delete Adjustment'}
+                    message={`Are you sure you want to delete this ${adjustmentToDelete?.adjustment_type} adjustment?`}
+                    buttons={[
+                        {
+                            text: 'Cancel',
+                            role: 'cancel',
+                            cssClass: 'secondary',
+                        },
+                        {
+                            text: 'Delete',
+                            role: 'destructive',
+                            handler: handleDeleteConfirm
+                        }
+                    ]}
                 />
                 
                 <IonToast
