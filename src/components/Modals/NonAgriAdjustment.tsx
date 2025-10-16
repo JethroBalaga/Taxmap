@@ -31,7 +31,7 @@ interface NonAgriAdjustmentProps {
   setAdjustmentFactor: (value: string) => void;
   landAdjustments: LandAdjustmentData[];
   isLoadingAdjustments: boolean;
-  valueInfoId: string; // Added valueInfoId prop
+  valueInfoId: string;
 }
 
 const NonAgriAdjustment: React.FC<NonAgriAdjustmentProps> = ({
@@ -44,7 +44,7 @@ const NonAgriAdjustment: React.FC<NonAgriAdjustmentProps> = ({
   setAdjustmentFactor,
   landAdjustments,
   isLoadingAdjustments,
-  valueInfoId // Receive valueInfoId
+  valueInfoId
 }) => {
   const [filteredAdjustments, setFilteredAdjustments] = useState<LandAdjustmentData[]>([]);
 
@@ -250,7 +250,7 @@ const NonAgriAdjustment: React.FC<NonAgriAdjustmentProps> = ({
             <SubmitButton 
               label="Save Adjustment"
               onClick={handleSubmit}
-              disabled={!description} // Disable if no description selected
+              disabled={!description}
             />
           </div>
         </div>
