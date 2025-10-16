@@ -17,6 +17,7 @@ import {
 } from '@ionic/react';
 import { closeOutline } from 'ionicons/icons';
 import { LandAdjustmentData } from '../../utils/landAdjustmentLocalStorage';
+import { NonAgriAdjustmentLocalStorage } from '../../utils/tablestorages/NonAgriAdjustmentLocalStorage';
 import SubmitButton from '../GlobalComponent/SubmitButton';
 import '../../CSS/modal.css';
 
@@ -30,6 +31,7 @@ interface NonAgriAdjustmentProps {
   setAdjustmentFactor: (value: string) => void;
   landAdjustments: LandAdjustmentData[];
   isLoadingAdjustments: boolean;
+  valueInfoId: string; // Added valueInfoId prop
 }
 
 const NonAgriAdjustment: React.FC<NonAgriAdjustmentProps> = ({
@@ -41,7 +43,8 @@ const NonAgriAdjustment: React.FC<NonAgriAdjustmentProps> = ({
   adjustmentFactor,
   setAdjustmentFactor,
   landAdjustments,
-  isLoadingAdjustments
+  isLoadingAdjustments,
+  valueInfoId // Receive valueInfoId
 }) => {
   const [filteredAdjustments, setFilteredAdjustments] = useState<LandAdjustmentData[]>([]);
 
@@ -76,11 +79,27 @@ const NonAgriAdjustment: React.FC<NonAgriAdjustmentProps> = ({
   };
 
   const handleSubmit = () => {
-    // Submit functionality will be added later
-    console.log('Submit button clicked');
-    console.log('Adjustment Type:', adjustmentType);
-    console.log('Description:', description);
-    console.log('Adjustment Factor:', adjustmentFactor);
+    // Save to NonAgriAdjustmentLocalStorage
+    if (description && valueInfoId) {
+      const selectedAdjustment = filteredAdjustments.find(
+        adj => adj.description === description
+      );
+      
+      if (selectedAdjustment) {
+        NonAgriAdjustmentLocalStorage.saveNonAgriAdjustment({
+          valueInfoId: valueInfoId,
+          adjustmentId: selectedAdjustment.adjustment_id
+        });
+        
+        console.log('Adjustment saved:', {
+          valueInfoId: valueInfoId,
+          adjustmentId: selectedAdjustment.adjustment_id,
+          adjustmentType: adjustmentType,
+          description: description,
+          adjustmentFactor: adjustmentFactor
+        });
+      }
+    }
     
     // Close modal after submission
     onDismiss();
@@ -123,6 +142,27 @@ const NonAgriAdjustment: React.FC<NonAgriAdjustmentProps> = ({
           justifyContent: 'center',
           minHeight: '60vh'
         }}>
+          {/* Value Info ID Display */}
+          <div style={{ width: '100%', maxWidth: '400px', marginBottom: '16px', textAlign: 'center' }}>
+            <IonItem className="custom-input" lines="none">
+              <IonLabel position="stacked" className="input-label">
+                Value Info ID
+              </IonLabel>
+              <div style={{ 
+                padding: '12px', 
+                backgroundColor: '#f8f9fa', 
+                border: '1px solid #e2e8f0', 
+                borderRadius: '8px', 
+                marginTop: '8px',
+                textAlign: 'center',
+                fontSize: '14px',
+                color: '#666'
+              }}>
+                {valueInfoId}
+              </div>
+            </IonItem>
+          </div>
+
           {/* Adjustment Type Display */}
           <div style={{ width: '100%', maxWidth: '400px', marginBottom: '24px', textAlign: 'center' }}>
             <IonItem className="custom-input" lines="none">
