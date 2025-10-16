@@ -22,9 +22,11 @@ import { arrowBack, cutOutline, resizeOutline, trailSignOutline } from "ionicons
 import { useHistory, useParams } from 'react-router-dom';
 import { FormDataLocalStorage } from '../../utils/tablestorages/FormDataLocalStorage';
 import { ValueInfoLocalStorage } from '../../utils/tablestorages/ValueInfoLocalStorage';
+import { NonAgriAdjustmentLocalStorage } from '../../utils/tablestorages/NonAgriAdjustmentLocalStorage';
 import { useState, useEffect } from "react";
 import NonAgriAdjustment from '../../components/Modals/NonAgriAdjustment';
 import { LandAdjustmentData, getLandAdjustmentData } from '../../utils/landAdjustmentLocalStorage';
+import DynamicTable from '../../components/GlobalComponent/DynamicTable';
 import "../../CSS/Forms.css";
 
 const NonAgriLandTable: React.FC = () => {
@@ -32,7 +34,7 @@ const NonAgriLandTable: React.FC = () => {
     const history = useHistory();
     
     const [formData, setFormData] = useState<any>(null);
-    const [valueInfoId, setValueInfoId] = useState<string>(''); // Added valueInfoId state
+    const [valueInfoId, setValueInfoId] = useState<string>('');
     const [isLoading, setIsLoading] = useState(true);
     const [showToast, setShowToast] = useState(false);
     const [toastMessage, setToastMessage] = useState('');
@@ -134,6 +136,28 @@ const NonAgriLandTable: React.FC = () => {
         loadFormData();
         loadLandAdjustments();
     }, [formId]);
+
+    // Filter adjustments for current valueInfoId and format for DynamicTable
+    const getCombinedAdjustmentData = () => {
+        if (!valueInfoId || landAdjustments.length === 0) return [];
+
+        const nonAgriAdjustments = NonAgriAdjustmentLocalStorage.getAdjustmentsByValueInfoId(valueInfoId);
+        
+        return nonAgriAdjustments.map(nonAgriAdj => {
+            // Find the corresponding land adjustment data
+            const landAdj = landAdjustments.find(adj => adj.adjustment_id === nonAgriAdj.adjustmentId);
+            
+            return {
+                valueInfoId: nonAgriAdj.valueInfoId,
+                adjustmentId: nonAgriAdj.adjustmentId,
+                adjustment_type: landAdj?.adjustment_type || 'N/A',
+                description: landAdj?.description || 'N/A',
+                adjustment_factor: landAdj?.adjustment_factor || 'N/A'
+            };
+        });
+    };
+
+    const currentAdjustments = getCombinedAdjustmentData();
     
     const handleBack = () => {
         history.push('/menu/forms');
@@ -151,6 +175,13 @@ const NonAgriLandTable: React.FC = () => {
         setSelectedAdjustmentType('');
         setDescription('');
         setAdjustmentFactor('');
+        // Reload adjustments when modal is dismissed to get latest data
+        loadLandAdjustments();
+    };
+
+    const handleRowClick = (rowData: any) => {
+        // Handle row click if needed
+        console.log('Row clicked:', rowData);
     };
 
     // Filter icons based on classification
@@ -270,6 +301,25 @@ const NonAgriLandTable: React.FC = () => {
                     </div>
                 )}
 
+                {/* Adjustments Table using DynamicTable Component */}
+                <IonCard>
+                    <IonCardContent>
+                        {isLoadingAdjustments ? (
+                            <div style={{ textAlign: 'center', padding: '20px' }}>
+                                <IonSpinner name="crescent" />
+                                <p>Loading adjustments...</p>
+                            </div>
+                        ) : (
+                            <DynamicTable
+                                data={currentAdjustments}
+                                title="Land Adjustments"
+                                keyField="adjustmentId"
+                                onRowClick={handleRowClick}
+                            />
+                        )}
+                    </IonCardContent>
+                </IonCard>
+
                 {/* Non-Agri Adjustment Modal */}
                 <NonAgriAdjustment
                     isOpen={showAdjustmentModal}
@@ -281,7 +331,7 @@ const NonAgriLandTable: React.FC = () => {
                     setAdjustmentFactor={setAdjustmentFactor}
                     landAdjustments={landAdjustments}
                     isLoadingAdjustments={isLoadingAdjustments}
-                    valueInfoId={valueInfoId} // Pass valueInfoId to modal
+                    valueInfoId={valueInfoId}
                 />
                 
                 <IonToast
