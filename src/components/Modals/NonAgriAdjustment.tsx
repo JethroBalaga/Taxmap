@@ -56,7 +56,7 @@ const NonAgriAdjustment: React.FC<NonAgriAdjustmentProps> = ({
       filteredData = landAdjustments.filter(adj => adj.adjustment_type === 'Stripping');
     } else if (adjustmentType === 'Corner Influence') {
       filteredData = landAdjustments.filter(adj => adj.adjustment_type === 'Corner Influence');
-    } else if (adjustmentType === 'Frontage') {
+    } else if (adjustmentType === 'Commercial Frontage') {
       filteredData = landAdjustments.filter(adj => adj.adjustment_type === 'Commercial Frontage');
     }
     
