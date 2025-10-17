@@ -23,7 +23,7 @@ import { arrowBack } from "ionicons/icons";
 import { useHistory, useParams } from 'react-router-dom';
 import { useState, useEffect } from "react";
 import { useNonAgriLand } from './useNonAgriLand';
-import { NonAgriLandUI } from './components/NonAgriLandUI';
+import { NonAgriLandUI } from './NonAgriLandUI';
 import "../../CSS/Forms.css";
 
 const NonAgriLandTable: React.FC = () => {
