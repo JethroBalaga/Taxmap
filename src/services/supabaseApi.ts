@@ -272,6 +272,32 @@ export const supabaseApi = {
   },
 
   /**
+   * Insert non-agricultural adjustment and return the composite key (value_info_id, adjustment_id)
+   */
+  async insertNonAgriAdjustment(value_info_id: string, adjustment_id: string): Promise<string> {
+    const { data, error } = await supabase.rpc('insert_nonagri_adjustment', {
+      p_value_info_id: value_info_id,
+      p_adjustment_id: adjustment_id
+    });
+
+    if (error) {
+      console.error('RPC Error inserting non-agricultural adjustment:', {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint
+      });
+      throw new Error(`Failed to insert non-agricultural adjustment: ${error.message}`);
+    }
+    
+    if (!data) {
+      throw new Error('No data returned from insert_nonagri_adjustment function');
+    }
+    
+    return data; // Returns the composite key
+  },
+
+  /**
    * Update form status by form_id
    */
   async updateFormStatus(form_id: string, status: string): Promise<void> {

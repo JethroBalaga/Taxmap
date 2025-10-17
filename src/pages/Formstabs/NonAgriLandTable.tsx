@@ -32,6 +32,7 @@ import { LandAdjustmentData, getLandAdjustmentData } from '../../utils/landAdjus
 import DynamicTable from '../../components/GlobalComponent/DynamicTable';
 import SubmitButton from '../../components/GlobalComponent/SubmitButton';
 import { supabaseApi } from '../../services/supabaseApi';
+import { supabase } from '../../utils/supaBaseClient';
 import "../../CSS/Forms.css";
 
 const NonAgriLandTable: React.FC = () => {
