@@ -159,8 +159,10 @@ const Forms: React.FC = () => {
       } else if (kind === '1' && classification === 'A') {
         history.push(`/menu/forms/agriculturaltable/${selectedForm.id}`);
       } else if (kind === '1' && classification !== 'A') {
-        // Navigate to Non-Agricultural Land Table for Land + Non-Agricultural (kind 1, classification not A)
-        history.push(`/menu/forms/nonagriltable/${selectedForm.id}`);
+        // Pass the updated form data via state to ensure NonAgriLandTable has latest data
+        history.push(`/menu/forms/nonagriltable/${selectedForm.id}`, {
+          formData: selectedForm
+        });
       } else {
         setToastMessage('Details are only available for Building, Machinery, or Land forms');
         setToastButtons([{ text: 'OK', role: 'cancel' }]);
@@ -295,6 +297,7 @@ const Forms: React.FC = () => {
     loadFormData();
     setSelectedForm(updatedData);
 
+    // Dispatch custom event to notify other components
     window.dispatchEvent(new CustomEvent('formDataUpdated', {
       detail: {
         formId: updatedData.id,
