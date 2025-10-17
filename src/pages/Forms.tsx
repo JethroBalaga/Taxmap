@@ -159,9 +159,9 @@ const Forms: React.FC = () => {
       } else if (kind === '1' && classification === 'A') {
         history.push(`/menu/forms/agriculturaltable/${selectedForm.id}`);
       } else if (kind === '1' && classification !== 'A') {
-        // Pass the updated form data via state to ensure NonAgriLandTable has latest data
+        // Pass the updated form data via state - use different key name
         history.push(`/menu/forms/nonagriltable/${selectedForm.id}`, {
-          formData: selectedForm
+          formDataState: selectedForm // Changed from formData to formDataState
         });
       } else {
         setToastMessage('Details are only available for Building, Machinery, or Land forms');
