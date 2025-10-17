@@ -165,6 +165,7 @@ const NonAgriLandTable: React.FC = () => {
     }, [formId]);
 
     // Filter adjustments for current valueInfoId and format for DynamicTable
+    // Filter adjustments for current valueInfoId and format for DynamicTable
     const getCombinedAdjustmentData = () => {
         if (!valueInfoId || landAdjustments.length === 0) return [];
 
@@ -179,7 +180,8 @@ const NonAgriLandTable: React.FC = () => {
                 adjustmentId: nonAgriAdj.adjustmentId,
                 adjustment_type: landAdj?.adjustment_type || 'N/A',
                 description: landAdj?.description || 'N/A',
-                adjustment_factor: landAdj?.adjustment_factor || 'N/A'
+                adjustment_factor: landAdj?.adjustment_factor || 'N/A',
+                value_adjustment: 'N/A' // Added Value Adjustment column
             };
         });
     };
@@ -466,7 +468,7 @@ const NonAgriLandTable: React.FC = () => {
                         </IonButton>
                     </IonButtons>
                     <IonTitle>Non-Agricultural Land - Form {formData.id}</IonTitle>
-                    
+
                     {/* Submit Button on the right side - BACK IN HEADER */}
                     <IonButtons slot="end">
                         <SubmitButton
