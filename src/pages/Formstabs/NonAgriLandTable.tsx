@@ -27,6 +27,7 @@ const NonAgriLandTable: React.FC = () => {
     const {
         // State
         formData,
+        valueInfoId, // Make sure this is included
         isLoading,
         showToast,
         toastMessage,
@@ -151,6 +152,7 @@ const NonAgriLandTable: React.FC = () => {
                     selectedAdjustmentForUpdate={selectedAdjustmentForUpdate}
                     showDeleteAlert={showDeleteAlert}
                     adjustmentToDelete={adjustmentToDelete}
+                    valueInfoId={valueInfoId} // ADD THIS - crucial for adjustments to work
                     
                     // Handlers
                     onSubmit={onSubmit}
