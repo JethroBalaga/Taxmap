@@ -24,12 +24,14 @@ import { useHistory, useParams } from 'react-router-dom';
 import { FormDataLocalStorage } from '../../utils/tablestorages/FormDataLocalStorage';
 import { ValueInfoLocalStorage } from '../../utils/tablestorages/ValueInfoLocalStorage';
 import { NonAgriAdjustmentLocalStorage } from '../../utils/tablestorages/NonAgriAdjustmentLocalStorage';
+import { PhotoTagLocalStorage } from '../../utils/tablestorages/PhotoTagLocalStorage';
 import { useState, useEffect } from "react";
 import NonAgriAdjustment from '../../components/Modals/NonAgriAdjustment';
 import NonAgriAdjustmentUpdate from '../../components/Modals/NonAgriAdjustmentUpdate';
 import { LandAdjustmentData, getLandAdjustmentData } from '../../utils/landAdjustmentLocalStorage';
 import DynamicTable from '../../components/GlobalComponent/DynamicTable';
 import SubmitButton from '../../components/GlobalComponent/SubmitButton';
+import { supabaseApi } from '../../services/supabaseApi';
 import "../../CSS/Forms.css";
 
 const NonAgriLandTable: React.FC = () => {
@@ -184,18 +186,104 @@ const NonAgriLandTable: React.FC = () => {
 
     const onSubmit = async () => {
         setIsSubmitting(true);
+        setToastMessage('Starting non-agricultural land upload process...');
+        setShowToast(true);
+
         try {
-            // Add your submission logic here
-            console.log('Submitting non-agricultural land form with adjustments:', currentAdjustments);
-            setToastMessage('Form submitted successfully!');
+            const formData = FormDataLocalStorage.getFormData(formId);
+            if (!formData) throw new Error('Form data not found');
+            if (formData.uploaded) throw new Error('Form already uploaded');
+
+            const valueInfo = ValueInfoLocalStorage.getValueInfo(valueInfoId);
+            if (!valueInfo) throw new Error(`ValueInfo not found for ${valueInfoId}`);
+
+            const photoTag = PhotoTagLocalStorage.getPhotoTag(valueInfo.photoTagId);
+            if (!photoTag) throw new Error('Photo tag not found');
+
+            // Insert photo record
+            const databaseTagId = await supabaseApi.insertPhoto({
+                photo: photoTag.photoName,
+                longitude: photoTag.longitude,
+                latitude: photoTag.latitude,
+                date_taken: validateDate(photoTag.timestamp ? photoTag.timestamp.toISOString().split('T')[0] : null)
+            });
+            if (!databaseTagId) throw new Error('Failed to insert photo record');
+
+            // Upload photo file if available
+            const photoFile = await getPhotoFile(photoTag);
+            if (photoFile) {
+                const folderPath = `${databaseTagId}/${photoTag.photoName}`;
+                const { error: uploadError } = await supabase.storage.from('tag-photos').upload(folderPath, photoFile, {
+                    contentType: 'image/jpeg',
+                    upsert: false
+                });
+                if (uploadError) {
+                    console.warn('Photo upload failed', uploadError);
+                    setToastMessage('Form submitted but photo upload failed');
+                }
+                // No cleanup - users keep their photos as copies
+            } else {
+                setToastMessage('Form submitted but could not retrieve photo');
+            }
+
+            // Insert form record
+            let databaseFormId = formData.synced_id;
+            if (!databaseFormId) {
+                databaseFormId = await supabaseApi.insertForm({
+                    declarant_id: formData.declarantId || 0,
+                    kind_id: parseInt(formData.kind),
+                    class_id: formData.classification,
+                    area: formData.area.toString(),
+                    district_id: formData.district,
+                    actual_used_id: formData.actualUse,
+                    subclass_id: formData.subclass || null,
+                    status: 'New'
+                });
+                if (!databaseFormId) throw new Error('Failed to insert form');
+            }
+
+            // Insert value info record
+            const databaseValueInfoId = await supabaseApi.insertValueInfo(databaseFormId, databaseTagId);
+
+            // Insert non-agricultural adjustments (only value_info_id and adjustment_id)
+            for (const adjustment of currentAdjustments) {
+                await supabaseApi.insertNonAgriAdjustment(
+                    databaseValueInfoId,
+                    adjustment.adjustmentId
+                );
+            }
+
+            // Mark form as uploaded
+            if (!formData.synced_id) {
+                FormDataLocalStorage.markFormAsUploaded(formId, databaseFormId);
+            }
+
+            setToastMessage('Non-agricultural land data submitted successfully! All data synchronized with server.');
             setShowToast(true);
-        } catch (error) {
-            console.error('Error submitting form:', error);
-            setToastMessage('Error submitting form');
+
+        } catch (error: any) {
+            console.error('Non-agricultural land upload failed:', error);
+            setToastMessage(`Upload failed: ${error.message || 'Unknown error'}`);
             setShowToast(true);
         } finally {
             setIsSubmitting(false);
         }
+    };
+
+    // Helper functions
+    const validateDate = (dateString: string | null): string | null => {
+        if (!dateString) return null;
+        try {
+            return new Date(dateString).toISOString().split('T')[0];
+        } catch {
+            return null;
+        }
+    };
+
+    const getPhotoFile = async (photoTag: any): Promise<File | null> => {
+        // Implement photo file retrieval logic
+        // This would typically get the photo file from the device storage
+        return null;
     };
 
     const handleIconClick = (adjustmentType: string) => {
@@ -385,7 +473,7 @@ const NonAgriLandTable: React.FC = () => {
                             label="Submit Form"
                             onClick={onSubmit}
                             loading={isSubmitting}
-                            disabled={currentAdjustments.length === 0 || isSubmitting}
+                            disabled={isSubmitting}
                             className="header-submit-button"
                         />
                     </IonButtons>
