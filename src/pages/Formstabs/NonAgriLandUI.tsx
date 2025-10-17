@@ -14,7 +14,6 @@ import { cutOutline, resizeOutline, trailSignOutline, trashOutline } from "ionic
 import NonAgriAdjustment from '../../components/Modals/NonAgriAdjustment';
 import NonAgriAdjustmentUpdate from '../../components/Modals/NonAgriAdjustmentUpdate';
 import DynamicTable from '../../components/GlobalComponent/DynamicTable';
-import SubmitButton from '../../components/GlobalComponent/SubmitButton';
 import { LandAdjustmentData } from '../../utils/landAdjustmentLocalStorage';
 
 interface NonAgriLandUIProps {
@@ -33,10 +32,7 @@ interface NonAgriLandUIProps {
     selectedAdjustmentForUpdate: any;
     showDeleteAlert: boolean;
     adjustmentToDelete: any;
-    valueInfoId: string;
-    showToast: boolean;
-    toastMessage: string;
-    toastColor: 'success' | 'danger' | 'warning' | undefined;
+    valueInfoId?: string;
     
     // Handlers
     onSubmit: () => void;
@@ -50,7 +46,6 @@ interface NonAgriLandUIProps {
     setAdjustmentFactor: (factor: string) => void;
     setShowDeleteAlert: (show: boolean) => void;
     setAdjustmentToDelete: (adjustment: any) => void;
-    showToastMessage: (message: string, color?: 'success' | 'danger' | 'warning') => void;
 }
 
 // Grid data configuration array
@@ -116,7 +111,7 @@ export const NonAgriLandUI: React.FC<NonAgriLandUIProps> = ({
     selectedAdjustmentForUpdate,
     showDeleteAlert,
     adjustmentToDelete,
-    valueInfoId,
+    valueInfoId = '',
     
     // Handlers
     onSubmit,
@@ -153,17 +148,6 @@ export const NonAgriLandUI: React.FC<NonAgriLandUIProps> = ({
                     </IonGrid>
                 </IonCardContent>
             </IonCard>
-
-            {/* Submit Button */}
-            <div style={{ textAlign: 'center', margin: '1rem 0' }}>
-                <SubmitButton
-                    label="Submit Form"
-                    onClick={onSubmit}
-                    loading={isSubmitting}
-                    disabled={isSubmitting}
-                    className="header-submit-button"
-                />
-            </div>
 
             {/* Icons Section */}
             {visibleIcons.length > 0 && (

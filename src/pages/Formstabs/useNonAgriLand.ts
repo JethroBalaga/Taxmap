@@ -1,6 +1,6 @@
 // src/pages/hooks/useNonAgriLand.ts
 import { useState, useEffect } from "react";
-import { useHistory } from 'react-router-dom';
+import { useHistory, useLocation } from 'react-router-dom';
 import { FormDataLocalStorage } from '../../utils/tablestorages/FormDataLocalStorage';
 import { ValueInfoLocalStorage } from '../../utils/tablestorages/ValueInfoLocalStorage';
 import { NonAgriAdjustmentLocalStorage } from '../../utils/tablestorages/NonAgriAdjustmentLocalStorage';
@@ -39,6 +39,7 @@ const adjustmentIcons = [
 
 export const useNonAgriLand = (formId: string | undefined) => {
     const history = useHistory();
+    const location = useLocation();
 
     // State
     const [formData, setFormData] = useState<any>(null);
@@ -77,10 +78,14 @@ export const useNonAgriLand = (formId: string | undefined) => {
     const loadFormData = () => {
         if (formId) {
             setIsLoading(true);
-            const data = FormDataLocalStorage.getFormData(formId);
-            setFormData(data);
-
-            if (data) {
+            console.log('Loading non-agricultural land form data for ID:', formId);
+            
+            // First check if we have form data passed via navigation state
+            if (location.state && location.state.formData) {
+                console.log('Using form data from navigation state');
+                setFormData(location.state.formData);
+                
+                // Fetch or create ValueInfo for this formId using the passed form data
                 let valueInfo = ValueInfoLocalStorage.getValueInfoByFormDataId(formId);
                 if (!valueInfo) {
                     valueInfo = ValueInfoLocalStorage.addValueInfo({
@@ -89,12 +94,30 @@ export const useNonAgriLand = (formId: string | undefined) => {
                     });
                 }
                 setValueInfoId(valueInfo.id);
-            }
+                
+                setIsLoading(false);
+            } else {
+                // Fallback to loading from localStorage - use different variable name
+                const storedFormData = FormDataLocalStorage.getFormData(formId);
+                setFormData(storedFormData);
+                
+                // Fetch or create ValueInfo for this formId using the stored form data
+                if (storedFormData) {
+                    let valueInfo = ValueInfoLocalStorage.getValueInfoByFormDataId(formId);
+                    if (!valueInfo) {
+                        valueInfo = ValueInfoLocalStorage.addValueInfo({
+                            formDataId: formId,
+                            photoTagId: ''
+                        });
+                    }
+                    setValueInfoId(valueInfo.id);
+                }
+                
+                setIsLoading(false);
 
-            setIsLoading(false);
-
-            if (!data) {
-                showToastMessage('Form not found', 'danger');
+                if (!storedFormData) {
+                    showToastMessage('Form not found', 'danger');
+                }
             }
         }
     };
@@ -119,6 +142,31 @@ export const useNonAgriLand = (formId: string | undefined) => {
         loadLandAdjustments();
     }, [formId]);
 
+    // Listen for form data updates from Forms page
+    useEffect(() => {
+        const handleFormDataUpdate = (event: CustomEvent) => {
+            if (event.detail && event.detail.formId === formId) {
+                console.log('Form data updated, reloading...');
+                loadFormData();
+            }
+        };
+
+        const handleStorageChange = (e: StorageEvent) => {
+            if (e.key === 'formUpdateTrigger') {
+                console.log('Form update detected via localStorage, reloading...');
+                loadFormData();
+            }
+        };
+
+        window.addEventListener('formDataUpdated', handleFormDataUpdate as EventListener);
+        window.addEventListener('storage', handleStorageChange);
+
+        return () => {
+            window.removeEventListener('formDataUpdated', handleFormDataUpdate as EventListener);
+            window.removeEventListener('storage', handleStorageChange);
+        };
+    }, [formId]);
+
     // Filter adjustments for current valueInfoId and format for table
     const getCombinedAdjustmentData = () => {
         if (!valueInfoId || landAdjustments.length === 0) return [];
@@ -133,7 +181,8 @@ export const useNonAgriLand = (formId: string | undefined) => {
                 adjustmentId: nonAgriAdj.adjustmentId,
                 adjustment_type: landAdj?.adjustment_type || 'N/A',
                 description: landAdj?.description || 'N/A',
-                adjustment_factor: landAdj?.adjustment_factor || 'N/A'
+                adjustment_factor: landAdj?.adjustment_factor || 'N/A',
+                value_adjustment: 'N/A' // Added Value Adjustment column
             };
         });
     };
@@ -149,9 +198,10 @@ export const useNonAgriLand = (formId: string | undefined) => {
         showToastMessage('Starting non-agricultural land upload process...', 'warning');
 
         try {
-            const formData = FormDataLocalStorage.getFormData(formId!);
-            if (!formData) throw new Error('Form data not found');
-            if (formData.uploaded) throw new Error('Form already uploaded');
+            // Use different variable name to avoid conflict
+            const currentFormData = FormDataLocalStorage.getFormData(formId!);
+            if (!currentFormData) throw new Error('Form data not found');
+            if (currentFormData.uploaded) throw new Error('Form already uploaded');
 
             const valueInfo = ValueInfoLocalStorage.getValueInfo(valueInfoId);
             if (!valueInfo) throw new Error(`ValueInfo not found for ${valueInfoId}`);
@@ -185,16 +235,16 @@ export const useNonAgriLand = (formId: string | undefined) => {
             }
 
             // Insert form record
-            let databaseFormId = formData.synced_id;
+            let databaseFormId = currentFormData.synced_id;
             if (!databaseFormId) {
                 databaseFormId = await supabaseApi.insertForm({
-                    declarant_id: formData.declarantId || 0,
-                    kind_id: parseInt(formData.kind),
-                    class_id: formData.classification,
-                    area: formData.area.toString(),
-                    district_id: formData.district,
-                    actual_used_id: formData.actualUse,
-                    subclass_id: formData.subclass || null,
+                    declarant_id: currentFormData.declarantId || 0,
+                    kind_id: parseInt(currentFormData.kind),
+                    class_id: currentFormData.classification,
+                    area: currentFormData.area.toString(),
+                    district_id: currentFormData.district,
+                    actual_used_id: currentFormData.actualUse,
+                    subclass_id: currentFormData.subclass || null,
                     status: 'New'
                 });
                 if (!databaseFormId) throw new Error('Failed to insert form');
@@ -212,7 +262,7 @@ export const useNonAgriLand = (formId: string | undefined) => {
             }
 
             // Mark form as uploaded
-            if (!formData.synced_id) {
+            if (!currentFormData.synced_id) {
                 FormDataLocalStorage.markFormAsUploaded(formId!, databaseFormId);
             }
 
