@@ -80,12 +80,13 @@ export const useNonAgriLand = (formId: string | undefined) => {
             setIsLoading(true);
             console.log('Loading non-agricultural land form data for ID:', formId);
             
-            // First check if we have form data passed via navigation state
-            if (location.state && location.state.formData) {
-                console.log('Using form data from navigation state');
-                setFormData(location.state.formData);
-                
-                // Fetch or create ValueInfo for this formId using the passed form data
+            // ALWAYS load from localStorage to get the latest data
+            const storedFormData = FormDataLocalStorage.getFormData(formId);
+            console.log('Loaded form data from localStorage:', storedFormData);
+            setFormData(storedFormData);
+            
+            // Fetch or create ValueInfo for this formId using the stored form data
+            if (storedFormData) {
                 let valueInfo = ValueInfoLocalStorage.getValueInfoByFormDataId(formId);
                 if (!valueInfo) {
                     valueInfo = ValueInfoLocalStorage.addValueInfo({
@@ -94,30 +95,12 @@ export const useNonAgriLand = (formId: string | undefined) => {
                     });
                 }
                 setValueInfoId(valueInfo.id);
-                
-                setIsLoading(false);
-            } else {
-                // Fallback to loading from localStorage - use different variable name
-                const storedFormData = FormDataLocalStorage.getFormData(formId);
-                setFormData(storedFormData);
-                
-                // Fetch or create ValueInfo for this formId using the stored form data
-                if (storedFormData) {
-                    let valueInfo = ValueInfoLocalStorage.getValueInfoByFormDataId(formId);
-                    if (!valueInfo) {
-                        valueInfo = ValueInfoLocalStorage.addValueInfo({
-                            formDataId: formId,
-                            photoTagId: ''
-                        });
-                    }
-                    setValueInfoId(valueInfo.id);
-                }
-                
-                setIsLoading(false);
+            }
+            
+            setIsLoading(false);
 
-                if (!storedFormData) {
-                    showToastMessage('Form not found', 'danger');
-                }
+            if (!storedFormData) {
+                showToastMessage('Form not found', 'danger');
             }
         }
     };
@@ -146,14 +129,14 @@ export const useNonAgriLand = (formId: string | undefined) => {
     useEffect(() => {
         const handleFormDataUpdate = (event: CustomEvent) => {
             if (event.detail && event.detail.formId === formId) {
-                console.log('Form data updated, reloading...');
+                console.log('Form data updated, reloading form data...');
                 loadFormData();
             }
         };
 
         const handleStorageChange = (e: StorageEvent) => {
             if (e.key === 'formUpdateTrigger') {
-                console.log('Form update detected via localStorage, reloading...');
+                console.log('Form update detected via localStorage, reloading form data...');
                 loadFormData();
             }
         };
