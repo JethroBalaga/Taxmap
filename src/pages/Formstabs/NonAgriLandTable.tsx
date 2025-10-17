@@ -29,6 +29,7 @@ import NonAgriAdjustment from '../../components/Modals/NonAgriAdjustment';
 import NonAgriAdjustmentUpdate from '../../components/Modals/NonAgriAdjustmentUpdate';
 import { LandAdjustmentData, getLandAdjustmentData } from '../../utils/landAdjustmentLocalStorage';
 import DynamicTable from '../../components/GlobalComponent/DynamicTable';
+import SubmitButton from '../../components/GlobalComponent/SubmitButton';
 import "../../CSS/Forms.css";
 
 const NonAgriLandTable: React.FC = () => {
@@ -40,6 +41,7 @@ const NonAgriLandTable: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [showToast, setShowToast] = useState(false);
     const [toastMessage, setToastMessage] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Modal states
     const [showAdjustmentModal, setShowAdjustmentModal] = useState(false);
@@ -178,6 +180,22 @@ const NonAgriLandTable: React.FC = () => {
 
     const handleBack = () => {
         history.push('/menu/forms');
+    };
+
+    const onSubmit = async () => {
+        setIsSubmitting(true);
+        try {
+            // Add your submission logic here
+            console.log('Submitting non-agricultural land form with adjustments:', currentAdjustments);
+            setToastMessage('Form submitted successfully!');
+            setShowToast(true);
+        } catch (error) {
+            console.error('Error submitting form:', error);
+            setToastMessage('Error submitting form');
+            setShowToast(true);
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     const handleIconClick = (adjustmentType: string) => {
@@ -360,6 +378,17 @@ const NonAgriLandTable: React.FC = () => {
                         </IonButton>
                     </IonButtons>
                     <IonTitle>Non-Agricultural Land - Form {formData.id}</IonTitle>
+                    
+                    {/* Submit Button on the right side */}
+                    <IonButtons slot="end">
+                        <SubmitButton
+                            label="Submit Form"
+                            onClick={onSubmit}
+                            loading={isSubmitting}
+                            disabled={currentAdjustments.length === 0 || isSubmitting}
+                            className="header-submit-button"
+                        />
+                    </IonButtons>
                 </IonToolbar>
             </IonHeader>
 
