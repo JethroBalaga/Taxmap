@@ -32,7 +32,7 @@ interface NonAgriLandUIProps {
     selectedAdjustmentForUpdate: any;
     showDeleteAlert: boolean;
     adjustmentToDelete: any;
-    valueInfoId?: string;
+    valueInfoId: string; // CHANGED from optional to required
     
     // Handlers
     onSubmit: () => void;
@@ -111,7 +111,7 @@ export const NonAgriLandUI: React.FC<NonAgriLandUIProps> = ({
     selectedAdjustmentForUpdate,
     showDeleteAlert,
     adjustmentToDelete,
-    valueInfoId = '',
+    valueInfoId, // Now required
     
     // Handlers
     onSubmit,
@@ -241,7 +241,7 @@ export const NonAgriLandUI: React.FC<NonAgriLandUIProps> = ({
                 setAdjustmentFactor={setAdjustmentFactor}
                 landAdjustments={landAdjustments}
                 isLoadingAdjustments={isLoadingAdjustments}
-                valueInfoId={valueInfoId}
+                valueInfoId={valueInfoId} // This now gets the proper valueInfoId
             />
 
             <NonAgriAdjustmentUpdate
@@ -254,7 +254,7 @@ export const NonAgriLandUI: React.FC<NonAgriLandUIProps> = ({
                 setAdjustmentFactor={setAdjustmentFactor}
                 landAdjustments={landAdjustments}
                 isLoadingAdjustments={isLoadingAdjustments}
-                valueInfoId={valueInfoId}
+                valueInfoId={valueInfoId} // This now gets the proper valueInfoId
                 existingAdjustment={selectedAdjustmentForUpdate}
             />
 
