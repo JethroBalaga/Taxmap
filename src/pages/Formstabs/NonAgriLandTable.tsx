@@ -22,7 +22,7 @@ import {
 import { arrowBack } from "ionicons/icons";
 import { useHistory, useParams } from 'react-router-dom';
 import { useState, useEffect } from "react";
-import { useNonAgriLand } from './hooks/useNonAgriLand';
+import { useNonAgriLand } from './useNonAgriLand';
 import { NonAgriLandUI } from './components/NonAgriLandUI';
 import "../../CSS/Forms.css";
 
