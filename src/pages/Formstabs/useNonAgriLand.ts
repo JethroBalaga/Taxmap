@@ -82,31 +82,24 @@ export const useNonAgriLand = (formId: string | undefined) => {
 
     // Add calculation function for value adjustments
     const calculateValueAdjustment = (adjustmentType: string, adjustmentFactor: string, rate: number, area: number): string => {
-        if (!adjustmentFactor || !rate || !area) {
+        if (!adjustmentFactor || !rate) {
             return 'N/A';
         }
 
         try {
             const factor = parseFloat(adjustmentFactor) / 100; // Convert to percentage
-            const firstValue = rate * factor;
-            const valueAdjustment = firstValue * area;
 
-            // Different calculation methods for different adjustment types
             switch (adjustmentType) {
                 case 'Corner Influence':
                     // Corner Influence: Rate × Adjustment Factor × Area
                     return (rate * factor * area).toFixed(2);
                 
                 case 'Stripping':
-                    // Stripping might have different calculation
-                    return (rate * factor * area).toFixed(2);
-                
-                case 'Commercial Frontage':
-                    // Commercial Frontage calculation
-                    return (rate * factor * area).toFixed(2);
+                    // Stripping: Rate × Adjustment Factor
+                    return (rate * factor).toFixed(2);
                 
                 default:
-                    return (rate * factor * area).toFixed(2);
+                    return 'N/A';
             }
         } catch (error) {
             console.error('Error calculating value adjustment:', error);
