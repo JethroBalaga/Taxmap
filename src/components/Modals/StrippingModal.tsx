@@ -15,6 +15,7 @@ import {
 } from '@ionic/react';
 import { closeOutline } from 'ionicons/icons';
 import { LandAdjustmentData } from '../../utils/landAdjustmentLocalStorage';
+import SubmitButton from '../GlobalComponent/SubmitButton';
 import '../../CSS/modal.css';
 
 interface StrippingModalProps {
@@ -47,6 +48,7 @@ const StrippingModal: React.FC<StrippingModalProps> = ({
   area
 }) => {
   const [strippingAdjustment, setStrippingAdjustment] = useState<LandAdjustmentData | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (isOpen && landAdjustments.length > 0) {
@@ -71,6 +73,22 @@ const StrippingModal: React.FC<StrippingModalProps> = ({
       }
     }
   }, [isOpen, landAdjustments, setDescription, setAdjustmentFactor]);
+
+  const handleSubmit = async () => {
+    setIsSubmitting(true);
+    console.log('Stripping modal submit clicked');
+    console.log('Additional Factor (Strip Area):', additionalFactor);
+    console.log('Adjustment Factor:', strippingAdjustment?.adjustment_factor);
+    console.log('Description:', description);
+    console.log('Value Info ID:', valueInfoId);
+    
+    // TODO: Add functionality to save the stripping adjustment
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    setIsSubmitting(false);
+    onDismiss();
+  };
 
   return (
     <IonModal isOpen={isOpen} onDidDismiss={onDismiss} className="custom-wide-modal">
@@ -188,6 +206,23 @@ const StrippingModal: React.FC<StrippingModalProps> = ({
                 type="number"
               />
             </IonItem>
+          </div>
+
+          {/* Submit Button Section - Single Centered Button */}
+          <div style={{ 
+            width: '100%', 
+            maxWidth: '400px', 
+            marginTop: '32px',
+            display: 'flex', 
+            justifyContent: 'center'
+          }}>
+            <SubmitButton
+              label="Submit Stripping"
+              onClick={handleSubmit}
+              disabled={!additionalFactor || isSubmitting}
+              loading={isSubmitting}
+              className="modal-submit-btn"
+            />
           </div>
         </div>
       </IonContent>
