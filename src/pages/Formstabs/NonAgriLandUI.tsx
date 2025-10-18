@@ -39,7 +39,7 @@ interface NonAgriLandUIProps {
     subclassRates: any[];
     isLoadingRates: boolean;
     getStrippingInfo: () => { currentCount: number; nextNumber: number; hasStripping: boolean; canAddMore: boolean; remainingArea: number; totalStripArea: number };
-    getStrippingAdjustment: (stripNumber: number) => LandAdjustmentData | null; // Add this prop
+    getStrippingAdjustment: (stripNumber: number) => LandAdjustmentData | null;
     
     // Handlers
     onSubmit: () => void;
@@ -84,35 +84,22 @@ const getIconComponent = (iconName: string) => {
     }
 };
 
-// Get icon label based on whether adjustment already exists - FIXED LOGIC
+// Get icon label based on whether adjustment already exists - SIMPLIFIED
 const getIconLabel = (adjustmentType: string, currentAdjustments: any[], getStrippingInfoProp: any) => {
     if (adjustmentType === 'Stripping') {
-        const hasExistingAdjustment = currentAdjustments.some(
-            adj => adj.adjustment_type === adjustmentType
-        );
         const { nextNumber } = getStrippingInfoProp();
         
-        if (hasExistingAdjustment) {
-            // For update, show the current strip number
-            switch (nextNumber - 1) {
-                case 1: return "Update 1st Strip";
-                case 2: return "Update 2nd Strip";
-                case 3: return "Update 3rd Strip";
-                case 4: return "Update 4th Strip";
-                default: return "Update Strip";
-            }
-        } else {
-            // For add, show the next available strip
-            switch (nextNumber) {
-                case 1: return "Add 1st Strip";
-                case 2: return "Add 2nd Strip";
-                case 3: return "Add 3rd Strip";
-                case 4: return "Add 4th Strip";
-                default: return "Add Strip";
-            }
+        // ALWAYS show "Add Xth Strip" regardless of existing adjustments
+        switch (nextNumber) {
+            case 1: return "Add 1st Strip";
+            case 2: return "Add 2nd Strip";
+            case 3: return "Add 3rd Strip";
+            case 4: return "Add 4th Strip";
+            default: return "Add Strip";
         }
     }
     
+    // For other adjustment types, keep the original logic
     const hasExistingAdjustment = currentAdjustments.some(
         adj => adj.adjustment_type === adjustmentType
     );
@@ -152,8 +139,8 @@ export const NonAgriLandUI: React.FC<NonAgriLandUIProps> = ({
     valueInfoId,
     subclassRates,
     isLoadingRates,
-    getStrippingInfo, // This is the prop function
-    getStrippingAdjustment, // Add this prop
+    getStrippingInfo,
+    getStrippingAdjustment,
     
     // Handlers
     onSubmit,
@@ -265,10 +252,16 @@ export const NonAgriLandUI: React.FC<NonAgriLandUIProps> = ({
                                                 handleIconClick(item.adjustmentType);
                                             }
                                         } else {
-                                            if (hasExistingAdjustment) {
-                                                handleUpdateIconClick(item.adjustmentType);
-                                            } else {
+                                            // For Stripping, always use handleIconClick (Add functionality)
+                                            if (item.adjustmentType === 'Stripping') {
                                                 handleIconClick(item.adjustmentType);
+                                            } else {
+                                                // For other adjustments, use update if exists
+                                                if (hasExistingAdjustment) {
+                                                    handleUpdateIconClick(item.adjustmentType);
+                                                } else {
+                                                    handleIconClick(item.adjustmentType);
+                                                }
                                             }
                                         }
                                     }}
@@ -359,7 +352,7 @@ export const NonAgriLandUI: React.FC<NonAgriLandUIProps> = ({
                 valueInfoId={valueInfoId}
                 area={formData?.area || 0}
                 getStrippingInfo={getStrippingInfo}
-                getStrippingAdjustment={getStrippingAdjustment} // Pass this prop
+                getStrippingAdjustment={getStrippingAdjustment}
             />
 
             {/* Delete Confirmation Alert */}
