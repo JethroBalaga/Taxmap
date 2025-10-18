@@ -15,6 +15,7 @@ import {
 } from '@ionic/react';
 import { closeOutline } from 'ionicons/icons';
 import { LandAdjustmentData } from '../../utils/landAdjustmentLocalStorage';
+import { NonAgriAdjustmentLocalStorage } from '../../utils/tablestorages/NonAgriAdjustmentLocalStorage';
 import SubmitButton from '../GlobalComponent/SubmitButton';
 import '../../CSS/modal.css';
 
@@ -75,19 +76,47 @@ const StrippingModal: React.FC<StrippingModalProps> = ({
   }, [isOpen, landAdjustments, setDescription, setAdjustmentFactor]);
 
   const handleSubmit = async () => {
+    if (!strippingAdjustment || !additionalFactor) {
+      console.error('Missing required data for submission');
+      return;
+    }
+
     setIsSubmitting(true);
-    console.log('Stripping modal submit clicked');
-    console.log('Additional Factor (Strip Area):', additionalFactor);
-    console.log('Adjustment Factor:', strippingAdjustment?.adjustment_factor);
-    console.log('Description:', description);
-    console.log('Value Info ID:', valueInfoId);
     
-    // TODO: Add functionality to save the stripping adjustment
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    setIsSubmitting(false);
-    onDismiss();
+    try {
+      console.log('Saving stripping adjustment data:');
+      console.log('Value Info ID:', valueInfoId);
+      console.log('Adjustment ID:', strippingAdjustment.adjustment_id);
+      console.log('Strip Area (Additional Factor):', additionalFactor);
+      
+      // Convert additionalFactor to number
+      const stripAreaNumber = parseFloat(additionalFactor);
+      
+      if (isNaN(stripAreaNumber)) {
+        console.error('Invalid strip area value');
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Save to NonAgriAdjustmentLocalStorage
+      const savedAdjustment = NonAgriAdjustmentLocalStorage.saveNonAgriAdjustment({
+        valueInfoId: valueInfoId,
+        adjustmentId: strippingAdjustment.adjustment_id,
+        additionalFactor: stripAreaNumber
+      });
+
+      console.log('Successfully saved stripping adjustment:', savedAdjustment);
+      
+      // Show success message or handle success state
+      // You might want to add a toast notification here
+      
+    } catch (error) {
+      console.error('Error saving stripping adjustment:', error);
+      // You might want to add an error toast notification here
+    } finally {
+      setIsSubmitting(false);
+      onDismiss();
+    }
   };
 
   return (
@@ -156,6 +185,27 @@ const StrippingModal: React.FC<StrippingModalProps> = ({
             </IonItem>
           </div>
 
+          {/* Adjustment ID Display */}
+          <div style={{ width: '100%', maxWidth: '400px', marginBottom: '16px', textAlign: 'center' }}>
+            <IonItem className="custom-input" lines="none">
+              <IonLabel position="stacked" className="input-label">
+                Adjustment ID
+              </IonLabel>
+              <div style={{ 
+                padding: '12px', 
+                backgroundColor: '#f8f9fa', 
+                border: '1px solid #e2e8f0', 
+                borderRadius: '8px', 
+                marginTop: '8px',
+                textAlign: 'center',
+                fontSize: '14px',
+                color: '#666'
+              }}>
+                {strippingAdjustment?.adjustment_id || 'N/A'}
+              </div>
+            </IonItem>
+          </div>
+
           {/* Description Display (Fixed as STRIPPING 1) */}
           <div style={{ width: '100%', maxWidth: '400px', marginBottom: '24px', textAlign: 'center' }}>
             <IonItem className="custom-input" lines="none">
@@ -219,7 +269,7 @@ const StrippingModal: React.FC<StrippingModalProps> = ({
             <SubmitButton
               label="Submit Stripping"
               onClick={handleSubmit}
-              disabled={!additionalFactor || isSubmitting}
+              disabled={!additionalFactor || isSubmitting || !strippingAdjustment}
               loading={isSubmitting}
               className="modal-submit-btn"
             />
