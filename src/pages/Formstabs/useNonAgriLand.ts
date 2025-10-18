@@ -282,9 +282,13 @@ export const useNonAgriLand = (formId: string | undefined) => {
 
     const currentAdjustments = getCombinedAdjustmentData();
 
-    // Check if Corner Influence adjustment exists
+    // Check if adjustments exist
     const hasCornerInfluence = currentAdjustments.some(
         adj => adj.adjustment_type === 'Corner Influence'
+    );
+
+    const hasStripping = currentAdjustments.some(
+        adj => adj.adjustment_type === 'Stripping'
     );
 
     const handleBack = () => {
@@ -457,17 +461,20 @@ export const useNonAgriLand = (formId: string | undefined) => {
         setAdjustmentToDelete(null);
     };
 
-    // Filter icons based on classification AND whether Corner Influence exists
+    // Filter icons based on classification AND mutual exclusion rules
     const getVisibleIcons = () => {
         const classification = formData?.classification;
         if (!classification) return adjustmentIcons;
 
         const classificationFilteredIcons = adjustmentIcons.filter(icon => !icon.hideFor.includes(classification));
         
-        // Hide Stripping icon if Corner Influence already exists
+        // Mutual exclusion: Hide Stripping if Corner Influence exists, and vice versa
         return classificationFilteredIcons.filter(icon => {
             if (icon.adjustmentType === 'Stripping' && hasCornerInfluence) {
-                return false; // Hide Stripping
+                return false; // Hide Stripping when Corner Influence exists
+            }
+            if (icon.adjustmentType === 'Corner Influence' && hasStripping) {
+                return false; // Hide Corner Influence when Stripping exists
             }
             return true; // Keep all other icons
         });
@@ -499,7 +506,8 @@ export const useNonAgriLand = (formId: string | undefined) => {
         visibleIcons,
         subclassRates,
         isLoadingRates,
-        hasCornerInfluence, // Export for testing if needed
+        hasCornerInfluence,
+        hasStripping, // Export for testing if needed
         
         // Handlers
         handleBack,
