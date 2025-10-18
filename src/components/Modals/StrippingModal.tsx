@@ -33,7 +33,7 @@ interface StrippingModalProps {
   isLoadingAdjustments: boolean;
   valueInfoId: string;
   area: number;
-  getStrippingInfo: () => { currentCount: number; nextNumber: number; hasStripping: boolean; canAddMore: boolean };
+  getStrippingInfo: () => { currentCount: number; nextNumber: number; hasStripping: boolean; canAddMore: boolean; remainingArea: number; totalStripArea: number };
 }
 
 const StrippingModal: React.FC<StrippingModalProps> = ({
@@ -56,34 +56,49 @@ const StrippingModal: React.FC<StrippingModalProps> = ({
   const [remainingArea, setRemainingArea] = useState<number>(area);
   const [stripAreaError, setStripAreaError] = useState<string>('');
   const [currentStripNumber, setCurrentStripNumber] = useState<number>(1);
+  const [availableArea, setAvailableArea] = useState<number>(area);
 
   useEffect(() => {
     if (isOpen) {
-      const { nextNumber } = getStrippingInfo();
+      const { nextNumber, remainingArea: currentRemainingArea } = getStrippingInfo();
       setCurrentStripNumber(nextNumber);
+      setAvailableArea(currentRemainingArea); // Use remaining area for subsequent strips
       
-      if (landAdjustments.length > 0) {
-        // Find the appropriate stripping adjustment based on the sequence
-        const strippingAdjustmentToFind = landAdjustments.find(
-          adj => adj.adjustment_type === 'Stripping' && adj.description === `STRIPPING ${nextNumber}`
-        );
+      // Find the stripping adjustment from land adjustments
+      const strippingAdjustmentToFind = landAdjustments.find(
+        adj => adj.adjustment_type === 'Stripping'
+      );
+      
+      console.log(`Setting up stripping modal for strip ${nextNumber}`);
+      console.log('Available area:', currentRemainingArea);
+      console.log('Found stripping adjustment:', strippingAdjustmentToFind);
+      
+      if (strippingAdjustmentToFind) {
+        setStrippingAdjustment(strippingAdjustmentToFind);
+        setDescription(`STRIPPING ${nextNumber}`);
+        setAdjustmentFactor(strippingAdjustmentToFind.adjustment_factor);
         
-        console.log(`Searching for STRIPPING ${nextNumber} adjustment in:`, landAdjustments);
-        console.log('Found stripping adjustment:', strippingAdjustmentToFind);
+        // Check if there's existing additional factor for this strip
+        const existingAdjustment = NonAgriAdjustmentLocalStorage.getAdjustmentsByValueInfoId(valueInfoId)
+          .find(adj => adj.adjustmentId === strippingAdjustmentToFind.adjustment_id);
         
-        if (strippingAdjustmentToFind) {
-          setStrippingAdjustment(strippingAdjustmentToFind);
-          setDescription(`STRIPPING ${nextNumber}`);
-          setAdjustmentFactor(strippingAdjustmentToFind.adjustment_factor);
-        } else {
-          console.warn(`STRIPPING ${nextNumber} adjustment not found in land adjustments`);
-          setStrippingAdjustment(null);
-          setDescription(`STRIPPING ${nextNumber}`);
-          setAdjustmentFactor('');
+        if (existingAdjustment) {
+          const existingAdditionalFactor = NonAgriAdjustmentLocalStorage.getAdditionalFactor(
+            valueInfoId, 
+            strippingAdjustmentToFind.adjustment_id
+          );
+          if (existingAdditionalFactor) {
+            setAdditionalFactor(existingAdditionalFactor.toString());
+          }
         }
+      } else {
+        console.warn('Stripping adjustment not found in land adjustments');
+        setStrippingAdjustment(null);
+        setDescription(`STRIPPING ${nextNumber}`);
+        setAdjustmentFactor('');
       }
     }
-  }, [isOpen, landAdjustments, setDescription, setAdjustmentFactor, getStrippingInfo]);
+  }, [isOpen, landAdjustments, setDescription, setAdjustmentFactor, getStrippingInfo, valueInfoId]);
 
   // Calculate remaining area when additionalFactor changes
   useEffect(() => {
@@ -91,26 +106,26 @@ const StrippingModal: React.FC<StrippingModalProps> = ({
       const stripArea = parseFloat(additionalFactor);
       
       if (!isNaN(stripArea)) {
-        // Validate strip area
-        if (stripArea >= area) {
-          setStripAreaError('Strip Area cannot be greater than or equal to total Area');
+        // Validate strip area against available area
+        if (stripArea > availableArea) {
+          setStripAreaError(`Strip Area cannot be greater than available area (${availableArea.toLocaleString()})`);
           setRemainingArea(0);
         } else if (stripArea <= 0) {
           setStripAreaError('Strip Area must be greater than 0');
-          setRemainingArea(area);
+          setRemainingArea(availableArea);
         } else {
           setStripAreaError('');
-          setRemainingArea(area - stripArea);
+          setRemainingArea(availableArea - stripArea);
         }
       } else {
         setStripAreaError('');
-        setRemainingArea(area);
+        setRemainingArea(availableArea);
       }
     } else {
       setStripAreaError('');
-      setRemainingArea(area);
+      setRemainingArea(availableArea);
     }
-  }, [additionalFactor, area]);
+  }, [additionalFactor, availableArea]);
 
   const handleStripAreaChange = (value: string) => {
     setAdditionalFactor(value);
@@ -135,7 +150,7 @@ const StrippingModal: React.FC<StrippingModalProps> = ({
       // Convert additionalFactor to number
       const stripAreaNumber = parseFloat(additionalFactor);
       
-      if (isNaN(stripAreaNumber) || stripAreaNumber >= area || stripAreaNumber <= 0) {
+      if (isNaN(stripAreaNumber) || stripAreaNumber > availableArea || stripAreaNumber <= 0) {
         console.error('Invalid strip area value');
         setIsSubmitting(false);
         return;
@@ -216,11 +231,11 @@ const StrippingModal: React.FC<StrippingModalProps> = ({
             </IonItem>
           </div>
 
-          {/* Area Display */}
+          {/* Available Area Display */}
           <div style={{ width: '100%', maxWidth: '400px', marginBottom: '16px', textAlign: 'center' }}>
             <IonItem className="custom-input" lines="none">
               <IonLabel position="stacked" className="input-label">
-                Area
+                {currentStripNumber === 1 ? 'Total Area' : 'Available Area'}
               </IonLabel>
               <div style={{ 
                 padding: '12px', 
@@ -232,7 +247,7 @@ const StrippingModal: React.FC<StrippingModalProps> = ({
                 fontSize: '14px',
                 color: '#666'
               }}>
-                {area.toLocaleString()}
+                {availableArea.toLocaleString()}
               </div>
             </IonItem>
           </div>
@@ -274,7 +289,7 @@ const StrippingModal: React.FC<StrippingModalProps> = ({
                 fontSize: '14px',
                 color: '#666'
               }}>
-                S{currentStripNumber}
+                STRIPPING {currentStripNumber}
               </div>
             </IonItem>
           </div>
@@ -302,7 +317,7 @@ const StrippingModal: React.FC<StrippingModalProps> = ({
               </IonLabel>
               <IonInput
                 value={additionalFactor}
-                placeholder="Enter strip area"
+                placeholder={`Enter strip area (max: ${availableArea.toLocaleString()})`}
                 onIonInput={(e) => handleStripAreaChange(e.detail.value!)}
                 className="modal-input"
                 type="number"

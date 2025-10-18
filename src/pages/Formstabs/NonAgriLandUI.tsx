@@ -38,7 +38,7 @@ interface NonAgriLandUIProps {
     valueInfoId: string;
     subclassRates: any[];
     isLoadingRates: boolean;
-    getStrippingInfo: () => { currentCount: number; nextNumber: number; hasStripping: boolean; canAddMore: boolean };
+    getStrippingInfo: () => { currentCount: number; nextNumber: number; hasStripping: boolean; canAddMore: boolean; remainingArea: number; totalStripArea: number };
     
     // Handlers
     onSubmit: () => void;
@@ -83,13 +83,33 @@ const getIconComponent = (iconName: string) => {
     }
 };
 
-// Get icon label based on whether adjustment already exists
-const getIconLabel = (adjustmentType: string, currentAdjustments: any[]) => {
+// Get icon label based on whether adjustment already exists - FIXED LOGIC
+const getIconLabel = (adjustmentType: string, currentAdjustments: any[], getStrippingInfoProp: any) => {
     if (adjustmentType === 'Stripping') {
         const hasExistingAdjustment = currentAdjustments.some(
             adj => adj.adjustment_type === adjustmentType
         );
-        return hasExistingAdjustment ? 'Update 1st Strip' : 'Add 1st Strip';
+        const { nextNumber } = getStrippingInfoProp();
+        
+        if (hasExistingAdjustment) {
+            // For update, show the current strip number
+            switch (nextNumber - 1) {
+                case 1: return "Update 1st Strip";
+                case 2: return "Update 2nd Strip";
+                case 3: return "Update 3rd Strip";
+                case 4: return "Update 4th Strip";
+                default: return "Update Strip";
+            }
+        } else {
+            // For add, show the next available strip
+            switch (nextNumber) {
+                case 1: return "Add 1st Strip";
+                case 2: return "Add 2nd Strip";
+                case 3: return "Add 3rd Strip";
+                case 4: return "Add 4th Strip";
+                default: return "Add Strip";
+            }
+        }
     }
     
     const hasExistingAdjustment = currentAdjustments.some(
@@ -131,7 +151,7 @@ export const NonAgriLandUI: React.FC<NonAgriLandUIProps> = ({
     valueInfoId,
     subclassRates,
     isLoadingRates,
-    getStrippingInfo,
+    getStrippingInfo, // This is the prop function
     
     // Handlers
     onSubmit,
@@ -149,6 +169,8 @@ export const NonAgriLandUI: React.FC<NonAgriLandUIProps> = ({
     setAdjustmentToDelete
 }) => {
     const gridData = getGridData(formData);
+    // Use the prop function to get stripping info
+    const { remainingArea, currentCount } = getStrippingInfo();
 
     return (
         <>
@@ -170,6 +192,26 @@ export const NonAgriLandUI: React.FC<NonAgriLandUIProps> = ({
                     </IonGrid>
                 </IonCardContent>
             </IonCard>
+
+            {/* Remaining Area Display */}
+            {currentCount > 0 && (
+                <IonCard>
+                    <IonCardContent>
+                        <div style={{ textAlign: 'center', padding: '10px' }}>
+                            <IonText>
+                                <strong>Remaining Area after {currentCount} strip(s): </strong>
+                                <span style={{ 
+                                    color: '#2e7d32', 
+                                    fontWeight: 'bold',
+                                    fontSize: '1.1em'
+                                }}>
+                                    {remainingArea.toLocaleString()}
+                                </span>
+                            </IonText>
+                        </div>
+                    </IonCardContent>
+                </IonCard>
+            )}
 
             {/* NEW: Simplified Subclass Rate Information Table with Base Market Value */}
             <IonCard>
@@ -233,7 +275,7 @@ export const NonAgriLandUI: React.FC<NonAgriLandUIProps> = ({
                                     <IonText color="medium">
                                         {item.adjustmentType === 'Delete' ?
                                             (selectedRow ? 'Delete Selected' : 'Select to Delete') :
-                                            getIconLabel(item.adjustmentType, currentAdjustments)
+                                            getIconLabel(item.adjustmentType, currentAdjustments, getStrippingInfo)
                                         }
                                     </IonText>
                                 </div>
