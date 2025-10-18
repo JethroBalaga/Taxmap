@@ -1,3 +1,4 @@
+// src/pages/useNonAgriLand.tsx
 import { useState, useEffect } from "react";
 import { useHistory, useLocation } from 'react-router-dom';
 import { FormDataLocalStorage } from '../../utils/tablestorages/FormDataLocalStorage';
@@ -53,6 +54,7 @@ export const useNonAgriLand = (formId: string | undefined) => {
     // Modal states
     const [showAdjustmentModal, setShowAdjustmentModal] = useState(false);
     const [showUpdateAdjustmentModal, setShowUpdateAdjustmentModal] = useState(false);
+    const [showStrippingModal, setShowStrippingModal] = useState(false);
     const [selectedAdjustmentType, setSelectedAdjustmentType] = useState('');
     const [description, setDescription] = useState('');
     const [adjustmentFactor, setAdjustmentFactor] = useState('');
@@ -416,7 +418,15 @@ export const useNonAgriLand = (formId: string | undefined) => {
             } else {
                 showToastMessage('Please select an adjustment to delete', 'warning');
             }
+        } else if (adjustmentType === 'Stripping') {
+            // Special handling for Stripping - open specialized modal
+            setSelectedAdjustmentType(adjustmentType);
+            setDescription('');
+            setAdjustmentFactor('');
+            setAdditionalFactor('');
+            setShowStrippingModal(true);
         } else {
+            // Use generic modal for other adjustments
             setSelectedAdjustmentType(adjustmentType);
             setDescription('');
             setAdjustmentFactor('');
@@ -433,7 +443,11 @@ export const useNonAgriLand = (formId: string | undefined) => {
         setSelectedAdjustmentType(adjustmentType);
         setDescription(existingAdj?.description || '');
         setAdjustmentFactor(existingAdj?.adjustment_factor?.replace('%', '') || '');
-        setShowUpdateAdjustmentModal(true);
+        if (adjustmentType === 'Stripping') {
+            setShowStrippingModal(true);
+        } else {
+            setShowUpdateAdjustmentModal(true);
+        }
     };
 
     const handleModalDismiss = () => {
@@ -447,6 +461,16 @@ export const useNonAgriLand = (formId: string | undefined) => {
 
     const handleUpdateModalDismiss = () => {
         setShowUpdateAdjustmentModal(false);
+        setSelectedAdjustmentForUpdate(null);
+        setSelectedAdjustmentType('');
+        setDescription('');
+        setAdjustmentFactor('');
+        setAdditionalFactor('');
+        loadLandAdjustments();
+    };
+
+    const handleStrippingModalDismiss = () => {
+        setShowStrippingModal(false);
         setSelectedAdjustmentForUpdate(null);
         setSelectedAdjustmentType('');
         setDescription('');
@@ -511,6 +535,7 @@ export const useNonAgriLand = (formId: string | undefined) => {
         isSubmitting,
         showAdjustmentModal,
         showUpdateAdjustmentModal,
+        showStrippingModal,
         selectedAdjustmentType,
         description,
         adjustmentFactor,
@@ -535,6 +560,7 @@ export const useNonAgriLand = (formId: string | undefined) => {
         handleUpdateIconClick,
         handleModalDismiss,
         handleUpdateModalDismiss,
+        handleStrippingModalDismiss,
         handleRowClick,
         handleDeleteConfirm,
         showToastMessage,
