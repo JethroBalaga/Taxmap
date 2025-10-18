@@ -1,4 +1,3 @@
-// src/pages/components/NonAgriLandUI.tsx
 import React from "react";
 import {
     IonCard,
