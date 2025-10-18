@@ -205,7 +205,7 @@ const StrippingModal: React.FC<StrippingModalProps> = ({
           <div style={{ width: '100%', maxWidth: '400px', marginBottom: '16px', textAlign: 'center' }}>
             <IonItem className="custom-input" lines="none">
               <IonLabel position="stacked" className="input-label">
-                Total Area
+                Area
               </IonLabel>
               <div style={{ 
                 padding: '12px', 
@@ -217,7 +217,7 @@ const StrippingModal: React.FC<StrippingModalProps> = ({
                 fontSize: '14px',
                 color: '#666'
               }}>
-                {area.toLocaleString()} sqm
+                {area.toLocaleString()}
               </div>
             </IonItem>
           </div>
@@ -317,7 +317,7 @@ const StrippingModal: React.FC<StrippingModalProps> = ({
                 color: '#2e7d32',
                 fontWeight: 'bold'
               }}>
-                {remainingArea.toLocaleString()} sqm
+                {remainingArea.toLocaleString()}
               </div>
             </IonItem>
           </div>

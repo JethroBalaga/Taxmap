@@ -296,7 +296,7 @@ export const useNonAgriLand = (formId: string | undefined) => {
                     adjustment_type: landAdj?.adjustment_type || 'N/A',
                     description: landAdj?.description || 'N/A',
                     adjustment_factor: landAdj?.adjustment_factor ? `${landAdj.adjustment_factor}%` : 'N/A',
-                    additional_factor: additionalFactorValue ? `${additionalFactorValue.toLocaleString()} sqm` : 'N/A',
+                    additional_factor: additionalFactorValue ? additionalFactorValue.toLocaleString() : 'N/A',
                     value_adjustment: valueAdjustment
                 };
             }
