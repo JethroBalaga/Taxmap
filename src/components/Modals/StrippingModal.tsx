@@ -49,17 +49,28 @@ const StrippingModal: React.FC<StrippingModalProps> = ({
   const [strippingAdjustment, setStrippingAdjustment] = useState<LandAdjustmentData | null>(null);
 
   useEffect(() => {
-    // Find the "Stripping 1" adjustment
-    const stripping1Adjustment = landAdjustments.find(
-      adj => adj.adjustment_type === 'Stripping' && adj.description === 'Stripping 1'
-    );
-    
-    if (stripping1Adjustment) {
-      setStrippingAdjustment(stripping1Adjustment);
-      setDescription('Stripping 1');
-      setAdjustmentFactor(stripping1Adjustment.adjustment_factor);
+    if (isOpen && landAdjustments.length > 0) {
+      console.log('Searching for STRIPPING 1 adjustment in:', landAdjustments);
+      
+      // Find the "STRIPPING 1" adjustment
+      const stripping1Adjustment = landAdjustments.find(
+        adj => adj.adjustment_type === 'Stripping' && adj.description === 'STRIPPING 1'
+      );
+      
+      console.log('Found STRIPPING 1 adjustment:', stripping1Adjustment);
+      
+      if (stripping1Adjustment) {
+        setStrippingAdjustment(stripping1Adjustment);
+        setDescription('STRIPPING 1');
+        setAdjustmentFactor(stripping1Adjustment.adjustment_factor);
+      } else {
+        console.warn('STRIPPING 1 adjustment not found in land adjustments');
+        setStrippingAdjustment(null);
+        setDescription('STRIPPING 1');
+        setAdjustmentFactor('');
+      }
     }
-  }, [landAdjustments, setDescription, setAdjustmentFactor]);
+  }, [isOpen, landAdjustments, setDescription, setAdjustmentFactor]);
 
   return (
     <IonModal isOpen={isOpen} onDidDismiss={onDismiss} className="custom-wide-modal">
@@ -127,7 +138,7 @@ const StrippingModal: React.FC<StrippingModalProps> = ({
             </IonItem>
           </div>
 
-          {/* Description Display (Fixed as Stripping 1) */}
+          {/* Description Display (Fixed as STRIPPING 1) */}
           <div style={{ width: '100%', maxWidth: '400px', marginBottom: '24px', textAlign: 'center' }}>
             <IonItem className="custom-input" lines="none">
               <IonLabel position="stacked" className="input-label">
@@ -143,7 +154,7 @@ const StrippingModal: React.FC<StrippingModalProps> = ({
                 fontSize: '14px',
                 color: '#666'
               }}>
-                Stripping 1
+                STRIPPING 1
               </div>
             </IonItem>
           </div>
