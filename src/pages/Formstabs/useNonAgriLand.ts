@@ -317,46 +317,55 @@ export const useNonAgriLand = (formId: string | undefined) => {
     );
 
     // Get the next available stripping number and current stripping count
-   // Get the next available stripping number and current stripping count
-const getStrippingInfo = () => {
-    const strippingAdjustments = currentAdjustments.filter(
-        adj => adj.adjustment_type === 'Stripping'
-    );
-    
-    const currentCount = strippingAdjustments.length;
-    const nextNumber = currentCount + 1;
-    
-    // Calculate remaining area after all strips
-    let totalStripArea = 0;
-    let remainingArea = formData?.area || 0;
-    
-    // Only calculate if we have stripping adjustments
-    if (strippingAdjustments.length > 0 && valueInfoId) {
-        totalStripArea = strippingAdjustments.reduce((total, adj) => {
-            if (adj.adjustmentId) {
-                const additionalFactorValue = NonAgriAdjustmentLocalStorage.getAdditionalFactor(
-                    valueInfoId, 
-                    adj.adjustmentId
-                );
-                if (additionalFactorValue) {
-                    return total + additionalFactorValue;
-                }
-            }
-            return total;
-        }, 0);
+    const getStrippingInfo = () => {
+        const strippingAdjustments = currentAdjustments.filter(
+            adj => adj.adjustment_type === 'Stripping'
+        );
         
-        remainingArea = Math.max(0, (formData?.area || 0) - totalStripArea);
-    }
-    
-    return {
-        currentCount,
-        nextNumber,
-        hasStripping: currentCount > 0,
-        canAddMore: currentCount < 4 && remainingArea > 0,
-        remainingArea: remainingArea,
-        totalStripArea: totalStripArea
+        const currentCount = strippingAdjustments.length;
+        const nextNumber = currentCount + 1;
+        
+        // Calculate remaining area after all strips - get directly from localStorage
+        let totalStripArea = 0;
+        
+        if (strippingAdjustments.length > 0 && valueInfoId) {
+            totalStripArea = strippingAdjustments.reduce((total, adj) => {
+                if (adj.adjustmentId) {
+                    const additionalFactorValue = NonAgriAdjustmentLocalStorage.getAdditionalFactor(
+                        valueInfoId, 
+                        adj.adjustmentId
+                    );
+                    if (additionalFactorValue) {
+                        return total + additionalFactorValue;
+                    }
+                }
+                return total;
+            }, 0);
+        }
+        
+        const remainingArea = Math.max(0, (formData?.area || 0) - totalStripArea);
+        
+        return {
+            currentCount,
+            nextNumber,
+            hasStripping: currentCount > 0,
+            canAddMore: currentCount < 4 && remainingArea > 0,
+            remainingArea: remainingArea,
+            totalStripArea: totalStripArea
+        };
     };
-};
+
+    // Get the correct stripping adjustment ID based on strip number
+    const getStrippingAdjustmentId = (stripNumber: number) => {
+        // Assuming your land adjustments have IDs like S1, S2, S3, S4 for stripping
+        return `S${stripNumber}`;
+    };
+
+    // Get the correct stripping adjustment based on strip number
+    const getStrippingAdjustment = (stripNumber: number) => {
+        const adjustmentId = getStrippingAdjustmentId(stripNumber);
+        return landAdjustments.find(adj => adj.adjustment_id === adjustmentId) || null;
+    };
 
     // Get icon label based on stripping sequence
     const getStrippingIconLabel = () => {
@@ -635,6 +644,7 @@ const getStrippingInfo = () => {
         hasCornerInfluence,
         hasStripping,
         getStrippingInfo,
+        getStrippingAdjustment, // Add this new function
 
         // Handlers
         handleBack,
