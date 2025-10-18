@@ -153,7 +153,7 @@ export const NonAgriLandUI: React.FC<NonAgriLandUIProps> = ({
                 </IonCardContent>
             </IonCard>
 
-            {/* NEW: Simplified Subclass Rate Information Table */}
+            {/* NEW: Simplified Subclass Rate Information Table with Base Market Value */}
             <IonCard>
                 <IonCardContent>
                     {isLoadingRates ? (

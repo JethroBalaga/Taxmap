@@ -93,16 +93,16 @@ export const useNonAgriLand = (formId: string | undefined) => {
                 case 'Corner Influence':
                     // Corner Influence: Rate × Adjustment Factor × Area
                     return (rate * factor * area).toFixed(2);
-                
+
                 case 'Stripping':
                     // Stripping: Rate × Adjustment Factor
                     return (rate * factor).toFixed(2);
-                
+
                 case 'Commercial Frontage':
                     // Commercial Frontage: First Value = Rate - 50%, then Value Adjustment = Adjustment Factor × First Value
                     const firstValue = rate * 0.5; // Rate - 50% means Rate × 50%
                     return (factor * firstValue).toFixed(2);
-                
+
                 default:
                     return 'N/A';
             }
@@ -114,7 +114,7 @@ export const useNonAgriLand = (formId: string | undefined) => {
 
     // Calculate base market value: Area × Rate
     const calculateBaseMarketValue = (rate: number, area: number): string => {
-        if (!rate || !area) {
+        if (isNaN(rate) || isNaN(area) || rate <= 0 || area <= 0) {
             return 'N/A';
         }
         try {
@@ -129,12 +129,12 @@ export const useNonAgriLand = (formId: string | undefined) => {
         if (formId) {
             setIsLoading(true);
             console.log('Loading non-agricultural land form data for ID:', formId);
-            
+
             // ALWAYS load from localStorage to get the latest data
             const storedFormData = FormDataLocalStorage.getFormData(formId);
             console.log('Loaded form data from localStorage:', storedFormData);
             setFormData(storedFormData);
-            
+
             // Fetch or create ValueInfo for this formId using the stored form data
             if (storedFormData) {
                 let valueInfo = ValueInfoLocalStorage.getValueInfoByFormDataId(formId);
@@ -146,7 +146,7 @@ export const useNonAgriLand = (formId: string | undefined) => {
                 }
                 setValueInfoId(valueInfo.id);
             }
-            
+
             setIsLoading(false);
 
             if (!storedFormData) {
@@ -172,26 +172,42 @@ export const useNonAgriLand = (formId: string | undefined) => {
 
     const loadSubclassRates = async () => {
         if (!formData?.subclass) return;
-        
+
         setIsLoadingRates(true);
         try {
             const ratesData = await getSubclassRateData();
             if (ratesData) {
                 // Get current rate for the form's subclass
-                const currentRate = await getCurrentRateForSubclass(formData.subclass);
+                const apiRate = await getCurrentRateForSubclass(formData.subclass);
                 const area = formData?.area || 0;
-                
+
+                // Ensure we have a string value
+                const rateString = apiRate ? String(apiRate) : '0';
+                // Safely parse to number
+                const rateNumber = parseFloat(rateString);
+                // Check if valid number
+                const isValidRate = !isNaN(rateNumber) && isFinite(rateNumber) && rateNumber >= 0;
+
+                const displayRate = isValidRate ? rateString : '0';
+                const calculatedRate = isValidRate ? rateNumber : 0;
+
                 // Create the rate display data with base market value
                 const rateDisplayData = [{
                     valueInfoId: valueInfoId,
-                    rate: currentRate || 'N/A',
-                    base_market_value: calculateBaseMarketValue(parseFloat(currentRate || '0'), area)
+                    rate: displayRate,
+                    base_market_value: calculateBaseMarketValue(calculatedRate, area)
                 }];
-                
+
                 setSubclassRates(rateDisplayData);
             }
         } catch (error) {
             console.error('Error loading subclass rates:', error);
+            // Set default values on error
+            setSubclassRates([{
+                valueInfoId: valueInfoId,
+                rate: '0',
+                base_market_value: 'N/A'
+            }]);
         } finally {
             setIsLoadingRates(false);
         }
@@ -239,8 +255,8 @@ export const useNonAgriLand = (formId: string | undefined) => {
         if (!valueInfoId || landAdjustments.length === 0) return [];
 
         const nonAgriAdjustments = NonAgriAdjustmentLocalStorage.getAdjustmentsByValueInfoId(valueInfoId);
-        
-        // Get the current rate and area for calculations
+
+        // Get the current rate and area for calculations - handle safely
         const currentRate = subclassRates.length > 0 ? parseFloat(subclassRates[0].rate) || 0 : 0;
         const area = formData?.area || 0;
 
@@ -418,15 +434,16 @@ export const useNonAgriLand = (formId: string | undefined) => {
 
     const handleDeleteConfirm = () => {
         if (adjustmentToDelete) {
+            // Use valueInfoId from the component's state
             const success = NonAgriAdjustmentLocalStorage.deleteNonAgriAdjustment(
-                adjustmentToDelete.valueInfoId,
+                valueInfoId, // This is the correct valueInfoId from state
                 adjustmentToDelete.adjustmentId
             );
 
             if (success) {
                 showToastMessage(`${adjustmentToDelete.adjustment_type} adjustment deleted successfully`, 'success');
                 setSelectedRow(null);
-                loadLandAdjustments();
+                loadLandAdjustments(); // Refresh the list
             } else {
                 showToastMessage('Error deleting adjustment', 'danger');
             }
@@ -468,7 +485,7 @@ export const useNonAgriLand = (formId: string | undefined) => {
         visibleIcons,
         subclassRates,
         isLoadingRates,
-        
+
         // Handlers
         handleBack,
         onSubmit,
