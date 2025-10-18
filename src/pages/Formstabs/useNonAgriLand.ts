@@ -65,6 +65,10 @@ export const useNonAgriLand = (formId: string | undefined) => {
     const [showDeleteAlert, setShowDeleteAlert] = useState(false);
     const [adjustmentToDelete, setAdjustmentToDelete] = useState<any>(null);
 
+    // Reverse deletion warning state
+    const [showReverseDeleteWarning, setShowReverseDeleteWarning] = useState(false);
+    const [reverseDeleteWarningMessage, setReverseDeleteWarningMessage] = useState('');
+
     // Selected row state
     const [selectedRow, setSelectedRow] = useState<any>(null);
 
@@ -268,7 +272,7 @@ export const useNonAgriLand = (formId: string | undefined) => {
 
             // Get additional factor from NonAgriAdjustmentLocalStorage
             const additionalFactorValue = NonAgriAdjustmentLocalStorage.getAdditionalFactor(
-                valueInfoId,
+                valueInfoId, 
                 nonAgriAdj.adjustmentId
             );
 
@@ -321,18 +325,18 @@ export const useNonAgriLand = (formId: string | undefined) => {
         const strippingAdjustments = currentAdjustments.filter(
             adj => adj.adjustment_type === 'Stripping'
         );
-
+        
         const currentCount = strippingAdjustments.length;
         const nextNumber = currentCount + 1;
-
+        
         // Calculate remaining area after all strips - get directly from localStorage
         let totalStripArea = 0;
-
+        
         if (strippingAdjustments.length > 0 && valueInfoId) {
             totalStripArea = strippingAdjustments.reduce((total, adj) => {
                 if (adj.adjustmentId) {
                     const additionalFactorValue = NonAgriAdjustmentLocalStorage.getAdditionalFactor(
-                        valueInfoId,
+                        valueInfoId, 
                         adj.adjustmentId
                     );
                     if (additionalFactorValue) {
@@ -342,9 +346,9 @@ export const useNonAgriLand = (formId: string | undefined) => {
                 return total;
             }, 0);
         }
-
+        
         const remainingArea = Math.max(0, (formData?.area || 0) - totalStripArea);
-
+        
         return {
             currentCount,
             nextNumber,
@@ -370,11 +374,11 @@ export const useNonAgriLand = (formId: string | undefined) => {
     // Get icon label based on stripping sequence
     const getStrippingIconLabel = () => {
         const { nextNumber, canAddMore } = getStrippingInfo();
-
+        
         if (!canAddMore) {
             return "Max Strips Reached";
         }
-
+        
         switch (nextNumber) {
             case 1: return "Add 1st Strip";
             case 2: return "Add 2nd Strip";
@@ -566,27 +570,35 @@ export const useNonAgriLand = (formId: string | undefined) => {
                 const strippingAdjustments = currentAdjustments.filter(
                     adj => adj.adjustment_type === 'Stripping'
                 );
-
-                if (strippingAdjustments.length > 0) {
+                
+                if (strippingAdjustments.length > 1) {
                     // Extract strip numbers from adjustment IDs (S1, S2, S3, S4)
                     const getStripNumber = (adj: any) => {
                         const match = adj.adjustmentId?.match(/S(\d+)/);
                         return match ? parseInt(match[1]) : 0;
                     };
 
+                    // Get all existing strip numbers
+                    const existingStripNumbers = strippingAdjustments.map(getStripNumber);
+                    
                     // Find the highest strip number (the one that should be deleted first)
-                    const highestStripNumber = Math.max(...strippingAdjustments.map(getStripNumber));
-
+                    const highestStripNumber = Math.max(...existingStripNumbers);
+                    
                     // Get the strip number of the adjustment to delete
                     const adjustmentStripNumber = getStripNumber(adjustmentToDelete);
-
-                    // Only allow deletion if it's the highest strip number (S4, then S3, then S2, then S1)
+                    
+                    // Only allow deletion if it's the highest strip number (S2, then S1)
                     if (adjustmentStripNumber !== highestStripNumber) {
-                        // Get all existing strip numbers sorted
-                        const existingStrips = Array.from(new Set(strippingAdjustments.map(getStripNumber))).sort((a, b) => a - b);
-                        const existingStripsText = existingStrips.map(num => `S${num}`).join(', ');
-
-                        showToastMessage(`You can only delete the highest strip first. Existing strips: ${existingStripsText}. Please delete S${highestStripNumber} first.`, 'warning');
+                        // Sort the existing strip numbers and format them
+                        const sortedStrips = [...existingStripNumbers].sort((a, b) => a - b);
+                        const existingStripsText = sortedStrips.map(num => `S${num}`).join(', ');
+                        
+                        // Use custom warning state
+                        setReverseDeleteWarningMessage(`You can only delete the highest strip first. Existing strips: ${existingStripsText}. Please delete S${highestStripNumber} first.`);
+                        setShowReverseDeleteWarning(true);
+                        
+                        // Reset states and deselect the row
+                        setSelectedRow(null);
                         setShowDeleteAlert(false);
                         setAdjustmentToDelete(null);
                         return;
@@ -611,6 +623,7 @@ export const useNonAgriLand = (formId: string | undefined) => {
         setShowDeleteAlert(false);
         setAdjustmentToDelete(null);
     };
+
     // Filter icons based on classification AND mutual exclusion rules
     const getVisibleIcons = () => {
         const classification = formData?.classification;
@@ -677,6 +690,10 @@ export const useNonAgriLand = (formId: string | undefined) => {
         hasStripping,
         getStrippingInfo,
         getStrippingAdjustment,
+        showReverseDeleteWarning,
+        setShowReverseDeleteWarning,
+        reverseDeleteWarningMessage,
+        setReverseDeleteWarningMessage,
 
         // Handlers
         handleBack,
