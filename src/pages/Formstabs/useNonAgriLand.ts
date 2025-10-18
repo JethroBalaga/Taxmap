@@ -112,6 +112,19 @@ export const useNonAgriLand = (formId: string | undefined) => {
         }
     };
 
+    // Calculate base market value: Area × Rate
+    const calculateBaseMarketValue = (rate: number, area: number): string => {
+        if (!rate || !area) {
+            return 'N/A';
+        }
+        try {
+            return (rate * area).toFixed(2);
+        } catch (error) {
+            console.error('Error calculating base market value:', error);
+            return 'N/A';
+        }
+    };
+
     const loadFormData = () => {
         if (formId) {
             setIsLoading(true);
@@ -166,11 +179,13 @@ export const useNonAgriLand = (formId: string | undefined) => {
             if (ratesData) {
                 // Get current rate for the form's subclass
                 const currentRate = await getCurrentRateForSubclass(formData.subclass);
+                const area = formData?.area || 0;
                 
-                // Create the simplified rate display data
+                // Create the rate display data with base market value
                 const rateDisplayData = [{
                     valueInfoId: valueInfoId,
-                    rate: currentRate || 'N/A' // No percentage sign
+                    rate: currentRate || 'N/A',
+                    base_market_value: calculateBaseMarketValue(parseFloat(currentRate || '0'), area)
                 }];
                 
                 setSubclassRates(rateDisplayData);
@@ -192,7 +207,7 @@ export const useNonAgriLand = (formId: string | undefined) => {
         if (formData?.subclass && valueInfoId) {
             loadSubclassRates();
         }
-    }, [formData?.subclass, valueInfoId]);
+    }, [formData?.subclass, valueInfoId, formData?.area]); // Added formData.area as dependency
 
     // Listen for form data updates from Forms page
     useEffect(() => {
