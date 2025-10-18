@@ -53,7 +53,10 @@ const NonAgriLandTable: React.FC = () => {
         hasCornerInfluence,
         hasStripping,
         getStrippingInfo,
-        getStrippingAdjustment, // Add this missing prop
+        getStrippingAdjustment,
+        showReverseDeleteWarning,
+        setShowReverseDeleteWarning,
+        reverseDeleteWarningMessage,
         
         // Handlers
         handleBack,
@@ -168,7 +171,10 @@ const NonAgriLandTable: React.FC = () => {
                     subclassRates={subclassRates}
                     isLoadingRates={isLoadingRates}
                     getStrippingInfo={getStrippingInfo}
-                    getStrippingAdjustment={getStrippingAdjustment} // Add this prop
+                    getStrippingAdjustment={getStrippingAdjustment}
+                    showReverseDeleteWarning={showReverseDeleteWarning}
+                    setShowReverseDeleteWarning={setShowReverseDeleteWarning}
+                    reverseDeleteWarningMessage={reverseDeleteWarningMessage}
                     
                     // Handlers
                     onSubmit={onSubmit}
