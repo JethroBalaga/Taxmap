@@ -50,6 +50,9 @@ const NonAgriLandTable: React.FC = () => {
         visibleIcons,
         subclassRates,
         isLoadingRates,
+        hasCornerInfluence,
+        hasStripping,
+        getStrippingInfo,
         
         // Handlers
         handleBack,
@@ -163,6 +166,7 @@ const NonAgriLandTable: React.FC = () => {
                     valueInfoId={valueInfoId}
                     subclassRates={subclassRates}
                     isLoadingRates={isLoadingRates}
+                    getStrippingInfo={getStrippingInfo}
                     
                     // Handlers
                     onSubmit={onSubmit}

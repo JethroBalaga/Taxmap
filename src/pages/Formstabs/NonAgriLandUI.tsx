@@ -38,6 +38,7 @@ interface NonAgriLandUIProps {
     valueInfoId: string;
     subclassRates: any[];
     isLoadingRates: boolean;
+    getStrippingInfo: () => { currentCount: number; nextNumber: number; hasStripping: boolean; canAddMore: boolean };
     
     // Handlers
     onSubmit: () => void;
@@ -130,6 +131,7 @@ export const NonAgriLandUI: React.FC<NonAgriLandUIProps> = ({
     valueInfoId,
     subclassRates,
     isLoadingRates,
+    getStrippingInfo,
     
     // Handlers
     onSubmit,
@@ -312,6 +314,7 @@ export const NonAgriLandUI: React.FC<NonAgriLandUIProps> = ({
                 isLoadingAdjustments={isLoadingAdjustments}
                 valueInfoId={valueInfoId}
                 area={formData?.area || 0}
+                getStrippingInfo={getStrippingInfo}
             />
 
             {/* Delete Confirmation Alert */}
