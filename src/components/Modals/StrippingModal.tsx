@@ -34,7 +34,7 @@ interface StrippingModalProps {
   valueInfoId: string;
   area: number;
   getStrippingInfo: () => { currentCount: number; nextNumber: number; hasStripping: boolean; canAddMore: boolean; remainingArea: number; totalStripArea: number };
-  getStrippingAdjustment: (stripNumber: number) => LandAdjustmentData | null; // Add this prop
+  getStrippingAdjustment: (stripNumber: number) => LandAdjustmentData | null;
 }
 
 const StrippingModal: React.FC<StrippingModalProps> = ({
@@ -51,7 +51,7 @@ const StrippingModal: React.FC<StrippingModalProps> = ({
   valueInfoId,
   area,
   getStrippingInfo,
-  getStrippingAdjustment // Use this new prop
+  getStrippingAdjustment
 }) => {
   const [strippingAdjustment, setStrippingAdjustment] = useState<LandAdjustmentData | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
