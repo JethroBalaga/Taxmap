@@ -83,7 +83,7 @@ export const useNonAgriLand = (formId: string | undefined) => {
     };
 
     // Add calculation function for value adjustments
-    const calculateValueAdjustment = (adjustmentType: string, adjustmentFactor: string, rate: number, area: number): string => {
+    const calculateValueAdjustment = (adjustmentType: string, adjustmentFactor: string, rate: number, area: number, additionalFactor?: number): string => {
         if (!adjustmentFactor || !rate) {
             return 'N/A';
         }
@@ -97,8 +97,9 @@ export const useNonAgriLand = (formId: string | undefined) => {
                     return (rate * factor * area).toFixed(2);
 
                 case 'Stripping':
-                    // Stripping: Rate × Adjustment Factor
-                    return (rate * factor).toFixed(2);
+                    // Stripping: Rate × Adjustment Factor × Strip Area (Additional Factor)
+                    const stripArea = additionalFactor || 0;
+                    return (rate * factor * stripArea).toFixed(2);
 
                 case 'Commercial Frontage':
                     // Commercial Frontage: First Value = Rate - 50%, then Value Adjustment = Adjustment Factor × First Value
@@ -265,11 +266,18 @@ export const useNonAgriLand = (formId: string | undefined) => {
         return nonAgriAdjustments.map(nonAgriAdj => {
             const landAdj = landAdjustments.find(adj => adj.adjustment_id === nonAgriAdj.adjustmentId);
 
+            // Get additional factor from NonAgriAdjustmentLocalStorage
+            const additionalFactorValue = NonAgriAdjustmentLocalStorage.getAdditionalFactor(
+                valueInfoId, 
+                nonAgriAdj.adjustmentId
+            );
+
             const valueAdjustment = calculateValueAdjustment(
                 landAdj?.adjustment_type || '',
                 landAdj?.adjustment_factor || '',
                 currentRate,
-                area
+                area,
+                additionalFactorValue
             );
 
             // Create base adjustment object with controlled property order
@@ -288,7 +296,7 @@ export const useNonAgriLand = (formId: string | undefined) => {
                     adjustment_type: landAdj?.adjustment_type || 'N/A',
                     description: landAdj?.description || 'N/A',
                     adjustment_factor: landAdj?.adjustment_factor ? `${landAdj.adjustment_factor}%` : 'N/A',
-                    additional_factor: 'N/A', // This will appear right after adjustment_factor
+                    additional_factor: additionalFactorValue ? `${additionalFactorValue.toLocaleString()} sqm` : 'N/A',
                     value_adjustment: valueAdjustment
                 };
             }

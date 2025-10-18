@@ -11,7 +11,8 @@ import {
   IonIcon,
   IonItem,
   IonLabel,
-  IonInput
+  IonInput,
+  IonText
 } from '@ionic/react';
 import { closeOutline } from 'ionicons/icons';
 import { LandAdjustmentData } from '../../utils/landAdjustmentLocalStorage';
@@ -50,6 +51,8 @@ const StrippingModal: React.FC<StrippingModalProps> = ({
 }) => {
   const [strippingAdjustment, setStrippingAdjustment] = useState<LandAdjustmentData | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [remainingArea, setRemainingArea] = useState<number>(area);
+  const [stripAreaError, setStripAreaError] = useState<string>('');
 
   useEffect(() => {
     if (isOpen && landAdjustments.length > 0) {
@@ -75,9 +78,40 @@ const StrippingModal: React.FC<StrippingModalProps> = ({
     }
   }, [isOpen, landAdjustments, setDescription, setAdjustmentFactor]);
 
+  // Calculate remaining area when additionalFactor changes
+  useEffect(() => {
+    if (additionalFactor) {
+      const stripArea = parseFloat(additionalFactor);
+      
+      if (!isNaN(stripArea)) {
+        // Validate strip area
+        if (stripArea >= area) {
+          setStripAreaError('Strip Area cannot be greater than or equal to total Area');
+          setRemainingArea(0);
+        } else if (stripArea <= 0) {
+          setStripAreaError('Strip Area must be greater than 0');
+          setRemainingArea(area);
+        } else {
+          setStripAreaError('');
+          setRemainingArea(area - stripArea);
+        }
+      } else {
+        setStripAreaError('');
+        setRemainingArea(area);
+      }
+    } else {
+      setStripAreaError('');
+      setRemainingArea(area);
+    }
+  }, [additionalFactor, area]);
+
+  const handleStripAreaChange = (value: string) => {
+    setAdditionalFactor(value);
+  };
+
   const handleSubmit = async () => {
-    if (!strippingAdjustment || !additionalFactor) {
-      console.error('Missing required data for submission');
+    if (!strippingAdjustment || !additionalFactor || stripAreaError) {
+      console.error('Missing required data or validation error for submission');
       return;
     }
 
@@ -88,11 +122,12 @@ const StrippingModal: React.FC<StrippingModalProps> = ({
       console.log('Value Info ID:', valueInfoId);
       console.log('Adjustment ID:', strippingAdjustment.adjustment_id);
       console.log('Strip Area (Additional Factor):', additionalFactor);
+      console.log('Remaining Area:', remainingArea);
       
       // Convert additionalFactor to number
       const stripAreaNumber = parseFloat(additionalFactor);
       
-      if (isNaN(stripAreaNumber)) {
+      if (isNaN(stripAreaNumber) || stripAreaNumber >= area || stripAreaNumber <= 0) {
         console.error('Invalid strip area value');
         setIsSubmitting(false);
         return;
@@ -118,6 +153,8 @@ const StrippingModal: React.FC<StrippingModalProps> = ({
       onDismiss();
     }
   };
+
+  const isSubmitDisabled = !additionalFactor || isSubmitting || !strippingAdjustment || !!stripAreaError;
 
   return (
     <IonModal isOpen={isOpen} onDidDismiss={onDismiss} className="custom-wide-modal">
@@ -168,7 +205,7 @@ const StrippingModal: React.FC<StrippingModalProps> = ({
           <div style={{ width: '100%', maxWidth: '400px', marginBottom: '16px', textAlign: 'center' }}>
             <IonItem className="custom-input" lines="none">
               <IonLabel position="stacked" className="input-label">
-                Area
+                Total Area
               </IonLabel>
               <div style={{ 
                 padding: '12px', 
@@ -243,7 +280,7 @@ const StrippingModal: React.FC<StrippingModalProps> = ({
           </div>
 
           {/* Strip Area Input */}
-          <div style={{ width: '100%', maxWidth: '400px', marginBottom: '24px', textAlign: 'center' }}>
+          <div style={{ width: '100%', maxWidth: '400px', marginBottom: '16px', textAlign: 'center' }}>
             <IonItem className="custom-input" lines="none">
               <IonLabel position="stacked" className="input-label">
                 Strip Area <span style={{ color: 'red' }}>*</span>
@@ -251,10 +288,37 @@ const StrippingModal: React.FC<StrippingModalProps> = ({
               <IonInput
                 value={additionalFactor}
                 placeholder="Enter strip area"
-                onIonInput={(e) => setAdditionalFactor(e.detail.value!)}
+                onIonInput={(e) => handleStripAreaChange(e.detail.value!)}
                 className="modal-input"
                 type="number"
               />
+            </IonItem>
+            {stripAreaError && (
+              <IonText color="danger" style={{ fontSize: '12px', marginTop: '4px' }}>
+                {stripAreaError}
+              </IonText>
+            )}
+          </div>
+
+          {/* Remaining Area Display */}
+          <div style={{ width: '100%', maxWidth: '400px', marginBottom: '24px', textAlign: 'center' }}>
+            <IonItem className="custom-input" lines="none">
+              <IonLabel position="stacked" className="input-label">
+                Remaining Area
+              </IonLabel>
+              <div style={{ 
+                padding: '12px', 
+                backgroundColor: '#e8f5e8', 
+                border: '1px solid #c8e6c9', 
+                borderRadius: '8px', 
+                marginTop: '8px',
+                textAlign: 'center',
+                fontSize: '14px',
+                color: '#2e7d32',
+                fontWeight: 'bold'
+              }}>
+                {remainingArea.toLocaleString()} sqm
+              </div>
             </IonItem>
           </div>
 
@@ -269,7 +333,7 @@ const StrippingModal: React.FC<StrippingModalProps> = ({
             <SubmitButton
               label="Submit Stripping"
               onClick={handleSubmit}
-              disabled={!additionalFactor || isSubmitting || !strippingAdjustment}
+              disabled={isSubmitDisabled}
               loading={isSubmitting}
               className="modal-submit-btn"
             />
