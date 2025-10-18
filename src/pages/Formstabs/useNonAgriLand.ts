@@ -6,6 +6,7 @@ import { ValueInfoLocalStorage } from '../../utils/tablestorages/ValueInfoLocalS
 import { NonAgriAdjustmentLocalStorage } from '../../utils/tablestorages/NonAgriAdjustmentLocalStorage';
 import { PhotoTagLocalStorage } from '../../utils/tablestorages/PhotoTagLocalStorage';
 import { LandAdjustmentData, getLandAdjustmentData } from '../../utils/landAdjustmentLocalStorage';
+import { getSubclassRateData, getCurrentRateForSubclass } from '../../utils/subclassRateLocalStorage';
 import { supabaseApi } from '../../services/supabaseApi';
 import { supabase } from '../../utils/supaBaseClient';
 
@@ -69,6 +70,10 @@ export const useNonAgriLand = (formId: string | undefined) => {
     const [landAdjustments, setLandAdjustments] = useState<LandAdjustmentData[]>([]);
     const [isLoadingAdjustments, setIsLoadingAdjustments] = useState(false);
 
+    // Subclass rates data
+    const [subclassRates, setSubclassRates] = useState<any[]>([]);
+    const [isLoadingRates, setIsLoadingRates] = useState(false);
+
     const showToastMessage = (message: string, color: 'success' | 'danger' | 'warning' = 'success') => {
         setToastMessage(message);
         setToastColor(color);
@@ -120,10 +125,44 @@ export const useNonAgriLand = (formId: string | undefined) => {
         }
     };
 
+    const loadSubclassRates = async () => {
+        if (!formData?.subclass) return;
+        
+        setIsLoadingRates(true);
+        try {
+            const ratesData = await getSubclassRateData();
+            if (ratesData) {
+                // Get current rate for the form's subclass
+                const currentRate = await getCurrentRateForSubclass(formData.subclass);
+                
+                // Create the rate display data
+                const rateDisplayData = [{
+                    valueInfoId: valueInfoId,
+                    subclass: formData.subclass,
+                    rate: currentRate ? `${currentRate}%` : 'N/A',
+                    effectiveYear: new Date().getFullYear()
+                }];
+                
+                setSubclassRates(rateDisplayData);
+            }
+        } catch (error) {
+            console.error('Error loading subclass rates:', error);
+        } finally {
+            setIsLoadingRates(false);
+        }
+    };
+
     useEffect(() => {
         loadFormData();
         loadLandAdjustments();
     }, [formId]);
+
+    // Load subclass rates when formData changes
+    useEffect(() => {
+        if (formData?.subclass && valueInfoId) {
+            loadSubclassRates();
+        }
+    }, [formData?.subclass, valueInfoId]);
 
     // Listen for form data updates from Forms page
     useEffect(() => {
@@ -160,7 +199,6 @@ export const useNonAgriLand = (formId: string | undefined) => {
             const landAdj = landAdjustments.find(adj => adj.adjustment_id === nonAgriAdj.adjustmentId);
 
             return {
-                valueInfoId: nonAgriAdj.valueInfoId,
                 adjustmentId: nonAgriAdj.adjustmentId,
                 adjustment_type: landAdj?.adjustment_type || 'N/A',
                 description: landAdj?.description || 'N/A',
@@ -372,6 +410,8 @@ export const useNonAgriLand = (formId: string | undefined) => {
         isLoadingAdjustments,
         currentAdjustments,
         visibleIcons,
+        subclassRates,
+        isLoadingRates,
         
         // Handlers
         handleBack,
