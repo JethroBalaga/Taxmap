@@ -182,26 +182,6 @@ export const NonAgriLandUI: React.FC<NonAgriLandUIProps> = ({
                 </IonCardContent>
             </IonCard>
 
-            {/* Remaining Area Display */}
-            {currentCount > 0 && (
-                <IonCard>
-                    <IonCardContent>
-                        <div style={{ textAlign: 'center', padding: '10px' }}>
-                            <IonText>
-                                <strong>Remaining Area after {currentCount} strip(s): </strong>
-                                <span style={{ 
-                                    color: '#2e7d32', 
-                                    fontWeight: 'bold',
-                                    fontSize: '1.1em'
-                                }}>
-                                    {remainingArea.toLocaleString()}
-                                </span>
-                            </IonText>
-                        </div>
-                    </IonCardContent>
-                </IonCard>
-            )}
-
             {/* NEW: Simplified Subclass Rate Information Table with Base Market Value */}
             <IonCard>
                 <IonCardContent>
@@ -278,6 +258,26 @@ export const NonAgriLandUI: React.FC<NonAgriLandUIProps> = ({
                         );
                     })}
                 </div>
+            )}
+
+            {/* Remaining Area Display - MOVED BELOW ICONS */}
+            {currentCount > 0 && (
+                <IonCard>
+                    <IonCardContent>
+                        <div style={{ textAlign: 'center', padding: '10px' }}>
+                            <IonText>
+                                <strong>Remaining Area after {currentCount} strip(s): </strong>
+                                <span style={{ 
+                                    color: '#2e7d32', 
+                                    fontWeight: 'bold',
+                                    fontSize: '1.1em'
+                                }}>
+                                    {remainingArea.toLocaleString()}
+                                </span>
+                            </IonText>
+                        </div>
+                    </IonCardContent>
+                </IonCard>
             )}
 
             {/* Adjustments Table using DynamicTable Component */}
