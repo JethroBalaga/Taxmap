@@ -1,3 +1,4 @@
+// src/components/Modals/StrippingModal.tsx
 import React, { useState, useEffect } from 'react';
 import {
   IonModal,

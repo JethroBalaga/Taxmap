@@ -14,7 +14,7 @@ import { supabase } from '../../utils/supaBaseClient';
 const adjustmentIcons = [
     {
         icon: 'cutOutline',
-        label: "Add Stripping",
+        label: "Add 1st Strip",
         hideFor: ['C', 'I'],
         adjustmentType: 'Stripping'
     },
