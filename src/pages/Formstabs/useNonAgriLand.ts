@@ -57,6 +57,7 @@ export const useNonAgriLand = (formId: string | undefined) => {
     const [selectedAdjustmentType, setSelectedAdjustmentType] = useState('');
     const [description, setDescription] = useState('');
     const [adjustmentFactor, setAdjustmentFactor] = useState('');
+    const [additionalFactor, setAdditionalFactor] = useState(''); // NEW: Additional factor state
     const [selectedAdjustmentForUpdate, setSelectedAdjustmentForUpdate] = useState<any>(null);
 
     // Alert state for delete confirmation
@@ -270,11 +271,16 @@ export const useNonAgriLand = (formId: string | undefined) => {
                 area
             );
 
+            // Get additional factor from NonAgriAdjustment
+            const additionalFactorValue = nonAgriAdj.additionalFactor !== undefined ? 
+                `${nonAgriAdj.additionalFactor}%` : 'N/A';
+
             return {
                 adjustmentId: nonAgriAdj.adjustmentId,
                 adjustment_type: landAdj?.adjustment_type || 'N/A',
                 description: landAdj?.description || 'N/A',
                 adjustment_factor: landAdj?.adjustment_factor ? `${landAdj.adjustment_factor}%` : 'N/A',
+                additional_factor: additionalFactorValue, // NEW COLUMN
                 value_adjustment: valueAdjustment
             };
         });
@@ -405,6 +411,7 @@ export const useNonAgriLand = (formId: string | undefined) => {
             setSelectedAdjustmentType(adjustmentType);
             setDescription('');
             setAdjustmentFactor('');
+            setAdditionalFactor(''); // NEW: Reset additional factor
             setShowAdjustmentModal(true);
         }
     };
@@ -417,6 +424,7 @@ export const useNonAgriLand = (formId: string | undefined) => {
         setSelectedAdjustmentType(adjustmentType);
         setDescription(existingAdj?.description || '');
         setAdjustmentFactor(existingAdj?.adjustment_factor?.replace('%', '') || '');
+        setAdditionalFactor(existingAdj?.additional_factor?.replace('%', '') || ''); // NEW
         setShowUpdateAdjustmentModal(true);
     };
 
@@ -425,6 +433,7 @@ export const useNonAgriLand = (formId: string | undefined) => {
         setSelectedAdjustmentType('');
         setDescription('');
         setAdjustmentFactor('');
+        setAdditionalFactor(''); // NEW
         loadLandAdjustments();
     };
 
@@ -434,6 +443,7 @@ export const useNonAgriLand = (formId: string | undefined) => {
         setSelectedAdjustmentType('');
         setDescription('');
         setAdjustmentFactor('');
+        setAdditionalFactor(''); // NEW
         loadLandAdjustments();
     };
 
@@ -496,6 +506,7 @@ export const useNonAgriLand = (formId: string | undefined) => {
         selectedAdjustmentType,
         description,
         adjustmentFactor,
+        additionalFactor, // NEW
         selectedAdjustmentForUpdate,
         showDeleteAlert,
         adjustmentToDelete,
@@ -507,7 +518,7 @@ export const useNonAgriLand = (formId: string | undefined) => {
         subclassRates,
         isLoadingRates,
         hasCornerInfluence,
-        hasStripping, // Export for testing if needed
+        hasStripping,
         
         // Handlers
         handleBack,
@@ -521,6 +532,7 @@ export const useNonAgriLand = (formId: string | undefined) => {
         showToastMessage,
         setDescription,
         setAdjustmentFactor,
+        setAdditionalFactor, // NEW
         setShowDeleteAlert,
         setAdjustmentToDelete
     };
