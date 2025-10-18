@@ -2,6 +2,7 @@
 export interface NonAgriAdjustment {
   valueInfoId: string;
   adjustmentId: string;
+  additionalFactor?: number; // New optional field
 }
 
 const NON_AGRI_ADJUSTMENT_KEY = 'nonAgriAdjustments';
@@ -71,6 +72,44 @@ export const NonAgriAdjustmentLocalStorage = {
     }
   },
 
+  // Update additional factor for existing adjustment
+  updateAdditionalFactor: (valueInfoId: string, adjustmentId: string, additionalFactor: number): boolean => {
+    try {
+      const allAdjustments = NonAgriAdjustmentLocalStorage.getAllNonAgriAdjustments();
+      const existingIndex = allAdjustments.findIndex(
+        adj => adj.valueInfoId === valueInfoId && adj.adjustmentId === adjustmentId
+      );
+      
+      if (existingIndex >= 0) {
+        const updatedAdjustments = [...allAdjustments];
+        updatedAdjustments[existingIndex] = {
+          ...updatedAdjustments[existingIndex],
+          additionalFactor
+        };
+        localStorage.setItem(NON_AGRI_ADJUSTMENT_KEY, JSON.stringify(updatedAdjustments));
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Error updating additional factor:', error);
+      return false;
+    }
+  },
+
+  // Get additional factor for specific adjustment
+  getAdditionalFactor: (valueInfoId: string, adjustmentId: string): number | undefined => {
+    try {
+      const allAdjustments = NonAgriAdjustmentLocalStorage.getAllNonAgriAdjustments();
+      const adjustment = allAdjustments.find(
+        adj => adj.valueInfoId === valueInfoId && adj.adjustmentId === adjustmentId
+      );
+      return adjustment?.additionalFactor;
+    } catch (error) {
+      console.error('Error retrieving additional factor:', error);
+      return undefined;
+    }
+  },
+
   // Delete specific non-agri adjustment
   deleteNonAgriAdjustment: (valueInfoId: string, adjustmentId: string): boolean => {
     try {
@@ -133,6 +172,15 @@ export const NonAgriAdjustmentLocalStorage = {
     );
   },
 
+  // Check if adjustment has additional factor
+  hasAdditionalFactor: (valueInfoId: string, adjustmentId: string): boolean => {
+    const allAdjustments = NonAgriAdjustmentLocalStorage.getAllNonAgriAdjustments();
+    const adjustment = allAdjustments.find(
+      adj => adj.valueInfoId === valueInfoId && adj.adjustmentId === adjustmentId
+    );
+    return adjustment?.additionalFactor !== undefined;
+  },
+
   // Check if any adjustments exist for a valueInfoId
   hasAdjustmentsForValueInfoId: (valueInfoId: string): boolean => {
     const allAdjustments = NonAgriAdjustmentLocalStorage.getAllNonAgriAdjustments();
@@ -149,6 +197,12 @@ export const NonAgriAdjustmentLocalStorage = {
   getAdjustmentCount: (): number => {
     const allAdjustments = NonAgriAdjustmentLocalStorage.getAllNonAgriAdjustments();
     return allAdjustments.length;
+  },
+
+  // Get adjustments with additional factors
+  getAdjustmentsWithAdditionalFactors: (): NonAgriAdjustment[] => {
+    const allAdjustments = NonAgriAdjustmentLocalStorage.getAllNonAgriAdjustments();
+    return allAdjustments.filter(adj => adj.additionalFactor !== undefined);
   },
 
   // Get unique valueInfoIds
