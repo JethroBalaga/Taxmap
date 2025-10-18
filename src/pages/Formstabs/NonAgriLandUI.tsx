@@ -1,3 +1,4 @@
+// src/pages/NonAgriLandUI.tsx
 import React from "react";
 import {
     IonCard,
@@ -12,6 +13,7 @@ import {
 import { cutOutline, resizeOutline, trailSignOutline, trashOutline } from "ionicons/icons";
 import NonAgriAdjustment from '../../components/Modals/NonAgriAdjustment';
 import NonAgriAdjustmentUpdate from '../../components/Modals/NonAgriAdjustmentUpdate';
+import StrippingModal from '../../components/Modals/StrippingModal';
 import DynamicTable from '../../components/GlobalComponent/DynamicTable';
 import { LandAdjustmentData } from '../../utils/landAdjustmentLocalStorage';
 
@@ -25,9 +27,11 @@ interface NonAgriLandUIProps {
     isSubmitting: boolean;
     showAdjustmentModal: boolean;
     showUpdateAdjustmentModal: boolean;
+    showStrippingModal: boolean;
     selectedAdjustmentType: string;
     description: string;
     adjustmentFactor: string;
+    additionalFactor: string;
     selectedAdjustmentForUpdate: any;
     showDeleteAlert: boolean;
     adjustmentToDelete: any;
@@ -41,10 +45,12 @@ interface NonAgriLandUIProps {
     handleUpdateIconClick: (adjustmentType: string) => void;
     handleModalDismiss: () => void;
     handleUpdateModalDismiss: () => void;
+    handleStrippingModalDismiss: () => void;
     handleRowClick: (rowData: any) => void;
     handleDeleteConfirm: () => void;
     setDescription: (description: string) => void;
     setAdjustmentFactor: (factor: string) => void;
+    setAdditionalFactor: (factor: string) => void;
     setShowDeleteAlert: (show: boolean) => void;
     setAdjustmentToDelete: (adjustment: any) => void;
 }
@@ -106,9 +112,11 @@ export const NonAgriLandUI: React.FC<NonAgriLandUIProps> = ({
     isSubmitting,
     showAdjustmentModal,
     showUpdateAdjustmentModal,
+    showStrippingModal,
     selectedAdjustmentType,
     description,
     adjustmentFactor,
+    additionalFactor,
     selectedAdjustmentForUpdate,
     showDeleteAlert,
     adjustmentToDelete,
@@ -122,10 +130,12 @@ export const NonAgriLandUI: React.FC<NonAgriLandUIProps> = ({
     handleUpdateIconClick,
     handleModalDismiss,
     handleUpdateModalDismiss,
+    handleStrippingModalDismiss,
     handleRowClick,
     handleDeleteConfirm,
     setDescription,
     setAdjustmentFactor,
+    setAdditionalFactor,
     setShowDeleteAlert,
     setAdjustmentToDelete
 }) => {
@@ -279,6 +289,22 @@ export const NonAgriLandUI: React.FC<NonAgriLandUIProps> = ({
                 isLoadingAdjustments={isLoadingAdjustments}
                 valueInfoId={valueInfoId}
                 existingAdjustment={selectedAdjustmentForUpdate}
+            />
+
+            {/* Stripping Modal */}
+            <StrippingModal
+                isOpen={showStrippingModal}
+                onDismiss={handleStrippingModalDismiss}
+                description={description}
+                setDescription={setDescription}
+                adjustmentFactor={adjustmentFactor}
+                setAdjustmentFactor={setAdjustmentFactor}
+                additionalFactor={additionalFactor}
+                setAdditionalFactor={setAdditionalFactor}
+                landAdjustments={landAdjustments}
+                isLoadingAdjustments={isLoadingAdjustments}
+                valueInfoId={valueInfoId}
+                area={formData?.area || 0}
             />
 
             {/* Delete Confirmation Alert */}
