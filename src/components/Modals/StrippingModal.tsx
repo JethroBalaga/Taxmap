@@ -109,26 +109,40 @@ const StrippingModal: React.FC<StrippingModalProps> = ({
       const stripArea = parseFloat(localAdditionalFactor);
       
       if (!isNaN(stripArea)) {
-        // Validate strip area against available area
-        if (stripArea > availableArea) {
-          setStripAreaError(`Strip Area cannot be greater than available area (${availableArea.toLocaleString()})`);
-          setRemainingArea(0);
-        } else if (stripArea <= 0) {
-          setStripAreaError('Strip Area must be greater than 0');
-          setRemainingArea(availableArea);
+        // Special validation for 1st strip - cannot be greater than or equal to total area
+        if (currentStripNumber === 1) {
+          if (stripArea >= area) {
+            setStripAreaError(`For 1st strip, strip area must be less than total area (${area.toLocaleString()})`);
+            setRemainingArea(0);
+          } else if (stripArea <= 0) {
+            setStripAreaError('Strip Area must be greater than 0');
+            setRemainingArea(area);
+          } else {
+            setStripAreaError('');
+            setRemainingArea(area - stripArea);
+          }
         } else {
-          setStripAreaError('');
-          setRemainingArea(availableArea - stripArea);
+          // For subsequent strips (2nd, 3rd, 4th) - use available area validation
+          if (stripArea > availableArea) {
+            setStripAreaError(`Strip Area cannot be greater than available area (${availableArea.toLocaleString()})`);
+            setRemainingArea(0);
+          } else if (stripArea <= 0) {
+            setStripAreaError('Strip Area must be greater than 0');
+            setRemainingArea(availableArea);
+          } else {
+            setStripAreaError('');
+            setRemainingArea(availableArea - stripArea);
+          }
         }
       } else {
         setStripAreaError('Please enter a valid number');
-        setRemainingArea(availableArea);
+        setRemainingArea(currentStripNumber === 1 ? area : availableArea);
       }
     } else {
       setStripAreaError('');
-      setRemainingArea(availableArea);
+      setRemainingArea(currentStripNumber === 1 ? area : availableArea);
     }
-  }, [localAdditionalFactor, availableArea]);
+  }, [localAdditionalFactor, availableArea, currentStripNumber, area]);
 
   const handleStripAreaChange = (value: string) => {
     setLocalAdditionalFactor(value); // Only update local state
@@ -153,10 +167,20 @@ const StrippingModal: React.FC<StrippingModalProps> = ({
       // Convert localAdditionalFactor to number
       const stripAreaNumber = parseFloat(localAdditionalFactor);
       
-      if (isNaN(stripAreaNumber) || stripAreaNumber > availableArea || stripAreaNumber <= 0) {
-        console.error('Invalid strip area value');
-        setIsSubmitting(false);
-        return;
+      // Special validation for 1st strip
+      if (currentStripNumber === 1) {
+        if (isNaN(stripAreaNumber) || stripAreaNumber >= area || stripAreaNumber <= 0) {
+          console.error('Invalid strip area value for 1st strip');
+          setIsSubmitting(false);
+          return;
+        }
+      } else {
+        // Validation for subsequent strips
+        if (isNaN(stripAreaNumber) || stripAreaNumber > availableArea || stripAreaNumber <= 0) {
+          console.error('Invalid strip area value');
+          setIsSubmitting(false);
+          return;
+        }
       }
 
       // Save to NonAgriAdjustmentLocalStorage
@@ -196,6 +220,25 @@ const StrippingModal: React.FC<StrippingModalProps> = ({
       case 3: return '3rd';
       case 4: return '4th';
       default: return `${num}th`;
+    }
+  };
+
+  // Get the max allowed value for the current strip
+  const getMaxAllowedValue = () => {
+    if (currentStripNumber === 1) {
+      return area - 1; // For 1st strip, must be less than total area
+    } else {
+      return availableArea; // For subsequent strips, can be up to available area
+    }
+  };
+
+  // Get placeholder text based on strip number
+  const getPlaceholderText = () => {
+    const maxAllowed = getMaxAllowedValue();
+    if (currentStripNumber === 1) {
+      return `Enter strip area (must be less than ${area.toLocaleString()})`;
+    } else {
+      return `Enter strip area (max: ${maxAllowed.toLocaleString()})`;
     }
   };
 
@@ -260,7 +303,7 @@ const StrippingModal: React.FC<StrippingModalProps> = ({
                 fontSize: '14px',
                 color: '#666'
               }}>
-                {availableArea.toLocaleString()}
+                {currentStripNumber === 1 ? area.toLocaleString() : availableArea.toLocaleString()}
               </div>
             </IonItem>
           </div>
@@ -330,16 +373,22 @@ const StrippingModal: React.FC<StrippingModalProps> = ({
               </IonLabel>
               <IonInput
                 value={localAdditionalFactor}
-                placeholder={`Enter strip area (max: ${availableArea.toLocaleString()})`}
+                placeholder={getPlaceholderText()}
                 onIonInput={(e) => handleStripAreaChange(e.detail.value!)}
                 className="modal-input"
                 type="number"
                 clearInput={true}
+                max={getMaxAllowedValue()} // Set max attribute for HTML5 validation
               />
             </IonItem>
             {stripAreaError && (
               <IonText color="danger" style={{ fontSize: '12px', marginTop: '4px' }}>
                 {stripAreaError}
+              </IonText>
+            )}
+            {currentStripNumber === 1 && (
+              <IonText color="medium" style={{ fontSize: '12px', marginTop: '4px' }}>
+                <small>For 1st strip, must be less than total area to allow for remaining area</small>
               </IonText>
             )}
           </div>
