@@ -33,6 +33,7 @@ interface StrippingModalProps {
   isLoadingAdjustments: boolean;
   valueInfoId: string;
   area: number;
+  getStrippingInfo: () => { currentCount: number; nextNumber: number; hasStripping: boolean; canAddMore: boolean };
 }
 
 const StrippingModal: React.FC<StrippingModalProps> = ({
@@ -47,36 +48,42 @@ const StrippingModal: React.FC<StrippingModalProps> = ({
   landAdjustments,
   isLoadingAdjustments,
   valueInfoId,
-  area
+  area,
+  getStrippingInfo
 }) => {
   const [strippingAdjustment, setStrippingAdjustment] = useState<LandAdjustmentData | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [remainingArea, setRemainingArea] = useState<number>(area);
   const [stripAreaError, setStripAreaError] = useState<string>('');
+  const [currentStripNumber, setCurrentStripNumber] = useState<number>(1);
 
   useEffect(() => {
-    if (isOpen && landAdjustments.length > 0) {
-      console.log('Searching for STRIPPING 1 adjustment in:', landAdjustments);
+    if (isOpen) {
+      const { nextNumber } = getStrippingInfo();
+      setCurrentStripNumber(nextNumber);
       
-      // Find the "STRIPPING 1" adjustment
-      const stripping1Adjustment = landAdjustments.find(
-        adj => adj.adjustment_type === 'Stripping' && adj.description === 'STRIPPING 1'
-      );
-      
-      console.log('Found STRIPPING 1 adjustment:', stripping1Adjustment);
-      
-      if (stripping1Adjustment) {
-        setStrippingAdjustment(stripping1Adjustment);
-        setDescription('STRIPPING 1');
-        setAdjustmentFactor(stripping1Adjustment.adjustment_factor);
-      } else {
-        console.warn('STRIPPING 1 adjustment not found in land adjustments');
-        setStrippingAdjustment(null);
-        setDescription('STRIPPING 1');
-        setAdjustmentFactor('');
+      if (landAdjustments.length > 0) {
+        // Find the appropriate stripping adjustment based on the sequence
+        const strippingAdjustmentToFind = landAdjustments.find(
+          adj => adj.adjustment_type === 'Stripping' && adj.description === `STRIPPING ${nextNumber}`
+        );
+        
+        console.log(`Searching for STRIPPING ${nextNumber} adjustment in:`, landAdjustments);
+        console.log('Found stripping adjustment:', strippingAdjustmentToFind);
+        
+        if (strippingAdjustmentToFind) {
+          setStrippingAdjustment(strippingAdjustmentToFind);
+          setDescription(`STRIPPING ${nextNumber}`);
+          setAdjustmentFactor(strippingAdjustmentToFind.adjustment_factor);
+        } else {
+          console.warn(`STRIPPING ${nextNumber} adjustment not found in land adjustments`);
+          setStrippingAdjustment(null);
+          setDescription(`STRIPPING ${nextNumber}`);
+          setAdjustmentFactor('');
+        }
       }
     }
-  }, [isOpen, landAdjustments, setDescription, setAdjustmentFactor]);
+  }, [isOpen, landAdjustments, setDescription, setAdjustmentFactor, getStrippingInfo]);
 
   // Calculate remaining area when additionalFactor changes
   useEffect(() => {
@@ -123,6 +130,7 @@ const StrippingModal: React.FC<StrippingModalProps> = ({
       console.log('Adjustment ID:', strippingAdjustment.adjustment_id);
       console.log('Strip Area (Additional Factor):', additionalFactor);
       console.log('Remaining Area:', remainingArea);
+      console.log('Strip Number:', currentStripNumber);
       
       // Convert additionalFactor to number
       const stripAreaNumber = parseFloat(additionalFactor);
@@ -142,12 +150,8 @@ const StrippingModal: React.FC<StrippingModalProps> = ({
 
       console.log('Successfully saved stripping adjustment:', savedAdjustment);
       
-      // Show success message or handle success state
-      // You might want to add a toast notification here
-      
     } catch (error) {
       console.error('Error saving stripping adjustment:', error);
-      // You might want to add an error toast notification here
     } finally {
       setIsSubmitting(false);
       onDismiss();
@@ -156,13 +160,24 @@ const StrippingModal: React.FC<StrippingModalProps> = ({
 
   const isSubmitDisabled = !additionalFactor || isSubmitting || !strippingAdjustment || !!stripAreaError;
 
+  // Get the ordinal suffix for the strip number
+  const getOrdinalSuffix = (num: number) => {
+    switch (num) {
+      case 1: return '1st';
+      case 2: return '2nd';
+      case 3: return '3rd';
+      case 4: return '4th';
+      default: return `${num}th`;
+    }
+  };
+
   return (
     <IonModal isOpen={isOpen} onDidDismiss={onDismiss} className="custom-wide-modal">
       <IonHeader>
         <IonToolbar className="fancy-header">
           <IonTitle className="fancy-title">
             <i className="icon-adjustment" style={{ marginRight: '10px' }}></i>
-            Stripping Adjustment
+            {getOrdinalSuffix(currentStripNumber)} Strip Adjustment
           </IonTitle>
           <IonButtons slot="end">
             <IonButton onClick={onDismiss} className="fancy-close-btn">
@@ -243,7 +258,7 @@ const StrippingModal: React.FC<StrippingModalProps> = ({
             </IonItem>
           </div>
 
-          {/* Description Display (Fixed as STRIPPING 1) */}
+          {/* Description Display (Dynamic based on strip number) */}
           <div style={{ width: '100%', maxWidth: '400px', marginBottom: '24px', textAlign: 'center' }}>
             <IonItem className="custom-input" lines="none">
               <IonLabel position="stacked" className="input-label">
@@ -259,7 +274,7 @@ const StrippingModal: React.FC<StrippingModalProps> = ({
                 fontSize: '14px',
                 color: '#666'
               }}>
-                STRIPPING 1
+                S{currentStripNumber}
               </div>
             </IonItem>
           </div>
@@ -331,7 +346,7 @@ const StrippingModal: React.FC<StrippingModalProps> = ({
             justifyContent: 'center'
           }}>
             <SubmitButton
-              label="Submit Stripping"
+              label={`Submit ${getOrdinalSuffix(currentStripNumber)} Strip`}
               onClick={handleSubmit}
               disabled={isSubmitDisabled}
               loading={isSubmitting}

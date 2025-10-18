@@ -316,6 +316,40 @@ export const useNonAgriLand = (formId: string | undefined) => {
         adj => adj.adjustment_type === 'Stripping'
     );
 
+    // Get the next available stripping number and current stripping count
+    const getStrippingInfo = () => {
+        const strippingAdjustments = currentAdjustments.filter(
+            adj => adj.adjustment_type === 'Stripping'
+        );
+        
+        const currentCount = strippingAdjustments.length;
+        const nextNumber = currentCount + 1;
+        
+        return {
+            currentCount,
+            nextNumber,
+            hasStripping: currentCount > 0,
+            canAddMore: currentCount < 4 // Maximum 4 strips
+        };
+    };
+
+    // Get icon label based on stripping sequence
+    const getStrippingIconLabel = () => {
+        const { nextNumber, canAddMore } = getStrippingInfo();
+        
+        if (!canAddMore) {
+            return "Max Strips Reached";
+        }
+        
+        switch (nextNumber) {
+            case 1: return "Add 1st Strip";
+            case 2: return "Add 2nd Strip";
+            case 3: return "Add 3rd Strip";
+            case 4: return "Add 4th Strip";
+            default: return "Add Strip";
+        }
+    };
+
     const handleBack = () => {
         history.push('/menu/forms');
     };
@@ -518,10 +552,25 @@ export const useNonAgriLand = (formId: string | undefined) => {
 
         const classificationFilteredIcons = adjustmentIcons.filter(icon => !icon.hideFor.includes(classification));
 
+        // Update the stripping icon label
+        const updatedIcons = classificationFilteredIcons.map(icon => {
+            if (icon.adjustmentType === 'Stripping') {
+                return {
+                    ...icon,
+                    label: getStrippingIconLabel()
+                };
+            }
+            return icon;
+        });
+
+        const { canAddMore } = getStrippingInfo();
+
         // Mutual exclusion: Hide Stripping if Corner Influence exists, and vice versa
-        return classificationFilteredIcons.filter(icon => {
-            if (icon.adjustmentType === 'Stripping' && hasCornerInfluence) {
-                return false;
+        // Also hide stripping if max strips reached
+        return updatedIcons.filter(icon => {
+            if (icon.adjustmentType === 'Stripping') {
+                if (!canAddMore) return false;
+                if (hasCornerInfluence) return false;
             }
             if (icon.adjustmentType === 'Corner Influence' && hasStripping) {
                 return false;
@@ -560,6 +609,7 @@ export const useNonAgriLand = (formId: string | undefined) => {
         isLoadingRates,
         hasCornerInfluence,
         hasStripping,
+        getStrippingInfo,
 
         // Handlers
         handleBack,
