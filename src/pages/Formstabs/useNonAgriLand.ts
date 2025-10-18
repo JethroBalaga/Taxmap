@@ -56,7 +56,7 @@ export const useNonAgriLand = (formId: string | undefined) => {
     const [selectedAdjustmentType, setSelectedAdjustmentType] = useState('');
     const [description, setDescription] = useState('');
     const [adjustmentFactor, setAdjustmentFactor] = useState('');
-    const [additionalFactor, setAdditionalFactor] = useState(''); // NEW: Additional factor state
+    const [additionalFactor, setAdditionalFactor] = useState('');
     const [selectedAdjustmentForUpdate, setSelectedAdjustmentForUpdate] = useState<any>(null);
 
     // Alert state for delete confirmation
@@ -93,16 +93,16 @@ export const useNonAgriLand = (formId: string | undefined) => {
                 case 'Corner Influence':
                     // Corner Influence: Rate × Adjustment Factor × Area
                     return (rate * factor * area).toFixed(2);
-                
+
                 case 'Stripping':
                     // Stripping: Rate × Adjustment Factor
                     return (rate * factor).toFixed(2);
-                
+
                 case 'Commercial Frontage':
                     // Commercial Frontage: First Value = Rate - 50%, then Value Adjustment = Adjustment Factor × First Value
                     const firstValue = rate * 0.5; // Rate - 50% means Rate × 50%
                     return (factor * firstValue).toFixed(2);
-                
+
                 default:
                     return 'N/A';
             }
@@ -129,12 +129,12 @@ export const useNonAgriLand = (formId: string | undefined) => {
         if (formId) {
             setIsLoading(true);
             console.log('Loading non-agricultural land form data for ID:', formId);
-            
+
             // ALWAYS load from localStorage to get the latest data
             const storedFormData = FormDataLocalStorage.getFormData(formId);
             console.log('Loaded form data from localStorage:', storedFormData);
             setFormData(storedFormData);
-            
+
             // Fetch or create ValueInfo for this formId using the stored form data
             if (storedFormData) {
                 let valueInfo = ValueInfoLocalStorage.getValueInfoByFormDataId(formId);
@@ -146,7 +146,7 @@ export const useNonAgriLand = (formId: string | undefined) => {
                 }
                 setValueInfoId(valueInfo.id);
             }
-            
+
             setIsLoading(false);
 
             if (!storedFormData) {
@@ -172,7 +172,7 @@ export const useNonAgriLand = (formId: string | undefined) => {
 
     const loadSubclassRates = async () => {
         if (!formData?.subclass) return;
-        
+
         setIsLoadingRates(true);
         try {
             const ratesData = await getSubclassRateData();
@@ -180,24 +180,24 @@ export const useNonAgriLand = (formId: string | undefined) => {
                 // Get current rate for the form's subclass
                 const apiRate = await getCurrentRateForSubclass(formData.subclass);
                 const area = formData?.area || 0;
-                
+
                 // Ensure we have a string value
                 const rateString = apiRate ? String(apiRate) : '0';
                 // Safely parse to number
                 const rateNumber = parseFloat(rateString);
                 // Check if valid number
                 const isValidRate = !isNaN(rateNumber) && isFinite(rateNumber) && rateNumber >= 0;
-                
+
                 const displayRate = isValidRate ? rateString : '0';
                 const calculatedRate = isValidRate ? rateNumber : 0;
-                
+
                 // Create the rate display data with base market value
                 const rateDisplayData = [{
                     valueInfoId: valueInfoId,
                     rate: displayRate,
                     base_market_value: calculateBaseMarketValue(calculatedRate, area)
                 }];
-                
+
                 setSubclassRates(rateDisplayData);
             }
         } catch (error) {
@@ -223,7 +223,7 @@ export const useNonAgriLand = (formId: string | undefined) => {
         if (formData?.subclass && valueInfoId) {
             loadSubclassRates();
         }
-    }, [formData?.subclass, valueInfoId, formData?.area]); // Added formData.area as dependency
+    }, [formData?.subclass, valueInfoId, formData?.area]);
 
     // Listen for form data updates from Forms page
     useEffect(() => {
@@ -255,7 +255,7 @@ export const useNonAgriLand = (formId: string | undefined) => {
         if (!valueInfoId || landAdjustments.length === 0) return [];
 
         const nonAgriAdjustments = NonAgriAdjustmentLocalStorage.getAdjustmentsByValueInfoId(valueInfoId);
-        
+
         // Get the current rate and area for calculations - handle safely
         const currentRate = subclassRates.length > 0 ? parseFloat(subclassRates[0].rate) || 0 : 0;
         const area = formData?.area || 0;
@@ -270,7 +270,7 @@ export const useNonAgriLand = (formId: string | undefined) => {
                 area
             );
 
-            // Create base adjustment object
+            // Create base adjustment object with controlled property order
             const adjustment = {
                 adjustmentId: nonAgriAdj.adjustmentId,
                 adjustment_type: landAdj?.adjustment_type || 'N/A',
@@ -280,13 +280,14 @@ export const useNonAgriLand = (formId: string | undefined) => {
             };
 
             // ONLY add additional_factor property for Stripping adjustments
-            if (landAdj?.adjustment_type === 'Stripping' && 
-                nonAgriAdj.additionalFactor !== undefined && 
-                nonAgriAdj.additionalFactor !== null && 
-                nonAgriAdj.additionalFactor !== '') {
+            if (landAdj?.adjustment_type === 'Stripping') {
                 return {
-                    ...adjustment,
-                    additional_factor: `${nonAgriAdj.additionalFactor}%`
+                    adjustmentId: nonAgriAdj.adjustmentId,
+                    adjustment_type: landAdj?.adjustment_type || 'N/A',
+                    description: landAdj?.description || 'N/A',
+                    adjustment_factor: landAdj?.adjustment_factor ? `${landAdj.adjustment_factor}%` : 'N/A',
+                    additional_factor: 'N/A', // This will appear right after adjustment_factor
+                    value_adjustment: valueAdjustment
                 };
             }
 
@@ -419,7 +420,7 @@ export const useNonAgriLand = (formId: string | undefined) => {
             setSelectedAdjustmentType(adjustmentType);
             setDescription('');
             setAdjustmentFactor('');
-            setAdditionalFactor(''); // NEW: Reset additional factor
+            setAdditionalFactor('');
             setShowAdjustmentModal(true);
         }
     };
@@ -432,9 +433,6 @@ export const useNonAgriLand = (formId: string | undefined) => {
         setSelectedAdjustmentType(adjustmentType);
         setDescription(existingAdj?.description || '');
         setAdjustmentFactor(existingAdj?.adjustment_factor?.replace('%', '') || '');
-        // Only set additional factor for Stripping adjustments
-        setAdditionalFactor(adjustmentType === 'Stripping' ? 
-            (existingAdj?.additional_factor?.replace('%', '') || '') : '');
         setShowUpdateAdjustmentModal(true);
     };
 
@@ -443,7 +441,7 @@ export const useNonAgriLand = (formId: string | undefined) => {
         setSelectedAdjustmentType('');
         setDescription('');
         setAdjustmentFactor('');
-        setAdditionalFactor(''); // NEW
+        setAdditionalFactor('');
         loadLandAdjustments();
     };
 
@@ -453,7 +451,7 @@ export const useNonAgriLand = (formId: string | undefined) => {
         setSelectedAdjustmentType('');
         setDescription('');
         setAdjustmentFactor('');
-        setAdditionalFactor(''); // NEW
+        setAdditionalFactor('');
         loadLandAdjustments();
     };
 
@@ -465,14 +463,14 @@ export const useNonAgriLand = (formId: string | undefined) => {
         if (adjustmentToDelete) {
             // Use valueInfoId from the component's state
             const success = NonAgriAdjustmentLocalStorage.deleteNonAgriAdjustment(
-                valueInfoId, // This is the correct valueInfoId from state
+                valueInfoId,
                 adjustmentToDelete.adjustmentId
             );
 
             if (success) {
                 showToastMessage(`${adjustmentToDelete.adjustment_type} adjustment deleted successfully`, 'success');
                 setSelectedRow(null);
-                loadLandAdjustments(); // Refresh the list
+                loadLandAdjustments();
             } else {
                 showToastMessage('Error deleting adjustment', 'danger');
             }
@@ -487,16 +485,16 @@ export const useNonAgriLand = (formId: string | undefined) => {
         if (!classification) return adjustmentIcons;
 
         const classificationFilteredIcons = adjustmentIcons.filter(icon => !icon.hideFor.includes(classification));
-        
+
         // Mutual exclusion: Hide Stripping if Corner Influence exists, and vice versa
         return classificationFilteredIcons.filter(icon => {
             if (icon.adjustmentType === 'Stripping' && hasCornerInfluence) {
-                return false; // Hide Stripping when Corner Influence exists
+                return false;
             }
             if (icon.adjustmentType === 'Corner Influence' && hasStripping) {
-                return false; // Hide Corner Influence when Stripping exists
+                return false;
             }
-            return true; // Keep all other icons
+            return true;
         });
     };
 
@@ -516,7 +514,7 @@ export const useNonAgriLand = (formId: string | undefined) => {
         selectedAdjustmentType,
         description,
         adjustmentFactor,
-        additionalFactor, // NEW
+        additionalFactor,
         selectedAdjustmentForUpdate,
         showDeleteAlert,
         adjustmentToDelete,
@@ -529,7 +527,7 @@ export const useNonAgriLand = (formId: string | undefined) => {
         isLoadingRates,
         hasCornerInfluence,
         hasStripping,
-        
+
         // Handlers
         handleBack,
         onSubmit,
@@ -542,7 +540,7 @@ export const useNonAgriLand = (formId: string | undefined) => {
         showToastMessage,
         setDescription,
         setAdjustmentFactor,
-        setAdditionalFactor, // NEW
+        setAdditionalFactor,
         setShowDeleteAlert,
         setAdjustmentToDelete
     };
