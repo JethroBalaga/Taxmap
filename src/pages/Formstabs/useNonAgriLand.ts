@@ -98,6 +98,11 @@ export const useNonAgriLand = (formId: string | undefined) => {
                     // Stripping: Rate × Adjustment Factor
                     return (rate * factor).toFixed(2);
                 
+                case 'Commercial Frontage':
+                    // Commercial Frontage: First Value = Rate - 50%, then Value Adjustment = Adjustment Factor × First Value
+                    const firstValue = rate * 0.5; // Rate - 50% means Rate × 50%
+                    return (factor * firstValue).toFixed(2);
+                
                 default:
                     return 'N/A';
             }
