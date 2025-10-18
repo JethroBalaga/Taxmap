@@ -84,6 +84,13 @@ const getIconComponent = (iconName: string) => {
 
 // Get icon label based on whether adjustment already exists
 const getIconLabel = (adjustmentType: string, currentAdjustments: any[]) => {
+    if (adjustmentType === 'Stripping') {
+        const hasExistingAdjustment = currentAdjustments.some(
+            adj => adj.adjustment_type === adjustmentType
+        );
+        return hasExistingAdjustment ? 'Update 1st Strip' : 'Add 1st Strip';
+    }
+    
     const hasExistingAdjustment = currentAdjustments.some(
         adj => adj.adjustment_type === adjustmentType
     );
