@@ -32,7 +32,9 @@ interface NonAgriLandUIProps {
     selectedAdjustmentForUpdate: any;
     showDeleteAlert: boolean;
     adjustmentToDelete: any;
-    valueInfoId: string; // CHANGED from optional to required
+    valueInfoId: string;
+    subclassRates: any[];
+    isLoadingRates: boolean;
     
     // Handlers
     onSubmit: () => void;
@@ -111,7 +113,9 @@ export const NonAgriLandUI: React.FC<NonAgriLandUIProps> = ({
     selectedAdjustmentForUpdate,
     showDeleteAlert,
     adjustmentToDelete,
-    valueInfoId, // Now required
+    valueInfoId,
+    subclassRates,
+    isLoadingRates,
     
     // Handlers
     onSubmit,
@@ -146,6 +150,25 @@ export const NonAgriLandUI: React.FC<NonAgriLandUIProps> = ({
                             </IonRow>
                         ))}
                     </IonGrid>
+                </IonCardContent>
+            </IonCard>
+
+            {/* NEW: Subclass Rate Information Table */}
+            <IonCard>
+                <IonCardContent>
+                    {isLoadingRates ? (
+                        <div style={{ textAlign: 'center', padding: '20px' }}>
+                            <IonText>Loading rate information...</IonText>
+                        </div>
+                    ) : (
+                        <DynamicTable
+                            data={subclassRates}
+                            title="Subclass Rate Information"
+                            keyField="valueInfoId"
+                            onRowClick={handleRowClick}
+                            selectedRow={selectedRow}
+                        />
+                    )}
                 </IonCardContent>
             </IonCard>
 
@@ -202,7 +225,7 @@ export const NonAgriLandUI: React.FC<NonAgriLandUIProps> = ({
                 </div>
             )}
 
-            {/* Adjustments Table */}
+            {/* Adjustments Table using DynamicTable Component */}
             <IonCard>
                 <IonCardContent>
                     {isLoadingAdjustments ? (
@@ -230,7 +253,7 @@ export const NonAgriLandUI: React.FC<NonAgriLandUIProps> = ({
                 </IonCardContent>
             </IonCard>
 
-            {/* Modals */}
+            {/* Non-Agri Adjustment Modal */}
             <NonAgriAdjustment
                 isOpen={showAdjustmentModal}
                 onDismiss={handleModalDismiss}
@@ -241,9 +264,10 @@ export const NonAgriLandUI: React.FC<NonAgriLandUIProps> = ({
                 setAdjustmentFactor={setAdjustmentFactor}
                 landAdjustments={landAdjustments}
                 isLoadingAdjustments={isLoadingAdjustments}
-                valueInfoId={valueInfoId} // This now gets the proper valueInfoId
+                valueInfoId={valueInfoId}
             />
 
+            {/* Non-Agri Adjustment Update Modal */}
             <NonAgriAdjustmentUpdate
                 isOpen={showUpdateAdjustmentModal}
                 onDismiss={handleUpdateModalDismiss}
@@ -254,7 +278,7 @@ export const NonAgriLandUI: React.FC<NonAgriLandUIProps> = ({
                 setAdjustmentFactor={setAdjustmentFactor}
                 landAdjustments={landAdjustments}
                 isLoadingAdjustments={isLoadingAdjustments}
-                valueInfoId={valueInfoId} // This now gets the proper valueInfoId
+                valueInfoId={valueInfoId}
                 existingAdjustment={selectedAdjustmentForUpdate}
             />
 
