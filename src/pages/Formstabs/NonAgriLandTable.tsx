@@ -53,6 +53,7 @@ const NonAgriLandTable: React.FC = () => {
         hasCornerInfluence,
         hasStripping,
         getStrippingInfo,
+        getStrippingAdjustment, // Add this missing prop
         
         // Handlers
         handleBack,
@@ -167,6 +168,7 @@ const NonAgriLandTable: React.FC = () => {
                     subclassRates={subclassRates}
                     isLoadingRates={isLoadingRates}
                     getStrippingInfo={getStrippingInfo}
+                    getStrippingAdjustment={getStrippingAdjustment} // Add this prop
                     
                     // Handlers
                     onSubmit={onSubmit}
