@@ -59,14 +59,15 @@ const StrippingModal: React.FC<StrippingModalProps> = ({
   const [stripAreaError, setStripAreaError] = useState<string>('');
   const [currentStripNumber, setCurrentStripNumber] = useState<number>(1);
   const [availableArea, setAvailableArea] = useState<number>(area);
+  const [localAdditionalFactor, setLocalAdditionalFactor] = useState<string>(''); // COMPLETELY local state
 
+  // Initialize modal only once when it opens
   useEffect(() => {
     if (isOpen) {
       const { nextNumber, remainingArea: currentRemainingArea } = getStrippingInfo();
       setCurrentStripNumber(nextNumber);
       setAvailableArea(currentRemainingArea);
       
-      // Use the new function to get the correct stripping adjustment
       const strippingAdjustmentToFind = getStrippingAdjustment(nextNumber);
       
       console.log(`Setting up stripping modal for strip ${nextNumber}`);
@@ -88,27 +89,24 @@ const StrippingModal: React.FC<StrippingModalProps> = ({
             strippingAdjustmentToFind.adjustment_id
           );
           if (existingAdditionalFactor) {
-            setAdditionalFactor(existingAdditionalFactor.toString());
-          } else {
-            setAdditionalFactor('');
+            setLocalAdditionalFactor(existingAdditionalFactor.toString()); // Set local state only
           }
-        } else {
-          setAdditionalFactor('');
         }
+        // Don't reset localAdditionalFactor if no existing value - let user input
       } else {
         console.warn(`Stripping adjustment for strip ${nextNumber} not found`);
         setStrippingAdjustment(null);
         setDescription(`STRIPPING ${nextNumber}`);
         setAdjustmentFactor('');
-        setAdditionalFactor('');
+        // Don't reset localAdditionalFactor - let user input
       }
     }
-  }, [isOpen, landAdjustments, setDescription, setAdjustmentFactor, getStrippingInfo, valueInfoId, getStrippingAdjustment]);
+  }, [isOpen, getStrippingInfo, getStrippingAdjustment, valueInfoId, setDescription, setAdjustmentFactor]); // Remove dependencies that cause resets
 
-  // Calculate remaining area when additionalFactor changes
+  // Calculate remaining area when localAdditionalFactor changes
   useEffect(() => {
-    if (additionalFactor) {
-      const stripArea = parseFloat(additionalFactor);
+    if (localAdditionalFactor) {
+      const stripArea = parseFloat(localAdditionalFactor);
       
       if (!isNaN(stripArea)) {
         // Validate strip area against available area
@@ -123,21 +121,21 @@ const StrippingModal: React.FC<StrippingModalProps> = ({
           setRemainingArea(availableArea - stripArea);
         }
       } else {
-        setStripAreaError('');
+        setStripAreaError('Please enter a valid number');
         setRemainingArea(availableArea);
       }
     } else {
       setStripAreaError('');
       setRemainingArea(availableArea);
     }
-  }, [additionalFactor, availableArea]);
+  }, [localAdditionalFactor, availableArea]);
 
   const handleStripAreaChange = (value: string) => {
-    setAdditionalFactor(value);
+    setLocalAdditionalFactor(value); // Only update local state
   };
 
   const handleSubmit = async () => {
-    if (!strippingAdjustment || !additionalFactor || stripAreaError) {
+    if (!strippingAdjustment || !localAdditionalFactor || stripAreaError) {
       console.error('Missing required data or validation error for submission');
       return;
     }
@@ -148,12 +146,12 @@ const StrippingModal: React.FC<StrippingModalProps> = ({
       console.log('Saving stripping adjustment data:');
       console.log('Value Info ID:', valueInfoId);
       console.log('Adjustment ID:', strippingAdjustment.adjustment_id);
-      console.log('Strip Area (Additional Factor):', additionalFactor);
+      console.log('Strip Area (Additional Factor):', localAdditionalFactor);
       console.log('Remaining Area:', remainingArea);
       console.log('Strip Number:', currentStripNumber);
       
-      // Convert additionalFactor to number
-      const stripAreaNumber = parseFloat(additionalFactor);
+      // Convert localAdditionalFactor to number
+      const stripAreaNumber = parseFloat(localAdditionalFactor);
       
       if (isNaN(stripAreaNumber) || stripAreaNumber > availableArea || stripAreaNumber <= 0) {
         console.error('Invalid strip area value');
@@ -170,6 +168,9 @@ const StrippingModal: React.FC<StrippingModalProps> = ({
 
       console.log('Successfully saved stripping adjustment:', savedAdjustment);
       
+      // Only update parent state on successful submission
+      setAdditionalFactor(localAdditionalFactor);
+      
     } catch (error) {
       console.error('Error saving stripping adjustment:', error);
     } finally {
@@ -178,7 +179,14 @@ const StrippingModal: React.FC<StrippingModalProps> = ({
     }
   };
 
-  const isSubmitDisabled = !additionalFactor || isSubmitting || !strippingAdjustment || !!stripAreaError;
+  const handleModalDismiss = () => {
+    // Reset local state when modal closes
+    setLocalAdditionalFactor('');
+    setStripAreaError('');
+    onDismiss();
+  };
+
+  const isSubmitDisabled = !localAdditionalFactor || isSubmitting || !strippingAdjustment || !!stripAreaError;
 
   // Get the ordinal suffix for the strip number
   const getOrdinalSuffix = (num: number) => {
@@ -192,7 +200,7 @@ const StrippingModal: React.FC<StrippingModalProps> = ({
   };
 
   return (
-    <IonModal isOpen={isOpen} onDidDismiss={onDismiss} className="custom-wide-modal">
+    <IonModal isOpen={isOpen} onDidDismiss={handleModalDismiss} className="custom-wide-modal">
       <IonHeader>
         <IonToolbar className="fancy-header">
           <IonTitle className="fancy-title">
@@ -200,7 +208,7 @@ const StrippingModal: React.FC<StrippingModalProps> = ({
             {getOrdinalSuffix(currentStripNumber)} Strip Adjustment
           </IonTitle>
           <IonButtons slot="end">
-            <IonButton onClick={onDismiss} className="fancy-close-btn">
+            <IonButton onClick={handleModalDismiss} className="fancy-close-btn">
               <IonIcon icon={closeOutline} />
             </IonButton>
           </IonButtons>
@@ -257,7 +265,7 @@ const StrippingModal: React.FC<StrippingModalProps> = ({
             </IonItem>
           </div>
 
-          {/* Adjustment ID Display - Now shows S1, S2, S3, S4 correctly */}
+          {/* Adjustment ID Display */}
           <div style={{ width: '100%', maxWidth: '400px', marginBottom: '16px', textAlign: 'center' }}>
             <IonItem className="custom-input" lines="none">
               <IonLabel position="stacked" className="input-label">
@@ -278,7 +286,7 @@ const StrippingModal: React.FC<StrippingModalProps> = ({
             </IonItem>
           </div>
 
-          {/* Description Display (Dynamic based on strip number) */}
+          {/* Description Display */}
           <div style={{ width: '100%', maxWidth: '400px', marginBottom: '24px', textAlign: 'center' }}>
             <IonItem className="custom-input" lines="none">
               <IonLabel position="stacked" className="input-label">
@@ -314,18 +322,19 @@ const StrippingModal: React.FC<StrippingModalProps> = ({
             </IonItem>
           </div>
 
-          {/* Strip Area Input */}
+          {/* Strip Area Input - NOW FIXED */}
           <div style={{ width: '100%', maxWidth: '400px', marginBottom: '16px', textAlign: 'center' }}>
             <IonItem className="custom-input" lines="none">
               <IonLabel position="stacked" className="input-label">
                 Strip Area <span style={{ color: 'red' }}>*</span>
               </IonLabel>
               <IonInput
-                value={additionalFactor}
+                value={localAdditionalFactor}
                 placeholder={`Enter strip area (max: ${availableArea.toLocaleString()})`}
                 onIonInput={(e) => handleStripAreaChange(e.detail.value!)}
                 className="modal-input"
                 type="number"
+                clearInput={true}
               />
             </IonItem>
             {stripAreaError && (
@@ -357,7 +366,7 @@ const StrippingModal: React.FC<StrippingModalProps> = ({
             </IonItem>
           </div>
 
-          {/* Submit Button Section - Single Centered Button */}
+          {/* Submit Button */}
           <div style={{ 
             width: '100%', 
             maxWidth: '400px', 
