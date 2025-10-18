@@ -34,6 +34,7 @@ interface StrippingModalProps {
   valueInfoId: string;
   area: number;
   getStrippingInfo: () => { currentCount: number; nextNumber: number; hasStripping: boolean; canAddMore: boolean; remainingArea: number; totalStripArea: number };
+  getStrippingAdjustment: (stripNumber: number) => LandAdjustmentData | null; // Add this prop
 }
 
 const StrippingModal: React.FC<StrippingModalProps> = ({
@@ -49,7 +50,8 @@ const StrippingModal: React.FC<StrippingModalProps> = ({
   isLoadingAdjustments,
   valueInfoId,
   area,
-  getStrippingInfo
+  getStrippingInfo,
+  getStrippingAdjustment // Use this new prop
 }) => {
   const [strippingAdjustment, setStrippingAdjustment] = useState<LandAdjustmentData | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -62,12 +64,10 @@ const StrippingModal: React.FC<StrippingModalProps> = ({
     if (isOpen) {
       const { nextNumber, remainingArea: currentRemainingArea } = getStrippingInfo();
       setCurrentStripNumber(nextNumber);
-      setAvailableArea(currentRemainingArea); // Use remaining area for subsequent strips
+      setAvailableArea(currentRemainingArea);
       
-      // Find the stripping adjustment from land adjustments
-      const strippingAdjustmentToFind = landAdjustments.find(
-        adj => adj.adjustment_type === 'Stripping'
-      );
+      // Use the new function to get the correct stripping adjustment
+      const strippingAdjustmentToFind = getStrippingAdjustment(nextNumber);
       
       console.log(`Setting up stripping modal for strip ${nextNumber}`);
       console.log('Available area:', currentRemainingArea);
@@ -89,16 +89,21 @@ const StrippingModal: React.FC<StrippingModalProps> = ({
           );
           if (existingAdditionalFactor) {
             setAdditionalFactor(existingAdditionalFactor.toString());
+          } else {
+            setAdditionalFactor('');
           }
+        } else {
+          setAdditionalFactor('');
         }
       } else {
-        console.warn('Stripping adjustment not found in land adjustments');
+        console.warn(`Stripping adjustment for strip ${nextNumber} not found`);
         setStrippingAdjustment(null);
         setDescription(`STRIPPING ${nextNumber}`);
         setAdjustmentFactor('');
+        setAdditionalFactor('');
       }
     }
-  }, [isOpen, landAdjustments, setDescription, setAdjustmentFactor, getStrippingInfo, valueInfoId]);
+  }, [isOpen, landAdjustments, setDescription, setAdjustmentFactor, getStrippingInfo, valueInfoId, getStrippingAdjustment]);
 
   // Calculate remaining area when additionalFactor changes
   useEffect(() => {
@@ -252,7 +257,7 @@ const StrippingModal: React.FC<StrippingModalProps> = ({
             </IonItem>
           </div>
 
-          {/* Adjustment ID Display */}
+          {/* Adjustment ID Display - Now shows S1, S2, S3, S4 correctly */}
           <div style={{ width: '100%', maxWidth: '400px', marginBottom: '16px', textAlign: 'center' }}>
             <IonItem className="custom-input" lines="none">
               <IonLabel position="stacked" className="input-label">
@@ -268,7 +273,7 @@ const StrippingModal: React.FC<StrippingModalProps> = ({
                 fontSize: '14px',
                 color: '#666'
               }}>
-                {strippingAdjustment?.adjustment_id || 'N/A'}
+                {strippingAdjustment?.adjustment_id || `S${currentStripNumber}`}
               </div>
             </IonItem>
           </div>
