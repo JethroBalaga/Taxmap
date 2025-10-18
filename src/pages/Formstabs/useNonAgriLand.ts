@@ -93,16 +93,16 @@ export const useNonAgriLand = (formId: string | undefined) => {
                 case 'Corner Influence':
                     // Corner Influence: Rate × Adjustment Factor × Area
                     return (rate * factor * area).toFixed(2);
-
+                
                 case 'Stripping':
                     // Stripping: Rate × Adjustment Factor
                     return (rate * factor).toFixed(2);
-
+                
                 case 'Commercial Frontage':
                     // Commercial Frontage: First Value = Rate - 50%, then Value Adjustment = Adjustment Factor × First Value
                     const firstValue = rate * 0.5; // Rate - 50% means Rate × 50%
                     return (factor * firstValue).toFixed(2);
-
+                
                 default:
                     return 'N/A';
             }
@@ -129,12 +129,12 @@ export const useNonAgriLand = (formId: string | undefined) => {
         if (formId) {
             setIsLoading(true);
             console.log('Loading non-agricultural land form data for ID:', formId);
-
+            
             // ALWAYS load from localStorage to get the latest data
             const storedFormData = FormDataLocalStorage.getFormData(formId);
             console.log('Loaded form data from localStorage:', storedFormData);
             setFormData(storedFormData);
-
+            
             // Fetch or create ValueInfo for this formId using the stored form data
             if (storedFormData) {
                 let valueInfo = ValueInfoLocalStorage.getValueInfoByFormDataId(formId);
@@ -146,7 +146,7 @@ export const useNonAgriLand = (formId: string | undefined) => {
                 }
                 setValueInfoId(valueInfo.id);
             }
-
+            
             setIsLoading(false);
 
             if (!storedFormData) {
@@ -172,7 +172,7 @@ export const useNonAgriLand = (formId: string | undefined) => {
 
     const loadSubclassRates = async () => {
         if (!formData?.subclass) return;
-
+        
         setIsLoadingRates(true);
         try {
             const ratesData = await getSubclassRateData();
@@ -180,24 +180,24 @@ export const useNonAgriLand = (formId: string | undefined) => {
                 // Get current rate for the form's subclass
                 const apiRate = await getCurrentRateForSubclass(formData.subclass);
                 const area = formData?.area || 0;
-
+                
                 // Ensure we have a string value
                 const rateString = apiRate ? String(apiRate) : '0';
                 // Safely parse to number
                 const rateNumber = parseFloat(rateString);
                 // Check if valid number
                 const isValidRate = !isNaN(rateNumber) && isFinite(rateNumber) && rateNumber >= 0;
-
+                
                 const displayRate = isValidRate ? rateString : '0';
                 const calculatedRate = isValidRate ? rateNumber : 0;
-
+                
                 // Create the rate display data with base market value
                 const rateDisplayData = [{
                     valueInfoId: valueInfoId,
                     rate: displayRate,
                     base_market_value: calculateBaseMarketValue(calculatedRate, area)
                 }];
-
+                
                 setSubclassRates(rateDisplayData);
             }
         } catch (error) {
@@ -255,7 +255,7 @@ export const useNonAgriLand = (formId: string | undefined) => {
         if (!valueInfoId || landAdjustments.length === 0) return [];
 
         const nonAgriAdjustments = NonAgriAdjustmentLocalStorage.getAdjustmentsByValueInfoId(valueInfoId);
-
+        
         // Get the current rate and area for calculations - handle safely
         const currentRate = subclassRates.length > 0 ? parseFloat(subclassRates[0].rate) || 0 : 0;
         const area = formData?.area || 0;
@@ -281,6 +281,11 @@ export const useNonAgriLand = (formId: string | undefined) => {
     };
 
     const currentAdjustments = getCombinedAdjustmentData();
+
+    // Check if Corner Influence adjustment exists
+    const hasCornerInfluence = currentAdjustments.some(
+        adj => adj.adjustment_type === 'Corner Influence'
+    );
 
     const handleBack = () => {
         history.push('/menu/forms');
@@ -452,11 +457,20 @@ export const useNonAgriLand = (formId: string | undefined) => {
         setAdjustmentToDelete(null);
     };
 
-    // Filter icons based on classification
+    // Filter icons based on classification AND whether Corner Influence exists
     const getVisibleIcons = () => {
         const classification = formData?.classification;
         if (!classification) return adjustmentIcons;
-        return adjustmentIcons.filter(icon => !icon.hideFor.includes(classification));
+
+        const classificationFilteredIcons = adjustmentIcons.filter(icon => !icon.hideFor.includes(classification));
+        
+        // Hide Stripping icon if Corner Influence already exists
+        return classificationFilteredIcons.filter(icon => {
+            if (icon.adjustmentType === 'Stripping' && hasCornerInfluence) {
+                return false; // Hide Stripping
+            }
+            return true; // Keep all other icons
+        });
     };
 
     const visibleIcons = getVisibleIcons();
@@ -485,7 +499,8 @@ export const useNonAgriLand = (formId: string | undefined) => {
         visibleIcons,
         subclassRates,
         isLoadingRates,
-
+        hasCornerInfluence, // Export for testing if needed
+        
         // Handlers
         handleBack,
         onSubmit,
