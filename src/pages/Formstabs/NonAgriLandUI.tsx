@@ -153,7 +153,7 @@ export const NonAgriLandUI: React.FC<NonAgriLandUIProps> = ({
                 </IonCardContent>
             </IonCard>
 
-            {/* NEW: Subclass Rate Information Table */}
+            {/* NEW: Simplified Subclass Rate Information Table */}
             <IonCard>
                 <IonCardContent>
                     {isLoadingRates ? (
@@ -163,7 +163,7 @@ export const NonAgriLandUI: React.FC<NonAgriLandUIProps> = ({
                     ) : (
                         <DynamicTable
                             data={subclassRates}
-                            title="Subclass Rate Information"
+                            title="Rate Information"
                             keyField="valueInfoId"
                             onRowClick={handleRowClick}
                             selectedRow={selectedRow}

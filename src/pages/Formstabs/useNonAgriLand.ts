@@ -80,6 +80,40 @@ export const useNonAgriLand = (formId: string | undefined) => {
         setShowToast(true);
     };
 
+    // Add calculation function for value adjustments
+    const calculateValueAdjustment = (adjustmentType: string, adjustmentFactor: string, rate: number, area: number): string => {
+        if (!adjustmentFactor || !rate || !area) {
+            return 'N/A';
+        }
+
+        try {
+            const factor = parseFloat(adjustmentFactor) / 100; // Convert to percentage
+            const firstValue = rate * factor;
+            const valueAdjustment = firstValue * area;
+
+            // Different calculation methods for different adjustment types
+            switch (adjustmentType) {
+                case 'Corner Influence':
+                    // Corner Influence: Rate × Adjustment Factor × Area
+                    return `$${(rate * factor * area).toFixed(2)}`;
+                
+                case 'Stripping':
+                    // Stripping might have different calculation
+                    return `$${(rate * factor * area).toFixed(2)}`;
+                
+                case 'Commercial Frontage':
+                    // Commercial Frontage calculation
+                    return `$${(rate * factor * area).toFixed(2)}`;
+                
+                default:
+                    return `$${(rate * factor * area).toFixed(2)}`;
+            }
+        } catch (error) {
+            console.error('Error calculating value adjustment:', error);
+            return 'N/A';
+        }
+    };
+
     const loadFormData = () => {
         if (formId) {
             setIsLoading(true);
@@ -187,21 +221,32 @@ export const useNonAgriLand = (formId: string | undefined) => {
         };
     }, [formId]);
 
-    // Filter adjustments for current valueInfoId and format for table
+    // Filter adjustments for current valueInfoId and format for table with calculations
     const getCombinedAdjustmentData = () => {
         if (!valueInfoId || landAdjustments.length === 0) return [];
 
         const nonAgriAdjustments = NonAgriAdjustmentLocalStorage.getAdjustmentsByValueInfoId(valueInfoId);
+        
+        // Get the current rate and area for calculations
+        const currentRate = subclassRates.length > 0 ? parseFloat(subclassRates[0].rate) || 0 : 0;
+        const area = formData?.area || 0;
 
         return nonAgriAdjustments.map(nonAgriAdj => {
             const landAdj = landAdjustments.find(adj => adj.adjustment_id === nonAgriAdj.adjustmentId);
+
+            const valueAdjustment = calculateValueAdjustment(
+                landAdj?.adjustment_type || '',
+                landAdj?.adjustment_factor || '',
+                currentRate,
+                area
+            );
 
             return {
                 adjustmentId: nonAgriAdj.adjustmentId,
                 adjustment_type: landAdj?.adjustment_type || 'N/A',
                 description: landAdj?.description || 'N/A',
-                adjustment_factor: landAdj?.adjustment_factor || 'N/A',
-                value_adjustment: 'N/A' // Added Value Adjustment column
+                adjustment_factor: landAdj?.adjustment_factor ? `${landAdj.adjustment_factor}%` : 'N/A',
+                value_adjustment: valueAdjustment
             };
         });
     };
@@ -333,7 +378,7 @@ export const useNonAgriLand = (formId: string | undefined) => {
         setSelectedAdjustmentForUpdate(existingAdj);
         setSelectedAdjustmentType(adjustmentType);
         setDescription(existingAdj?.description || '');
-        setAdjustmentFactor(existingAdj?.adjustment_factor || '');
+        setAdjustmentFactor(existingAdj?.adjustment_factor?.replace('%', '') || '');
         setShowUpdateAdjustmentModal(true);
     };
 
