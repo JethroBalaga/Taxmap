@@ -95,18 +95,18 @@ export const useNonAgriLand = (formId: string | undefined) => {
             switch (adjustmentType) {
                 case 'Corner Influence':
                     // Corner Influence: Rate × Adjustment Factor × Area
-                    return `$${(rate * factor * area).toFixed(2)}`;
+                    return (rate * factor * area).toFixed(2);
                 
                 case 'Stripping':
                     // Stripping might have different calculation
-                    return `$${(rate * factor * area).toFixed(2)}`;
+                    return (rate * factor * area).toFixed(2);
                 
                 case 'Commercial Frontage':
                     // Commercial Frontage calculation
-                    return `$${(rate * factor * area).toFixed(2)}`;
+                    return (rate * factor * area).toFixed(2);
                 
                 default:
-                    return `$${(rate * factor * area).toFixed(2)}`;
+                    return (rate * factor * area).toFixed(2);
             }
         } catch (error) {
             console.error('Error calculating value adjustment:', error);
