@@ -135,12 +135,10 @@ export const useNonAgriLand = (formId: string | undefined) => {
                 // Get current rate for the form's subclass
                 const currentRate = await getCurrentRateForSubclass(formData.subclass);
                 
-                // Create the rate display data
+                // Create the simplified rate display data
                 const rateDisplayData = [{
                     valueInfoId: valueInfoId,
-                    subclass: formData.subclass,
-                    rate: currentRate ? `${currentRate}%` : 'N/A',
-                    effectiveYear: new Date().getFullYear()
+                    rate: currentRate || 'N/A' // No percentage sign
                 }];
                 
                 setSubclassRates(rateDisplayData);
