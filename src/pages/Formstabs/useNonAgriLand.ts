@@ -1,4 +1,3 @@
-// src/pages/hooks/useNonAgriLand.ts
 import { useState, useEffect } from "react";
 import { useHistory, useLocation } from 'react-router-dom';
 import { FormDataLocalStorage } from '../../utils/tablestorages/FormDataLocalStorage';
@@ -271,18 +270,27 @@ export const useNonAgriLand = (formId: string | undefined) => {
                 area
             );
 
-            // Get additional factor from NonAgriAdjustment
-            const additionalFactorValue = nonAgriAdj.additionalFactor !== undefined ? 
-                `${nonAgriAdj.additionalFactor}%` : 'N/A';
-
-            return {
+            // Create base adjustment object
+            const adjustment = {
                 adjustmentId: nonAgriAdj.adjustmentId,
                 adjustment_type: landAdj?.adjustment_type || 'N/A',
                 description: landAdj?.description || 'N/A',
                 adjustment_factor: landAdj?.adjustment_factor ? `${landAdj.adjustment_factor}%` : 'N/A',
-                additional_factor: additionalFactorValue, // NEW COLUMN
                 value_adjustment: valueAdjustment
             };
+
+            // ONLY add additional_factor property for Stripping adjustments
+            if (landAdj?.adjustment_type === 'Stripping' && 
+                nonAgriAdj.additionalFactor !== undefined && 
+                nonAgriAdj.additionalFactor !== null && 
+                nonAgriAdj.additionalFactor !== '') {
+                return {
+                    ...adjustment,
+                    additional_factor: `${nonAgriAdj.additionalFactor}%`
+                };
+            }
+
+            return adjustment;
         });
     };
 
@@ -424,7 +432,9 @@ export const useNonAgriLand = (formId: string | undefined) => {
         setSelectedAdjustmentType(adjustmentType);
         setDescription(existingAdj?.description || '');
         setAdjustmentFactor(existingAdj?.adjustment_factor?.replace('%', '') || '');
-        setAdditionalFactor(existingAdj?.additional_factor?.replace('%', '') || ''); // NEW
+        // Only set additional factor for Stripping adjustments
+        setAdditionalFactor(adjustmentType === 'Stripping' ? 
+            (existingAdj?.additional_factor?.replace('%', '') || '') : '');
         setShowUpdateAdjustmentModal(true);
     };
 
