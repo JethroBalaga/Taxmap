@@ -317,21 +317,46 @@ export const useNonAgriLand = (formId: string | undefined) => {
     );
 
     // Get the next available stripping number and current stripping count
-    const getStrippingInfo = () => {
-        const strippingAdjustments = currentAdjustments.filter(
-            adj => adj.adjustment_type === 'Stripping'
-        );
+   // Get the next available stripping number and current stripping count
+const getStrippingInfo = () => {
+    const strippingAdjustments = currentAdjustments.filter(
+        adj => adj.adjustment_type === 'Stripping'
+    );
+    
+    const currentCount = strippingAdjustments.length;
+    const nextNumber = currentCount + 1;
+    
+    // Calculate remaining area after all strips
+    let totalStripArea = 0;
+    let remainingArea = formData?.area || 0;
+    
+    // Only calculate if we have stripping adjustments
+    if (strippingAdjustments.length > 0 && valueInfoId) {
+        totalStripArea = strippingAdjustments.reduce((total, adj) => {
+            if (adj.adjustmentId) {
+                const additionalFactorValue = NonAgriAdjustmentLocalStorage.getAdditionalFactor(
+                    valueInfoId, 
+                    adj.adjustmentId
+                );
+                if (additionalFactorValue) {
+                    return total + additionalFactorValue;
+                }
+            }
+            return total;
+        }, 0);
         
-        const currentCount = strippingAdjustments.length;
-        const nextNumber = currentCount + 1;
-        
-        return {
-            currentCount,
-            nextNumber,
-            hasStripping: currentCount > 0,
-            canAddMore: currentCount < 4 // Maximum 4 strips
-        };
+        remainingArea = Math.max(0, (formData?.area || 0) - totalStripArea);
+    }
+    
+    return {
+        currentCount,
+        nextNumber,
+        hasStripping: currentCount > 0,
+        canAddMore: currentCount < 4 && remainingArea > 0,
+        remainingArea: remainingArea,
+        totalStripArea: totalStripArea
     };
+};
 
     // Get icon label based on stripping sequence
     const getStrippingIconLabel = () => {
