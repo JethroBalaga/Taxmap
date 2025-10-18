@@ -35,9 +35,11 @@ const NonAgriLandTable: React.FC = () => {
         isSubmitting,
         showAdjustmentModal,
         showUpdateAdjustmentModal,
+        showStrippingModal,
         selectedAdjustmentType,
         description,
         adjustmentFactor,
+        additionalFactor,
         selectedAdjustmentForUpdate,
         showDeleteAlert,
         adjustmentToDelete,
@@ -56,11 +58,13 @@ const NonAgriLandTable: React.FC = () => {
         handleUpdateIconClick,
         handleModalDismiss,
         handleUpdateModalDismiss,
+        handleStrippingModalDismiss,
         handleRowClick,
         handleDeleteConfirm,
         showToastMessage,
         setDescription,
         setAdjustmentFactor,
+        setAdditionalFactor,
         setShowDeleteAlert,
         setAdjustmentToDelete
     } = useNonAgriLand(formId);
@@ -148,9 +152,11 @@ const NonAgriLandTable: React.FC = () => {
                     isSubmitting={isSubmitting}
                     showAdjustmentModal={showAdjustmentModal}
                     showUpdateAdjustmentModal={showUpdateAdjustmentModal}
+                    showStrippingModal={showStrippingModal}
                     selectedAdjustmentType={selectedAdjustmentType}
                     description={description}
                     adjustmentFactor={adjustmentFactor}
+                    additionalFactor={additionalFactor}
                     selectedAdjustmentForUpdate={selectedAdjustmentForUpdate}
                     showDeleteAlert={showDeleteAlert}
                     adjustmentToDelete={adjustmentToDelete}
@@ -164,10 +170,12 @@ const NonAgriLandTable: React.FC = () => {
                     handleUpdateIconClick={handleUpdateIconClick}
                     handleModalDismiss={handleModalDismiss}
                     handleUpdateModalDismiss={handleUpdateModalDismiss}
+                    handleStrippingModalDismiss={handleStrippingModalDismiss}
                     handleRowClick={handleRowClick}
                     handleDeleteConfirm={handleDeleteConfirm}
                     setDescription={setDescription}
                     setAdjustmentFactor={setAdjustmentFactor}
+                    setAdditionalFactor={setAdditionalFactor}
                     setShowDeleteAlert={setShowDeleteAlert}
                     setAdjustmentToDelete={setAdjustmentToDelete}
                 />
