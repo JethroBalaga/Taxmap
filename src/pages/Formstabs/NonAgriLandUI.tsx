@@ -40,6 +40,9 @@ interface NonAgriLandUIProps {
     isLoadingRates: boolean;
     getStrippingInfo: () => { currentCount: number; nextNumber: number; hasStripping: boolean; canAddMore: boolean; remainingArea: number; totalStripArea: number };
     getStrippingAdjustment: (stripNumber: number) => LandAdjustmentData | null;
+    showReverseDeleteWarning: boolean;
+    setShowReverseDeleteWarning: (show: boolean) => void;
+    reverseDeleteWarningMessage: string;
     
     // Handlers
     onSubmit: () => void;
@@ -141,6 +144,9 @@ export const NonAgriLandUI: React.FC<NonAgriLandUIProps> = ({
     isLoadingRates,
     getStrippingInfo,
     getStrippingAdjustment,
+    showReverseDeleteWarning,
+    setShowReverseDeleteWarning,
+    reverseDeleteWarningMessage,
     
     // Handlers
     onSubmit,
@@ -371,6 +377,21 @@ export const NonAgriLandUI: React.FC<NonAgriLandUIProps> = ({
                         text: 'Delete',
                         role: 'destructive',
                         handler: handleDeleteConfirm
+                    }
+                ]}
+            />
+
+            {/* Reverse Deletion Warning Alert */}
+            <IonAlert
+                isOpen={showReverseDeleteWarning}
+                onDidDismiss={() => setShowReverseDeleteWarning(false)}
+                header={'Reverse Deletion Required'}
+                message={reverseDeleteWarningMessage}
+                buttons={[
+                    {
+                        text: 'OK',
+                        role: 'cancel',
+                        cssClass: 'secondary'
                     }
                 ]}
             />
