@@ -120,26 +120,6 @@ export const useBuildingTableLogic = (
         }
     }, []);
 
-    const cleanupLocalPhotos = useCallback(async (photoTag: any) => {
-        try {
-            const photoPath = `phototags/${photoTag.photoName}`;
-            
-            if (Capacitor.isNativePlatform()) {
-                // Delete from filesystem for native apps
-                await Filesystem.deleteFile({
-                    path: photoPath,
-                    directory: Directory.Data
-                });
-                console.log('Local photo cleaned up successfully');
-            } else {
-                // For web, remove from localStorage if it exists
-                localStorage.removeItem(photoTag.photoName);
-            }
-        } catch (error) {
-            console.warn('Could not clean up local photo:', error);
-        }
-    }, []);
-
     // --- Market Values ---
     const calculateMarketValues = useCallback((buildingCodeRate: number, depreciationRate: number | null, area: number, constructionPercent: number | null) => {
         const baseMarketValue = buildingCodeRate * area;
@@ -367,7 +347,8 @@ export const useBuildingTableLogic = (
                     console.warn('Photo upload failed', uploadError);
                     showToastMessage('Form submitted but photo upload failed', 'warning');
                 } else {
-                    await cleanupLocalPhotos(photoTag);
+                    // Photo uploaded successfully - KEEP local copy (no cleanup)
+                    console.log('Photo uploaded successfully, keeping local copy');
                 }
             } else {
                 showToastMessage('Form submitted but could not retrieve photo', 'warning');
