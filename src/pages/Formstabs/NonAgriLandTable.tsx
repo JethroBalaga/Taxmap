@@ -36,6 +36,8 @@ const NonAgriLandTable: React.FC = () => {
         showAdjustmentModal,
         showUpdateAdjustmentModal,
         showStrippingModal,
+        showInfoModal,
+        setShowInfoModal,
         selectedAdjustmentType,
         description,
         adjustmentFactor,
@@ -161,6 +163,8 @@ const NonAgriLandTable: React.FC = () => {
                     showAdjustmentModal={showAdjustmentModal}
                     showUpdateAdjustmentModal={showUpdateAdjustmentModal}
                     showStrippingModal={showStrippingModal}
+                    showInfoModal={showInfoModal}
+                    setShowInfoModal={setShowInfoModal}
                     selectedAdjustmentType={selectedAdjustmentType}
                     description={description}
                     adjustmentFactor={adjustmentFactor}
