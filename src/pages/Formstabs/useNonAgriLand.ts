@@ -231,7 +231,7 @@ export const useNonAgriLand = (formId: string | undefined) => {
         }
     };
 
-    // Get base adjustments data (without calculations) - FIXED: Proper dependency tracking
+    // Get base adjustments data (without calculations) - FIXED: Additional factor only for Stripping
     const getBaseAdjustmentsData = () => {
         if (!valueInfoId || landAdjustments.length === 0) return [];
 
@@ -253,9 +253,16 @@ export const useNonAgriLand = (formId: string | undefined) => {
                 adjustment_type: landAdj?.adjustment_type || 'N/A',
                 description: landAdj?.description || 'N/A',
                 adjustment_factor: landAdj?.adjustment_factor ? `${landAdj.adjustment_factor}%` : 'N/A',
-                value_adjustment: 'N/A', // Will be calculated
-                additional_factor: additionalFactorValue ? additionalFactorValue.toLocaleString() : 'N/A'
+                value_adjustment: 'N/A' // Will be calculated
             };
+
+            // ONLY add additional_factor property for Stripping adjustments
+            if (landAdj?.adjustment_type === 'Stripping') {
+                return {
+                    ...adjustment,
+                    additional_factor: additionalFactorValue ? additionalFactorValue.toLocaleString() : 'N/A'
+                };
+            }
 
             return adjustment;
         });
@@ -306,9 +313,19 @@ export const useNonAgriLand = (formId: string | undefined) => {
                         additionalFactorValue
                     );
 
+                    // For non-Stripping adjustments, return without additional_factor
+                    if (adj.adjustment_type !== 'Stripping') {
+                        return {
+                            ...adj,
+                            value_adjustment: valueAdjustment
+                        };
+                    }
+
+                    // For Stripping adjustments, include additional_factor
                     return {
                         ...adj,
-                        value_adjustment: valueAdjustment
+                        value_adjustment: valueAdjustment,
+                        additional_factor: additionalFactorValue ? additionalFactorValue.toLocaleString() : 'N/A'
                     };
                 });
 
@@ -348,7 +365,8 @@ export const useNonAgriLand = (formId: string | undefined) => {
                     adjustments: adjustmentsWithCalculations.map(adj => ({
                         type: adj.adjustment_type,
                         value: adj.value_adjustment,
-                        factor: adj.adjustment_factor
+                        factor: adj.adjustment_factor,
+                        hasAdditionalFactor: adj.adjustment_type === 'Stripping'
                     }))
                 });
             }
