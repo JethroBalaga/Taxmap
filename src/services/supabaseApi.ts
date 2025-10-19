@@ -67,6 +67,11 @@ export interface AgriLandAdjustmentData {
   market: number | null;
 }
 
+export interface NonAgriAdjustmentData {
+  adjustment_id: string;
+  additional_factor?: number | null;
+}
+
 // Fixed helper function to validate and convert dates
 const validateDate = (dateString: string | null | undefined): string | null => {
   if (dateString == null || dateString === '') return null;
@@ -272,12 +277,17 @@ export const supabaseApi = {
   },
 
   /**
-   * Insert non-agricultural adjustment and return the composite key (value_info_id, adjustment_id)
+   * Insert non-agricultural adjustment with additional_factor
    */
-  async insertNonAgriAdjustment(value_info_id: string, adjustment_id: string): Promise<string> {
+  async insertNonAgriAdjustment(
+    value_info_id: string, 
+    adjustment_id: string, 
+    additional_factor?: number | null
+  ): Promise<string> {
     const { data, error } = await supabase.rpc('insert_nonagri_adjustment', {
       p_value_info_id: value_info_id,
-      p_adjustment_id: adjustment_id
+      p_adjustment_id: adjustment_id,
+      p_additional_factor: validateNumber(additional_factor)
     });
 
     if (error) {
@@ -295,6 +305,24 @@ export const supabaseApi = {
     }
     
     return data; // Returns the composite key
+  },
+
+  /**
+   * Insert multiple non-agricultural adjustments for a value_info record
+   */
+  async insertMultipleNonAgriAdjustments(
+    value_info_id: string, 
+    adjustments: NonAgriAdjustmentData[]
+  ): Promise<void> {
+    for (const adjustment of adjustments) {
+      const { error } = await supabase.rpc('insert_nonagri_adjustment', {
+        p_value_info_id: value_info_id,
+        p_adjustment_id: adjustment.adjustment_id,
+        p_additional_factor: validateNumber(adjustment.additional_factor)
+      });
+
+      if (error) throw error;
+    }
   },
 
   /**
