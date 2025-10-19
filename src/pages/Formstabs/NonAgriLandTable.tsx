@@ -33,6 +33,7 @@ const NonAgriLandTable: React.FC = () => {
         toastMessage,
         toastColor,
         isSubmitting,
+        isSubmissionAllowed, // NEW: Get submission validation state
         showAdjustmentModal,
         showUpdateAdjustmentModal,
         showStrippingModal,
@@ -135,13 +136,13 @@ const NonAgriLandTable: React.FC = () => {
                     </IonButtons>
                     <IonTitle>Non-Agricultural Land - Form {formData.id}</IonTitle>
                     
-                    {/* Submit Button on the right side */}
+                    {/* Submit Button on the right side - UPDATED: Added submission validation */}
                     <IonButtons slot="end">
                         <SubmitButton
                             label="Submit Form"
                             onClick={onSubmit}
                             loading={isSubmitting}
-                            disabled={isSubmitting}
+                            disabled={isSubmitting || !isSubmissionAllowed} // NEW: Added validation condition
                             className="header-submit-button"
                         />
                     </IonButtons>
@@ -157,6 +158,7 @@ const NonAgriLandTable: React.FC = () => {
                     landAdjustments={landAdjustments}
                     isLoadingAdjustments={isLoadingAdjustments}
                     isSubmitting={isSubmitting}
+                    isSubmissionAllowed={isSubmissionAllowed} // NEW: Pass submission state to UI
                     showAdjustmentModal={showAdjustmentModal}
                     showUpdateAdjustmentModal={showUpdateAdjustmentModal}
                     showStrippingModal={showStrippingModal}
