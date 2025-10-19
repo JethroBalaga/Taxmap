@@ -86,6 +86,25 @@ export const useNonAgriLand = (formId: string | undefined) => {
         setShowToast(true);
     };
 
+    // Add validation function for stripping adjustments
+    const validateStrippingAdjustments = (): boolean => {
+        const strippingAdjustments = currentAdjustments.filter(
+            adj => adj.adjustment_type === 'Stripping'
+        );
+        
+        if (strippingAdjustments.length === 0) {
+            return true; // No stripping adjustments, so valid to submit
+        }
+        
+        const { remainingArea } = getStrippingInfo();
+        
+        // Submit button should be ENABLED when remaining area is 0
+        // (all area has been allocated to strips)
+        return remainingArea === 0;
+    };
+
+    const canSubmit = validateStrippingAdjustments();
+
     // Add calculation function for value adjustments
     const calculateValueAdjustment = (adjustmentType: string, adjustmentFactor: string, rate: number, area: number, additionalFactor?: number): string => {
         if (!adjustmentFactor || !rate) {
@@ -700,6 +719,7 @@ export const useNonAgriLand = (formId: string | undefined) => {
         setShowReverseDeleteWarning,
         reverseDeleteWarningMessage,
         setReverseDeleteWarningMessage,
+        canSubmit,
 
         // Handlers
         handleBack,
