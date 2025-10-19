@@ -556,20 +556,29 @@ const MachineryTable: React.FC = () => {
             <FormInfoCards formContext={formContext} />
           )}
           
+          {/* Value Info Table in Card - Similar to BuildingAdjustmentsTable */}
           {formContext && !isLoadingContext && formContext.valueInfoTableData.length > 0 && (
             <div className="form-details-section">
-              <DynamicTable
-                data={formContext.valueInfoTableData}
-                keyField="value_info_id"
-              />
+              <IonCard>
+                <IonCardContent>
+                  <DynamicTable
+                    data={formContext.valueInfoTableData}
+                    keyField="value_info_id"
+                  />
+                </IonCardContent>
+              </IonCard>
             </div>
           )}
           
           {formContext && !isLoadingContext && formContext.valueInfoTableData.length === 0 && (
             <div className="no-value-info">
-              <IonText color="medium">
-                <p>No Value Info entries found for this form.</p>
-              </IonText>
+              <IonCard>
+                <IonCardContent>
+                  <IonText color="medium">
+                    <p>No Value Info entries found for this form.</p>
+                  </IonText>
+                </IonCardContent>
+              </IonCard>
             </div>
           )}
           
