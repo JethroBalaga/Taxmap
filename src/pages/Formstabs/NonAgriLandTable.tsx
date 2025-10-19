@@ -57,7 +57,7 @@ const NonAgriLandTable: React.FC = () => {
         showReverseDeleteWarning,
         setShowReverseDeleteWarning,
         reverseDeleteWarningMessage,
-        submitDisabledInfo, // ADDED: Submit validation info
+        submitDisabledInfo,
         
         // Handlers
         handleBack,
@@ -142,7 +142,7 @@ const NonAgriLandTable: React.FC = () => {
                             label="Submit Form"
                             onClick={onSubmit}
                             loading={isSubmitting}
-                            disabled={isSubmitting || submitDisabledInfo.disabled} // UPDATED: Add submit validation
+                            disabled={isSubmitting || submitDisabledInfo.disabled}
                             className="header-submit-button"
                         />
                     </IonButtons>
@@ -150,8 +150,8 @@ const NonAgriLandTable: React.FC = () => {
             </IonHeader>
 
             <IonContent className="forms-container">
-                {/* Submit Warning Message */}
-                {submitDisabledInfo.disabled && (
+                {/* REMOVED: The yellow warning message div only */}
+                {/* {submitDisabledInfo.disabled && (
                     <div style={{ 
                         textAlign: 'center', 
                         padding: '10px', 
@@ -164,7 +164,7 @@ const NonAgriLandTable: React.FC = () => {
                             <small>{submitDisabledInfo.reason}</small>
                         </IonText>
                     </div>
-                )}
+                )} */}
 
                 <NonAgriLandUI
                     formData={formData}
@@ -192,7 +192,7 @@ const NonAgriLandTable: React.FC = () => {
                     showReverseDeleteWarning={showReverseDeleteWarning}
                     setShowReverseDeleteWarning={setShowReverseDeleteWarning}
                     reverseDeleteWarningMessage={reverseDeleteWarningMessage}
-                    submitDisabledInfo={submitDisabledInfo} // ADDED: Pass submit validation info
+                    submitDisabledInfo={submitDisabledInfo}
                     
                     // Handlers
                     onSubmit={onSubmit}
