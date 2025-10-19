@@ -240,6 +240,26 @@ export const useNonAgriLand = (formId: string | undefined) => {
         }
     };
 
+    // Calculate assessed value: Adjusted Market Value × Assessment Level (convert percentage to decimal)
+    const calculateAssessedValue = (adjustedMarketValue: string, assessmentLevel: string): string => {
+        if (adjustedMarketValue === 'N/A' || assessmentLevel === 'N/A') return 'N/A';
+        
+        try {
+            const marketValue = parseFloat(adjustedMarketValue);
+            if (isNaN(marketValue) || marketValue <= 0) return 'N/A';
+
+            // Remove % sign and convert to decimal
+            const assessmentRate = parseFloat(assessmentLevel.replace('%', '')) / 100;
+            if (isNaN(assessmentRate) || assessmentRate <= 0) return 'N/A';
+
+            const assessedValue = marketValue * assessmentRate;
+            return assessedValue.toFixed(2);
+        } catch (error) {
+            console.error('Error calculating assessed value:', error);
+            return 'N/A';
+        }
+    };
+
     const loadFormData = () => {
         if (formId) {
             setIsLoading(true);
@@ -407,13 +427,17 @@ export const useNonAgriLand = (formId: string | undefined) => {
                     formData.classification
                 );
 
-                // Create the rate display data with both market values and assessment level
+                // Calculate assessed value
+                const assessedValue = calculateAssessedValue(adjustmentMarketValue, assessmentLevel);
+
+                // Create the rate display data with all values
                 const rateDisplayData = [{
                     valueInfoId: valueInfoId,
                     rate: displayRate,
                     base_market_value: baseMarketValue,
                     adjustment_market_value: adjustmentMarketValue,
-                    assessment_level: assessmentLevel
+                    assessment_level: assessmentLevel,
+                    assessed_value: assessedValue
                 }];
 
                 setSubclassRates(rateDisplayData);
@@ -425,6 +449,7 @@ export const useNonAgriLand = (formId: string | undefined) => {
                     hasStripping: hasStripping,
                     adjustmentMarketValue: adjustmentMarketValue,
                     assessmentLevel: assessmentLevel,
+                    assessedValue: assessedValue,
                     adjustments: adjustmentsWithCalculations.map(adj => ({
                         type: adj.adjustment_type,
                         value: adj.value_adjustment,
@@ -441,7 +466,8 @@ export const useNonAgriLand = (formId: string | undefined) => {
                 rate: '0',
                 base_market_value: 'N/A',
                 adjustment_market_value: 'N/A',
-                assessment_level: 'N/A'
+                assessment_level: 'N/A',
+                assessed_value: 'N/A'
             }]);
             setCurrentAdjustments([]);
         } finally {
