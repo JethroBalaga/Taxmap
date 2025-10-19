@@ -33,7 +33,6 @@ const NonAgriLandTable: React.FC = () => {
         toastMessage,
         toastColor,
         isSubmitting,
-        isSubmissionAllowed, // NEW: Get submission validation state
         showAdjustmentModal,
         showUpdateAdjustmentModal,
         showStrippingModal,
@@ -58,6 +57,7 @@ const NonAgriLandTable: React.FC = () => {
         showReverseDeleteWarning,
         setShowReverseDeleteWarning,
         reverseDeleteWarningMessage,
+        submitDisabledInfo, // ADDED: Submit validation info
         
         // Handlers
         handleBack,
@@ -136,13 +136,13 @@ const NonAgriLandTable: React.FC = () => {
                     </IonButtons>
                     <IonTitle>Non-Agricultural Land - Form {formData.id}</IonTitle>
                     
-                    {/* Submit Button on the right side - UPDATED: Added submission validation */}
+                    {/* Submit Button on the right side */}
                     <IonButtons slot="end">
                         <SubmitButton
                             label="Submit Form"
                             onClick={onSubmit}
                             loading={isSubmitting}
-                            disabled={isSubmitting || !isSubmissionAllowed} // NEW: Added validation condition
+                            disabled={isSubmitting || submitDisabledInfo.disabled} // UPDATED: Add submit validation
                             className="header-submit-button"
                         />
                     </IonButtons>
@@ -150,6 +150,22 @@ const NonAgriLandTable: React.FC = () => {
             </IonHeader>
 
             <IonContent className="forms-container">
+                {/* Submit Warning Message */}
+                {submitDisabledInfo.disabled && (
+                    <div style={{ 
+                        textAlign: 'center', 
+                        padding: '10px', 
+                        backgroundColor: '#fff3cd',
+                        border: '1px solid #ffeaa7',
+                        margin: '10px',
+                        borderRadius: '4px'
+                    }}>
+                        <IonText color="warning">
+                            <small>{submitDisabledInfo.reason}</small>
+                        </IonText>
+                    </div>
+                )}
+
                 <NonAgriLandUI
                     formData={formData}
                     currentAdjustments={currentAdjustments}
@@ -158,7 +174,6 @@ const NonAgriLandTable: React.FC = () => {
                     landAdjustments={landAdjustments}
                     isLoadingAdjustments={isLoadingAdjustments}
                     isSubmitting={isSubmitting}
-                    isSubmissionAllowed={isSubmissionAllowed} // NEW: Pass submission state to UI
                     showAdjustmentModal={showAdjustmentModal}
                     showUpdateAdjustmentModal={showUpdateAdjustmentModal}
                     showStrippingModal={showStrippingModal}
@@ -177,6 +192,7 @@ const NonAgriLandTable: React.FC = () => {
                     showReverseDeleteWarning={showReverseDeleteWarning}
                     setShowReverseDeleteWarning={setShowReverseDeleteWarning}
                     reverseDeleteWarningMessage={reverseDeleteWarningMessage}
+                    submitDisabledInfo={submitDisabledInfo} // ADDED: Pass submit validation info
                     
                     // Handlers
                     onSubmit={onSubmit}

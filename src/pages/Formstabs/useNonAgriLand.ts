@@ -388,11 +388,36 @@ export const useNonAgriLand = (formId: string | undefined) => {
         }
     };
 
+    // Add submit validation function
+    const getSubmitDisabledInfo = (): { disabled: boolean; reason: string } => {
+        const { currentCount, remainingArea } = getStrippingInfo();
+        
+        // If there are stripping adjustments and remaining area is NOT zero, disable submit
+        if (currentCount > 0 && remainingArea !== 0) {
+            return {
+                disabled: true,
+                reason: `Cannot submit while there are ${currentCount} strip(s) with ${remainingArea.toLocaleString()} remaining area. All strips must fully utilize the land area.`
+            };
+        }
+        
+        return {
+            disabled: false,
+            reason: ''
+        };
+    };
+
     const handleBack = () => {
         history.push('/menu/forms');
     };
 
     const onSubmit = async () => {
+        // Check if submission should be disabled due to stripping validation
+        const submitDisabledInfo = getSubmitDisabledInfo();
+        if (submitDisabledInfo.disabled) {
+            showToastMessage(submitDisabledInfo.reason, 'warning');
+            return;
+        }
+
         setIsSubmitting(true);
         showToastMessage('Starting non-agricultural land upload process...', 'warning');
 
@@ -659,6 +684,7 @@ export const useNonAgriLand = (formId: string | undefined) => {
     };
 
     const visibleIcons = getVisibleIcons();
+    const submitDisabledInfo = getSubmitDisabledInfo();
 
     return {
         // State
@@ -694,6 +720,7 @@ export const useNonAgriLand = (formId: string | undefined) => {
         setShowReverseDeleteWarning,
         reverseDeleteWarningMessage,
         setReverseDeleteWarningMessage,
+        submitDisabledInfo, // ADDED: Submit validation info
 
         // Handlers
         handleBack,

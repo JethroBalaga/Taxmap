@@ -25,7 +25,6 @@ interface NonAgriLandUIProps {
     landAdjustments: LandAdjustmentData[];
     isLoadingAdjustments: boolean;
     isSubmitting: boolean;
-    isSubmissionAllowed: boolean; // NEW: Added submission validation prop
     showAdjustmentModal: boolean;
     showUpdateAdjustmentModal: boolean;
     showStrippingModal: boolean;
@@ -44,6 +43,7 @@ interface NonAgriLandUIProps {
     showReverseDeleteWarning: boolean;
     setShowReverseDeleteWarning: (show: boolean) => void;
     reverseDeleteWarningMessage: string;
+    submitDisabledInfo: { disabled: boolean; reason: string }; // ADDED: Submit validation info
     
     // Handlers
     onSubmit: () => void;
@@ -130,7 +130,6 @@ export const NonAgriLandUI: React.FC<NonAgriLandUIProps> = ({
     landAdjustments,
     isLoadingAdjustments,
     isSubmitting,
-    isSubmissionAllowed, // NEW: Added submission validation prop
     showAdjustmentModal,
     showUpdateAdjustmentModal,
     showStrippingModal,
@@ -149,6 +148,7 @@ export const NonAgriLandUI: React.FC<NonAgriLandUIProps> = ({
     showReverseDeleteWarning,
     setShowReverseDeleteWarning,
     reverseDeleteWarningMessage,
+    submitDisabledInfo, // ADDED: Submit validation info
     
     // Handlers
     onSubmit,
@@ -276,26 +276,19 @@ export const NonAgriLandUI: React.FC<NonAgriLandUIProps> = ({
                             <IonText>
                                 <strong>Remaining Area after {currentCount} strip(s): </strong>
                                 <span style={{ 
-                                    color: '#2e7d32', 
+                                    color: remainingArea === 0 ? '#2e7d32' : '#d32f2f', // UPDATED: Red color when non-zero
                                     fontWeight: 'bold',
                                     fontSize: '1.1em'
                                 }}>
                                     {remainingArea.toLocaleString()}
                                 </span>
-                            </IonText>
-                        </div>
-                    </IonCardContent>
-                </IonCard>
-            )}
-
-            {/* NEW: Submission Warning for Stripping Adjustments */}
-            {currentCount > 0 && remainingArea > 0 && (
-                <IonCard color="warning">
-                    <IonCardContent>
-                        <div style={{ textAlign: 'center', padding: '10px' }}>
-                            <IonText color="warning">
-                                <strong>Submission Disabled: </strong>
-                                All area must be allocated to strips before submission. Remaining area must be 0.
+                                {remainingArea !== 0 && ( // ADDED: Warning when area is non-zero
+                                    <div style={{ marginTop: '5px' }}>
+                                        <IonText color="danger">
+                                            <small>All strips must fully utilize the land area before submission</small>
+                                        </IonText>
+                                    </div>
+                                )}
                             </IonText>
                         </div>
                     </IonCardContent>
