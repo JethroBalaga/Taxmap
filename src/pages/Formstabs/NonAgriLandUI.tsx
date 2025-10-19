@@ -25,6 +25,7 @@ interface NonAgriLandUIProps {
     landAdjustments: LandAdjustmentData[];
     isLoadingAdjustments: boolean;
     isSubmitting: boolean;
+    isSubmissionAllowed: boolean; // NEW: Added submission validation prop
     showAdjustmentModal: boolean;
     showUpdateAdjustmentModal: boolean;
     showStrippingModal: boolean;
@@ -129,6 +130,7 @@ export const NonAgriLandUI: React.FC<NonAgriLandUIProps> = ({
     landAdjustments,
     isLoadingAdjustments,
     isSubmitting,
+    isSubmissionAllowed, // NEW: Added submission validation prop
     showAdjustmentModal,
     showUpdateAdjustmentModal,
     showStrippingModal,
@@ -280,6 +282,20 @@ export const NonAgriLandUI: React.FC<NonAgriLandUIProps> = ({
                                 }}>
                                     {remainingArea.toLocaleString()}
                                 </span>
+                            </IonText>
+                        </div>
+                    </IonCardContent>
+                </IonCard>
+            )}
+
+            {/* NEW: Submission Warning for Stripping Adjustments */}
+            {currentCount > 0 && remainingArea > 0 && (
+                <IonCard color="warning">
+                    <IonCardContent>
+                        <div style={{ textAlign: 'center', padding: '10px' }}>
+                            <IonText color="warning">
+                                <strong>Submission Disabled: </strong>
+                                All area must be allocated to strips before submission. Remaining area must be 0.
                             </IonText>
                         </div>
                     </IonCardContent>
