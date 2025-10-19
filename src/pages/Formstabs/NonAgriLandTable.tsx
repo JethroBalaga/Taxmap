@@ -150,22 +150,6 @@ const NonAgriLandTable: React.FC = () => {
             </IonHeader>
 
             <IonContent className="forms-container">
-                {/* REMOVED: The yellow warning message div only */}
-                {/* {submitDisabledInfo.disabled && (
-                    <div style={{ 
-                        textAlign: 'center', 
-                        padding: '10px', 
-                        backgroundColor: '#fff3cd',
-                        border: '1px solid #ffeaa7',
-                        margin: '10px',
-                        borderRadius: '4px'
-                    }}>
-                        <IonText color="warning">
-                            <small>{submitDisabledInfo.reason}</small>
-                        </IonText>
-                    </div>
-                )} */}
-
                 <NonAgriLandUI
                     formData={formData}
                     currentAdjustments={currentAdjustments}
