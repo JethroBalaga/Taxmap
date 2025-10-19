@@ -57,7 +57,6 @@ const NonAgriLandTable: React.FC = () => {
         showReverseDeleteWarning,
         setShowReverseDeleteWarning,
         reverseDeleteWarningMessage,
-        canSubmit,
         
         // Handlers
         handleBack,
@@ -138,33 +137,13 @@ const NonAgriLandTable: React.FC = () => {
                     
                     {/* Submit Button on the right side */}
                     <IonButtons slot="end">
-                        <div style={{ position: 'relative' }}>
-                            <SubmitButton
-                                label="Submit Form"
-                                onClick={onSubmit}
-                                loading={isSubmitting}
-                                disabled={isSubmitting || !canSubmit}
-                                className="header-submit-button"
-                            />
-                            {!canSubmit && (
-                                <div style={{
-                                    position: 'absolute',
-                                    top: '100%',
-                                    left: '50%',
-                                    transform: 'translateX(-50%)',
-                                    background: '#333',
-                                    color: 'white',
-                                    padding: '4px 8px',
-                                    borderRadius: '4px',
-                                    fontSize: '12px',
-                                    whiteSpace: 'nowrap',
-                                    zIndex: 1000,
-                                    marginTop: '4px'
-                                }}>
-                                    Complete all stripping adjustments first
-                                </div>
-                            )}
-                        </div>
+                        <SubmitButton
+                            label="Submit Form"
+                            onClick={onSubmit}
+                            loading={isSubmitting}
+                            disabled={isSubmitting}
+                            className="header-submit-button"
+                        />
                     </IonButtons>
                 </IonToolbar>
             </IonHeader>
