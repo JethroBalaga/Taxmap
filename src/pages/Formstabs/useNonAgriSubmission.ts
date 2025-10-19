@@ -37,6 +37,31 @@ export const useNonAgriSubmission = ({
         return null;
     };
 
+    const insertNonAgriAdjustmentWithRetry = async (databaseValueInfoId: string, adjustmentId: string, retryCount = 0): Promise<boolean> => {
+        try {
+            const result = await supabaseApi.insertNonAgriAdjustment(databaseValueInfoId, adjustmentId);
+            
+            // If no data returned but no error, consider it successful
+            if (!result) {
+                console.warn(`No data returned for adjustment ${adjustmentId}, but assuming success`);
+                return true;
+            }
+            
+            return true;
+        } catch (error: any) {
+            console.error(`Error inserting adjustment ${adjustmentId}:`, error);
+            
+            // Retry logic for transient errors
+            if (retryCount < 3 && error.message?.includes('timeout') || error.message?.includes('network')) {
+                console.log(`Retrying adjustment ${adjustmentId}, attempt ${retryCount + 1}`);
+                await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
+                return insertNonAgriAdjustmentWithRetry(databaseValueInfoId, adjustmentId, retryCount + 1);
+            }
+            
+            throw error;
+        }
+    };
+
     const onSubmit = async (showToastMessage: (message: string, color?: 'success' | 'danger' | 'warning') => void) => {
         // Check if submission should be disabled due to stripping validation
         const submitDisabledInfo = getSubmitDisabledInfo();
@@ -102,13 +127,49 @@ export const useNonAgriSubmission = ({
 
             // Insert value info record
             const databaseValueInfoId = await supabaseApi.insertValueInfo(databaseFormId, databaseTagId);
+            if (!databaseValueInfoId) throw new Error('Failed to insert value info record');
 
-            // Insert non-agricultural adjustments
-            for (const adjustment of currentAdjustments) {
-                await supabaseApi.insertNonAgriAdjustment(
-                    databaseValueInfoId,
-                    adjustment.adjustmentId
-                );
+            // Insert non-agricultural adjustments with error handling
+            if (currentAdjustments.length > 0) {
+                showToastMessage(`Inserting ${currentAdjustments.length} adjustments...`, 'warning');
+                
+                const adjustmentResults = [];
+                for (const adjustment of currentAdjustments) {
+                    try {
+                        const success = await insertNonAgriAdjustmentWithRetry(databaseValueInfoId, adjustment.adjustmentId);
+                        adjustmentResults.push({
+                            adjustmentId: adjustment.adjustmentId,
+                            type: adjustment.adjustment_type,
+                            success
+                        });
+                        
+                        if (success) {
+                            console.log(`Successfully inserted adjustment: ${adjustment.adjustment_type} (${adjustment.adjustmentId})`);
+                        }
+                    } catch (error: any) {
+                        console.error(`Failed to insert adjustment ${adjustment.adjustmentId}:`, error);
+                        adjustmentResults.push({
+                            adjustmentId: adjustment.adjustmentId,
+                            type: adjustment.adjustment_type,
+                            success: false,
+                            error: error.message
+                        });
+                        
+                        // Continue with other adjustments even if one fails
+                        showToastMessage(`Warning: Failed to insert ${adjustment.adjustment_type} adjustment, continuing...`, 'warning');
+                    }
+                }
+
+                // Check if any adjustments failed
+                const failedAdjustments = adjustmentResults.filter(result => !result.success);
+                if (failedAdjustments.length > 0) {
+                    console.warn('Some adjustments failed to insert:', failedAdjustments);
+                    showToastMessage(`Form submitted but ${failedAdjustments.length} adjustment(s) failed`, 'warning');
+                } else {
+                    console.log('All adjustments inserted successfully');
+                }
+            } else {
+                console.log('No adjustments to insert');
             }
 
             // Mark form as uploaded

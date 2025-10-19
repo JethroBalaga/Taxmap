@@ -6,7 +6,7 @@ import {
     IonText,
     IonToast
 } from "@ionic/react";
-import { createOutline, arrowUpCircleOutline, trashOutline} from "ionicons/icons";
+import { createOutline, arrowUpCircleOutline, trashOutline, informationCircleOutline } from "ionicons/icons";
 import DynamicTable from "../../components/GlobalComponent/DynamicTable";
 import { BuildingAdjustmentData,BuildingAdjustmentLocalStorage} from "../../utils/tablestorages/BuildingAdjustmentLocalStorage";
 import "../../CSS/BuildingResponsive.css";
@@ -43,10 +43,26 @@ const BuildingAdjustmentsTable: React.FC<BuildingAdjustmentsTableProps> = ({
         setSelectedAdjustmentId(newSelectedId);
     };
 
-    const handleAdjustmentRowClick = async (rowData: BuildingAdjustmentData) => {
+    const handleAdjustmentRowClick = (rowData: BuildingAdjustmentData) => {
+        // Only select the row, don't automatically show details
         handleSelectAdjustmentRow(rowData);
-        if (rowData && rowData.buidlingsubcomponent) {
-            onSubcomponentClick(rowData);
+    };
+
+    const handleShowCalculationDetails = () => {
+        if (!selectedAdjustmentId) {
+            showToastMessage('Please select an adjustment to view calculation details', 'warning');
+            return;
+        }
+        
+        // Find the selected adjustment data
+        const selectedAdjustment = buildingAdjustments.find(
+            adj => adj.bldg_adjustment_id === selectedAdjustmentId
+        );
+        
+        if (selectedAdjustment && selectedAdjustment.buidlingsubcomponent) {
+            onSubcomponentClick(selectedAdjustment);
+        } else {
+            showToastMessage('No subcomponent data available for this adjustment', 'warning');
         }
     };
 
@@ -137,6 +153,13 @@ const BuildingAdjustmentsTable: React.FC<BuildingAdjustmentsTableProps> = ({
             onClick: handleDeleteAdjustment,
             title: "Delete Building adjustment",
             enabled: !!selectedAdjustmentId
+        },
+        {
+            icon: informationCircleOutline,
+            className: "info-button",
+            onClick: handleShowCalculationDetails,
+            title: "View Calculation Details",
+            enabled: !!selectedAdjustmentId
         }
     ];
 
@@ -156,7 +179,10 @@ const BuildingAdjustmentsTable: React.FC<BuildingAdjustmentsTableProps> = ({
                             fill="clear"
                             className={action.className}
                             onClick={action.onClick}
-                            style={{ opacity: action.enabled ? 1 : 0.5 }}
+                            style={{ 
+                                opacity: action.enabled ? 1 : 0.5,
+                                color: action.icon === informationCircleOutline ? (action.enabled ? '#2e7d32' : '#92949c') : undefined
+                            }}
                             title={action.title}
                             disabled={!action.enabled}
                         >
@@ -172,7 +198,15 @@ const BuildingAdjustmentsTable: React.FC<BuildingAdjustmentsTableProps> = ({
                         title="Building Adjustments"
                         keyField="bldg_adjustment_id"
                         onRowClick={handleAdjustmentRowClick}
+                        selectedRow={selectedAdjustmentId ? filteredAdjustmentsForTable.find(item => item.bldg_adjustment_id === selectedAdjustmentId) : undefined}
                     />
+                    {selectedAdjustmentId && (
+                        <div style={{ textAlign: 'center', marginTop: '8px' }}>
+                            <IonText color="medium">
+                                <small>Selected adjustment ID: {selectedAdjustmentId}</small>
+                            </IonText>
+                        </div>
+                    )}
                 </div>
             ) : (
                 <div className="no-data">
