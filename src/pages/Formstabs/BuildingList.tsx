@@ -38,8 +38,7 @@ interface BuildingListProps {
 
 // Interface for the table data (only what we want to display)
 interface BuildingTableData {
-    id: string;
-    building_id: string;
+    valueInfoId: string; // Changed to match non-agri pattern
     structure_type: string;
     base_market_value: string;
     adjusted_market_value: string;
@@ -101,7 +100,7 @@ const BuildingList: React.FC<BuildingListProps> = ({
         return Math.round(assessedValue);
     };
 
-    // Prepare clean data for DynamicTable (only display columns)
+    // Prepare clean data for DynamicTable - match non-agri pattern
     const tableData: BuildingTableData[] = buildingInfoIds.map((id) => {
         const buildingData = buildingDataList.get(id);
         const baseMarketValue = baseMarketValues.get(id) || 0;
@@ -112,8 +111,7 @@ const BuildingList: React.FC<BuildingListProps> = ({
         const assessedValue = calculateAssessedValue(finalAdjustedValue, assessmentLevel);
 
         return {
-            id,
-            building_id: id,
+            valueInfoId: id, // Use valueInfoId to match non-agri pattern
             structure_type: buildingData?.structureType || 'N/A',
             base_market_value: baseMarketValue !== undefined ? `₱${baseMarketValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'N/A',
             adjusted_market_value: finalAdjustedValue !== undefined ? `₱${finalAdjustedValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'N/A',
@@ -130,7 +128,8 @@ const BuildingList: React.FC<BuildingListProps> = ({
     });
 
     const handleTableRowClick = (rowData: BuildingTableData) => {
-        handleRowClick(rowData.id);
+        // Use valueInfoId for selection to match the data structure
+        handleRowClick(rowData.valueInfoId);
     };
 
     if (loading) {
@@ -180,9 +179,9 @@ const BuildingList: React.FC<BuildingListProps> = ({
                     <DynamicTable
                         data={filteredTableData}
                         title="Building Information"
-                        keyField="id"
+                        keyField="valueInfoId" // Updated to match the new field name
                         onRowClick={handleTableRowClick}
-                        selectedRow={selectedBuildingId ? filteredTableData.find(item => item.id === selectedBuildingId) : undefined}
+                        selectedRow={selectedBuildingId ? filteredTableData.find(item => item.valueInfoId === selectedBuildingId) : undefined}
                     />
 
                     {/* Show Building Details Card for selected building */}

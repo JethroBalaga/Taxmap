@@ -119,7 +119,8 @@ const BuildingAdjustmentsTable: React.FC<BuildingAdjustmentsTableProps> = ({
     });
 
     const filteredAdjustmentsForTable = filteredAdjustments.map(adj => {
-        const { Maincomponent, ...rest } = adj;
+        // Remove value_info_id and Maincomponent from display
+        const { value_info_id, Maincomponent, ...rest } = adj;
 
         const depreciationValue = (rest as any).depreciation;
         const formattedDepreciation = depreciationValue && depreciationValue.toString().trim() !== ''
