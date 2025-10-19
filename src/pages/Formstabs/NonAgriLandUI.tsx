@@ -190,7 +190,7 @@ export const NonAgriLandUI: React.FC<NonAgriLandUIProps> = ({
                 </IonCardContent>
             </IonCard>
 
-            {/* Rate Information Table with Base Market Value and Adjustment Market Value */}
+            {/* Rate Information Table with Base Market Value, Adjustment Market Value, and Assessment Level */}
             <IonCard>
                 <IonCardContent>
                     {isLoadingRates ? (

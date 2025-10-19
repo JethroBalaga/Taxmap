@@ -7,6 +7,7 @@ import { NonAgriAdjustmentLocalStorage } from '../../utils/tablestorages/NonAgri
 import { PhotoTagLocalStorage } from '../../utils/tablestorages/PhotoTagLocalStorage';
 import { LandAdjustmentData, getLandAdjustmentData } from '../../utils/landAdjustmentLocalStorage';
 import { getSubclassRateData, getCurrentRateForSubclass } from '../../utils/subclassRateLocalStorage';
+import { getAssessmentLevelForValue, getAssessmentLevelData } from '../../utils/assessmentLevelLocalStorage';
 import { supabaseApi } from '../../services/supabaseApi';
 import { supabase } from '../../utils/supaBaseClient';
 
@@ -186,6 +187,59 @@ export const useNonAgriLand = (formId: string | undefined) => {
         }
     };
 
+    // Calculate assessment level based on adjusted market value
+    const calculateAssessmentLevel = async (adjustedMarketValue: string, kindId: number, classification: string): Promise<string> => {
+        if (adjustedMarketValue === 'N/A') return 'N/A';
+        
+        try {
+            const marketValue = parseFloat(adjustedMarketValue);
+            if (isNaN(marketValue) || marketValue <= 0) return 'N/A';
+
+            // Get assessment level data
+            const assessmentLevels = await getAssessmentLevelData();
+            if (!assessmentLevels || assessmentLevels.length === 0) {
+                console.log('No assessment level data available');
+                return 'N/A';
+            }
+
+            // Convert kindId to number (formData.kind might be string)
+            const numericKindId = typeof kindId === 'string' ? parseInt(kindId) : kindId;
+            
+            // Find the assessment level that matches the market value range, kind, and classification
+            const matchingLevel = assessmentLevels.find(level => 
+                level.kind_id === numericKindId &&
+                level.class_id === classification &&
+                marketValue >= level.range1 &&
+                marketValue <= level.range2
+            );
+
+            if (matchingLevel) {
+                console.log('Found matching assessment level:', {
+                    marketValue,
+                    kindId: numericKindId,
+                    classification,
+                    range1: matchingLevel.range1,
+                    range2: matchingLevel.range2,
+                    rate: matchingLevel.rate_percent
+                });
+                return matchingLevel.rate_percent;
+            } else {
+                console.log('No matching assessment level found:', {
+                    marketValue,
+                    kindId: numericKindId,
+                    classification,
+                    availableLevels: assessmentLevels.filter(level => 
+                        level.kind_id === numericKindId && level.class_id === classification
+                    ).map(level => ({ range1: level.range1, range2: level.range2, rate: level.rate_percent }))
+                });
+                return 'N/A';
+            }
+        } catch (error) {
+            console.error('Error calculating assessment level:', error);
+            return 'N/A';
+        }
+    };
+
     const loadFormData = () => {
         if (formId) {
             setIsLoading(true);
@@ -346,12 +400,20 @@ export const useNonAgriLand = (formId: string | undefined) => {
                     adjustmentMarketValue = calculateAdjustmentMarketValue(baseMarketValue, adjustmentsWithCalculations);
                 }
 
-                // Create the rate display data with both market values
+                // Calculate assessment level
+                const assessmentLevel = await calculateAssessmentLevel(
+                    adjustmentMarketValue,
+                    formData.kind,
+                    formData.classification
+                );
+
+                // Create the rate display data with both market values and assessment level
                 const rateDisplayData = [{
                     valueInfoId: valueInfoId,
                     rate: displayRate,
                     base_market_value: baseMarketValue,
-                    adjustment_market_value: adjustmentMarketValue
+                    adjustment_market_value: adjustmentMarketValue,
+                    assessment_level: assessmentLevel
                 }];
 
                 setSubclassRates(rateDisplayData);
@@ -362,6 +424,7 @@ export const useNonAgriLand = (formId: string | undefined) => {
                     baseMarketValue: baseMarketValue,
                     hasStripping: hasStripping,
                     adjustmentMarketValue: adjustmentMarketValue,
+                    assessmentLevel: assessmentLevel,
                     adjustments: adjustmentsWithCalculations.map(adj => ({
                         type: adj.adjustment_type,
                         value: adj.value_adjustment,
@@ -377,7 +440,8 @@ export const useNonAgriLand = (formId: string | undefined) => {
                 valueInfoId: valueInfoId,
                 rate: '0',
                 base_market_value: 'N/A',
-                adjustment_market_value: 'N/A'
+                adjustment_market_value: 'N/A',
+                assessment_level: 'N/A'
             }]);
             setCurrentAdjustments([]);
         } finally {
