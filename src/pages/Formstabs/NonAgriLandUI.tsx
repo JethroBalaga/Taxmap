@@ -10,10 +10,11 @@ import {
     IonAlert,
     IonIcon
 } from "@ionic/react";
-import { cutOutline, resizeOutline, trailSignOutline, trashOutline } from "ionicons/icons";
+import { cutOutline, resizeOutline, trailSignOutline, trashOutline, informationCircleOutline } from "ionicons/icons";
 import NonAgriAdjustment from '../../components/Modals/NonAgriAdjustment';
 import NonAgriAdjustmentUpdate from '../../components/Modals/NonAgriAdjustmentUpdate';
 import StrippingModal from '../../components/Modals/StrippingModal';
+import ValueAdjustmentInfoModal from '../../components/Modals/ValueAdjustmentInfoModal';
 import DynamicTable from '../../components/GlobalComponent/DynamicTable';
 import { LandAdjustmentData } from '../../utils/landAdjustmentLocalStorage';
 
@@ -44,6 +45,10 @@ interface NonAgriLandUIProps {
     setShowReverseDeleteWarning: (show: boolean) => void;
     reverseDeleteWarningMessage: string;
     submitDisabledInfo: { disabled: boolean; reason: string };
+    
+    // New state for info modal
+    showInfoModal: boolean;
+    setShowInfoModal: (show: boolean) => void;
     
     // Handlers
     onSubmit: () => void;
@@ -84,6 +89,7 @@ const getIconComponent = (iconName: string) => {
         case 'resizeOutline': return resizeOutline;
         case 'trailSignOutline': return trailSignOutline;
         case 'trashOutline': return trashOutline;
+        case 'informationCircleOutline': return informationCircleOutline;
         default: return cutOutline;
     }
 };
@@ -114,6 +120,10 @@ const getIconLabel = (adjustmentType: string, currentAdjustments: any[], getStri
 const getIconColor = (adjustmentType: string, selectedRow: any, currentAdjustments: any[]) => {
     if (adjustmentType === 'Delete') {
         return selectedRow ? '#eb445a' : '#92949c';
+    }
+    
+    if (adjustmentType === 'Information') {
+        return selectedRow ? '#2e7d32' : '#92949c';
     }
 
     const hasExistingAdjustment = currentAdjustments.some(
@@ -150,6 +160,10 @@ export const NonAgriLandUI: React.FC<NonAgriLandUIProps> = ({
     reverseDeleteWarningMessage,
     submitDisabledInfo,
     
+    // New props for info modal
+    showInfoModal,
+    setShowInfoModal,
+    
     // Handlers
     onSubmit,
     handleIconClick,
@@ -166,8 +180,14 @@ export const NonAgriLandUI: React.FC<NonAgriLandUIProps> = ({
     setAdjustmentToDelete
 }) => {
     const gridData = getGridData(formData);
-    // Use the prop function to get stripping info
     const { remainingArea, currentCount } = getStrippingInfo();
+
+    // Information icon configuration
+    const infoIcon = {
+        icon: 'informationCircleOutline',
+        label: "Calculation Info",
+        adjustmentType: 'Information'
+    };
 
     return (
         <>
@@ -209,64 +229,85 @@ export const NonAgriLandUI: React.FC<NonAgriLandUIProps> = ({
                 </IonCardContent>
             </IonCard>
 
-            {/* Icons Section */}
-            {visibleIcons.length > 0 && (
-                <div style={{
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    gap: '2rem',
-                    margin: '2rem 0',
-                    padding: '1rem'
-                }}>
-                    {visibleIcons.map((item, index) => {
-                        const hasExistingAdjustment = currentAdjustments.some(
-                            adj => adj.adjustment_type === item.adjustmentType
-                        );
+            {/* Icons Section - Updated to include information icon */}
+            <div style={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                gap: '2rem',
+                margin: '2rem 0',
+                padding: '1rem',
+                flexWrap: 'wrap'
+            }}>
+                {/* Existing adjustment icons */}
+                {visibleIcons.map((item, index) => {
+                    const hasExistingAdjustment = currentAdjustments.some(
+                        adj => adj.adjustment_type === item.adjustmentType
+                    );
 
-                        return (
-                            <div key={index} style={{ textAlign: 'center' }}>
-                                <IonIcon
-                                    icon={getIconComponent(item.icon)}
-                                    size="large"
-                                    style={{
-                                        cursor: item.adjustmentType === 'Delete' ? (selectedRow ? 'pointer' : 'not-allowed') : 'pointer',
-                                        color: getIconColor(item.adjustmentType, selectedRow, currentAdjustments),
-                                        opacity: item.adjustmentType === 'Delete' && !selectedRow ? 0.5 : 1
-                                    }}
-                                    onClick={() => {
-                                        if (item.adjustmentType === 'Delete') {
-                                            if (selectedRow) {
-                                                handleIconClick(item.adjustmentType);
-                                            }
+                    return (
+                        <div key={index} style={{ textAlign: 'center' }}>
+                            <IonIcon
+                                icon={getIconComponent(item.icon)}
+                                size="large"
+                                style={{
+                                    cursor: item.adjustmentType === 'Delete' ? (selectedRow ? 'pointer' : 'not-allowed') : 'pointer',
+                                    color: getIconColor(item.adjustmentType, selectedRow, currentAdjustments),
+                                    opacity: (item.adjustmentType === 'Delete' && !selectedRow) ? 0.5 : 1
+                                }}
+                                onClick={() => {
+                                    if (item.adjustmentType === 'Delete') {
+                                        if (selectedRow) {
+                                            handleIconClick(item.adjustmentType);
+                                        }
+                                    } else {
+                                        if (item.adjustmentType === 'Stripping') {
+                                            handleIconClick(item.adjustmentType);
                                         } else {
-                                            // For Stripping, always use handleIconClick (Add functionality)
-                                            if (item.adjustmentType === 'Stripping') {
-                                                handleIconClick(item.adjustmentType);
+                                            if (hasExistingAdjustment) {
+                                                handleUpdateIconClick(item.adjustmentType);
                                             } else {
-                                                // For other adjustments, use update if exists
-                                                if (hasExistingAdjustment) {
-                                                    handleUpdateIconClick(item.adjustmentType);
-                                                } else {
-                                                    handleIconClick(item.adjustmentType);
-                                                }
+                                                handleIconClick(item.adjustmentType);
                                             }
                                         }
-                                    }}
-                                />
-                                <div style={{ marginTop: '0.5rem' }}>
-                                    <IonText color="medium">
-                                        {item.adjustmentType === 'Delete' ?
-                                            (selectedRow ? 'Delete Selected' : 'Select to Delete') :
-                                            getIconLabel(item.adjustmentType, currentAdjustments, getStrippingInfo)
-                                        }
-                                    </IonText>
-                                </div>
+                                    }
+                                }}
+                            />
+                            <div style={{ marginTop: '0.5rem' }}>
+                                <IonText color="medium">
+                                    {item.adjustmentType === 'Delete' ?
+                                        (selectedRow ? 'Delete Selected' : 'Select to Delete') :
+                                        getIconLabel(item.adjustmentType, currentAdjustments, getStrippingInfo)
+                                    }
+                                </IonText>
                             </div>
-                        );
-                    })}
+                        </div>
+                    );
+                })}
+
+                {/* Information Icon - Always visible but only enabled when a row is selected */}
+                <div style={{ textAlign: 'center' }}>
+                    <IonIcon
+                        icon={getIconComponent(infoIcon.icon)}
+                        size="large"
+                        style={{
+                            cursor: selectedRow ? 'pointer' : 'not-allowed',
+                            color: getIconColor(infoIcon.adjustmentType, selectedRow, currentAdjustments),
+                            opacity: selectedRow ? 1 : 0.5
+                        }}
+                        onClick={() => {
+                            if (selectedRow) {
+                                setShowInfoModal(true);
+                            }
+                        }}
+                    />
+                    <div style={{ marginTop: '0.5rem' }}>
+                        <IonText color="medium">
+                            {selectedRow ? 'Calculation Info' : 'Select for Info'}
+                        </IonText>
+                    </div>
                 </div>
-            )}
+            </div>
 
             {/* Remaining Area Display - MOVED BELOW ICONS */}
             {currentCount > 0 && (
@@ -368,6 +409,15 @@ export const NonAgriLandUI: React.FC<NonAgriLandUIProps> = ({
                 area={formData?.area || 0}
                 getStrippingInfo={getStrippingInfo}
                 getStrippingAdjustment={getStrippingAdjustment}
+            />
+
+            {/* Value Adjustment Info Modal */}
+            <ValueAdjustmentInfoModal
+                isOpen={showInfoModal}
+                onClose={() => setShowInfoModal(false)}
+                selectedAdjustment={selectedRow}
+                formData={formData}
+                subclassRates={subclassRates}
             />
 
             {/* Delete Confirmation Alert */}
