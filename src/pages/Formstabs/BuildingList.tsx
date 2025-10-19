@@ -142,12 +142,11 @@ const BuildingList: React.FC<BuildingListProps> = ({
 
     return (
         <>
-            {/* Form Summary Section - REMOVED Form ID since it's in header now */}
+            {/* Form Summary Section - Matching non-agri design */}
             <IonCard className="form-summary-card">
                 <IonCardContent>
                     <IonGrid style={{ margin: '0', padding: '0' }}>
                         <IonRow style={{ marginBottom: '4px' }}>
-                            {/* Removed Form ID column */}
                             <IonCol size="4" style={{ padding: '4px' }}><IonText><strong>District:</strong> {district || 'N/A'}</IonText></IonCol>
                             <IonCol size="4" style={{ padding: '4px' }}><IonText><strong>Declarant ID:</strong> {declarant || 'N/A'}</IonText></IonCol>
                             <IonCol size="4" style={{ padding: '4px' }}><IonText><strong>Kind:</strong> {kind || 'N/A'}</IonText></IonCol>
@@ -164,44 +163,68 @@ const BuildingList: React.FC<BuildingListProps> = ({
                 </IonCardContent>
             </IonCard>
 
-            {/* Building Table */}
-            {buildingInfoIds.length > 0 ? (
-                <>
-                    <div className="search-and-icon-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '10px 0' }}>
-                        <IonButton
-                            fill="clear"
-                            onClick={handleOpenFirstBuildingDetails}
-                            title="Click to open details for the first building"
-                        >
-                            <IonIcon icon={informationCircle} color="primary" size="small" />
-                        </IonButton>
-                    </div>
-                    
-                    <DynamicTable
-                        data={filteredTableData}
-                        title="Building Information"
-                        keyField="valueInfoId"
-                        onRowClick={handleTableRowClick}
-                        selectedRow={selectedBuildingId ? filteredTableData.find(item => item.valueInfoId === selectedBuildingId) : undefined}
+            {/* Click to Open Building Details - ABOVE the table like non-agri */}
+            {buildingInfoIds.length > 0 && (
+                <div style={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    gap: '1rem',
+                    margin: '1rem 0',
+                    padding: '1rem'
+                }}>
+                    <IonIcon
+                        icon={informationCircle}
+                        size="large"
+                        style={{
+                            cursor: 'pointer',
+                            color: '#3880ff'
+                        }}
+                        onClick={handleOpenFirstBuildingDetails}
                     />
+                    <IonText color="medium">
+                        Click to open building details
+                    </IonText>
+                </div>
+            )}
 
-                    {/* Show Building Details Card for selected building */}
-                    {selectedBuildingId && (() => {
-                        const selectedBuilding = buildingDataList.get(selectedBuildingId);
-                        return selectedBuilding && (
-                            <IonRow>
-                                <IonCol size="12">
-                                    <BuildingDetailsCard
-                                        buildingData={{ ...selectedBuilding, id: selectedBuildingId }}
-                                        buildingRate={buildingCodeRates.get(selectedBuildingId)}
-                                        onUpdateClick={onUpdateClick}
-                                    />
-                                </IonCol>
-                            </IonRow>
-                        );
-                    })()}
-                </>
-            ) : (
+            {/* Building Information Table - Matching non-agri design */}
+            <IonCard>
+                <IonCardContent>
+                    {loading ? (
+                        <div style={{ textAlign: 'center', padding: '20px' }}>
+                            <IonText>Loading building information...</IonText>
+                        </div>
+                    ) : (
+                        <DynamicTable
+                            data={filteredTableData}
+                            title="Building Information"
+                            keyField="valueInfoId"
+                            onRowClick={handleTableRowClick}
+                            selectedRow={selectedBuildingId ? filteredTableData.find(item => item.valueInfoId === selectedBuildingId) : undefined}
+                        />
+                    )}
+                </IonCardContent>
+            </IonCard>
+
+            {/* Show Building Details Card for selected building */}
+            {selectedBuildingId && (() => {
+                const selectedBuilding = buildingDataList.get(selectedBuildingId);
+                return selectedBuilding && (
+                    <IonCard>
+                        <IonCardContent>
+                            <BuildingDetailsCard
+                                buildingData={{ ...selectedBuilding, id: selectedBuildingId }}
+                                buildingRate={buildingCodeRates.get(selectedBuildingId)}
+                                onUpdateClick={onUpdateClick}
+                            />
+                        </IonCardContent>
+                    </IonCard>
+                );
+            })()}
+
+            {/* No Data State - Matching non-agri design */}
+            {buildingInfoIds.length === 0 && !loading && (
                 <div className="no-data">
                     <IonText>No building information available for this form.</IonText>
                 </div>

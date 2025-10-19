@@ -4,7 +4,9 @@ import {
     IonIcon,
     IonSearchbar,
     IonText,
-    IonToast
+    IonToast,
+    IonCard,
+    IonCardContent
 } from "@ionic/react";
 import { createOutline, arrowUpCircleOutline, trashOutline, informationCircleOutline } from "ionicons/icons";
 import DynamicTable from "../../components/GlobalComponent/DynamicTable";
@@ -166,6 +168,7 @@ const BuildingAdjustmentsTable: React.FC<BuildingAdjustmentsTableProps> = ({
 
     return (
         <>
+            {/* Search and Icons Section - Above the table like non-agri */}
             <div className="search-container">
                 <IonSearchbar
                     placeholder="Search adjustments..."
@@ -192,28 +195,35 @@ const BuildingAdjustmentsTable: React.FC<BuildingAdjustmentsTableProps> = ({
                     ))}
                 </div>
             </div>
-            {filteredAdjustments.length > 0 ? (
-                <div style={{ padding: '0 16px' }}>
-                    <DynamicTable
-                        data={filteredAdjustmentsForTable}
-                        title="Building Adjustments"
-                        keyField="bldg_adjustment_id"
-                        onRowClick={handleAdjustmentRowClick}
-                        selectedRow={selectedAdjustmentId ? filteredAdjustmentsForTable.find(item => item.bldg_adjustment_id === selectedAdjustmentId) : undefined}
-                    />
-                    {selectedAdjustmentId && (
-                        <div style={{ textAlign: 'center', marginTop: '8px' }}>
-                            <IonText color="medium">
-                                <small>Selected adjustment ID: {selectedAdjustmentId}</small>
-                            </IonText>
+
+            {/* Building Adjustments Table - Matching non-agri design */}
+            <IonCard>
+                <IonCardContent>
+                    {filteredAdjustments.length > 0 ? (
+                        <DynamicTable
+                            data={filteredAdjustmentsForTable}
+                            title="Building Adjustments"
+                            keyField="bldg_adjustment_id"
+                            onRowClick={handleAdjustmentRowClick}
+                            selectedRow={selectedAdjustmentId ? filteredAdjustmentsForTable.find(item => item.bldg_adjustment_id === selectedAdjustmentId) : undefined}
+                        />
+                    ) : (
+                        <div className="no-data">
+                            <IonText>No building adjustments found.</IonText>
                         </div>
                     )}
-                </div>
-            ) : (
-                <div className="no-data">
-                    <IonText>No building adjustments found.</IonText>
+                </IonCardContent>
+            </IonCard>
+
+            {/* Selected Adjustment Info */}
+            {selectedAdjustmentId && (
+                <div style={{ textAlign: 'center', marginTop: '8px' }}>
+                    <IonText color="medium">
+                        <small>Selected adjustment ID: {selectedAdjustmentId}</small>
+                    </IonText>
                 </div>
             )}
+
             <IonToast
                 isOpen={showDeleteToast}
                 onDidDismiss={() => setShowDeleteToast(false)}
