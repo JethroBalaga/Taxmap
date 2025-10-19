@@ -272,7 +272,7 @@ export const useNonAgriLand = (formId: string | undefined) => {
 
             // Get additional factor from NonAgriAdjustmentLocalStorage
             const additionalFactorValue = NonAgriAdjustmentLocalStorage.getAdditionalFactor(
-                valueInfoId, 
+                valueInfoId,
                 nonAgriAdj.adjustmentId
             );
 
@@ -325,18 +325,18 @@ export const useNonAgriLand = (formId: string | undefined) => {
         const strippingAdjustments = currentAdjustments.filter(
             adj => adj.adjustment_type === 'Stripping'
         );
-        
+
         const currentCount = strippingAdjustments.length;
         const nextNumber = currentCount + 1;
-        
+
         // Calculate remaining area after all strips - get directly from localStorage
         let totalStripArea = 0;
-        
+
         if (strippingAdjustments.length > 0 && valueInfoId) {
             totalStripArea = strippingAdjustments.reduce((total, adj) => {
                 if (adj.adjustmentId) {
                     const additionalFactorValue = NonAgriAdjustmentLocalStorage.getAdditionalFactor(
-                        valueInfoId, 
+                        valueInfoId,
                         adj.adjustmentId
                     );
                     if (additionalFactorValue) {
@@ -346,9 +346,9 @@ export const useNonAgriLand = (formId: string | undefined) => {
                 return total;
             }, 0);
         }
-        
+
         const remainingArea = Math.max(0, (formData?.area || 0) - totalStripArea);
-        
+
         return {
             currentCount,
             nextNumber,
@@ -374,11 +374,11 @@ export const useNonAgriLand = (formId: string | undefined) => {
     // Get icon label based on stripping sequence
     const getStrippingIconLabel = () => {
         const { nextNumber, canAddMore } = getStrippingInfo();
-        
+
         if (!canAddMore) {
             return "Max Strips Reached";
         }
-        
+
         switch (nextNumber) {
             case 1: return "Add 1st Strip";
             case 2: return "Add 2nd Strip";
@@ -391,7 +391,6 @@ export const useNonAgriLand = (formId: string | undefined) => {
     const handleBack = () => {
         history.push('/menu/forms');
     };
-
     const onSubmit = async () => {
         setIsSubmitting(true);
         showToastMessage('Starting non-agricultural land upload process...', 'warning');
@@ -407,6 +406,12 @@ export const useNonAgriLand = (formId: string | undefined) => {
 
             const photoTag = PhotoTagLocalStorage.getPhotoTag(valueInfo.photoTagId);
             if (!photoTag) throw new Error('Photo tag not found');
+
+            // Get non-agri adjustments from localStorage
+            const localStorageAdjustments = NonAgriAdjustmentLocalStorage.getAdjustmentsByValueInfoId(valueInfoId);
+            if (localStorageAdjustments.length === 0) {
+                throw new Error('No non-agricultural adjustments found in local storage');
+            }
 
             // Insert photo record
             const databaseTagId = await supabaseApi.insertPhoto({
@@ -452,11 +457,12 @@ export const useNonAgriLand = (formId: string | undefined) => {
             // Insert value info record
             const databaseValueInfoId = await supabaseApi.insertValueInfo(databaseFormId, databaseTagId);
 
-            // Insert non-agricultural adjustments
-            for (const adjustment of currentAdjustments) {
+            // Insert non-agricultural adjustments WITH additional_factor
+            for (const adjustment of localStorageAdjustments) {
                 await supabaseApi.insertNonAgriAdjustment(
                     databaseValueInfoId,
-                    adjustment.adjustmentId
+                    adjustment.adjustmentId,
+                    adjustment.additionalFactor // Include the additional factor from localStorage
                 );
             }
 
@@ -570,7 +576,7 @@ export const useNonAgriLand = (formId: string | undefined) => {
                 const strippingAdjustments = currentAdjustments.filter(
                     adj => adj.adjustment_type === 'Stripping'
                 );
-                
+
                 if (strippingAdjustments.length > 1) {
                     // Extract strip numbers from adjustment IDs (S1, S2, S3, S4)
                     const getStripNumber = (adj: any) => {
@@ -580,23 +586,23 @@ export const useNonAgriLand = (formId: string | undefined) => {
 
                     // Get all existing strip numbers
                     const existingStripNumbers = strippingAdjustments.map(getStripNumber);
-                    
+
                     // Find the highest strip number (the one that should be deleted first)
                     const highestStripNumber = Math.max(...existingStripNumbers);
-                    
+
                     // Get the strip number of the adjustment to delete
                     const adjustmentStripNumber = getStripNumber(adjustmentToDelete);
-                    
+
                     // Only allow deletion if it's the highest strip number (S2, then S1)
                     if (adjustmentStripNumber !== highestStripNumber) {
                         // Sort the existing strip numbers and format them
                         const sortedStrips = [...existingStripNumbers].sort((a, b) => a - b);
                         const existingStripsText = sortedStrips.map(num => `S${num}`).join(', ');
-                        
+
                         // Use custom warning state
                         setReverseDeleteWarningMessage(`You can only delete the highest strip first. Existing strips: ${existingStripsText}. Please delete S${highestStripNumber} first.`);
                         setShowReverseDeleteWarning(true);
-                        
+
                         // Reset states and deselect the row
                         setSelectedRow(null);
                         setShowDeleteAlert(false);
