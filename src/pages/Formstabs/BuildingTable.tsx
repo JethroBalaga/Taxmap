@@ -138,6 +138,7 @@ const BuildingTableWrapper: React.FC = () => {
             actual_use={formData.actualUse || ''}
             district={formData.district}
             subclass={formData.subclass}
+            formData={formData} // Pass the full formData for the title
         />
     );
 };

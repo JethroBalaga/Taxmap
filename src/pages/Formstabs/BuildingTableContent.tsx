@@ -34,6 +34,7 @@ interface BuildingTableProps {
     actual_use: string;
     district?: number | null;
     subclass?: string;
+    formData?: any; // Add formData prop for the title
 }
 
 const BuildingTableContent: React.FC<BuildingTableProps> = ({
@@ -45,7 +46,8 @@ const BuildingTableContent: React.FC<BuildingTableProps> = ({
     actual_use,
     district,
     classification,
-    subclass
+    subclass,
+    formData // Receive formData prop
 }) => {
     const {
         buildingInfoIds,
@@ -105,7 +107,8 @@ const BuildingTableContent: React.FC<BuildingTableProps> = ({
                             Back
                         </IonButton>
                     </IonButtons>
-                    <IonTitle>Building Assessment</IonTitle>
+                    {/* Updated Title to show Form ID like non-agri land */}
+                    <IonTitle>Building Assessment - Form {formData?.id || form_id}</IonTitle>
                     <IonButtons slot="end">
                         <SubmitButton
                             onClick={handleSubmit}

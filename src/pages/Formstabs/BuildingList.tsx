@@ -38,7 +38,7 @@ interface BuildingListProps {
 
 // Interface for the table data (only what we want to display)
 interface BuildingTableData {
-    valueInfoId: string; // Changed to match non-agri pattern
+    valueInfoId: string;
     structure_type: string;
     base_market_value: string;
     adjusted_market_value: string;
@@ -111,7 +111,7 @@ const BuildingList: React.FC<BuildingListProps> = ({
         const assessedValue = calculateAssessedValue(finalAdjustedValue, assessmentLevel);
 
         return {
-            valueInfoId: id, // Use valueInfoId to match non-agri pattern
+            valueInfoId: id,
             structure_type: buildingData?.structureType || 'N/A',
             base_market_value: baseMarketValue !== undefined ? `₱${baseMarketValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'N/A',
             adjusted_market_value: finalAdjustedValue !== undefined ? `₱${finalAdjustedValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'N/A',
@@ -128,7 +128,6 @@ const BuildingList: React.FC<BuildingListProps> = ({
     });
 
     const handleTableRowClick = (rowData: BuildingTableData) => {
-        // Use valueInfoId for selection to match the data structure
         handleRowClick(rowData.valueInfoId);
     };
 
@@ -143,21 +142,23 @@ const BuildingList: React.FC<BuildingListProps> = ({
 
     return (
         <>
-            {/* Form Summary Section */}
+            {/* Form Summary Section - REMOVED Form ID since it's in header now */}
             <IonCard className="form-summary-card">
                 <IonCardContent>
                     <IonGrid style={{ margin: '0', padding: '0' }}>
                         <IonRow style={{ marginBottom: '4px' }}>
-                            <IonCol size="3" style={{ padding: '4px' }}><IonText><strong>Form ID:</strong> {form_id}</IonText></IonCol>
-                            <IonCol size="3" style={{ padding: '4px' }}><IonText><strong>District:</strong> {district || 'N/A'}</IonText></IonCol>
-                            <IonCol size="3" style={{ padding: '4px' }}><IonText><strong>Declarant ID:</strong> {declarant || 'N/A'}</IonText></IonCol>
-                            <IonCol size="3" style={{ padding: '4px' }}><IonText><strong>Kind:</strong> {kind || 'N/A'}</IonText></IonCol>
+                            {/* Removed Form ID column */}
+                            <IonCol size="4" style={{ padding: '4px' }}><IonText><strong>District:</strong> {district || 'N/A'}</IonText></IonCol>
+                            <IonCol size="4" style={{ padding: '4px' }}><IonText><strong>Declarant ID:</strong> {declarant || 'N/A'}</IonText></IonCol>
+                            <IonCol size="4" style={{ padding: '4px' }}><IonText><strong>Kind:</strong> {kind || 'N/A'}</IonText></IonCol>
                         </IonRow>
                         <IonRow style={{ marginBottom: '4px' }}>
-                            <IonCol size="3" style={{ padding: '4px' }}><IonText><strong>Classification:</strong> {classification || 'N/A'}</IonText></IonCol>
-                            <IonCol size="3" style={{ padding: '4px' }}><IonText><strong>Subclass:</strong> {subclass || 'N/A'}</IonText></IonCol>
-                            <IonCol size="3" style={{ padding: '4px' }}><IonText><strong>Actual Use:</strong> {actual_use || 'N/A'}</IonText></IonCol>
-                            <IonCol size="3" style={{ padding: '4px' }}><IonText><strong>Area:</strong> {area ? `${area.toLocaleString()} sq ft` : 'N/A'}</IonText></IonCol>
+                            <IonCol size="4" style={{ padding: '4px' }}><IonText><strong>Classification:</strong> {classification || 'N/A'}</IonText></IonCol>
+                            <IonCol size="4" style={{ padding: '4px' }}><IonText><strong>Subclass:</strong> {subclass || 'N/A'}</IonText></IonCol>
+                            <IonCol size="4" style={{ padding: '4px' }}><IonText><strong>Actual Use:</strong> {actual_use || 'N/A'}</IonText></IonCol>
+                        </IonRow>
+                        <IonRow>
+                            <IonCol size="12" style={{ padding: '4px' }}><IonText><strong>Area:</strong> {area ? `${area.toLocaleString()} sq ft` : 'N/A'}</IonText></IonCol>
                         </IonRow>
                     </IonGrid>
                 </IonCardContent>
@@ -179,7 +180,7 @@ const BuildingList: React.FC<BuildingListProps> = ({
                     <DynamicTable
                         data={filteredTableData}
                         title="Building Information"
-                        keyField="valueInfoId" // Updated to match the new field name
+                        keyField="valueInfoId"
                         onRowClick={handleTableRowClick}
                         selectedRow={selectedBuildingId ? filteredTableData.find(item => item.valueInfoId === selectedBuildingId) : undefined}
                     />
