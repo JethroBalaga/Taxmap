@@ -1,98 +1,403 @@
-// src/pages/NonAgriLandUI.tsx
-import React from "react";
-import {
-    IonCard,
-    IonCardContent,
-    IonGrid,
-    IonRow,
-    IonCol,
-    IonText,
-    IonAlert,
-    IonIcon
-} from "@ionic/react";
-import { cutOutline, resizeOutline, trailSignOutline, trashOutline } from "ionicons/icons";
-import NonAgriAdjustment from '../../components/Modals/NonAgriAdjustment';
-import NonAgriAdjustmentUpdate from '../../components/Modals/NonAgriAdjustmentUpdate';
-import StrippingModal from '../../components/Modals/StrippingModal';
-import DynamicTable from '../../components/GlobalComponent/DynamicTable';
-import { LandAdjustmentData } from '../../utils/landAdjustmentLocalStorage';
+// src/pages/useNonAgriLand.tsx
+import { useState, useEffect } from "react";
+import { useHistory, useLocation } from 'react-router-dom';
+import { FormDataLocalStorage } from '../../utils/tablestorages/FormDataLocalStorage';
+import { ValueInfoLocalStorage } from '../../utils/tablestorages/ValueInfoLocalStorage';
+import { NonAgriAdjustmentLocalStorage } from '../../utils/tablestorages/NonAgriAdjustmentLocalStorage';
+import { PhotoTagLocalStorage } from '../../utils/tablestorages/PhotoTagLocalStorage';
+import { LandAdjustmentData, getLandAdjustmentData } from '../../utils/landAdjustmentLocalStorage';
+import { getSubclassRateData, getCurrentRateForSubclass } from '../../utils/subclassRateLocalStorage';
+import { supabaseApi } from '../../services/supabaseApi';
+import { supabase } from '../../utils/supaBaseClient';
 
-interface NonAgriLandUIProps {
-    formData: any;
-    currentAdjustments: any[];
-    visibleIcons: any[];
-    selectedRow: any;
-    landAdjustments: LandAdjustmentData[];
-    isLoadingAdjustments: boolean;
-    isSubmitting: boolean;
-    showAdjustmentModal: boolean;
-    showUpdateAdjustmentModal: boolean;
-    showStrippingModal: boolean;
-    selectedAdjustmentType: string;
-    description: string;
-    adjustmentFactor: string;
-    additionalFactor: string;
-    selectedAdjustmentForUpdate: any;
-    showDeleteAlert: boolean;
-    adjustmentToDelete: any;
-    valueInfoId: string;
-    subclassRates: any[];
-    isLoadingRates: boolean;
-    getStrippingInfo: () => { currentCount: number; nextNumber: number; hasStripping: boolean; canAddMore: boolean; remainingArea: number; totalStripArea: number };
-    getStrippingAdjustment: (stripNumber: number) => LandAdjustmentData | null;
-    showReverseDeleteWarning: boolean;
-    setShowReverseDeleteWarning: (show: boolean) => void;
-    reverseDeleteWarningMessage: string;
-    
-    // Handlers
-    onSubmit: () => void;
-    handleIconClick: (adjustmentType: string) => void;
-    handleUpdateIconClick: (adjustmentType: string) => void;
-    handleModalDismiss: () => void;
-    handleUpdateModalDismiss: () => void;
-    handleStrippingModalDismiss: () => void;
-    handleRowClick: (rowData: any) => void;
-    handleDeleteConfirm: () => void;
-    setDescription: (description: string) => void;
-    setAdjustmentFactor: (factor: string) => void;
-    setAdditionalFactor: (factor: string) => void;
-    setShowDeleteAlert: (show: boolean) => void;
-    setAdjustmentToDelete: (adjustment: any) => void;
-}
-
-// Grid data configuration array
-const getGridData = (formData: any) => [
-    [
-        { label: "District:", value: formData?.district || 'N/A' },
-        { label: "Declarant ID:", value: formData?.declarantId || 'N/A' },
-        { label: "Kind:", value: formData?.kind || 'N/A' },
-        { label: "Classification:", value: formData?.classification || 'N/A' }
-    ],
-    [
-        { label: "Subclass:", value: formData?.subclass || 'N/A' },
-        { label: "Actual Use:", value: formData?.actualUse || 'N/A' },
-        { label: "Area:", value: formData?.area ? formData.area.toLocaleString() : 'N/A' },
-        { label: "", value: "" }
-    ]
+// Icons configuration array
+const adjustmentIcons = [
+    {
+        icon: 'cutOutline',
+        label: "Add 1st Strip",
+        hideFor: ['C', 'I'],
+        adjustmentType: 'Stripping'
+    },
+    {
+        icon: 'resizeOutline',
+        label: "Add Corner Influence",
+        hideFor: ['I'],
+        adjustmentType: 'Corner Influence'
+    },
+    {
+        icon: 'trailSignOutline',
+        label: "Add Frontage",
+        hideFor: ['R', 'I'],
+        adjustmentType: 'Commercial Frontage'
+    },
+    {
+        icon: 'trashOutline',
+        label: "Delete Selected",
+        hideFor: ['I'],
+        adjustmentType: 'Delete'
+    }
 ];
 
-// Get icon component based on name
-const getIconComponent = (iconName: string) => {
-    switch (iconName) {
-        case 'cutOutline': return cutOutline;
-        case 'resizeOutline': return resizeOutline;
-        case 'trailSignOutline': return trailSignOutline;
-        case 'trashOutline': return trashOutline;
-        default: return cutOutline;
-    }
-};
+export const useNonAgriLand = (formId: string | undefined) => {
+    const history = useHistory();
+    const location = useLocation();
 
-// Get icon label based on whether adjustment already exists - SIMPLIFIED
-const getIconLabel = (adjustmentType: string, currentAdjustments: any[], getStrippingInfoProp: any) => {
-    if (adjustmentType === 'Stripping') {
-        const { nextNumber } = getStrippingInfoProp();
+    // State
+    const [formData, setFormData] = useState<any>(null);
+    const [valueInfoId, setValueInfoId] = useState<string>('');
+    const [isLoading, setIsLoading] = useState(true);
+    const [showToast, setShowToast] = useState(false);
+    const [toastMessage, setToastMessage] = useState('');
+    const [toastColor, setToastColor] = useState<'success' | 'danger' | 'warning' | undefined>(undefined);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Modal states
+    const [showAdjustmentModal, setShowAdjustmentModal] = useState(false);
+    const [showUpdateAdjustmentModal, setShowUpdateAdjustmentModal] = useState(false);
+    const [showStrippingModal, setShowStrippingModal] = useState(false);
+    const [selectedAdjustmentType, setSelectedAdjustmentType] = useState('');
+    const [description, setDescription] = useState('');
+    const [adjustmentFactor, setAdjustmentFactor] = useState('');
+    const [additionalFactor, setAdditionalFactor] = useState('');
+    const [selectedAdjustmentForUpdate, setSelectedAdjustmentForUpdate] = useState<any>(null);
+
+    // Alert state for delete confirmation
+    const [showDeleteAlert, setShowDeleteAlert] = useState(false);
+    const [adjustmentToDelete, setAdjustmentToDelete] = useState<any>(null);
+
+    // Reverse deletion warning state
+    const [showReverseDeleteWarning, setShowReverseDeleteWarning] = useState(false);
+    const [reverseDeleteWarningMessage, setReverseDeleteWarningMessage] = useState('');
+
+    // Selected row state
+    const [selectedRow, setSelectedRow] = useState<any>(null);
+
+    // Land adjustments data
+    const [landAdjustments, setLandAdjustments] = useState<LandAdjustmentData[]>([]);
+    const [isLoadingAdjustments, setIsLoadingAdjustments] = useState(false);
+
+    // Subclass rates data
+    const [subclassRates, setSubclassRates] = useState<any[]>([]);
+    const [isLoadingRates, setIsLoadingRates] = useState(false);
+
+    const showToastMessage = (message: string, color: 'success' | 'danger' | 'warning' = 'success') => {
+        setToastMessage(message);
+        setToastColor(color);
+        setShowToast(true);
+    };
+
+    // Add validation function for stripping adjustments
+    const validateStrippingAdjustments = (): boolean => {
+        const strippingAdjustments = currentAdjustments.filter(
+            adj => adj.adjustment_type === 'Stripping'
+        );
         
-        // ALWAYS show "Add Xth Strip" regardless of existing adjustments
+        if (strippingAdjustments.length === 0) {
+            return true; // No stripping adjustments, so valid to submit
+        }
+        
+        const { remainingArea } = getStrippingInfo();
+        
+        // Submit button should be ENABLED when remaining area is 0
+        // (all area has been allocated to strips)
+        return remainingArea === 0;
+    };
+
+    const canSubmit = validateStrippingAdjustments();
+
+    // Add calculation function for value adjustments
+    const calculateValueAdjustment = (adjustmentType: string, adjustmentFactor: string, rate: number, area: number, additionalFactor?: number): string => {
+        if (!adjustmentFactor || !rate) {
+            return 'N/A';
+        }
+
+        try {
+            const factor = parseFloat(adjustmentFactor) / 100; // Convert to percentage
+
+            switch (adjustmentType) {
+                case 'Corner Influence':
+                    // Corner Influence: Rate × Adjustment Factor × Area
+                    return (rate * factor * area).toFixed(2);
+
+                case 'Stripping':
+                    // Stripping: Rate × Adjustment Factor × Strip Area (Additional Factor)
+                    const stripArea = additionalFactor || 0;
+                    return (rate * factor * stripArea).toFixed(2);
+
+                case 'Commercial Frontage':
+                    // Commercial Frontage: First Value = Rate - 50%, then Value Adjustment = Adjustment Factor × First Value
+                    const firstValue = rate * 0.5; // Rate - 50% means Rate × 50%
+                    return (factor * firstValue).toFixed(2);
+
+                default:
+                    return 'N/A';
+            }
+        } catch (error) {
+            console.error('Error calculating value adjustment:', error);
+            return 'N/A';
+        }
+    };
+
+    // Calculate base market value: Area × Rate
+    const calculateBaseMarketValue = (rate: number, area: number): string => {
+        if (isNaN(rate) || isNaN(area) || rate <= 0 || area <= 0) {
+            return 'N/A';
+        }
+        try {
+            return (rate * area).toFixed(2);
+        } catch (error) {
+            console.error('Error calculating base market value:', error);
+            return 'N/A';
+        }
+    };
+
+    const loadFormData = () => {
+        if (formId) {
+            setIsLoading(true);
+            console.log('Loading non-agricultural land form data for ID:', formId);
+
+            // ALWAYS load from localStorage to get the latest data
+            const storedFormData = FormDataLocalStorage.getFormData(formId);
+            console.log('Loaded form data from localStorage:', storedFormData);
+            setFormData(storedFormData);
+
+            // Fetch or create ValueInfo for this formId using the stored form data
+            if (storedFormData) {
+                let valueInfo = ValueInfoLocalStorage.getValueInfoByFormDataId(formId);
+                if (!valueInfo) {
+                    valueInfo = ValueInfoLocalStorage.addValueInfo({
+                        formDataId: formId,
+                        photoTagId: ''
+                    });
+                }
+                setValueInfoId(valueInfo.id);
+            }
+
+            setIsLoading(false);
+
+            if (!storedFormData) {
+                showToastMessage('Form not found', 'danger');
+            }
+        }
+    };
+
+    const loadLandAdjustments = async () => {
+        setIsLoadingAdjustments(true);
+        try {
+            const adjustments = await getLandAdjustmentData();
+            if (adjustments) {
+                setLandAdjustments(adjustments);
+            }
+        } catch (error) {
+            console.error('Error loading land adjustments:', error);
+            showToastMessage('Error loading adjustment data', 'danger');
+        } finally {
+            setIsLoadingAdjustments(false);
+        }
+    };
+
+    const loadSubclassRates = async () => {
+        if (!formData?.subclass) return;
+
+        setIsLoadingRates(true);
+        try {
+            const ratesData = await getSubclassRateData();
+            if (ratesData) {
+                // Get current rate for the form's subclass
+                const apiRate = await getCurrentRateForSubclass(formData.subclass);
+                const area = formData?.area || 0;
+
+                // Ensure we have a string value
+                const rateString = apiRate ? String(apiRate) : '0';
+                // Safely parse to number
+                const rateNumber = parseFloat(rateString);
+                // Check if valid number
+                const isValidRate = !isNaN(rateNumber) && isFinite(rateNumber) && rateNumber >= 0;
+
+                const displayRate = isValidRate ? rateString : '0';
+                const calculatedRate = isValidRate ? rateNumber : 0;
+
+                // Create the rate display data with base market value
+                const rateDisplayData = [{
+                    valueInfoId: valueInfoId,
+                    rate: displayRate,
+                    base_market_value: calculateBaseMarketValue(calculatedRate, area)
+                }];
+
+                setSubclassRates(rateDisplayData);
+            }
+        } catch (error) {
+            console.error('Error loading subclass rates:', error);
+            // Set default values on error
+            setSubclassRates([{
+                valueInfoId: valueInfoId,
+                rate: '0',
+                base_market_value: 'N/A'
+            }]);
+        } finally {
+            setIsLoadingRates(false);
+        }
+    };
+
+    useEffect(() => {
+        loadFormData();
+        loadLandAdjustments();
+    }, [formId]);
+
+    // Load subclass rates when formData changes
+    useEffect(() => {
+        if (formData?.subclass && valueInfoId) {
+            loadSubclassRates();
+        }
+    }, [formData?.subclass, valueInfoId, formData?.area]);
+
+    // Listen for form data updates from Forms page
+    useEffect(() => {
+        const handleFormDataUpdate = (event: CustomEvent) => {
+            if (event.detail && event.detail.formId === formId) {
+                console.log('Form data updated, reloading form data...');
+                loadFormData();
+            }
+        };
+
+        const handleStorageChange = (e: StorageEvent) => {
+            if (e.key === 'formUpdateTrigger') {
+                console.log('Form update detected via localStorage, reloading form data...');
+                loadFormData();
+            }
+        };
+
+        window.addEventListener('formDataUpdated', handleFormDataUpdate as EventListener);
+        window.addEventListener('storage', handleStorageChange);
+
+        return () => {
+            window.removeEventListener('formDataUpdated', handleFormDataUpdate as EventListener);
+            window.removeEventListener('storage', handleStorageChange);
+        };
+    }, [formId]);
+
+    // Filter adjustments for current valueInfoId and format for table with calculations
+    const getCombinedAdjustmentData = () => {
+        if (!valueInfoId || landAdjustments.length === 0) return [];
+
+        const nonAgriAdjustments = NonAgriAdjustmentLocalStorage.getAdjustmentsByValueInfoId(valueInfoId);
+
+        // Get the current rate and area for calculations - handle safely
+        const currentRate = subclassRates.length > 0 ? parseFloat(subclassRates[0].rate) || 0 : 0;
+        const area = formData?.area || 0;
+
+        return nonAgriAdjustments.map(nonAgriAdj => {
+            const landAdj = landAdjustments.find(adj => adj.adjustment_id === nonAgriAdj.adjustmentId);
+
+            // Get additional factor from NonAgriAdjustmentLocalStorage
+            const additionalFactorValue = NonAgriAdjustmentLocalStorage.getAdditionalFactor(
+                valueInfoId,
+                nonAgriAdj.adjustmentId
+            );
+
+            const valueAdjustment = calculateValueAdjustment(
+                landAdj?.adjustment_type || '',
+                landAdj?.adjustment_factor || '',
+                currentRate,
+                area,
+                additionalFactorValue
+            );
+
+            // Create base adjustment object with controlled property order
+            const adjustment = {
+                adjustmentId: nonAgriAdj.adjustmentId,
+                adjustment_type: landAdj?.adjustment_type || 'N/A',
+                description: landAdj?.description || 'N/A',
+                adjustment_factor: landAdj?.adjustment_factor ? `${landAdj.adjustment_factor}%` : 'N/A',
+                value_adjustment: valueAdjustment
+            };
+
+            // ONLY add additional_factor property for Stripping adjustments
+            if (landAdj?.adjustment_type === 'Stripping') {
+                return {
+                    adjustmentId: nonAgriAdj.adjustmentId,
+                    adjustment_type: landAdj?.adjustment_type || 'N/A',
+                    description: landAdj?.description || 'N/A',
+                    adjustment_factor: landAdj?.adjustment_factor ? `${landAdj.adjustment_factor}%` : 'N/A',
+                    additional_factor: additionalFactorValue ? additionalFactorValue.toLocaleString() : 'N/A',
+                    value_adjustment: valueAdjustment
+                };
+            }
+
+            return adjustment;
+        });
+    };
+
+    const currentAdjustments = getCombinedAdjustmentData();
+
+    // Check if adjustments exist
+    const hasCornerInfluence = currentAdjustments.some(
+        adj => adj.adjustment_type === 'Corner Influence'
+    );
+
+    const hasStripping = currentAdjustments.some(
+        adj => adj.adjustment_type === 'Stripping'
+    );
+
+    // Get the next available stripping number and current stripping count
+    const getStrippingInfo = () => {
+        const strippingAdjustments = currentAdjustments.filter(
+            adj => adj.adjustment_type === 'Stripping'
+        );
+
+        const currentCount = strippingAdjustments.length;
+        const nextNumber = currentCount + 1;
+
+        // Calculate remaining area after all strips - get directly from localStorage
+        let totalStripArea = 0;
+
+        if (strippingAdjustments.length > 0 && valueInfoId) {
+            totalStripArea = strippingAdjustments.reduce((total, adj) => {
+                if (adj.adjustmentId) {
+                    const additionalFactorValue = NonAgriAdjustmentLocalStorage.getAdditionalFactor(
+                        valueInfoId,
+                        adj.adjustmentId
+                    );
+                    if (additionalFactorValue) {
+                        return total + additionalFactorValue;
+                    }
+                }
+                return total;
+            }, 0);
+        }
+
+        const remainingArea = Math.max(0, (formData?.area || 0) - totalStripArea);
+
+        return {
+            currentCount,
+            nextNumber,
+            hasStripping: currentCount > 0,
+            canAddMore: currentCount < 4 && remainingArea > 0,
+            remainingArea: remainingArea,
+            totalStripArea: totalStripArea
+        };
+    };
+
+    // Get the correct stripping adjustment ID based on strip number
+    const getStrippingAdjustmentId = (stripNumber: number) => {
+        // Assuming your land adjustments have IDs like S1, S2, S3, S4 for stripping
+        return `S${stripNumber}`;
+    };
+
+    // Get the correct stripping adjustment based on strip number
+    const getStrippingAdjustment = (stripNumber: number) => {
+        const adjustmentId = getStrippingAdjustmentId(stripNumber);
+        return landAdjustments.find(adj => adj.adjustment_id === adjustmentId) || null;
+    };
+
+    // Get icon label based on stripping sequence
+    const getStrippingIconLabel = () => {
+        const { nextNumber, canAddMore } = getStrippingInfo();
+
+        if (!canAddMore) {
+            return "Max Strips Reached";
+        }
+
         switch (nextNumber) {
             case 1: return "Add 1st Strip";
             case 2: return "Add 2nd Strip";
@@ -100,301 +405,337 @@ const getIconLabel = (adjustmentType: string, currentAdjustments: any[], getStri
             case 4: return "Add 4th Strip";
             default: return "Add Strip";
         }
-    }
-    
-    // For other adjustment types, keep the original logic
-    const hasExistingAdjustment = currentAdjustments.some(
-        adj => adj.adjustment_type === adjustmentType
-    );
-    return hasExistingAdjustment ? `Update ${adjustmentType}` : `Add ${adjustmentType}`;
-};
+    };
 
-// Get icon color based on whether adjustment already exists
-const getIconColor = (adjustmentType: string, selectedRow: any, currentAdjustments: any[]) => {
-    if (adjustmentType === 'Delete') {
-        return selectedRow ? '#eb445a' : '#92949c';
-    }
+    const handleBack = () => {
+        history.push('/menu/forms');
+    };
+    const onSubmit = async () => {
+        setIsSubmitting(true);
+        showToastMessage('Starting non-agricultural land upload process...', 'warning');
 
-    const hasExistingAdjustment = currentAdjustments.some(
-        adj => adj.adjustment_type === adjustmentType
-    );
-    return hasExistingAdjustment ? '#ffce00' : '#3880ff';
-};
+        try {
+            // Use different variable name to avoid conflict
+            const currentFormData = FormDataLocalStorage.getFormData(formId!);
+            if (!currentFormData) throw new Error('Form data not found');
+            if (currentFormData.uploaded) throw new Error('Form already uploaded');
 
-export const NonAgriLandUI: React.FC<NonAgriLandUIProps> = ({
-    formData,
-    currentAdjustments,
-    visibleIcons,
-    selectedRow,
-    landAdjustments,
-    isLoadingAdjustments,
-    isSubmitting,
-    showAdjustmentModal,
-    showUpdateAdjustmentModal,
-    showStrippingModal,
-    selectedAdjustmentType,
-    description,
-    adjustmentFactor,
-    additionalFactor,
-    selectedAdjustmentForUpdate,
-    showDeleteAlert,
-    adjustmentToDelete,
-    valueInfoId,
-    subclassRates,
-    isLoadingRates,
-    getStrippingInfo,
-    getStrippingAdjustment,
-    showReverseDeleteWarning,
-    setShowReverseDeleteWarning,
-    reverseDeleteWarningMessage,
-    
-    // Handlers
-    onSubmit,
-    handleIconClick,
-    handleUpdateIconClick,
-    handleModalDismiss,
-    handleUpdateModalDismiss,
-    handleStrippingModalDismiss,
-    handleRowClick,
-    handleDeleteConfirm,
-    setDescription,
-    setAdjustmentFactor,
-    setAdditionalFactor,
-    setShowDeleteAlert,
-    setAdjustmentToDelete
-}) => {
-    const gridData = getGridData(formData);
-    // Use the prop function to get stripping info
-    const { remainingArea, currentCount } = getStrippingInfo();
+            const valueInfo = ValueInfoLocalStorage.getValueInfo(valueInfoId);
+            if (!valueInfo) throw new Error(`ValueInfo not found for ${valueInfoId}`);
 
-    return (
-        <>
-            {/* Form Summary Card Only */}
-            <IonCard className="form-summary-card">
-                <IonCardContent>
-                    <IonGrid style={{ margin: '0', padding: '0' }}>
-                        {gridData.map((row, rowIndex) => (
-                            <IonRow key={rowIndex} style={{ marginBottom: '4px' }}>
-                                {row.map((col, colIndex) => (
-                                    <IonCol key={colIndex} size="3" style={{ padding: '4px' }}>
-                                        <IonText>
-                                            {col.label && <strong>{col.label}</strong>} {col.value}
-                                        </IonText>
-                                    </IonCol>
-                                ))}
-                            </IonRow>
-                        ))}
-                    </IonGrid>
-                </IonCardContent>
-            </IonCard>
+            const photoTag = PhotoTagLocalStorage.getPhotoTag(valueInfo.photoTagId);
+            if (!photoTag) throw new Error('Photo tag not found');
 
-            {/* NEW: Simplified Subclass Rate Information Table with Base Market Value */}
-            <IonCard>
-                <IonCardContent>
-                    {isLoadingRates ? (
-                        <div style={{ textAlign: 'center', padding: '20px' }}>
-                            <IonText>Loading rate information...</IonText>
-                        </div>
-                    ) : (
-                        <DynamicTable
-                            data={subclassRates}
-                            title="Rate Information"
-                            keyField="valueInfoId"
-                            onRowClick={handleRowClick}
-                            selectedRow={selectedRow}
-                        />
-                    )}
-                </IonCardContent>
-            </IonCard>
+            // Get non-agri adjustments from localStorage
+            const localStorageAdjustments = NonAgriAdjustmentLocalStorage.getAdjustmentsByValueInfoId(valueInfoId);
+            if (localStorageAdjustments.length === 0) {
+                throw new Error('No non-agricultural adjustments found in local storage');
+            }
 
-            {/* Icons Section */}
-            {visibleIcons.length > 0 && (
-                <div style={{
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    gap: '2rem',
-                    margin: '2rem 0',
-                    padding: '1rem'
-                }}>
-                    {visibleIcons.map((item, index) => {
-                        const hasExistingAdjustment = currentAdjustments.some(
-                            adj => adj.adjustment_type === item.adjustmentType
-                        );
+            // Insert photo record
+            const databaseTagId = await supabaseApi.insertPhoto({
+                photo: photoTag.photoName,
+                longitude: photoTag.longitude,
+                latitude: photoTag.latitude,
+                date_taken: validateDate(photoTag.timestamp ? photoTag.timestamp.toISOString().split('T')[0] : null)
+            });
+            if (!databaseTagId) throw new Error('Failed to insert photo record');
 
-                        return (
-                            <div key={index} style={{ textAlign: 'center' }}>
-                                <IonIcon
-                                    icon={getIconComponent(item.icon)}
-                                    size="large"
-                                    style={{
-                                        cursor: item.adjustmentType === 'Delete' ? (selectedRow ? 'pointer' : 'not-allowed') : 'pointer',
-                                        color: getIconColor(item.adjustmentType, selectedRow, currentAdjustments),
-                                        opacity: item.adjustmentType === 'Delete' && !selectedRow ? 0.5 : 1
-                                    }}
-                                    onClick={() => {
-                                        if (item.adjustmentType === 'Delete') {
-                                            if (selectedRow) {
-                                                handleIconClick(item.adjustmentType);
-                                            }
-                                        } else {
-                                            // For Stripping, always use handleIconClick (Add functionality)
-                                            if (item.adjustmentType === 'Stripping') {
-                                                handleIconClick(item.adjustmentType);
-                                            } else {
-                                                // For other adjustments, use update if exists
-                                                if (hasExistingAdjustment) {
-                                                    handleUpdateIconClick(item.adjustmentType);
-                                                } else {
-                                                    handleIconClick(item.adjustmentType);
-                                                }
-                                            }
-                                        }
-                                    }}
-                                />
-                                <div style={{ marginTop: '0.5rem' }}>
-                                    <IonText color="medium">
-                                        {item.adjustmentType === 'Delete' ?
-                                            (selectedRow ? 'Delete Selected' : 'Select to Delete') :
-                                            getIconLabel(item.adjustmentType, currentAdjustments, getStrippingInfo)
-                                        }
-                                    </IonText>
-                                </div>
-                            </div>
-                        );
-                    })}
-                </div>
-            )}
+            // Upload photo file if available
+            const photoFile = await getPhotoFile(photoTag);
+            if (photoFile) {
+                const folderPath = `${databaseTagId}/${photoTag.photoName}`;
+                const { error: uploadError } = await supabase.storage.from('tag-photos').upload(folderPath, photoFile, {
+                    contentType: 'image/jpeg',
+                    upsert: false
+                });
+                if (uploadError) {
+                    console.warn('Photo upload failed', uploadError);
+                    showToastMessage('Form submitted but photo upload failed', 'warning');
+                }
+            } else {
+                showToastMessage('Form submitted but could not retrieve photo', 'warning');
+            }
 
-            {/* Remaining Area Display - MOVED BELOW ICONS */}
-            {currentCount > 0 && (
-                <IonCard>
-                    <IonCardContent>
-                        <div style={{ textAlign: 'center', padding: '10px' }}>
-                            <IonText>
-                                <strong>Remaining Area after {currentCount} strip(s): </strong>
-                                <span style={{ 
-                                    color: '#2e7d32', 
-                                    fontWeight: 'bold',
-                                    fontSize: '1.1em'
-                                }}>
-                                    {remainingArea.toLocaleString()}
-                                </span>
-                            </IonText>
-                        </div>
-                    </IonCardContent>
-                </IonCard>
-            )}
+            // Insert form record
+            let databaseFormId = currentFormData.synced_id;
+            if (!databaseFormId) {
+                databaseFormId = await supabaseApi.insertForm({
+                    declarant_id: currentFormData.declarantId || 0,
+                    kind_id: parseInt(currentFormData.kind),
+                    class_id: currentFormData.classification,
+                    area: currentFormData.area.toString(),
+                    district_id: currentFormData.district,
+                    actual_used_id: currentFormData.actualUse,
+                    subclass_id: currentFormData.subclass || null,
+                    status: 'New'
+                });
+                if (!databaseFormId) throw new Error('Failed to insert form');
+            }
 
-            {/* Adjustments Table using DynamicTable Component */}
-            <IonCard>
-                <IonCardContent>
-                    {isLoadingAdjustments ? (
-                        <div style={{ textAlign: 'center', padding: '20px' }}>
-                            <IonText>Loading adjustments...</IonText>
-                        </div>
-                    ) : (
-                        <>
-                            <DynamicTable
-                                data={currentAdjustments}
-                                title="Land Adjustments"
-                                keyField="adjustmentId"
-                                onRowClick={handleRowClick}
-                                selectedRow={selectedRow}
-                            />
-                            {selectedRow && (
-                                <div style={{ textAlign: 'center', marginTop: '16px' }}>
-                                    <IonText color="medium">
-                                        <small>Selected: {selectedRow.adjustment_type}</small>
-                                    </IonText>
-                                </div>
-                            )}
-                        </>
-                    )}
-                </IonCardContent>
-            </IonCard>
+            // Insert value info record
+            const databaseValueInfoId = await supabaseApi.insertValueInfo(databaseFormId, databaseTagId);
 
-            {/* Non-Agri Adjustment Modal */}
-            <NonAgriAdjustment
-                isOpen={showAdjustmentModal}
-                onDismiss={handleModalDismiss}
-                adjustmentType={selectedAdjustmentType}
-                description={description}
-                setDescription={setDescription}
-                adjustmentFactor={adjustmentFactor}
-                setAdjustmentFactor={setAdjustmentFactor}
-                landAdjustments={landAdjustments}
-                isLoadingAdjustments={isLoadingAdjustments}
-                valueInfoId={valueInfoId}
-            />
+            // Insert non-agricultural adjustments WITH additional_factor
+            for (const adjustment of localStorageAdjustments) {
+                await supabaseApi.insertNonAgriAdjustment(
+                    databaseValueInfoId,
+                    adjustment.adjustmentId,
+                    adjustment.additionalFactor // Include the additional factor from localStorage
+                );
+            }
 
-            {/* Non-Agri Adjustment Update Modal */}
-            <NonAgriAdjustmentUpdate
-                isOpen={showUpdateAdjustmentModal}
-                onDismiss={handleUpdateModalDismiss}
-                adjustmentType={selectedAdjustmentType}
-                description={description}
-                setDescription={setDescription}
-                adjustmentFactor={adjustmentFactor}
-                setAdjustmentFactor={setAdjustmentFactor}
-                landAdjustments={landAdjustments}
-                isLoadingAdjustments={isLoadingAdjustments}
-                valueInfoId={valueInfoId}
-                existingAdjustment={selectedAdjustmentForUpdate}
-            />
+            // Mark form as uploaded
+            if (!currentFormData.synced_id) {
+                FormDataLocalStorage.markFormAsUploaded(formId!, databaseFormId);
+            }
 
-            {/* Stripping Modal */}
-            <StrippingModal
-                isOpen={showStrippingModal}
-                onDismiss={handleStrippingModalDismiss}
-                description={description}
-                setDescription={setDescription}
-                adjustmentFactor={adjustmentFactor}
-                setAdjustmentFactor={setAdjustmentFactor}
-                additionalFactor={additionalFactor}
-                setAdditionalFactor={setAdditionalFactor}
-                landAdjustments={landAdjustments}
-                isLoadingAdjustments={isLoadingAdjustments}
-                valueInfoId={valueInfoId}
-                area={formData?.area || 0}
-                getStrippingInfo={getStrippingInfo}
-                getStrippingAdjustment={getStrippingAdjustment}
-            />
+            showToastMessage('Non-agricultural land data submitted successfully! All data synchronized with server.', 'success');
 
-            {/* Delete Confirmation Alert */}
-            <IonAlert
-                isOpen={showDeleteAlert}
-                onDidDismiss={() => setShowDeleteAlert(false)}
-                header={'Delete Adjustment'}
-                message={`Are you sure you want to delete this ${adjustmentToDelete?.adjustment_type} adjustment?`}
-                buttons={[
-                    {
-                        text: 'Cancel',
-                        role: 'cancel',
-                        cssClass: 'secondary',
-                    },
-                    {
-                        text: 'Delete',
-                        role: 'destructive',
-                        handler: handleDeleteConfirm
+        } catch (error: any) {
+            console.error('Non-agricultural land upload failed:', error);
+            showToastMessage(`Upload failed: ${error.message || 'Unknown error'}`, 'danger');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    // Helper functions
+    const validateDate = (dateString: string | null): string | null => {
+        if (!dateString) return null;
+        try {
+            return new Date(dateString).toISOString().split('T')[0];
+        } catch {
+            return null;
+        }
+    };
+
+    const getPhotoFile = async (photoTag: any): Promise<File | null> => {
+        // Implement photo file retrieval logic
+        return null;
+    };
+
+    const handleIconClick = (adjustmentType: string) => {
+        if (adjustmentType === 'Delete') {
+            if (selectedRow) {
+                setAdjustmentToDelete(selectedRow);
+                setShowDeleteAlert(true);
+            } else {
+                showToastMessage('Please select an adjustment to delete', 'warning');
+            }
+        } else if (adjustmentType === 'Stripping') {
+            // Special handling for Stripping - open specialized modal
+            setSelectedAdjustmentType(adjustmentType);
+            setDescription('');
+            setAdjustmentFactor('');
+            setAdditionalFactor('');
+            setShowStrippingModal(true);
+        } else {
+            // Use generic modal for other adjustments
+            setSelectedAdjustmentType(adjustmentType);
+            setDescription('');
+            setAdjustmentFactor('');
+            setAdditionalFactor('');
+            setShowAdjustmentModal(true);
+        }
+    };
+
+    const handleUpdateIconClick = (adjustmentType: string) => {
+        const existingAdj = currentAdjustments.find(
+            adj => adj.adjustment_type === adjustmentType
+        );
+        setSelectedAdjustmentForUpdate(existingAdj);
+        setSelectedAdjustmentType(adjustmentType);
+        setDescription(existingAdj?.description || '');
+        setAdjustmentFactor(existingAdj?.adjustment_factor?.replace('%', '') || '');
+        if (adjustmentType === 'Stripping') {
+            setShowStrippingModal(true);
+        } else {
+            setShowUpdateAdjustmentModal(true);
+        }
+    };
+
+    const handleModalDismiss = () => {
+        setShowAdjustmentModal(false);
+        setSelectedAdjustmentType('');
+        setDescription('');
+        setAdjustmentFactor('');
+        setAdditionalFactor('');
+        loadLandAdjustments();
+    };
+
+    const handleUpdateModalDismiss = () => {
+        setShowUpdateAdjustmentModal(false);
+        setSelectedAdjustmentForUpdate(null);
+        setSelectedAdjustmentType('');
+        setDescription('');
+        setAdjustmentFactor('');
+        setAdditionalFactor('');
+        loadLandAdjustments();
+    };
+
+    const handleStrippingModalDismiss = () => {
+        setShowStrippingModal(false);
+        setSelectedAdjustmentForUpdate(null);
+        setSelectedAdjustmentType('');
+        setDescription('');
+        setAdjustmentFactor('');
+        setAdditionalFactor('');
+        loadLandAdjustments();
+    };
+
+    const handleRowClick = (rowData: any) => {
+        setSelectedRow(rowData);
+    };
+
+    const handleDeleteConfirm = () => {
+        if (adjustmentToDelete) {
+            // Check if it's a stripping adjustment and validate deletion order
+            if (adjustmentToDelete.adjustment_type === 'Stripping') {
+                const strippingAdjustments = currentAdjustments.filter(
+                    adj => adj.adjustment_type === 'Stripping'
+                );
+
+                if (strippingAdjustments.length > 1) {
+                    // Extract strip numbers from adjustment IDs (S1, S2, S3, S4)
+                    const getStripNumber = (adj: any) => {
+                        const match = adj.adjustmentId?.match(/S(\d+)/);
+                        return match ? parseInt(match[1]) : 0;
+                    };
+
+                    // Get all existing strip numbers
+                    const existingStripNumbers = strippingAdjustments.map(getStripNumber);
+
+                    // Find the highest strip number (the one that should be deleted first)
+                    const highestStripNumber = Math.max(...existingStripNumbers);
+
+                    // Get the strip number of the adjustment to delete
+                    const adjustmentStripNumber = getStripNumber(adjustmentToDelete);
+
+                    // Only allow deletion if it's the highest strip number (S2, then S1)
+                    if (adjustmentStripNumber !== highestStripNumber) {
+                        // Sort the existing strip numbers and format them
+                        const sortedStrips = [...existingStripNumbers].sort((a, b) => a - b);
+                        const existingStripsText = sortedStrips.map(num => `S${num}`).join(', ');
+
+                        // Use custom warning state
+                        setReverseDeleteWarningMessage(`You can only delete the highest strip first. Existing strips: ${existingStripsText}. Please delete S${highestStripNumber} first.`);
+                        setShowReverseDeleteWarning(true);
+
+                        // Reset states and deselect the row
+                        setSelectedRow(null);
+                        setShowDeleteAlert(false);
+                        setAdjustmentToDelete(null);
+                        return;
                     }
-                ]}
-            />
+                }
+            }
 
-            {/* Reverse Deletion Warning Alert */}
-            <IonAlert
-                isOpen={showReverseDeleteWarning}
-                onDidDismiss={() => setShowReverseDeleteWarning(false)}
-                header={'Reverse Deletion Required'}
-                message={reverseDeleteWarningMessage}
-                buttons={[
-                    {
-                        text: 'OK',
-                        role: 'cancel',
-                        cssClass: 'secondary'
-                    }
-                ]}
-            />
-        </>
-    );
+            // Use valueInfoId from the component's state
+            const success = NonAgriAdjustmentLocalStorage.deleteNonAgriAdjustment(
+                valueInfoId,
+                adjustmentToDelete.adjustmentId
+            );
+
+            if (success) {
+                showToastMessage(`${adjustmentToDelete.adjustment_type} adjustment deleted successfully`, 'success');
+                setSelectedRow(null);
+                loadLandAdjustments();
+            } else {
+                showToastMessage('Error deleting adjustment', 'danger');
+            }
+        }
+        setShowDeleteAlert(false);
+        setAdjustmentToDelete(null);
+    };
+
+    // Filter icons based on classification AND mutual exclusion rules
+    const getVisibleIcons = () => {
+        const classification = formData?.classification;
+        if (!classification) return adjustmentIcons;
+
+        const classificationFilteredIcons = adjustmentIcons.filter(icon => !icon.hideFor.includes(classification));
+
+        // Update the stripping icon label
+        const updatedIcons = classificationFilteredIcons.map(icon => {
+            if (icon.adjustmentType === 'Stripping') {
+                return {
+                    ...icon,
+                    label: getStrippingIconLabel()
+                };
+            }
+            return icon;
+        });
+
+        const { canAddMore } = getStrippingInfo();
+
+        // Mutual exclusion: Hide Stripping if Corner Influence exists, and vice versa
+        // Also hide stripping if max strips reached
+        return updatedIcons.filter(icon => {
+            if (icon.adjustmentType === 'Stripping') {
+                if (!canAddMore) return false;
+                if (hasCornerInfluence) return false;
+            }
+            if (icon.adjustmentType === 'Corner Influence' && hasStripping) {
+                return false;
+            }
+            return true;
+        });
+    };
+
+    const visibleIcons = getVisibleIcons();
+
+    return {
+        // State
+        formData,
+        valueInfoId,
+        isLoading,
+        showToast,
+        toastMessage,
+        toastColor,
+        isSubmitting,
+        showAdjustmentModal,
+        showUpdateAdjustmentModal,
+        showStrippingModal,
+        selectedAdjustmentType,
+        description,
+        adjustmentFactor,
+        additionalFactor,
+        selectedAdjustmentForUpdate,
+        showDeleteAlert,
+        adjustmentToDelete,
+        selectedRow,
+        landAdjustments,
+        isLoadingAdjustments,
+        currentAdjustments,
+        visibleIcons,
+        subclassRates,
+        isLoadingRates,
+        hasCornerInfluence,
+        hasStripping,
+        getStrippingInfo,
+        getStrippingAdjustment,
+        showReverseDeleteWarning,
+        setShowReverseDeleteWarning,
+        reverseDeleteWarningMessage,
+        setReverseDeleteWarningMessage,
+        canSubmit, // Add this
+
+        // Handlers
+        handleBack,
+        onSubmit,
+        handleIconClick,
+        handleUpdateIconClick,
+        handleModalDismiss,
+        handleUpdateModalDismiss,
+        handleStrippingModalDismiss,
+        handleRowClick,
+        handleDeleteConfirm,
+        showToastMessage,
+        setDescription,
+        setAdjustmentFactor,
+        setAdditionalFactor,
+        setShowDeleteAlert,
+        setAdjustmentToDelete
+    };
 };
