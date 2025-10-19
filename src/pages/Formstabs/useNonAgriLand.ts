@@ -80,6 +80,9 @@ export const useNonAgriLand = (formId: string | undefined) => {
     const [subclassRates, setSubclassRates] = useState<any[]>([]);
     const [isLoadingRates, setIsLoadingRates] = useState(false);
 
+    // Current adjustments with calculations
+    const [currentAdjustments, setCurrentAdjustments] = useState<any[]>([]);
+
     // Track adjustments changes to trigger rate recalculations
     const [adjustmentsVersion, setAdjustmentsVersion] = useState(0);
 
@@ -228,15 +231,12 @@ export const useNonAgriLand = (formId: string | undefined) => {
         }
     };
 
-    // Filter adjustments for current valueInfoId and format for table with calculations
-    const getCombinedAdjustmentData = useMemo(() => {
+    // Get base adjustments data (without calculations) - FIXED: Proper dependency tracking
+    const getBaseAdjustmentsData = () => {
         if (!valueInfoId || landAdjustments.length === 0) return [];
 
         const nonAgriAdjustments = NonAgriAdjustmentLocalStorage.getAdjustmentsByValueInfoId(valueInfoId);
-
-        // Get the current rate and area for calculations - handle safely
-        const currentRate = subclassRates.length > 0 ? parseFloat(subclassRates[0].rate) || 0 : 0;
-        const area = formData?.area || 0;
+        console.log('Base adjustments loaded:', nonAgriAdjustments);
 
         return nonAgriAdjustments.map(nonAgriAdj => {
             const landAdj = landAdjustments.find(adj => adj.adjustment_id === nonAgriAdj.adjustmentId);
@@ -247,42 +247,22 @@ export const useNonAgriLand = (formId: string | undefined) => {
                 nonAgriAdj.adjustmentId
             );
 
-            const valueAdjustment = calculateValueAdjustment(
-                landAdj?.adjustment_type || '',
-                landAdj?.adjustment_factor || '',
-                currentRate,
-                area,
-                additionalFactorValue
-            );
-
-            // Create base adjustment object with controlled property order
+            // Create base adjustment object
             const adjustment = {
                 adjustmentId: nonAgriAdj.adjustmentId,
                 adjustment_type: landAdj?.adjustment_type || 'N/A',
                 description: landAdj?.description || 'N/A',
                 adjustment_factor: landAdj?.adjustment_factor ? `${landAdj.adjustment_factor}%` : 'N/A',
-                value_adjustment: valueAdjustment
+                value_adjustment: 'N/A', // Will be calculated
+                additional_factor: additionalFactorValue ? additionalFactorValue.toLocaleString() : 'N/A'
             };
-
-            // ONLY add additional_factor property for Stripping adjustments
-            if (landAdj?.adjustment_type === 'Stripping') {
-                return {
-                    adjustmentId: nonAgriAdj.adjustmentId,
-                    adjustment_type: landAdj?.adjustment_type || 'N/A',
-                    description: landAdj?.description || 'N/A',
-                    adjustment_factor: landAdj?.adjustment_factor ? `${landAdj.adjustment_factor}%` : 'N/A',
-                    additional_factor: additionalFactorValue ? additionalFactorValue.toLocaleString() : 'N/A',
-                    value_adjustment: valueAdjustment
-                };
-            }
 
             return adjustment;
         });
-    }, [valueInfoId, landAdjustments, formData?.area, subclassRates, adjustmentsVersion]); // Added adjustmentsVersion
+    };
 
-    const currentAdjustments = getCombinedAdjustmentData;
-
-    const loadSubclassRates = async (forceRecalculation = false) => {
+    // Load subclass rates and calculate adjustments
+    const loadSubclassRates = async () => {
         if (!formData?.subclass) return;
 
         setIsLoadingRates(true);
@@ -306,22 +286,71 @@ export const useNonAgriLand = (formId: string | undefined) => {
                 // Calculate base market value
                 const baseMarketValue = calculateBaseMarketValue(calculatedRate, area);
                 
-                // Calculate adjustment market value
-                const adjustmentMarketValue = calculateAdjustmentMarketValue(baseMarketValue, currentAdjustments);
+                // Get base adjustments data
+                const baseAdjustments = getBaseAdjustmentsData();
+                console.log('Base adjustments for calculation:', baseAdjustments);
                 
-                // Calculate stripping market value if there are stripping adjustments
-                const hasStripping = currentAdjustments.some(adj => adj.adjustment_type === 'Stripping');
-                const strippingMarketValue = hasStripping ? calculateStrippingMarketValue(currentAdjustments) : 'N/A';
+                // Calculate value adjustments for all current adjustments using the actual API rate
+                const adjustmentsWithCalculations = baseAdjustments.map(adj => {
+                    const landAdj = landAdjustments.find(la => la.adjustment_id === adj.adjustmentId);
+                    const additionalFactorValue = NonAgriAdjustmentLocalStorage.getAdditionalFactor(
+                        valueInfoId, 
+                        adj.adjustmentId
+                    );
+
+                    const valueAdjustment = calculateValueAdjustment(
+                        adj.adjustment_type,
+                        landAdj?.adjustment_factor || '',
+                        calculatedRate,
+                        area,
+                        additionalFactorValue
+                    );
+
+                    return {
+                        ...adj,
+                        value_adjustment: valueAdjustment
+                    };
+                });
+
+                // Update current adjustments with calculations
+                setCurrentAdjustments(adjustmentsWithCalculations);
+                console.log('Updated current adjustments:', adjustmentsWithCalculations);
+
+                // Check if there are stripping adjustments
+                const hasStripping = adjustmentsWithCalculations.some(adj => adj.adjustment_type === 'Stripping');
+                
+                let adjustmentMarketValue;
+                
+                if (hasStripping) {
+                    // FOR STRIPPING: Adjusted Market Value = Sum of all Stripping Value Adjustments
+                    adjustmentMarketValue = calculateStrippingMarketValue(adjustmentsWithCalculations);
+                } else {
+                    // FOR NON-STRIPPING: Adjusted Market Value = Base Market Value + Sum of all Value Adjustments
+                    adjustmentMarketValue = calculateAdjustmentMarketValue(baseMarketValue, adjustmentsWithCalculations);
+                }
 
                 // Create the rate display data with both market values
                 const rateDisplayData = [{
                     valueInfoId: valueInfoId,
                     rate: displayRate,
                     base_market_value: baseMarketValue,
-                    adjustment_market_value: hasStripping ? strippingMarketValue : adjustmentMarketValue
+                    adjustment_market_value: adjustmentMarketValue
                 }];
 
                 setSubclassRates(rateDisplayData);
+                
+                console.log('Rate Calculation:', {
+                    rate: displayRate,
+                    area: area,
+                    baseMarketValue: baseMarketValue,
+                    hasStripping: hasStripping,
+                    adjustmentMarketValue: adjustmentMarketValue,
+                    adjustments: adjustmentsWithCalculations.map(adj => ({
+                        type: adj.adjustment_type,
+                        value: adj.value_adjustment,
+                        factor: adj.adjustment_factor
+                    }))
+                });
             }
         } catch (error) {
             console.error('Error loading subclass rates:', error);
@@ -332,6 +361,7 @@ export const useNonAgriLand = (formId: string | undefined) => {
                 base_market_value: 'N/A',
                 adjustment_market_value: 'N/A'
             }]);
+            setCurrentAdjustments([]);
         } finally {
             setIsLoadingRates(false);
         }
@@ -342,17 +372,25 @@ export const useNonAgriLand = (formId: string | undefined) => {
         setAdjustmentsVersion(prev => prev + 1);
     };
 
+    // Load adjustments when landAdjustments or valueInfoId changes
+    useEffect(() => {
+        if (valueInfoId && landAdjustments.length > 0) {
+            console.log('Loading adjustments due to landAdjustments or valueInfoId change');
+            loadSubclassRates();
+        }
+    }, [landAdjustments, valueInfoId, adjustmentsVersion]);
+
     useEffect(() => {
         loadFormData();
         loadLandAdjustments();
     }, [formId]);
 
-    // Load subclass rates when formData changes OR adjustments change
+    // Load subclass rates when formData changes
     useEffect(() => {
         if (formData?.subclass && valueInfoId) {
             loadSubclassRates();
         }
-    }, [formData?.subclass, valueInfoId, formData?.area, adjustmentsVersion]); // Use adjustmentsVersion instead of currentAdjustments
+    }, [formData?.subclass, formData?.area]);
 
     // Listen for form data updates from Forms page
     useEffect(() => {
