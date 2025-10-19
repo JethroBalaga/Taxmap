@@ -1,5 +1,5 @@
 // src/pages/useNonAgriLand.tsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useHistory, useLocation } from 'react-router-dom';
 import { FormDataLocalStorage } from '../../utils/tablestorages/FormDataLocalStorage';
 import { ValueInfoLocalStorage } from '../../utils/tablestorages/ValueInfoLocalStorage';
@@ -80,6 +80,9 @@ export const useNonAgriLand = (formId: string | undefined) => {
     const [subclassRates, setSubclassRates] = useState<any[]>([]);
     const [isLoadingRates, setIsLoadingRates] = useState(false);
 
+    // Track adjustments changes to trigger rate recalculations
+    const [adjustmentsVersion, setAdjustmentsVersion] = useState(0);
+
     const showToastMessage = (message: string, color: 'success' | 'danger' | 'warning' = 'success') => {
         setToastMessage(message);
         setToastColor(color);
@@ -132,6 +135,54 @@ export const useNonAgriLand = (formId: string | undefined) => {
         }
     };
 
+    // Calculate adjustment market value: Base Market Value + sum of all Value Adjustments (except Stripping)
+    const calculateAdjustmentMarketValue = (baseMarketValue: string, adjustments: any[]): string => {
+        if (baseMarketValue === 'N/A') return 'N/A';
+        
+        try {
+            const baseValue = parseFloat(baseMarketValue);
+            if (isNaN(baseValue)) return 'N/A';
+
+            // Sum all value adjustments except Stripping
+            const totalAdjustments = adjustments.reduce((sum, adjustment) => {
+                if (adjustment.adjustment_type !== 'Stripping' && adjustment.value_adjustment !== 'N/A') {
+                    const adjustmentValue = parseFloat(adjustment.value_adjustment);
+                    return sum + (isNaN(adjustmentValue) ? 0 : adjustmentValue);
+                }
+                return sum;
+            }, 0);
+
+            return (baseValue + totalAdjustments).toFixed(2);
+        } catch (error) {
+            console.error('Error calculating adjustment market value:', error);
+            return 'N/A';
+        }
+    };
+
+    // Calculate stripping market value: Sum of all Stripping Value Adjustments
+    const calculateStrippingMarketValue = (adjustments: any[]): string => {
+        try {
+            const strippingAdjustments = adjustments.filter(
+                adj => adj.adjustment_type === 'Stripping'
+            );
+
+            if (strippingAdjustments.length === 0) return 'N/A';
+
+            const totalStrippingValue = strippingAdjustments.reduce((sum, adjustment) => {
+                if (adjustment.value_adjustment !== 'N/A') {
+                    const adjustmentValue = parseFloat(adjustment.value_adjustment);
+                    return sum + (isNaN(adjustmentValue) ? 0 : adjustmentValue);
+                }
+                return sum;
+            }, 0);
+
+            return totalStrippingValue.toFixed(2);
+        } catch (error) {
+            console.error('Error calculating stripping market value:', error);
+            return 'N/A';
+        }
+    };
+
     const loadFormData = () => {
         if (formId) {
             setIsLoading(true);
@@ -177,88 +228,8 @@ export const useNonAgriLand = (formId: string | undefined) => {
         }
     };
 
-    const loadSubclassRates = async () => {
-        if (!formData?.subclass) return;
-
-        setIsLoadingRates(true);
-        try {
-            const ratesData = await getSubclassRateData();
-            if (ratesData) {
-                // Get current rate for the form's subclass
-                const apiRate = await getCurrentRateForSubclass(formData.subclass);
-                const area = formData?.area || 0;
-
-                // Ensure we have a string value
-                const rateString = apiRate ? String(apiRate) : '0';
-                // Safely parse to number
-                const rateNumber = parseFloat(rateString);
-                // Check if valid number
-                const isValidRate = !isNaN(rateNumber) && isFinite(rateNumber) && rateNumber >= 0;
-
-                const displayRate = isValidRate ? rateString : '0';
-                const calculatedRate = isValidRate ? rateNumber : 0;
-
-                // Create the rate display data with base market value
-                const rateDisplayData = [{
-                    valueInfoId: valueInfoId,
-                    rate: displayRate,
-                    base_market_value: calculateBaseMarketValue(calculatedRate, area)
-                }];
-
-                setSubclassRates(rateDisplayData);
-            }
-        } catch (error) {
-            console.error('Error loading subclass rates:', error);
-            // Set default values on error
-            setSubclassRates([{
-                valueInfoId: valueInfoId,
-                rate: '0',
-                base_market_value: 'N/A'
-            }]);
-        } finally {
-            setIsLoadingRates(false);
-        }
-    };
-
-    useEffect(() => {
-        loadFormData();
-        loadLandAdjustments();
-    }, [formId]);
-
-    // Load subclass rates when formData changes
-    useEffect(() => {
-        if (formData?.subclass && valueInfoId) {
-            loadSubclassRates();
-        }
-    }, [formData?.subclass, valueInfoId, formData?.area]);
-
-    // Listen for form data updates from Forms page
-    useEffect(() => {
-        const handleFormDataUpdate = (event: CustomEvent) => {
-            if (event.detail && event.detail.formId === formId) {
-                console.log('Form data updated, reloading form data...');
-                loadFormData();
-            }
-        };
-
-        const handleStorageChange = (e: StorageEvent) => {
-            if (e.key === 'formUpdateTrigger') {
-                console.log('Form update detected via localStorage, reloading form data...');
-                loadFormData();
-            }
-        };
-
-        window.addEventListener('formDataUpdated', handleFormDataUpdate as EventListener);
-        window.addEventListener('storage', handleStorageChange);
-
-        return () => {
-            window.removeEventListener('formDataUpdated', handleFormDataUpdate as EventListener);
-            window.removeEventListener('storage', handleStorageChange);
-        };
-    }, [formId]);
-
     // Filter adjustments for current valueInfoId and format for table with calculations
-    const getCombinedAdjustmentData = () => {
+    const getCombinedAdjustmentData = useMemo(() => {
         if (!valueInfoId || landAdjustments.length === 0) return [];
 
         const nonAgriAdjustments = NonAgriAdjustmentLocalStorage.getAdjustmentsByValueInfoId(valueInfoId);
@@ -307,9 +278,106 @@ export const useNonAgriLand = (formId: string | undefined) => {
 
             return adjustment;
         });
+    }, [valueInfoId, landAdjustments, formData?.area, subclassRates, adjustmentsVersion]); // Added adjustmentsVersion
+
+    const currentAdjustments = getCombinedAdjustmentData;
+
+    const loadSubclassRates = async (forceRecalculation = false) => {
+        if (!formData?.subclass) return;
+
+        setIsLoadingRates(true);
+        try {
+            const ratesData = await getSubclassRateData();
+            if (ratesData) {
+                // Get current rate for the form's subclass
+                const apiRate = await getCurrentRateForSubclass(formData.subclass);
+                const area = formData?.area || 0;
+
+                // Ensure we have a string value
+                const rateString = apiRate ? String(apiRate) : '0';
+                // Safely parse to number
+                const rateNumber = parseFloat(rateString);
+                // Check if valid number
+                const isValidRate = !isNaN(rateNumber) && isFinite(rateNumber) && rateNumber >= 0;
+
+                const displayRate = isValidRate ? rateString : '0';
+                const calculatedRate = isValidRate ? rateNumber : 0;
+
+                // Calculate base market value
+                const baseMarketValue = calculateBaseMarketValue(calculatedRate, area);
+                
+                // Calculate adjustment market value
+                const adjustmentMarketValue = calculateAdjustmentMarketValue(baseMarketValue, currentAdjustments);
+                
+                // Calculate stripping market value if there are stripping adjustments
+                const hasStripping = currentAdjustments.some(adj => adj.adjustment_type === 'Stripping');
+                const strippingMarketValue = hasStripping ? calculateStrippingMarketValue(currentAdjustments) : 'N/A';
+
+                // Create the rate display data with both market values
+                const rateDisplayData = [{
+                    valueInfoId: valueInfoId,
+                    rate: displayRate,
+                    base_market_value: baseMarketValue,
+                    adjustment_market_value: hasStripping ? strippingMarketValue : adjustmentMarketValue
+                }];
+
+                setSubclassRates(rateDisplayData);
+            }
+        } catch (error) {
+            console.error('Error loading subclass rates:', error);
+            // Set default values on error
+            setSubclassRates([{
+                valueInfoId: valueInfoId,
+                rate: '0',
+                base_market_value: 'N/A',
+                adjustment_market_value: 'N/A'
+            }]);
+        } finally {
+            setIsLoadingRates(false);
+        }
     };
 
-    const currentAdjustments = getCombinedAdjustmentData();
+    // Increment adjustments version to trigger recalculations
+    const triggerRateRecalculation = () => {
+        setAdjustmentsVersion(prev => prev + 1);
+    };
+
+    useEffect(() => {
+        loadFormData();
+        loadLandAdjustments();
+    }, [formId]);
+
+    // Load subclass rates when formData changes OR adjustments change
+    useEffect(() => {
+        if (formData?.subclass && valueInfoId) {
+            loadSubclassRates();
+        }
+    }, [formData?.subclass, valueInfoId, formData?.area, adjustmentsVersion]); // Use adjustmentsVersion instead of currentAdjustments
+
+    // Listen for form data updates from Forms page
+    useEffect(() => {
+        const handleFormDataUpdate = (event: CustomEvent) => {
+            if (event.detail && event.detail.formId === formId) {
+                console.log('Form data updated, reloading form data...');
+                loadFormData();
+            }
+        };
+
+        const handleStorageChange = (e: StorageEvent) => {
+            if (e.key === 'formUpdateTrigger') {
+                console.log('Form update detected via localStorage, reloading form data...');
+                loadFormData();
+            }
+        };
+
+        window.addEventListener('formDataUpdated', handleFormDataUpdate as EventListener);
+        window.addEventListener('storage', handleStorageChange);
+
+        return () => {
+            window.removeEventListener('formDataUpdated', handleFormDataUpdate as EventListener);
+            window.removeEventListener('storage', handleStorageChange);
+        };
+    }, [formId]);
 
     // Check if adjustments exist
     const hasCornerInfluence = currentAdjustments.some(
@@ -562,6 +630,7 @@ export const useNonAgriLand = (formId: string | undefined) => {
         setAdjustmentFactor('');
         setAdditionalFactor('');
         loadLandAdjustments();
+        triggerRateRecalculation(); // Trigger rate recalculation
     };
 
     const handleUpdateModalDismiss = () => {
@@ -572,6 +641,7 @@ export const useNonAgriLand = (formId: string | undefined) => {
         setAdjustmentFactor('');
         setAdditionalFactor('');
         loadLandAdjustments();
+        triggerRateRecalculation(); // Trigger rate recalculation
     };
 
     const handleStrippingModalDismiss = () => {
@@ -582,6 +652,7 @@ export const useNonAgriLand = (formId: string | undefined) => {
         setAdjustmentFactor('');
         setAdditionalFactor('');
         loadLandAdjustments();
+        triggerRateRecalculation(); // Trigger rate recalculation
     };
 
     const handleRowClick = (rowData: any) => {
@@ -641,6 +712,7 @@ export const useNonAgriLand = (formId: string | undefined) => {
                 showToastMessage(`${adjustmentToDelete.adjustment_type} adjustment deleted successfully`, 'success');
                 setSelectedRow(null);
                 loadLandAdjustments();
+                triggerRateRecalculation(); // Trigger rate recalculation
             } else {
                 showToastMessage('Error deleting adjustment', 'danger');
             }
@@ -720,7 +792,7 @@ export const useNonAgriLand = (formId: string | undefined) => {
         setShowReverseDeleteWarning,
         reverseDeleteWarningMessage,
         setReverseDeleteWarningMessage,
-        submitDisabledInfo, // ADDED: Submit validation info
+        submitDisabledInfo,
 
         // Handlers
         handleBack,

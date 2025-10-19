@@ -43,7 +43,7 @@ interface NonAgriLandUIProps {
     showReverseDeleteWarning: boolean;
     setShowReverseDeleteWarning: (show: boolean) => void;
     reverseDeleteWarningMessage: string;
-    submitDisabledInfo: { disabled: boolean; reason: string }; // ADDED: Submit validation info
+    submitDisabledInfo: { disabled: boolean; reason: string };
     
     // Handlers
     onSubmit: () => void;
@@ -148,7 +148,7 @@ export const NonAgriLandUI: React.FC<NonAgriLandUIProps> = ({
     showReverseDeleteWarning,
     setShowReverseDeleteWarning,
     reverseDeleteWarningMessage,
-    submitDisabledInfo, // ADDED: Submit validation info
+    submitDisabledInfo,
     
     // Handlers
     onSubmit,
@@ -190,7 +190,7 @@ export const NonAgriLandUI: React.FC<NonAgriLandUIProps> = ({
                 </IonCardContent>
             </IonCard>
 
-            {/* NEW: Simplified Subclass Rate Information Table with Base Market Value */}
+            {/* Rate Information Table with Base Market Value and Adjustment Market Value */}
             <IonCard>
                 <IonCardContent>
                     {isLoadingRates ? (
@@ -276,13 +276,13 @@ export const NonAgriLandUI: React.FC<NonAgriLandUIProps> = ({
                             <IonText>
                                 <strong>Remaining Area after {currentCount} strip(s): </strong>
                                 <span style={{ 
-                                    color: remainingArea === 0 ? '#2e7d32' : '#d32f2f', // UPDATED: Red color when non-zero
+                                    color: remainingArea === 0 ? '#2e7d32' : '#d32f2f',
                                     fontWeight: 'bold',
                                     fontSize: '1.1em'
                                 }}>
                                     {remainingArea.toLocaleString()}
                                 </span>
-                                {remainingArea !== 0 && ( // ADDED: Warning when area is non-zero
+                                {remainingArea !== 0 && (
                                     <div style={{ marginTop: '5px' }}>
                                         <IonText color="danger">
                                             <small>All strips must fully utilize the land area before submission</small>
