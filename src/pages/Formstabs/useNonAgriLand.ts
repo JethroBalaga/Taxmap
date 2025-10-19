@@ -56,6 +56,7 @@ export const useNonAgriLand = (formId: string | undefined) => {
     const [showAdjustmentModal, setShowAdjustmentModal] = useState(false);
     const [showUpdateAdjustmentModal, setShowUpdateAdjustmentModal] = useState(false);
     const [showStrippingModal, setShowStrippingModal] = useState(false);
+    const [showInfoModal, setShowInfoModal] = useState(false); // New info modal state
     const [selectedAdjustmentType, setSelectedAdjustmentType] = useState('');
     const [description, setDescription] = useState('');
     const [adjustmentFactor, setAdjustmentFactor] = useState('');
@@ -916,6 +917,8 @@ export const useNonAgriLand = (formId: string | undefined) => {
         showAdjustmentModal,
         showUpdateAdjustmentModal,
         showStrippingModal,
+        showInfoModal, // New state
+        setShowInfoModal, // New setter
         selectedAdjustmentType,
         description,
         adjustmentFactor,
