@@ -109,17 +109,14 @@ const MachineryTable: React.FC = () => {
   const [isLoadingContext, setIsLoadingContext] = useState(true);
   const [assessmentLevels, setAssessmentLevels] = useState<AssessmentLevelData[]>([]);
   
-  // State for update modal
   const [updateModalOpen, setUpdateModalOpen] = useState(false);
   const [selectedMachineData, setSelectedMachineData] = useState<MachineData | null>(null);
   const [selectedValueInfoId, setSelectedValueInfoId] = useState<string>('');
 
-  // Toast state
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [toastColor, setToastColor] = useState<'success' | 'danger' | 'warning' | undefined>(undefined);
 
-  // Format number function - no currency symbol
   const formatNumber = (value: string): string => {
     if (!value || value === 'N/A') return 'N/A';
     const number = parseFloat(value);
@@ -130,7 +127,6 @@ const MachineryTable: React.FC = () => {
     }).format(number);
   };
 
-  // Load assessment level data
   const loadAssessmentLevels = async () => {
     try {
       const data = await getAssessmentLevelData();
@@ -142,14 +138,12 @@ const MachineryTable: React.FC = () => {
     }
   };
 
-  // Get assessment level rate for a given adjusted market value, kind_id, and classification
   const getAssessmentLevelRate = (adjustedMarketValue: string, kindId: number, classification: string): { rate: string, rawRate: number } => {
     if (!adjustedMarketValue || adjustedMarketValue === 'N/A') return { rate: 'N/A', rawRate: 0 };
     
     const value = parseFloat(adjustedMarketValue);
     if (isNaN(value)) return { rate: 'N/A', rawRate: 0 };
     
-    // Filter for the specific kind_id and class_id (classification)
     const relevantAssessmentLevels = assessmentLevels.filter(level => 
       level.kind_id === kindId && 
       level.class_id === classification
@@ -159,12 +153,10 @@ const MachineryTable: React.FC = () => {
       return { rate: 'N/A', rawRate: 0 };
     }
 
-    // Find the assessment level where the value falls within range1 and range2
     const matchingLevel = relevantAssessmentLevels.find(level => 
       value >= level.range1 && value <= level.range2
     );
 
-    // If no exact match found, use the first available assessment level for this kind/class
     if (!matchingLevel && relevantAssessmentLevels.length > 0) {
       const rate = relevantAssessmentLevels[0].rate_percent;
       const rawRate = parseFloat(rate.replace('%', '')) || 0;
@@ -186,7 +178,6 @@ const MachineryTable: React.FC = () => {
     return { rate: 'N/A', rawRate: 0 };
   };
 
-  // Calculate assessed value: Adjusted Market Value x Assessment Level Rate
   const calculateAssessedValue = (adjustedMarketValue: string, rawRate: number): string => {
     if (!adjustedMarketValue || adjustedMarketValue === 'N/A' || rawRate === 0) return 'N/A';
     
@@ -228,14 +219,12 @@ const MachineryTable: React.FC = () => {
         const machineEntry = machineryData.find(item => item.valueInfoId === valueInfo.id);
         const adjustedMarketValue = machineEntry ? machineEntry.machineData.adjustedMarketValue : 'N/A';
         
-        // Get the assessment level using kind_id and classification from formData
         const { rate: assessmentLevel, rawRate } = getAssessmentLevelRate(
           adjustedMarketValue, 
           parseInt(formData.kind) || 3,
           formData.classification || ''
         );
 
-        // Calculate assessed value
         const assessedValue = calculateAssessedValue(adjustedMarketValue, rawRate);
         
         return {
@@ -428,24 +417,6 @@ const MachineryTable: React.FC = () => {
     }
   };
 
-  const cleanupLocalPhotos = async (photoTag: any) => {
-    try {
-      const photoPath = `phototags/${photoTag.photoName}`;
-      
-      if (Capacitor.isNativePlatform()) {
-        await Filesystem.deleteFile({
-          path: photoPath,
-          directory: Directory.Data
-        });
-        console.log('Local photo cleaned up successfully');
-      } else {
-        localStorage.removeItem(photoTag.photoName);
-      }
-    } catch (error) {
-      console.warn('Could not clean up local photo:', error);
-    }
-  };
-
   const showToastMessage = (message: string, color: 'success' | 'danger' | 'warning' = 'success') => {
     setToastMessage(message);
     setToastColor(color);
@@ -486,8 +457,6 @@ const MachineryTable: React.FC = () => {
           if (uploadError) {
             console.warn('Photo upload failed', uploadError);
             showToastMessage('Form submitted but photo upload failed', 'warning');
-          } else {
-            await cleanupLocalPhotos(photoTag);
           }
         } else {
           showToastMessage('Form submitted but could not retrieve photo', 'warning');
