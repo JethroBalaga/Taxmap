@@ -32,7 +32,7 @@ export const agriculturalUtils = (formData: any, agriculturalData: any, subclass
 
   const getDisplayableFormData = () => {
     if (!formData) return {};
-    const { status, uploaded, ...displayableData } = formData;
+    const { status, uploaded, id, ...displayableData } = formData; // Added 'id' to exclusion
     return displayableData;
   };
 
