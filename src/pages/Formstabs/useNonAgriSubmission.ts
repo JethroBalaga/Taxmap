@@ -74,14 +74,14 @@ export const useNonAgriSubmission = ({
         showToastMessage('Starting non-agricultural land upload process...', 'warning');
 
         try {
-            const currentFormData = await FormDataLocalStorage.getFormData(formId!); // Added await
+            const currentFormData = await FormDataLocalStorage.getFormData(formId!);
             if (!currentFormData) throw new Error('Form data not found');
             if (currentFormData.uploaded) throw new Error('Form already uploaded');
 
-            const valueInfo = ValueInfoLocalStorage.getValueInfo(valueInfoId);
+            const valueInfo = await ValueInfoLocalStorage.getValueInfo(valueInfoId); // Added await
             if (!valueInfo) throw new Error(`ValueInfo not found for ${valueInfoId}`);
 
-            const photoTag = PhotoTagLocalStorage.getPhotoTag(valueInfo.photoTagId);
+            const photoTag = await PhotoTagLocalStorage.getPhotoTag(valueInfo.photoTagId); // Added await
             if (!photoTag) throw new Error('Photo tag not found');
 
             // Insert photo record
@@ -174,7 +174,7 @@ export const useNonAgriSubmission = ({
 
             // Mark form as uploaded
             if (!currentFormData.synced_id) {
-                await FormDataLocalStorage.markFormAsUploaded(formId!, databaseFormId); // Added await
+                await FormDataLocalStorage.markFormAsUploaded(formId!, databaseFormId);
             }
 
             showToastMessage('Non-agricultural land data submitted successfully! All data synchronized with server.', 'success');
