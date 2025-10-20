@@ -76,9 +76,9 @@ const BuildingAdjustmentsTable: React.FC<BuildingAdjustmentsTableProps> = ({
         setShowDeleteToast(true);
     };
 
-    const performDeletion = () => {
+    const performDeletion = async () => {
         try {
-            const success = BuildingAdjustmentLocalStorage.deleteBuildingAdjustmentData(selectedAdjustmentId!);
+            const success = await BuildingAdjustmentLocalStorage.deleteBuildingAdjustmentData(selectedAdjustmentId!);
             if (success) {
                 onAdjustmentsUpdate();
                 setSelectedAdjustmentId(null);
