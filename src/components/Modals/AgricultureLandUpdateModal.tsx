@@ -193,8 +193,8 @@ const AgricultureLandUpdateModal: React.FC<AgricultureLandUpdateModalProps> = ({
 
       console.log('Updating agricultural data:', adjustmentData);
       
-      // Update the agricultural data in localStorage
-      const success = AgriculturalDataLocalStorage.updateAgriculturalData(valueInfoId, adjustmentData);
+      // Update the agricultural data in localForage
+      const success = await AgriculturalDataLocalStorage.updateAgriculturalData(valueInfoId, adjustmentData);
       
       if (success) {
         console.log('Agricultural data updated successfully');
