@@ -16,7 +16,7 @@ import {
 } from '@ionic/react';
 import { useState } from 'react';
 import { supabase } from '../utils/supaBaseClient';
-import { storeSession, SessionData } from '../utils/localStorage'; // Import the storage functions
+import { storeSession, SessionData } from '../utils/localStorage';
 import Logo from '../assets/Flag_of_Manolo_Fortich,_Bukidnon.png';
 import backgroundImg from '../assets/Background.jpg';
 import '../CSS/Login.css';
@@ -35,28 +35,59 @@ const AlertBox: React.FC<{ message: string; isOpen: boolean; onClose: () => void
 
 const Login: React.FC = () => {
   const navigation = useIonRouter();
-  const [email, setEmail] = useState('');
+  const [usernameOrEmail, setUsernameOrEmail] = useState('');
   const [password, setPassword] = useState('');
   const [alertMessage, setAlertMessage] = useState('');
   const [showAlert, setShowAlert] = useState(false);
   const [showToast, setShowToast] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const doLogin = async () => {
+    if (!usernameOrEmail || !password) {
+      setAlertMessage('Please enter both username/email and password.');
+      setShowAlert(true);
+      return;
+    }
+
+    setIsLoading(true);
+
     try {
-      // Verify credentials through Supabase Auth
+      let userEmail = usernameOrEmail;
+
+      // If input doesn't contain '@', treat it as username and look up the email
+      if (!usernameOrEmail.includes('@')) {
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('user_email')
+          .eq('username', usernameOrEmail)
+          .single();
+
+        if (userError || !userData) {
+          setAlertMessage('User not found. Please check your username or email.');
+          setShowAlert(true);
+          setIsLoading(false);
+          return;
+        }
+        userEmail = userData.user_email;
+      }
+
+      // Verify credentials through Supabase Auth using the email
       const { data, error: authError } = await supabase.auth.signInWithPassword({
-        email,
+        email: userEmail,
         password
       });
 
       if (authError) {
         // Handle specific password errors
         if (authError.message.includes('Invalid login credentials')) {
-          setAlertMessage('Incorrect email or password. Please try again.');
+          setAlertMessage('Incorrect username/email or password. Please try again.');
+        } else if (authError.message.includes('Email not confirmed')) {
+          setAlertMessage('Please verify your email address before logging in.');
         } else {
           setAlertMessage(authError.message);
         }
         setShowAlert(true);
+        setIsLoading(false);
         return;
       }
 
@@ -89,6 +120,14 @@ const Login: React.FC = () => {
       setAlertMessage('An unexpected error occurred. Please try again.');
       setShowAlert(true);
       console.error('Login error:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleKeyPress = (event: React.KeyboardEvent) => {
+    if (event.key === 'Enter') {
+      doLogin();
     }
   };
 
@@ -116,14 +155,16 @@ const Login: React.FC = () => {
                 <h1 className="login-title">TaxMap Staff</h1>
 
                 <IonInput
-                  label="Email"
+                  label="Username or Email"
                   labelPlacement="floating"
                   fill="outline"
-                  type="email"
-                  placeholder="Enter Email"
-                  value={email}
-                  onIonChange={e => setEmail(e.detail.value!)}
+                  type="text"
+                  placeholder="Enter username or email"
+                  value={usernameOrEmail}
+                  onIonChange={e => setUsernameOrEmail(e.detail.value!)}
+                  onKeyPress={handleKeyPress}
                   className="login-input"
+                  disabled={isLoading}
                 />
 
                 <IonInput
@@ -131,10 +172,12 @@ const Login: React.FC = () => {
                   labelPlacement="floating"
                   fill="outline"
                   type="password"
-                  placeholder="Password"
+                  placeholder="Enter password"
                   value={password}
                   onIonChange={e => setPassword(e.detail.value!)}
+                  onKeyPress={handleKeyPress}
                   className="login-input"
+                  disabled={isLoading}
                 >
                   <IonInputPasswordToggle slot="end" color="dark" />
                 </IonInput>
@@ -145,15 +188,20 @@ const Login: React.FC = () => {
                   shape="round"
                   color="warning"
                   className="login-button"
+                  disabled={isLoading}
                 >
-                  Login
+                  {isLoading ? 'Logging in...' : 'Login'}
                 </IonButton>
               </div>
             </IonCardContent>
           </IonCard>
         </div>
 
-        <AlertBox message={alertMessage} isOpen={showAlert} onClose={() => setShowAlert(false)} />
+        <AlertBox 
+          message={alertMessage} 
+          isOpen={showAlert} 
+          onClose={() => setShowAlert(false)} 
+        />
 
         <IonToast
           isOpen={showToast}
