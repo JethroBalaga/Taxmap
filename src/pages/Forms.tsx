@@ -55,10 +55,10 @@ const Forms: React.FC = () => {
     { icon: informationCircleOutline, className: selectedForm ? "icon-blue" : "icon-blue icon-disabled", onClick: () => handleInfoClick(), title: "View Form Details", enabled: !!selectedForm },
   ];
 
-  const loadFormData = useCallback(() => {
+  const loadFormData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const allForms = FormDataLocalStorage.getAllFormData();
+      const allForms = await FormDataLocalStorage.getAllFormData(); // Added await
       if (Array.isArray(allForms)) {
         setFormData(allForms);
       } else if (allForms && typeof allForms === 'object') {
@@ -178,7 +178,7 @@ const Forms: React.FC = () => {
   const deleteRelatedData = async (formId: string): Promise<void> => {
     console.log(`Deleting related data for form ID: ${formId}`);
 
-    const formToDelete = FormDataLocalStorage.getFormData(formId);
+    const formToDelete = await FormDataLocalStorage.getFormData(formId); // Added await
     const isMachineryForm = formToDelete?.kind === "3";
     const isAgriculturalLandForm = formToDelete?.kind === "1" && formToDelete?.classification === "A";
     const isNonAgriculturalLandForm = formToDelete?.kind === "1" && formToDelete?.classification !== "A";
@@ -209,7 +209,7 @@ const Forms: React.FC = () => {
         }
       } else if (isAgriculturalLandForm) {
         try {
-          AgriculturalDataLocalStorage.deleteAgriculturalData(valueInfo.id);
+          await AgriculturalDataLocalStorage.deleteAgriculturalData(valueInfo.id); // Added await
           console.log(`Deleted agricultural data for value info: ${valueInfo.id}`);
         } catch (error) {
           console.error(`Error deleting agricultural data for value info ${valueInfo.id}:`, error);
@@ -232,8 +232,8 @@ const Forms: React.FC = () => {
         }
       } else {
         try {
-          BuildingDataLocalStorage.deleteBuildingData(valueInfo.id);
-          BuildingAdjustmentLocalStorage.deleteBuildingAdjustmentsByValueInfoId(valueInfo.id);
+          await BuildingDataLocalStorage.deleteBuildingData(valueInfo.id); // Added await
+          await BuildingAdjustmentLocalStorage.deleteBuildingAdjustmentsByValueInfoId(valueInfo.id); // Added await
           console.log(`Deleted building data for value info: ${valueInfo.id}`);
         } catch (error) {
           console.error(`Error deleting building data for value info ${valueInfo.id}:`, error);
@@ -267,7 +267,7 @@ const Forms: React.FC = () => {
     if (selectedForm) {
       try {
         await deleteRelatedData(selectedForm.id);
-        const success = FormDataLocalStorage.deleteFormData(selectedForm.id);
+        const success = await FormDataLocalStorage.deleteFormData(selectedForm.id); // Added await
         if (success) {
           const updatedForms = formData.filter(form => form.id !== selectedForm.id);
           setFormData(updatedForms);
