@@ -103,7 +103,8 @@ export const useAgriculturalSubmission = (formId: string) => {
       const valueInfo = ValueInfoLocalStorage.getValueInfoByFormDataId(formId);
       if (!valueInfo) throw new Error('Value info not found');
 
-      const agriData = AgriculturalDataLocalStorage.getAgriculturalDataByValueInfoId(valueInfo.id);
+      // CHANGED: Added await since getAgriculturalDataByValueInfoId is now async
+      const agriData = await AgriculturalDataLocalStorage.getAgriculturalDataByValueInfoId(valueInfo.id);
       if (!agriData) throw new Error('Agricultural adjustment data not found');
 
       const photoTag = PhotoTagLocalStorage.getPhotoTag(valueInfo.photoTagId);
