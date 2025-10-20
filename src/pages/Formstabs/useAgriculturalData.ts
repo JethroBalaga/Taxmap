@@ -128,7 +128,7 @@ export const useAgriculturalData = (formId: string) => {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const form = await FormDataLocalStorage.getFormData(formId); // Added await
+      const form = await FormDataLocalStorage.getFormData(formId);
       
       if (form) {
         setFormData(form);
@@ -139,11 +139,12 @@ export const useAgriculturalData = (formId: string) => {
         setIsValidForm(isLandKind && isAgricultural);
 
         if (isLandKind && isAgricultural) {
-          const valueInfo = ValueInfoLocalStorage.getValueInfoByFormDataId(formId);
+          const valueInfos = await ValueInfoLocalStorage.getAllValueInfo(); // Added await
+          const valueInfo = valueInfos.find(info => info.formDataId === formId); // Changed to find
           
           if (valueInfo) {
             setValueInfoId(valueInfo.id);
-            const agriData = await AgriculturalDataLocalStorage.getAgriculturalDataByValueInfoId(valueInfo.id); // Added await
+            const agriData = await AgriculturalDataLocalStorage.getAgriculturalDataByValueInfoId(valueInfo.id);
             setAgriculturalData(agriData);
           }
         }
