@@ -1,4 +1,6 @@
-/* Updated Login.css with yellow focus and white toggle */
+/* ===========================
+   Login Page Layout
+=========================== */
 .login-container {
   display: flex;
   justify-content: center;
@@ -20,13 +22,17 @@
   z-index: -1;
 }
 
+/* ===========================
+   Login Card (Glassy Effect)
+=========================== */
 .login-card {
   width: 100%;
   max-width: 500px;
-  backdrop-filter: blur(8px);
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(12px) saturate(120%);
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  box-shadow: 0 4px 25px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
 .login-content {
@@ -34,9 +40,12 @@
   flex-direction: column;
   align-items: center;
   gap: 1rem;
-  padding: 1rem;
+  padding: 2rem;
 }
 
+/* ===========================
+   Avatar & Title
+=========================== */
 .login-avatar {
   width: 100px;
   height: 100px;
@@ -49,23 +58,46 @@
   align-items: center;
   justify-content: center;
   color: yellow;
+  font-weight: bold;
 }
 
-/* Updated Input Styles */
+/* ===========================
+   Input Styles (Transparent)
+=========================== */
 .login-input {
   width: 100%;
-  --background: rgba(255, 255, 255, 0.1);
-  --color: white;
-  --border-color: rgba(255, 255, 255, 0.3);
-  --highlight-color-focused: yellow; /* Yellow focus highlight */
-  --border-color-focused: yellow;   /* Yellow border when focused */
+  --background: transparent !important;
+  --color: white !important;
+  --placeholder-color: rgba(255, 255, 255, 0.6);
+  --border-color: rgba(255, 255, 255, 0.4);
+  --highlight-color-focused: yellow;
+  --border-color-focused: yellow;
+  --padding-start: 12px;
+  --padding-end: 12px;
 }
 
-/* White Password Toggle */
-.login-input .input-password-toggle {
+/* IonInput shadow parts */
+ion-input.login-input::part(native) {
+  background: transparent !important;
   color: white !important;
 }
 
+ion-input.login-input::part(container) {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  transition: all 0.3s ease;
+}
+
+ion-input.login-input.has-focus::part(container) {
+  border-color: yellow !important;
+  box-shadow: 0 0 8px yellow !important;
+}
+
+/* ===========================
+   Password Toggle (White)
+=========================== */
+.login-input .input-password-toggle,
 .login-input .input-password-toggle ion-icon {
   color: white !important;
   opacity: 0.8;
@@ -75,35 +107,57 @@
   opacity: 1;
 }
 
+/* ===========================
+   Buttons
+=========================== */
 .login-button {
   margin-top: 1rem;
   --background: yellow;
   --color: black;
+  width: 100%;
+  max-width: 350px;
+  align-self: center;
+  font-weight: bold;
+  transition: 0.3s ease;
+}
+
+.login-button:hover {
+  filter: brightness(1.1);
 }
 
 .login-secondary-button {
   --background: transparent;
   --color: white;
+  --border-color: transparent;
+  width: 100%;
+  max-width: 350px;
+  align-self: center;
+  transition: 0.3s ease;
 }
 
-/* Mobile Responsiveness */
+.login-secondary-button:hover {
+  --color: white;
+  opacity: 0.9;
+}
+
+/* ===========================
+   Mobile Responsiveness
+=========================== */
 @media (max-width: 576px) {
   .login-card {
     width: 95%;
   }
-  
+
   .login-content {
     padding: 1.5rem;
   }
-}
-.login-secondary-button {
-  --background: transparent;
-  --color: white; /* Ensures text is white */
-  --border-color: transparent;
-}
 
-/* For better visibility on hover */
-.login-secondary-button:hover {
-  --color: white;
-  opacity: 0.9;
+  .login-button,
+  .login-secondary-button {
+    width: 100%;
+  }
+
+  .login-title {
+    font-size: 1.2rem;
+  }
 }
