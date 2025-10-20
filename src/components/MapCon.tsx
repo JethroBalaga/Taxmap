@@ -64,10 +64,10 @@ const PhotoMarkers: React.FC<{
   onMarkerClick: (photoTagId: string) => void;
 }> = ({ photoTags, onMarkerClick }) => {
   // Preload form data to determine marker icons
-  const getMarkerIcon = (photoTag: PhotoTagData) => {
+  const getMarkerIcon = async (photoTag: PhotoTagData) => {
     const valueInfo = ValueInfoLocalStorage.getValueInfoByPhotoTagId(photoTag.id);
     if (valueInfo) {
-      const formData = FormDataLocalStorage.getFormData(valueInfo.formDataId);
+      const formData = await FormDataLocalStorage.getFormData(valueInfo.formDataId); // Added await
       if (formData && formData.kind) {
         console.log(`PhotoTag ${photoTag.id}: Found form data with kind:`, formData.kind, 'type:', typeof formData.kind);
         return getMarkerIconByKind(formData.kind);
@@ -82,13 +82,27 @@ const PhotoMarkers: React.FC<{
     return getMarkerIconByKind('1');
   };
 
+  const [markerIcons, setMarkerIcons] = useState<{[key: string]: L.Icon}>({});
+
+  useEffect(() => {
+    const loadMarkerIcons = async () => {
+      const icons: {[key: string]: L.Icon} = {};
+      for (const tag of photoTags) {
+        icons[tag.id] = await getMarkerIcon(tag);
+      }
+      setMarkerIcons(icons);
+    };
+
+    loadMarkerIcons();
+  }, [photoTags]);
+
   return (
     <>
       {photoTags.map((tag) => (
         <Marker
           key={tag.id}
           position={[tag.latitude, tag.longitude]}
-          icon={getMarkerIcon(tag)}
+          icon={markerIcons[tag.id] || getMarkerIconByKind('1')}
           eventHandlers={{
             click: () => {
               onMarkerClick(tag.id);
