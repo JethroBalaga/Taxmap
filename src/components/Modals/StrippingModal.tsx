@@ -63,44 +63,52 @@ const StrippingModal: React.FC<StrippingModalProps> = ({
 
   // Initialize modal only once when it opens
   useEffect(() => {
-    if (isOpen) {
-      const { nextNumber, remainingArea: currentRemainingArea } = getStrippingInfo();
-      setCurrentStripNumber(nextNumber);
-      setAvailableArea(currentRemainingArea);
-      
-      const strippingAdjustmentToFind = getStrippingAdjustment(nextNumber);
-      
-      console.log(`Setting up stripping modal for strip ${nextNumber}`);
-      console.log('Available area:', currentRemainingArea);
-      console.log('Found stripping adjustment:', strippingAdjustmentToFind);
-      
-      if (strippingAdjustmentToFind) {
-        setStrippingAdjustment(strippingAdjustmentToFind);
-        setDescription(`STRIPPING ${nextNumber}`);
-        setAdjustmentFactor(strippingAdjustmentToFind.adjustment_factor);
+    const initializeModal = async () => {
+      if (isOpen) {
+        const { nextNumber, remainingArea: currentRemainingArea } = getStrippingInfo();
+        setCurrentStripNumber(nextNumber);
+        setAvailableArea(currentRemainingArea);
         
-        // Check if there's existing additional factor for this strip
-        const existingAdjustment = NonAgriAdjustmentLocalStorage.getAdjustmentsByValueInfoId(valueInfoId)
-          .find(adj => adj.adjustmentId === strippingAdjustmentToFind.adjustment_id);
+        const strippingAdjustmentToFind = getStrippingAdjustment(nextNumber);
         
-        if (existingAdjustment) {
-          const existingAdditionalFactor = NonAgriAdjustmentLocalStorage.getAdditionalFactor(
-            valueInfoId, 
-            strippingAdjustmentToFind.adjustment_id
-          );
-          if (existingAdditionalFactor) {
-            setLocalAdditionalFactor(existingAdditionalFactor.toString()); // Set local state only
+        console.log(`Setting up stripping modal for strip ${nextNumber}`);
+        console.log('Available area:', currentRemainingArea);
+        console.log('Found stripping adjustment:', strippingAdjustmentToFind);
+        
+        if (strippingAdjustmentToFind) {
+          setStrippingAdjustment(strippingAdjustmentToFind);
+          setDescription(`STRIPPING ${nextNumber}`);
+          setAdjustmentFactor(strippingAdjustmentToFind.adjustment_factor);
+          
+          // Check if there's existing additional factor for this strip
+          try {
+            const existingAdjustments = await NonAgriAdjustmentLocalStorage.getAdjustmentsByValueInfoId(valueInfoId);
+            const existingAdjustment = existingAdjustments.find(adj => adj.adjustmentId === strippingAdjustmentToFind.adjustment_id);
+            
+            if (existingAdjustment) {
+              const existingAdditionalFactor = await NonAgriAdjustmentLocalStorage.getAdditionalFactor(
+                valueInfoId, 
+                strippingAdjustmentToFind.adjustment_id
+              );
+              if (existingAdditionalFactor) {
+                setLocalAdditionalFactor(existingAdditionalFactor.toString()); // Set local state only
+              }
+            }
+          } catch (error) {
+            console.error('Error loading existing adjustment:', error);
           }
+          // Don't reset localAdditionalFactor if no existing value - let user input
+        } else {
+          console.warn(`Stripping adjustment for strip ${nextNumber} not found`);
+          setStrippingAdjustment(null);
+          setDescription(`STRIPPING ${nextNumber}`);
+          setAdjustmentFactor('');
+          // Don't reset localAdditionalFactor - let user input
         }
-        // Don't reset localAdditionalFactor if no existing value - let user input
-      } else {
-        console.warn(`Stripping adjustment for strip ${nextNumber} not found`);
-        setStrippingAdjustment(null);
-        setDescription(`STRIPPING ${nextNumber}`);
-        setAdjustmentFactor('');
-        // Don't reset localAdditionalFactor - let user input
       }
-    }
+    };
+
+    initializeModal();
   }, [isOpen, getStrippingInfo, getStrippingAdjustment, valueInfoId, setDescription, setAdjustmentFactor]); // Remove dependencies that cause resets
 
   // Calculate remaining area when localAdditionalFactor changes
@@ -184,7 +192,7 @@ const StrippingModal: React.FC<StrippingModalProps> = ({
       }
 
       // Save to NonAgriAdjustmentLocalStorage
-      const savedAdjustment = NonAgriAdjustmentLocalStorage.saveNonAgriAdjustment({
+      const savedAdjustment = await NonAgriAdjustmentLocalStorage.saveNonAgriAdjustment({
         valueInfoId: valueInfoId,
         adjustmentId: strippingAdjustment.adjustment_id,
         additionalFactor: stripAreaNumber
