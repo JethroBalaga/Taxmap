@@ -100,13 +100,13 @@ export const useNonAgriLand = (formId: string | undefined) => {
         setShowToast(true);
     };
 
-    const loadFormData = () => {
+    const loadFormData = async () => {
         if (formId) {
             setIsLoading(true);
             console.log('Loading non-agricultural land form data for ID:', formId);
 
             // ALWAYS load from localStorage to get the latest data
-            const storedFormData = FormDataLocalStorage.getFormData(formId);
+            const storedFormData = await FormDataLocalStorage.getFormData(formId); // Added await
             console.log('Loaded form data from localStorage:', storedFormData);
             setFormData(storedFormData);
 
