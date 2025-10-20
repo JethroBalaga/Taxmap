@@ -1,4 +1,6 @@
 // src/utils/tablestorages/MachineDataLocalStorage.ts
+import localforage from 'localforage';
+
 export interface MachineData {
   valueInfoId: string; 
   selectedEquipment: string;
@@ -24,36 +26,39 @@ export interface MachineData {
 
 const MACHINE_DATA_KEY = 'machineData';
 
+// Configure localforage instance for machine data
+const machineDataStore = localforage.createInstance({
+  name: 'MachineDataStorage',
+  description: 'Storage for machine data entries'
+});
+
 export const MachineDataLocalStorage = {
-  // Get ALL machine data from localStorage
-  getAllMachineData: (): MachineData[] => {
+  // Get ALL machine data from localforage
+  getAllMachineData: async (): Promise<MachineData[]> => {
     try {
-      const storedData = localStorage.getItem(MACHINE_DATA_KEY);
-      if (storedData) {
-        return JSON.parse(storedData);
-      }
-      return [];
+      const storedData = await machineDataStore.getItem<MachineData[]>(MACHINE_DATA_KEY);
+      return storedData || [];
     } catch (error) {
-      console.error('Error retrieving machine data from localStorage:', error);
+      console.error('Error retrieving machine data from localforage:', error);
       return [];
     }
   },
 
   // Get a specific machine data by valueInfoId
-  getMachineData: (valueInfoId: string): MachineData | null => {
+  getMachineData: async (valueInfoId: string): Promise<MachineData | null> => {
     try {
-      const allMachineData = MachineDataLocalStorage.getAllMachineData();
+      const allMachineData = await MachineDataLocalStorage.getAllMachineData();
       return allMachineData.find(machine => machine.valueInfoId === valueInfoId) || null;
     } catch (error) {
-      console.error('Error retrieving machine data from localStorage:', error);
+      console.error('Error retrieving machine data from localforage:', error);
       return null;
     }
   },
 
-  // Save NEW machine data to localStorage
-  saveMachineData: (machineData: MachineData): MachineData => {
+  // Save NEW machine data to localforage
+  saveMachineData: async (machineData: MachineData): Promise<MachineData> => {
     try {
-      const allMachineData = MachineDataLocalStorage.getAllMachineData();
+      const allMachineData = await MachineDataLocalStorage.getAllMachineData();
       
       // Check if data already exists for this valueInfoId
       const existingIndex = allMachineData.findIndex(
@@ -70,18 +75,18 @@ export const MachineDataLocalStorage = {
         updatedMachineData = [...allMachineData, machineData];
       }
       
-      localStorage.setItem(MACHINE_DATA_KEY, JSON.stringify(updatedMachineData));
+      await machineDataStore.setItem(MACHINE_DATA_KEY, updatedMachineData);
       return machineData;
     } catch (error) {
-      console.error('Error saving machine data to localStorage:', error);
+      console.error('Error saving machine data to localforage:', error);
       throw error;
     }
   },
 
   // Update specific fields in machine data for a specific valueInfoId
-  updateMachineData: (valueInfoId: string, updates: Partial<MachineData>): MachineData | null => {
+  updateMachineData: async (valueInfoId: string, updates: Partial<MachineData>): Promise<MachineData | null> => {
     try {
-      const allMachineData = MachineDataLocalStorage.getAllMachineData();
+      const allMachineData = await MachineDataLocalStorage.getAllMachineData();
       const machineIndex = allMachineData.findIndex(
         machine => machine.valueInfoId === valueInfoId
       );
@@ -96,7 +101,7 @@ export const MachineDataLocalStorage = {
       };
       
       allMachineData[machineIndex] = updatedMachine;
-      localStorage.setItem(MACHINE_DATA_KEY, JSON.stringify(allMachineData));
+      await machineDataStore.setItem(MACHINE_DATA_KEY, allMachineData);
       return updatedMachine;
     } catch (error) {
       console.error('Error updating machine data:', error);
@@ -105,13 +110,13 @@ export const MachineDataLocalStorage = {
   },
 
   // Delete machine data for a specific valueInfoId
-  deleteMachineData: (valueInfoId: string): boolean => {
+  deleteMachineData: async (valueInfoId: string): Promise<boolean> => {
     try {
-      const allMachineData = MachineDataLocalStorage.getAllMachineData();
+      const allMachineData = await MachineDataLocalStorage.getAllMachineData();
       const updatedMachineData = allMachineData.filter(
         machine => machine.valueInfoId !== valueInfoId
       );
-      localStorage.setItem(MACHINE_DATA_KEY, JSON.stringify(updatedMachineData));
+      await machineDataStore.setItem(MACHINE_DATA_KEY, updatedMachineData);
       return true;
     } catch (error) {
       console.error('Error deleting machine data:', error);
@@ -119,24 +124,24 @@ export const MachineDataLocalStorage = {
     }
   },
 
-  // Clear ALL machine data from localStorage
-  clearAllMachineData: (): void => {
+  // Clear ALL machine data from localforage
+  clearAllMachineData: async (): Promise<void> => {
     try {
-      localStorage.removeItem(MACHINE_DATA_KEY);
+      await machineDataStore.removeItem(MACHINE_DATA_KEY);
     } catch (error) {
-      console.error('Error clearing machine data from localStorage:', error);
+      console.error('Error clearing machine data from localforage:', error);
     }
   },
 
   // Check if machine data exists for a specific valueInfoId
-  hasMachineDataForInfoId: (valueInfoId: string): boolean => {
-    const allMachineData = MachineDataLocalStorage.getAllMachineData();
+  hasMachineDataForInfoId: async (valueInfoId: string): Promise<boolean> => {
+    const allMachineData = await MachineDataLocalStorage.getAllMachineData();
     return allMachineData.some(machine => machine.valueInfoId === valueInfoId);
   },
 
   // Get machine data count
-  getMachineDataCount: (): number => {
-    const allMachineData = MachineDataLocalStorage.getAllMachineData();
+  getMachineDataCount: async (): Promise<number> => {
+    const allMachineData = await MachineDataLocalStorage.getAllMachineData();
     return allMachineData.length;
   }
 };
