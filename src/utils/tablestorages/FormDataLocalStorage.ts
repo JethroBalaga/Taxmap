@@ -1,4 +1,6 @@
 // src/utils/FormDataLocalStorage.ts
+import localforage from 'localforage';
+
 export interface FormData {
   id: string; // Random primary key
   district: number | null;
@@ -16,6 +18,12 @@ export interface FormData {
 
 const FORM_DATA_KEY = 'formData';
 
+// Configure localForage instance
+const formDataStorage = localforage.createInstance({
+  name: 'FormDataDB',
+  storeName: 'form_data_store'
+});
+
 // Helper function to generate random string ID
 const generateRandomId = (): string => {
   return Math.random().toString(36).substring(2, 15) + 
@@ -23,35 +31,32 @@ const generateRandomId = (): string => {
 };
 
 export const FormDataLocalStorage = {
-  // Get ALL form data from localStorage
-  getAllFormData: (): FormData[] => {
+  // Get ALL form data from localForage
+  getAllFormData: async (): Promise<FormData[]> => {
     try {
-      const storedData = localStorage.getItem(FORM_DATA_KEY);
-      if (storedData) {
-        return JSON.parse(storedData);
-      }
-      return [];
+      const storedData = await formDataStorage.getItem<FormData[]>(FORM_DATA_KEY);
+      return storedData || [];
     } catch (error) {
-      console.error('Error retrieving form data from localStorage:', error);
+      console.error('Error retrieving form data from localForage:', error);
       return [];
     }
   },
 
   // Get a specific form by ID
-  getFormData: (id: string): FormData | null => {
+  getFormData: async (id: string): Promise<FormData | null> => {
     try {
-      const allForms = FormDataLocalStorage.getAllFormData();
+      const allForms = await FormDataLocalStorage.getAllFormData();
       return allForms.find(form => form.id === id) || null;
     } catch (error) {
-      console.error('Error retrieving form data from localStorage:', error);
+      console.error('Error retrieving form data from localForage:', error);
       return null;
     }
   },
 
-  // Save NEW form data to localStorage with generated ID and default status
-  saveFormData: (formData: Omit<FormData, 'id' | 'status' | 'uploaded'>): FormData => {
+  // Save NEW form data to localForage with generated ID and default status
+  saveFormData: async (formData: Omit<FormData, 'id' | 'status' | 'uploaded'>): Promise<FormData> => {
     try {
-      const allForms = FormDataLocalStorage.getAllFormData();
+      const allForms = await FormDataLocalStorage.getAllFormData();
       const newForm: FormData = {
         ...formData,
         id: generateRandomId(),
@@ -60,18 +65,18 @@ export const FormDataLocalStorage = {
       };
       
       const updatedForms = [...allForms, newForm];
-      localStorage.setItem(FORM_DATA_KEY, JSON.stringify(updatedForms));
+      await formDataStorage.setItem(FORM_DATA_KEY, updatedForms);
       return newForm;
     } catch (error) {
-      console.error('Error saving form data to localStorage:', error);
+      console.error('Error saving form data to localForage:', error);
       throw error;
     }
   },
 
   // Update existing form data
-  updateFormData: (id: string, updates: Partial<FormData>): FormData | null => {
+  updateFormData: async (id: string, updates: Partial<FormData>): Promise<FormData | null> => {
     try {
-      const allForms = FormDataLocalStorage.getAllFormData();
+      const allForms = await FormDataLocalStorage.getAllFormData();
       const formIndex = allForms.findIndex(form => form.id === id);
       
       if (formIndex === -1) {
@@ -84,7 +89,7 @@ export const FormDataLocalStorage = {
       };
       
       allForms[formIndex] = updatedForm;
-      localStorage.setItem(FORM_DATA_KEY, JSON.stringify(allForms));
+      await formDataStorage.setItem(FORM_DATA_KEY, allForms);
       return updatedForm;
     } catch (error) {
       console.error('Error updating form data:', error);
@@ -93,11 +98,11 @@ export const FormDataLocalStorage = {
   },
 
   // Delete form data
-  deleteFormData: (id: string): boolean => {
+  deleteFormData: async (id: string): Promise<boolean> => {
     try {
-      const allForms = FormDataLocalStorage.getAllFormData();
+      const allForms = await FormDataLocalStorage.getAllFormData();
       const updatedForms = allForms.filter(form => form.id !== id);
-      localStorage.setItem(FORM_DATA_KEY, JSON.stringify(updatedForms));
+      await formDataStorage.setItem(FORM_DATA_KEY, updatedForms);
       return true;
     } catch (error) {
       console.error('Error deleting form data:', error);
@@ -105,41 +110,41 @@ export const FormDataLocalStorage = {
     }
   },
 
-  // Clear ALL form data from localStorage
-  clearAllFormData: (): void => {
+  // Clear ALL form data from localForage
+  clearAllFormData: async (): Promise<void> => {
     try {
-      localStorage.removeItem(FORM_DATA_KEY);
+      await formDataStorage.removeItem(FORM_DATA_KEY);
     } catch (error) {
-      console.error('Error clearing form data from localStorage:', error);
+      console.error('Error clearing form data from localForage:', error);
     }
   },
 
   // Get form data by status
-  getFormDataByStatus: (status: string): FormData[] => {
-    const allForms = FormDataLocalStorage.getAllFormData();
+  getFormDataByStatus: async (status: string): Promise<FormData[]> => {
+    const allForms = await FormDataLocalStorage.getAllFormData();
     return allForms.filter(form => form.status === status);
   },
 
   // Get uploaded forms
-  getUploadedForms: (): FormData[] => {
-    const allForms = FormDataLocalStorage.getAllFormData();
+  getUploadedForms: async (): Promise<FormData[]> => {
+    const allForms = await FormDataLocalStorage.getAllFormData();
     return allForms.filter(form => form.uploaded === true);
   },
 
   // Get unuploaded forms
-  getUnuploadedForms: (): FormData[] => {
-    const allForms = FormDataLocalStorage.getAllFormData();
+  getUnuploadedForms: async (): Promise<FormData[]> => {
+    const allForms = await FormDataLocalStorage.getAllFormData();
     return allForms.filter(form => form.uploaded !== true);
   },
 
   // Update status of form data
-  updateFormDataStatus: (id: string, status: string): FormData | null => {
-    return FormDataLocalStorage.updateFormData(id, { status });
+  updateFormDataStatus: async (id: string, status: string): Promise<FormData | null> => {
+    return await FormDataLocalStorage.updateFormData(id, { status });
   },
 
   // Mark form as uploaded
-  markFormAsUploaded: (id: string, synced_id: string): FormData | null => {
-    return FormDataLocalStorage.updateFormData(id, { 
+  markFormAsUploaded: async (id: string, synced_id: string): Promise<FormData | null> => {
+    return await FormDataLocalStorage.updateFormData(id, { 
       uploaded: true, 
       synced_id, 
       status: 'New' 
