@@ -63,32 +63,28 @@ const PhotoMarkers: React.FC<{
   photoTags: PhotoTagData[];
   onMarkerClick: (photoTagId: string) => void;
 }> = ({ photoTags, onMarkerClick }) => {
-  // Preload form data to determine marker icons
-  const getMarkerIcon = async (photoTag: PhotoTagData) => {
-    const valueInfo = ValueInfoLocalStorage.getValueInfoByPhotoTagId(photoTag.id);
-    if (valueInfo) {
-      const formData = await FormDataLocalStorage.getFormData(valueInfo.formDataId); // Added await
-      if (formData && formData.kind) {
-        console.log(`PhotoTag ${photoTag.id}: Found form data with kind:`, formData.kind, 'type:', typeof formData.kind);
-        return getMarkerIconByKind(formData.kind);
-      } else {
-        console.log(`PhotoTag ${photoTag.id}: No form data or kind found`);
-      }
-    } else {
-      console.log(`PhotoTag ${photoTag.id}: No value info found`);
-    }
-    // Default icon if no form data or kind found
-    console.log(`PhotoTag ${photoTag.id}: Using default Land icon`);
-    return getMarkerIconByKind('1');
-  };
-
   const [markerIcons, setMarkerIcons] = useState<{[key: string]: L.Icon}>({});
 
   useEffect(() => {
     const loadMarkerIcons = async () => {
       const icons: {[key: string]: L.Icon} = {};
       for (const tag of photoTags) {
-        icons[tag.id] = await getMarkerIcon(tag);
+        try {
+          const valueInfo = await ValueInfoLocalStorage.getValueInfoByPhotoTagId(tag.id);
+          if (valueInfo) {
+            const formData = await FormDataLocalStorage.getFormData(valueInfo.formDataId);
+            if (formData && formData.kind) {
+              console.log(`PhotoTag ${tag.id}: Found form data with kind:`, formData.kind);
+              icons[tag.id] = getMarkerIconByKind(formData.kind);
+              continue;
+            }
+          }
+        } catch (error) {
+          console.log(`PhotoTag ${tag.id}: Error loading form data:`, error);
+        }
+        // Default icon if no form data or kind found
+        console.log(`PhotoTag ${tag.id}: Using default Land icon`);
+        icons[tag.id] = getMarkerIconByKind('1');
       }
       setMarkerIcons(icons);
     };
@@ -104,9 +100,7 @@ const PhotoMarkers: React.FC<{
           position={[tag.latitude, tag.longitude]}
           icon={markerIcons[tag.id] || getMarkerIconByKind('1')}
           eventHandlers={{
-            click: () => {
-              onMarkerClick(tag.id);
-            }
+            click: () => onMarkerClick(tag.id)
           }}
         />
       ))}
@@ -192,8 +186,8 @@ const MapCon: React.FC = () => {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
 
   // Use a useCallback to memoize the loading function
-  const loadPhotoTags = useCallback(() => {
-    const tags = PhotoTagLocalStorage.getAllPhotoTags();
+  const loadPhotoTags = useCallback(async () => {
+    const tags = await PhotoTagLocalStorage.getAllPhotoTags();
     console.log('Loaded photo tags:', tags.length, 'tags:', tags);
     setPhotoTags(tags);
   }, []);
