@@ -181,8 +181,9 @@ export const useBuildingTableLogic = (
     const loadBuildingData = useCallback(async () => {
         setLoading(true);
         try {
-            const allInfos = ValueInfoLocalStorage.getAllValueInfo().filter(info => info.formDataId === form_id);
-            const ids = allInfos.map(info => info.id);
+            const allInfos = await ValueInfoLocalStorage.getAllValueInfo(); // Added await
+            const filteredInfos = allInfos.filter(info => info.formDataId === form_id);
+            const ids = filteredInfos.map(info => info.id);
             setBuildingInfoIds(ids);
 
             const dataMap = new Map<string, any>();
@@ -192,7 +193,7 @@ export const useBuildingTableLogic = (
             const assessmentMap = new Map<string, AssessmentLevelInfo>();
 
             for (const id of ids) {
-                const data = await BuildingDataLocalStorage.getBuildingData(id); // Added await
+                const data = await BuildingDataLocalStorage.getBuildingData(id);
                 if (!data) continue;
                 dataMap.set(id, data);
 
@@ -225,7 +226,8 @@ export const useBuildingTableLogic = (
     const loadBuildingAdjustments = useCallback(async () => {
         try {
             const allAdjustments = await BuildingAdjustmentLocalStorage.getAllBuildingAdjustmentData();
-            const formBuildingIds = ValueInfoLocalStorage.getAllValueInfo().filter(info => info.formDataId === form_id).map(info => info.id);
+            const allInfos = await ValueInfoLocalStorage.getAllValueInfo(); // Added await
+            const formBuildingIds = allInfos.filter(info => info.formDataId === form_id).map(info => info.id);
             const filtered = allAdjustments.filter(adj => formBuildingIds.includes(adj.value_info_id));
             setBuildingAdjustments(filtered);
         } catch (error) {
@@ -284,8 +286,8 @@ export const useBuildingTableLogic = (
     const handleBuildingUpdate = async (updatedData: any) => {
         try {
             await BuildingDataLocalStorage.updateBuildingData(selectedBuildingId, updatedData);
-            loadBuildingData();
-            loadBuildingAdjustments();
+            await loadBuildingData(); // Added await
+            await loadBuildingAdjustments(); // Added await
             showToastMessage('Building updated successfully!', 'success');
             setShowUpdateModal(false);
             setSelectedBuildingId('');
@@ -314,15 +316,16 @@ export const useBuildingTableLogic = (
         showToastMessage('Starting upload process...', 'warning');
 
         try {
-            const formData = await FormDataLocalStorage.getFormData(form_id); // Added await
+            const formData = await FormDataLocalStorage.getFormData(form_id);
             if (!formData) throw new Error('Form data not found');
             if (formData.uploaded) throw new Error('Form already uploaded');
 
-            const valueInfos = ValueInfoLocalStorage.getAllValueInfo().filter(info => info.formDataId === form_id);
-            if (!valueInfos.length) throw new Error('No value info found');
-            const valueInfo = valueInfos[0];
+            const valueInfos = await ValueInfoLocalStorage.getAllValueInfo(); // Added await
+            const filteredValueInfos = valueInfos.filter(info => info.formDataId === form_id);
+            if (!filteredValueInfos.length) throw new Error('No value info found');
+            const valueInfo = filteredValueInfos[0];
 
-            const photoTag = PhotoTagLocalStorage.getPhotoTag(valueInfo.photoTagId);
+            const photoTag = await PhotoTagLocalStorage.getPhotoTag(valueInfo.photoTagId); // Added await
             if (!photoTag) throw new Error('Photo tag not found');
 
             // Insert photo record into database
@@ -369,7 +372,7 @@ export const useBuildingTableLogic = (
 
             const databaseValueInfoId = await supabaseApi.insertValueInfo(databaseFormId, databaseTagId);
 
-            const buildingData = await BuildingDataLocalStorage.getBuildingData(valueInfo.id); // Added await
+            const buildingData = await BuildingDataLocalStorage.getBuildingData(valueInfo.id);
             if (!buildingData) throw new Error('Building data not found');
 
             await supabaseApi.insertGeneralDescription(databaseValueInfoId, {
@@ -398,7 +401,7 @@ export const useBuildingTableLogic = (
             if (filteredAdjustments.length) await supabaseApi.insertBuildingAdjustments(databaseValueInfoId, filteredAdjustments);
 
             await supabaseApi.updateFormStatus(databaseFormId, 'New');
-            await FormDataLocalStorage.markFormAsUploaded(form_id, databaseFormId); // Added await
+            await FormDataLocalStorage.markFormAsUploaded(form_id, databaseFormId);
 
             showToastMessage('Form submitted successfully! Data synchronized with server.', 'success');
 
