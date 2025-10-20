@@ -1,4 +1,6 @@
 // src/utils/AgriculturalDataLocalStorage.ts
+import localforage from 'localforage';
+
 export interface AgriculturalData {
   frontage: string;
   weather_road: string;
@@ -8,25 +10,28 @@ export interface AgriculturalData {
 
 const AGRICULTURAL_DATA_KEY = 'agriculturalData';
 
+// Configure localForage instance
+const agriculturalStorage = localforage.createInstance({
+  name: 'AgriculturalDataDB',
+  storeName: 'agricultural_store'
+});
+
 export const AgriculturalDataLocalStorage = {
-  // Get ALL agricultural data from localStorage
-  getAllAgriculturalData: (): AgriculturalData[] => {
+  // Get ALL agricultural data from localForage
+  getAllAgriculturalData: async (): Promise<AgriculturalData[]> => {
     try {
-      const storedData = localStorage.getItem(AGRICULTURAL_DATA_KEY);
-      if (storedData) {
-        return JSON.parse(storedData);
-      }
-      return [];
+      const storedData = await agriculturalStorage.getItem<AgriculturalData[]>(AGRICULTURAL_DATA_KEY);
+      return storedData || [];
     } catch (error) {
-      console.error('Error retrieving agricultural data from localStorage:', error);
+      console.error('Error retrieving agricultural data from localForage:', error);
       return [];
     }
   },
 
   // Get agricultural data for a specific value_info_id
-  getAgriculturalDataByValueInfoId: (value_info_id: string): AgriculturalData | null => {
+  getAgriculturalDataByValueInfoId: async (value_info_id: string): Promise<AgriculturalData | null> => {
     try {
-      const allAgriculturalData = AgriculturalDataLocalStorage.getAllAgriculturalData();
+      const allAgriculturalData = await AgriculturalDataLocalStorage.getAllAgriculturalData();
       return allAgriculturalData.find(data => data.value_info_id === value_info_id) || null;
     } catch (error) {
       console.error('Error retrieving agricultural data by value_info_id:', error);
@@ -34,10 +39,10 @@ export const AgriculturalDataLocalStorage = {
     }
   },
 
-  // Save NEW agricultural data to localStorage
-  saveAgriculturalData: (agriculturalData: AgriculturalData): void => {
+  // Save NEW agricultural data to localForage
+  saveAgriculturalData: async (agriculturalData: AgriculturalData): Promise<void> => {
     try {
-      const allAgriculturalData = AgriculturalDataLocalStorage.getAllAgriculturalData();
+      const allAgriculturalData = await AgriculturalDataLocalStorage.getAllAgriculturalData();
 
       // Check if data already exists for this value_info_id
       const existingIndex = allAgriculturalData.findIndex(
@@ -54,17 +59,17 @@ export const AgriculturalDataLocalStorage = {
         updatedAgriculturalData = [...allAgriculturalData, agriculturalData];
       }
 
-      localStorage.setItem(AGRICULTURAL_DATA_KEY, JSON.stringify(updatedAgriculturalData));
+      await agriculturalStorage.setItem(AGRICULTURAL_DATA_KEY, updatedAgriculturalData);
     } catch (error) {
-      console.error('Error saving agricultural data to localStorage:', error);
+      console.error('Error saving agricultural data to localForage:', error);
       throw error;
     }
   },
 
   // Update agricultural data for a specific value_info_id
-  updateAgriculturalData: (value_info_id: string, updates: Partial<AgriculturalData>): AgriculturalData | null => {
+  updateAgriculturalData: async (value_info_id: string, updates: Partial<AgriculturalData>): Promise<AgriculturalData | null> => {
     try {
-      const allAgriculturalData = AgriculturalDataLocalStorage.getAllAgriculturalData();
+      const allAgriculturalData = await AgriculturalDataLocalStorage.getAllAgriculturalData();
       const dataIndex = allAgriculturalData.findIndex(
         data => data.value_info_id === value_info_id
       );
@@ -79,7 +84,7 @@ export const AgriculturalDataLocalStorage = {
       };
 
       allAgriculturalData[dataIndex] = updatedData;
-      localStorage.setItem(AGRICULTURAL_DATA_KEY, JSON.stringify(allAgriculturalData));
+      await agriculturalStorage.setItem(AGRICULTURAL_DATA_KEY, allAgriculturalData);
       return updatedData;
     } catch (error) {
       console.error('Error updating agricultural data:', error);
@@ -88,13 +93,13 @@ export const AgriculturalDataLocalStorage = {
   },
 
   // Delete agricultural data for a specific value_info_id
-  deleteAgriculturalData: (value_info_id: string): boolean => {
+  deleteAgriculturalData: async (value_info_id: string): Promise<boolean> => {
     try {
-      const allAgriculturalData = AgriculturalDataLocalStorage.getAllAgriculturalData();
+      const allAgriculturalData = await AgriculturalDataLocalStorage.getAllAgriculturalData();
       const updatedAgriculturalData = allAgriculturalData.filter(
         data => data.value_info_id !== value_info_id
       );
-      localStorage.setItem(AGRICULTURAL_DATA_KEY, JSON.stringify(updatedAgriculturalData));
+      await agriculturalStorage.setItem(AGRICULTURAL_DATA_KEY, updatedAgriculturalData);
       return true;
     } catch (error) {
       console.error('Error deleting agricultural data:', error);
@@ -102,24 +107,24 @@ export const AgriculturalDataLocalStorage = {
     }
   },
 
-  // Clear ALL agricultural data from localStorage
-  clearAllAgriculturalData: (): void => {
+  // Clear ALL agricultural data from localForage
+  clearAllAgriculturalData: async (): Promise<void> => {
     try {
-      localStorage.removeItem(AGRICULTURAL_DATA_KEY);
+      await agriculturalStorage.removeItem(AGRICULTURAL_DATA_KEY);
     } catch (error) {
-      console.error('Error clearing agricultural data from localStorage:', error);
+      console.error('Error clearing agricultural data from localForage:', error);
     }
   },
 
   // Check if agricultural data exists for a specific value_info_id
-  hasAgriculturalData: (value_info_id: string): boolean => {
-    const allAgriculturalData = AgriculturalDataLocalStorage.getAllAgriculturalData();
+  hasAgriculturalData: async (value_info_id: string): Promise<boolean> => {
+    const allAgriculturalData = await AgriculturalDataLocalStorage.getAllAgriculturalData();
     return allAgriculturalData.some(data => data.value_info_id === value_info_id);
   },
 
   // Get agricultural data count
-  getAgriculturalDataCount: (): number => {
-    const allAgriculturalData = AgriculturalDataLocalStorage.getAllAgriculturalData();
+  getAgriculturalDataCount: async (): Promise<number> => {
+    const allAgriculturalData = await AgriculturalDataLocalStorage.getAllAgriculturalData();
     return allAgriculturalData.length;
   }
 };
