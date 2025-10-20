@@ -58,15 +58,15 @@ export const useMachinerySubmission = () => {
     showToastMessage('Starting machinery upload process...', 'warning');
 
     try {
-      const formData = await FormDataLocalStorage.getFormData(formId); // Added await
+      const formData = await FormDataLocalStorage.getFormData(formId);
       if (!formData) throw new Error('Form data not found');
       if (formData.uploaded) throw new Error('Form already uploaded');
 
       for (const { machineData, valueInfoId } of machineryData) {
-        const valueInfo = ValueInfoLocalStorage.getValueInfo(valueInfoId);
+        const valueInfo = await ValueInfoLocalStorage.getValueInfo(valueInfoId); // Added await
         if (!valueInfo) throw new Error(`ValueInfo not found for ${valueInfoId}`);
 
-        const photoTag = PhotoTagLocalStorage.getPhotoTag(valueInfo.photoTagId);
+        const photoTag = await PhotoTagLocalStorage.getPhotoTag(valueInfo.photoTagId); // Added await
         if (!photoTag) throw new Error('Photo tag not found');
 
         const databaseTagId = await supabaseApi.insertPhoto({
@@ -132,7 +132,7 @@ export const useMachinerySubmission = () => {
         });
 
         if (!formData.synced_id) {
-          await FormDataLocalStorage.markFormAsUploaded(formId, databaseFormId); // Added await
+          await FormDataLocalStorage.markFormAsUploaded(formId, databaseFormId);
         }
       }
 
