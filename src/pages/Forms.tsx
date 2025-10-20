@@ -58,7 +58,7 @@ const Forms: React.FC = () => {
   const loadFormData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const allForms = await FormDataLocalStorage.getAllFormData(); // Added await
+      const allForms = await FormDataLocalStorage.getAllFormData();
       if (Array.isArray(allForms)) {
         setFormData(allForms);
       } else if (allForms && typeof allForms === 'object') {
@@ -178,12 +178,12 @@ const Forms: React.FC = () => {
   const deleteRelatedData = async (formId: string): Promise<void> => {
     console.log(`Deleting related data for form ID: ${formId}`);
 
-    const formToDelete = await FormDataLocalStorage.getFormData(formId); // Added await
+    const formToDelete = await FormDataLocalStorage.getFormData(formId);
     const isMachineryForm = formToDelete?.kind === "3";
     const isAgriculturalLandForm = formToDelete?.kind === "1" && formToDelete?.classification === "A";
     const isNonAgriculturalLandForm = formToDelete?.kind === "1" && formToDelete?.classification !== "A";
 
-    const allValueInfo = ValueInfoLocalStorage.getAllValueInfo();
+    const allValueInfo = await ValueInfoLocalStorage.getAllValueInfo(); // Added await
     const relatedValueInfo = allValueInfo.filter(info => info.formDataId === formId);
 
     console.log(`Found ${relatedValueInfo.length} value info entries to delete`);
@@ -193,7 +193,7 @@ const Forms: React.FC = () => {
 
       if (valueInfo.photoTagId) {
         try {
-          PhotoTagLocalStorage.deletePhotoTag(valueInfo.photoTagId);
+          await PhotoTagLocalStorage.deletePhotoTag(valueInfo.photoTagId); // Added await
           console.log(`Deleted photo tag: ${valueInfo.photoTagId}`);
         } catch (error) {
           console.error(`Error deleting photo tag for value info ${valueInfo.id}:`, error);
@@ -202,14 +202,14 @@ const Forms: React.FC = () => {
 
       if (isMachineryForm) {
         try {
-          MachineDataLocalStorage.deleteMachineData(valueInfo.id);
+          await MachineDataLocalStorage.deleteMachineData(valueInfo.id); // Added await
           console.log(`Deleted machine data for value info: ${valueInfo.id}`);
         } catch (error) {
           console.error(`Error deleting machine data for value info ${valueInfo.id}:`, error);
         }
       } else if (isAgriculturalLandForm) {
         try {
-          await AgriculturalDataLocalStorage.deleteAgriculturalData(valueInfo.id); // Added await
+          await AgriculturalDataLocalStorage.deleteAgriculturalData(valueInfo.id);
           console.log(`Deleted agricultural data for value info: ${valueInfo.id}`);
         } catch (error) {
           console.error(`Error deleting agricultural data for value info ${valueInfo.id}:`, error);
@@ -217,7 +217,7 @@ const Forms: React.FC = () => {
       } else if (isNonAgriculturalLandForm) {
         try {
           // Delete non-agricultural land adjustments only
-          NonAgriAdjustmentLocalStorage.deleteAllAdjustmentsByValueInfoId(valueInfo.id);
+          await NonAgriAdjustmentLocalStorage.deleteAllAdjustmentsByValueInfoId(valueInfo.id); // Added await
           console.log(`DELETED NON-AGRICULTURAL ADJUSTMENTS for value info: ${valueInfo.id}`, {
             valueInfoId: valueInfo.id,
             formId: formId,
@@ -241,23 +241,23 @@ const Forms: React.FC = () => {
       }
 
       try {
-        ValueInfoLocalStorage.deleteValueInfo(valueInfo.id);
+        await ValueInfoLocalStorage.deleteValueInfo(valueInfo.id); // Added await
         console.log(`Deleted value info: ${valueInfo.id}`);
       } catch (error) {
         console.error(`Error deleting value info ${valueInfo.id}:`, error);
       }
     }
 
-    const remainingValueInfo = ValueInfoLocalStorage.getAllValueInfo();
+    const remainingValueInfo = await ValueInfoLocalStorage.getAllValueInfo(); // Added await
     const orphanedValueInfo = remainingValueInfo.filter(info => info.formDataId === formId);
     if (orphanedValueInfo.length > 0) {
-      orphanedValueInfo.forEach(info => {
+      for (const info of orphanedValueInfo) { // Changed to for...of for async
         try {
-          ValueInfoLocalStorage.deleteValueInfo(info.id);
+          await ValueInfoLocalStorage.deleteValueInfo(info.id); // Added await
         } catch (error) {
           console.error(`Error deleting orphaned value info ${info.id}:`, error);
         }
-      });
+      }
     }
 
     console.log(`Completed deletion of related data for form: ${formId}`);
@@ -267,7 +267,7 @@ const Forms: React.FC = () => {
     if (selectedForm) {
       try {
         await deleteRelatedData(selectedForm.id);
-        const success = await FormDataLocalStorage.deleteFormData(selectedForm.id); // Added await
+        const success = await FormDataLocalStorage.deleteFormData(selectedForm.id);
         if (success) {
           const updatedForms = formData.filter(form => form.id !== selectedForm.id);
           setFormData(updatedForms);
