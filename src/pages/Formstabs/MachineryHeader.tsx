@@ -46,7 +46,8 @@ const MachineryHeader: React.FC<MachineryHeaderProps> = ({
       <IonToolbar>
         <IonButtons slot="start">
           <IonButton onClick={onBack}>
-            <IonIcon slot="icon-only" icon={arrowBack} />
+            <IonIcon slot="start" icon={arrowBack} />
+            Back
           </IonButton>
         </IonButtons>
         
