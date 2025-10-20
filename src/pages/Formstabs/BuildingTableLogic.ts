@@ -67,14 +67,14 @@ export const useBuildingTableLogic = (
         try {
             // Photos are stored in the "phototags" directory in the filesystem
             const photoPath = `phototags/${photoTag.photoName}`;
-            
+
             if (Capacitor.isNativePlatform()) {
                 // For native apps, read from the data directory
                 const file = await Filesystem.readFile({
                     path: photoPath,
                     directory: Directory.Data
                 });
-                
+
                 // Convert base64 to Blob
                 const blob = await (await fetch(`data:image/jpeg;base64,${file.data}`)).blob();
                 return blob;
@@ -84,7 +84,7 @@ export const useBuildingTableLogic = (
                 if (photoData) {
                     return await (await fetch(photoData)).blob();
                 }
-                
+
                 // Fallback: check if photoData is stored directly in the photoTag
                 if (photoTag.photoData) {
                     return await (await fetch(photoTag.photoData)).blob();
@@ -102,7 +102,7 @@ export const useBuildingTableLogic = (
     const getPhotoFilePath = useCallback(async (photoTag: any): Promise<string | null> => {
         try {
             const photoPath = `phototags/${photoTag.photoName}`;
-            
+
             if (Capacitor.isNativePlatform()) {
                 // For native apps, get the file URI from the filesystem
                 const fileInfo = await Filesystem.getUri({
@@ -133,7 +133,7 @@ export const useBuildingTableLogic = (
 
     const getAssessmentLevelForBuilding = useCallback(async (adjustedValue: number): Promise<AssessmentLevelInfo | null> => {
         try {
-            const numericValue = Math.floor(adjustedValue);
+            const numericValue = adjustedValue; // ← No rounding, use original value
             const levels = await getAssessmentLevelData();
             const matching = levels?.find(lvl => {
                 if (!lvl) return false;
@@ -148,7 +148,6 @@ export const useBuildingTableLogic = (
             return null;
         }
     }, [kindId, classification]);
-
     // --- Adjustments ---
     const calculateAllAdjustments = useCallback(async () => {
         const map = new Map<string, number>();
