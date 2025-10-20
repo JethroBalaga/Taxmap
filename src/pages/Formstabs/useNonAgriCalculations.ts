@@ -163,36 +163,45 @@ export const useNonAgriCalculations = ({
         }
     };
 
-    const getBaseAdjustmentsData = () => {
+    const getBaseAdjustmentsData = async (): Promise<any[]> => {
         if (!valueInfoId || landAdjustments.length === 0) return [];
 
-        const nonAgriAdjustments = NonAgriAdjustmentLocalStorage.getAdjustmentsByValueInfoId(valueInfoId);
+        try {
+            const nonAgriAdjustments = await NonAgriAdjustmentLocalStorage.getAdjustmentsByValueInfoId(valueInfoId);
 
-        return nonAgriAdjustments.map(nonAgriAdj => {
-            const landAdj = landAdjustments.find(adj => adj.adjustment_id === nonAgriAdj.adjustmentId);
+            const adjustmentsWithData = await Promise.all(
+                nonAgriAdjustments.map(async (nonAgriAdj) => {
+                    const landAdj = landAdjustments.find(adj => adj.adjustment_id === nonAgriAdj.adjustmentId);
 
-            const additionalFactorValue = NonAgriAdjustmentLocalStorage.getAdditionalFactor(
-                valueInfoId, 
-                nonAgriAdj.adjustmentId
+                    const additionalFactorValue = await NonAgriAdjustmentLocalStorage.getAdditionalFactor(
+                        valueInfoId, 
+                        nonAgriAdj.adjustmentId
+                    );
+
+                    const adjustment = {
+                        adjustmentId: nonAgriAdj.adjustmentId,
+                        adjustment_type: landAdj?.adjustment_type || 'N/A',
+                        description: landAdj?.description || 'N/A',
+                        adjustment_factor: landAdj?.adjustment_factor ? `${landAdj.adjustment_factor}%` : 'N/A',
+                        value_adjustment: 'N/A'
+                    };
+
+                    if (landAdj?.adjustment_type === 'Stripping') {
+                        return {
+                            ...adjustment,
+                            additional_factor: additionalFactorValue ? additionalFactorValue.toLocaleString() : 'N/A'
+                        };
+                    }
+
+                    return adjustment;
+                })
             );
 
-            const adjustment = {
-                adjustmentId: nonAgriAdj.adjustmentId,
-                adjustment_type: landAdj?.adjustment_type || 'N/A',
-                description: landAdj?.description || 'N/A',
-                adjustment_factor: landAdj?.adjustment_factor ? `${landAdj.adjustment_factor}%` : 'N/A',
-                value_adjustment: 'N/A'
-            };
-
-            if (landAdj?.adjustment_type === 'Stripping') {
-                return {
-                    ...adjustment,
-                    additional_factor: additionalFactorValue ? additionalFactorValue.toLocaleString() : 'N/A'
-                };
-            }
-
-            return adjustment;
-        });
+            return adjustmentsWithData;
+        } catch (error) {
+            console.error('Error getting base adjustments data:', error);
+            return [];
+        }
     };
 
     const loadSubclassRates = async () => {
@@ -212,37 +221,41 @@ export const useNonAgriCalculations = ({
                 const displayRate = isValidRate ? rateString : '0';
                 const calculatedRate = isValidRate ? rateNumber : 0;
 
+                // Calculate base market value first
                 const baseMarketValue = calculateBaseMarketValue(calculatedRate, area);
-                const baseAdjustments = getBaseAdjustmentsData();
+
+                const baseAdjustments = await getBaseAdjustmentsData();
                 
-                const adjustmentsWithCalculations = baseAdjustments.map(adj => {
-                    const landAdj = landAdjustments.find(la => la.adjustment_id === adj.adjustmentId);
-                    const additionalFactorValue = NonAgriAdjustmentLocalStorage.getAdditionalFactor(
-                        valueInfoId, 
-                        adj.adjustmentId
-                    );
+                const adjustmentsWithCalculations = await Promise.all(
+                    baseAdjustments.map(async (adj) => {
+                        const landAdj = landAdjustments.find(la => la.adjustment_id === adj.adjustmentId);
+                        const additionalFactorValue = await NonAgriAdjustmentLocalStorage.getAdditionalFactor(
+                            valueInfoId, 
+                            adj.adjustmentId
+                        );
 
-                    const valueAdjustment = calculateValueAdjustment(
-                        adj.adjustment_type,
-                        landAdj?.adjustment_factor || '',
-                        calculatedRate,
-                        area,
-                        additionalFactorValue
-                    );
+                        const valueAdjustment = calculateValueAdjustment(
+                            adj.adjustment_type,
+                            landAdj?.adjustment_factor || '',
+                            calculatedRate,
+                            area,
+                            additionalFactorValue
+                        );
 
-                    if (adj.adjustment_type !== 'Stripping') {
+                        if (adj.adjustment_type !== 'Stripping') {
+                            return {
+                                ...adj,
+                                value_adjustment: valueAdjustment
+                            };
+                        }
+
                         return {
                             ...adj,
-                            value_adjustment: valueAdjustment
+                            value_adjustment: valueAdjustment,
+                            additional_factor: additionalFactorValue ? additionalFactorValue.toLocaleString() : 'N/A'
                         };
-                    }
-
-                    return {
-                        ...adj,
-                        value_adjustment: valueAdjustment,
-                        additional_factor: additionalFactorValue ? additionalFactorValue.toLocaleString() : 'N/A'
-                    };
-                });
+                    })
+                );
 
                 setCurrentAdjustments(adjustmentsWithCalculations);
 
@@ -295,7 +308,7 @@ export const useNonAgriCalculations = ({
         setAdjustmentsVersion(prev => prev + 1);
     };
 
-    const getStrippingInfo = () => {
+    const getStrippingInfo = async () => {
         const strippingAdjustments = currentAdjustments.filter(
             adj => adj.adjustment_type === 'Stripping'
         );
@@ -306,18 +319,17 @@ export const useNonAgriCalculations = ({
         let totalStripArea = 0;
         
         if (strippingAdjustments.length > 0 && valueInfoId) {
-            totalStripArea = strippingAdjustments.reduce((total, adj) => {
+            for (const adj of strippingAdjustments) {
                 if (adj.adjustmentId) {
-                    const additionalFactorValue = NonAgriAdjustmentLocalStorage.getAdditionalFactor(
+                    const additionalFactorValue = await NonAgriAdjustmentLocalStorage.getAdditionalFactor(
                         valueInfoId, 
                         adj.adjustmentId
                     );
                     if (additionalFactorValue) {
-                        return total + additionalFactorValue;
+                        totalStripArea += additionalFactorValue;
                     }
                 }
-                return total;
-            }, 0);
+            }
         }
         
         const remainingArea = Math.max(0, (formData?.area || 0) - totalStripArea);
@@ -337,8 +349,8 @@ export const useNonAgriCalculations = ({
         return landAdjustments.find(adj => adj.adjustment_id === adjustmentId) || null;
     };
 
-    const getStrippingIconLabel = () => {
-        const { nextNumber, canAddMore } = getStrippingInfo();
+    const getStrippingIconLabel = async () => {
+        const { nextNumber, canAddMore } = await getStrippingInfo();
         
         if (!canAddMore) {
             return "Max Strips Reached";
@@ -353,8 +365,8 @@ export const useNonAgriCalculations = ({
         }
     };
 
-    const getSubmitDisabledInfo = (): { disabled: boolean; reason: string } => {
-        const { currentCount, remainingArea } = getStrippingInfo();
+    const getSubmitDisabledInfo = async (): Promise<{ disabled: boolean; reason: string }> => {
+        const { currentCount, remainingArea } = await getStrippingInfo();
         
         if (currentCount > 0 && remainingArea !== 0) {
             return {
@@ -368,6 +380,11 @@ export const useNonAgriCalculations = ({
             reason: ''
         };
     };
+
+    // Load rates when dependencies change
+    useEffect(() => {
+        loadSubclassRates();
+    }, [formData, valueInfoId, landAdjustments, adjustmentsVersion]);
 
     return {
         // State

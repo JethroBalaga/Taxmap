@@ -106,7 +106,7 @@ export const useNonAgriModals = ({
         triggerRateRecalculation();
     };
 
-    const handleDeleteConfirm = () => {
+    const handleDeleteConfirm = async () => {
         if (adjustmentToDelete) {
             // Check if it's a stripping adjustment and validate deletion order
             if (adjustmentToDelete.adjustment_type === 'Stripping') {
@@ -138,14 +138,18 @@ export const useNonAgriModals = ({
                 }
             }
 
-            const success = NonAgriAdjustmentLocalStorage.deleteNonAgriAdjustment(
-                valueInfoId,
-                adjustmentToDelete.adjustmentId
-            );
+            try {
+                const success = await NonAgriAdjustmentLocalStorage.deleteNonAgriAdjustment(
+                    valueInfoId,
+                    adjustmentToDelete.adjustmentId
+                );
 
-            if (success) {
-                loadLandAdjustments();
-                triggerRateRecalculation();
+                if (success) {
+                    loadLandAdjustments();
+                    triggerRateRecalculation();
+                }
+            } catch (error) {
+                console.error('Error deleting adjustment:', error);
             }
         }
         setShowDeleteAlert(false);
