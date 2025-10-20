@@ -96,18 +96,18 @@ export const useAgriculturalSubmission = (formId: string) => {
     showToastMessage('Starting agricultural form upload process...', 'warning');
 
     try {
-      const formData = await FormDataLocalStorage.getFormData(formId); // Added await
+      const formData = await FormDataLocalStorage.getFormData(formId);
       if (!formData) throw new Error('Form data not found');
       if (formData.uploaded) throw new Error('Form already uploaded');
 
-      const valueInfo = ValueInfoLocalStorage.getValueInfoByFormDataId(formId);
+      const valueInfos = await ValueInfoLocalStorage.getAllValueInfo(); // Added await
+      const valueInfo = valueInfos.find(info => info.formDataId === formId); // Changed to find
       if (!valueInfo) throw new Error('Value info not found');
 
-      // CHANGED: Added await since getAgriculturalDataByValueInfoId is now async
       const agriData = await AgriculturalDataLocalStorage.getAgriculturalDataByValueInfoId(valueInfo.id);
       if (!agriData) throw new Error('Agricultural adjustment data not found');
 
-      const photoTag = PhotoTagLocalStorage.getPhotoTag(valueInfo.photoTagId);
+      const photoTag = await PhotoTagLocalStorage.getPhotoTag(valueInfo.photoTagId); // Added await
       if (!photoTag) throw new Error('Photo tag not found');
 
       const databaseTagId = await supabaseApi.insertPhoto({
@@ -163,7 +163,7 @@ export const useAgriculturalSubmission = (formId: string) => {
       if (!adjustmentSuccess) throw new Error('Failed to insert agricultural adjustment data');
 
       if (!formData.synced_id) {
-        await FormDataLocalStorage.markFormAsUploaded(formId, databaseFormId); // Added await
+        await FormDataLocalStorage.markFormAsUploaded(formId, databaseFormId);
       }
 
       showToastMessage('Agricultural data submitted successfully! All data synchronized with server.', 'success');
