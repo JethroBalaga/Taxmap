@@ -74,7 +74,7 @@ export const useNonAgriSubmission = ({
         showToastMessage('Starting non-agricultural land upload process...', 'warning');
 
         try {
-            const currentFormData = FormDataLocalStorage.getFormData(formId!);
+            const currentFormData = await FormDataLocalStorage.getFormData(formId!); // Added await
             if (!currentFormData) throw new Error('Form data not found');
             if (currentFormData.uploaded) throw new Error('Form already uploaded');
 
@@ -174,7 +174,7 @@ export const useNonAgriSubmission = ({
 
             // Mark form as uploaded
             if (!currentFormData.synced_id) {
-                FormDataLocalStorage.markFormAsUploaded(formId!, databaseFormId);
+                await FormDataLocalStorage.markFormAsUploaded(formId!, databaseFormId); // Added await
             }
 
             showToastMessage('Non-agricultural land data submitted successfully! All data synchronized with server.', 'success');
