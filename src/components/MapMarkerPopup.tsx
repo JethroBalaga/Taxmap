@@ -35,8 +35,8 @@ const MapMarkerPopup: React.FC<MapMarkerPopupProps> = ({ photoTagId, onClose }) 
     const loadData = async () => {
       try {
         setLoading(true);
-        // Get the photo tag
-        const tag = PhotoTagLocalStorage.getPhotoTag(photoTagId);
+        // Get the photo tag - now async
+        const tag = await PhotoTagLocalStorage.getPhotoTag(photoTagId);
         if (!tag) {
           setLoading(false);
           return;
@@ -44,11 +44,11 @@ const MapMarkerPopup: React.FC<MapMarkerPopupProps> = ({ photoTagId, onClose }) 
 
         setPhotoTag(tag);
 
-        // Get the associated value info
-        const valueInfo = ValueInfoLocalStorage.getValueInfoByPhotoTagId(photoTagId);
+        // Get the associated value info - now async
+        const valueInfo = await ValueInfoLocalStorage.getValueInfoByPhotoTagId(photoTagId);
         if (valueInfo) {
-          // Get the form data
-          const form = FormDataLocalStorage.getFormData(valueInfo.formDataId);
+          // Get the form data - now async
+          const form = await FormDataLocalStorage.getFormData(valueInfo.formDataId);
           if (form) {
             setFormData(form);
           }
