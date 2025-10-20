@@ -1,4 +1,6 @@
 // src/utils/tablestorages/NonAgriAdjustmentLocalStorage.ts
+import localforage from 'localforage';
+
 export interface NonAgriAdjustment {
   valueInfoId: string;
   adjustmentId: string;
@@ -7,25 +9,28 @@ export interface NonAgriAdjustment {
 
 const NON_AGRI_ADJUSTMENT_KEY = 'nonAgriAdjustments';
 
+// Configure localforage instance for non-agri adjustments
+const nonAgriAdjustmentStore = localforage.createInstance({
+  name: 'NonAgriAdjustmentStorage',
+  description: 'Storage for non-agricultural adjustment entries'
+});
+
 export const NonAgriAdjustmentLocalStorage = {
-  // Get ALL non-agri adjustments from localStorage
-  getAllNonAgriAdjustments: (): NonAgriAdjustment[] => {
+  // Get ALL non-agri adjustments from localforage
+  getAllNonAgriAdjustments: async (): Promise<NonAgriAdjustment[]> => {
     try {
-      const storedData = localStorage.getItem(NON_AGRI_ADJUSTMENT_KEY);
-      if (storedData) {
-        return JSON.parse(storedData);
-      }
-      return [];
+      const storedData = await nonAgriAdjustmentStore.getItem<NonAgriAdjustment[]>(NON_AGRI_ADJUSTMENT_KEY);
+      return storedData || [];
     } catch (error) {
-      console.error('Error retrieving non-agri adjustments from localStorage:', error);
+      console.error('Error retrieving non-agri adjustments from localforage:', error);
       return [];
     }
   },
 
   // Get adjustments by valueInfoId
-  getAdjustmentsByValueInfoId: (valueInfoId: string): NonAgriAdjustment[] => {
+  getAdjustmentsByValueInfoId: async (valueInfoId: string): Promise<NonAgriAdjustment[]> => {
     try {
-      const allAdjustments = NonAgriAdjustmentLocalStorage.getAllNonAgriAdjustments();
+      const allAdjustments = await NonAgriAdjustmentLocalStorage.getAllNonAgriAdjustments();
       return allAdjustments.filter(adj => adj.valueInfoId === valueInfoId);
     } catch (error) {
       console.error('Error retrieving adjustments by valueInfoId:', error);
@@ -34,9 +39,9 @@ export const NonAgriAdjustmentLocalStorage = {
   },
 
   // Get adjustments by adjustmentId
-  getAdjustmentsByAdjustmentId: (adjustmentId: string): NonAgriAdjustment[] => {
+  getAdjustmentsByAdjustmentId: async (adjustmentId: string): Promise<NonAgriAdjustment[]> => {
     try {
-      const allAdjustments = NonAgriAdjustmentLocalStorage.getAllNonAgriAdjustments();
+      const allAdjustments = await NonAgriAdjustmentLocalStorage.getAllNonAgriAdjustments();
       return allAdjustments.filter(adj => adj.adjustmentId === adjustmentId);
     } catch (error) {
       console.error('Error retrieving adjustments by adjustmentId:', error);
@@ -44,10 +49,10 @@ export const NonAgriAdjustmentLocalStorage = {
     }
   },
 
-  // Save NEW non-agri adjustment to localStorage
-  saveNonAgriAdjustment: (adjustment: NonAgriAdjustment): NonAgriAdjustment => {
+  // Save NEW non-agri adjustment to localforage
+  saveNonAgriAdjustment: async (adjustment: NonAgriAdjustment): Promise<NonAgriAdjustment> => {
     try {
-      const allAdjustments = NonAgriAdjustmentLocalStorage.getAllNonAgriAdjustments();
+      const allAdjustments = await NonAgriAdjustmentLocalStorage.getAllNonAgriAdjustments();
       
       // Check if adjustment already exists (same valueInfoId and adjustmentId combination)
       const existingIndex = allAdjustments.findIndex(
@@ -64,18 +69,18 @@ export const NonAgriAdjustmentLocalStorage = {
         updatedAdjustments = [...allAdjustments, adjustment];
       }
       
-      localStorage.setItem(NON_AGRI_ADJUSTMENT_KEY, JSON.stringify(updatedAdjustments));
+      await nonAgriAdjustmentStore.setItem(NON_AGRI_ADJUSTMENT_KEY, updatedAdjustments);
       return adjustment;
     } catch (error) {
-      console.error('Error saving non-agri adjustment to localStorage:', error);
+      console.error('Error saving non-agri adjustment to localforage:', error);
       throw error;
     }
   },
 
   // Update additional factor for existing adjustment
-  updateAdditionalFactor: (valueInfoId: string, adjustmentId: string, additionalFactor: number): boolean => {
+  updateAdditionalFactor: async (valueInfoId: string, adjustmentId: string, additionalFactor: number): Promise<boolean> => {
     try {
-      const allAdjustments = NonAgriAdjustmentLocalStorage.getAllNonAgriAdjustments();
+      const allAdjustments = await NonAgriAdjustmentLocalStorage.getAllNonAgriAdjustments();
       const existingIndex = allAdjustments.findIndex(
         adj => adj.valueInfoId === valueInfoId && adj.adjustmentId === adjustmentId
       );
@@ -86,7 +91,7 @@ export const NonAgriAdjustmentLocalStorage = {
           ...updatedAdjustments[existingIndex],
           additionalFactor
         };
-        localStorage.setItem(NON_AGRI_ADJUSTMENT_KEY, JSON.stringify(updatedAdjustments));
+        await nonAgriAdjustmentStore.setItem(NON_AGRI_ADJUSTMENT_KEY, updatedAdjustments);
         return true;
       }
       return false;
@@ -97,9 +102,9 @@ export const NonAgriAdjustmentLocalStorage = {
   },
 
   // Get additional factor for specific adjustment
-  getAdditionalFactor: (valueInfoId: string, adjustmentId: string): number | undefined => {
+  getAdditionalFactor: async (valueInfoId: string, adjustmentId: string): Promise<number | undefined> => {
     try {
-      const allAdjustments = NonAgriAdjustmentLocalStorage.getAllNonAgriAdjustments();
+      const allAdjustments = await NonAgriAdjustmentLocalStorage.getAllNonAgriAdjustments();
       const adjustment = allAdjustments.find(
         adj => adj.valueInfoId === valueInfoId && adj.adjustmentId === adjustmentId
       );
@@ -111,13 +116,13 @@ export const NonAgriAdjustmentLocalStorage = {
   },
 
   // Delete specific non-agri adjustment
-  deleteNonAgriAdjustment: (valueInfoId: string, adjustmentId: string): boolean => {
+  deleteNonAgriAdjustment: async (valueInfoId: string, adjustmentId: string): Promise<boolean> => {
     try {
-      const allAdjustments = NonAgriAdjustmentLocalStorage.getAllNonAgriAdjustments();
+      const allAdjustments = await NonAgriAdjustmentLocalStorage.getAllNonAgriAdjustments();
       const updatedAdjustments = allAdjustments.filter(
         adj => !(adj.valueInfoId === valueInfoId && adj.adjustmentId === adjustmentId)
       );
-      localStorage.setItem(NON_AGRI_ADJUSTMENT_KEY, JSON.stringify(updatedAdjustments));
+      await nonAgriAdjustmentStore.setItem(NON_AGRI_ADJUSTMENT_KEY, updatedAdjustments);
       return true;
     } catch (error) {
       console.error('Error deleting non-agri adjustment:', error);
@@ -126,13 +131,13 @@ export const NonAgriAdjustmentLocalStorage = {
   },
 
   // Delete all adjustments for a specific valueInfoId
-  deleteAllAdjustmentsByValueInfoId: (valueInfoId: string): boolean => {
+  deleteAllAdjustmentsByValueInfoId: async (valueInfoId: string): Promise<boolean> => {
     try {
-      const allAdjustments = NonAgriAdjustmentLocalStorage.getAllNonAgriAdjustments();
+      const allAdjustments = await NonAgriAdjustmentLocalStorage.getAllNonAgriAdjustments();
       const updatedAdjustments = allAdjustments.filter(
         adj => adj.valueInfoId !== valueInfoId
       );
-      localStorage.setItem(NON_AGRI_ADJUSTMENT_KEY, JSON.stringify(updatedAdjustments));
+      await nonAgriAdjustmentStore.setItem(NON_AGRI_ADJUSTMENT_KEY, updatedAdjustments);
       return true;
     } catch (error) {
       console.error('Error deleting adjustments by valueInfoId:', error);
@@ -141,13 +146,13 @@ export const NonAgriAdjustmentLocalStorage = {
   },
 
   // Delete all adjustments for a specific adjustmentId
-  deleteAllAdjustmentsByAdjustmentId: (adjustmentId: string): boolean => {
+  deleteAllAdjustmentsByAdjustmentId: async (adjustmentId: string): Promise<boolean> => {
     try {
-      const allAdjustments = NonAgriAdjustmentLocalStorage.getAllNonAgriAdjustments();
+      const allAdjustments = await NonAgriAdjustmentLocalStorage.getAllNonAgriAdjustments();
       const updatedAdjustments = allAdjustments.filter(
         adj => adj.adjustmentId !== adjustmentId
       );
-      localStorage.setItem(NON_AGRI_ADJUSTMENT_KEY, JSON.stringify(updatedAdjustments));
+      await nonAgriAdjustmentStore.setItem(NON_AGRI_ADJUSTMENT_KEY, updatedAdjustments);
       return true;
     } catch (error) {
       console.error('Error deleting adjustments by adjustmentId:', error);
@@ -155,26 +160,26 @@ export const NonAgriAdjustmentLocalStorage = {
     }
   },
 
-  // Clear ALL non-agri adjustments from localStorage
-  clearAllNonAgriAdjustments: (): void => {
+  // Clear ALL non-agri adjustments from localforage
+  clearAllNonAgriAdjustments: async (): Promise<void> => {
     try {
-      localStorage.removeItem(NON_AGRI_ADJUSTMENT_KEY);
+      await nonAgriAdjustmentStore.removeItem(NON_AGRI_ADJUSTMENT_KEY);
     } catch (error) {
-      console.error('Error clearing non-agri adjustments from localStorage:', error);
+      console.error('Error clearing non-agri adjustments from localforage:', error);
     }
   },
 
   // Check if adjustment exists for specific valueInfoId and adjustmentId
-  hasAdjustment: (valueInfoId: string, adjustmentId: string): boolean => {
-    const allAdjustments = NonAgriAdjustmentLocalStorage.getAllNonAgriAdjustments();
+  hasAdjustment: async (valueInfoId: string, adjustmentId: string): Promise<boolean> => {
+    const allAdjustments = await NonAgriAdjustmentLocalStorage.getAllNonAgriAdjustments();
     return allAdjustments.some(adj => 
       adj.valueInfoId === valueInfoId && adj.adjustmentId === adjustmentId
     );
   },
 
   // Check if adjustment has additional factor
-  hasAdditionalFactor: (valueInfoId: string, adjustmentId: string): boolean => {
-    const allAdjustments = NonAgriAdjustmentLocalStorage.getAllNonAgriAdjustments();
+  hasAdditionalFactor: async (valueInfoId: string, adjustmentId: string): Promise<boolean> => {
+    const allAdjustments = await NonAgriAdjustmentLocalStorage.getAllNonAgriAdjustments();
     const adjustment = allAdjustments.find(
       adj => adj.valueInfoId === valueInfoId && adj.adjustmentId === adjustmentId
     );
@@ -182,39 +187,39 @@ export const NonAgriAdjustmentLocalStorage = {
   },
 
   // Check if any adjustments exist for a valueInfoId
-  hasAdjustmentsForValueInfoId: (valueInfoId: string): boolean => {
-    const allAdjustments = NonAgriAdjustmentLocalStorage.getAllNonAgriAdjustments();
+  hasAdjustmentsForValueInfoId: async (valueInfoId: string): Promise<boolean> => {
+    const allAdjustments = await NonAgriAdjustmentLocalStorage.getAllNonAgriAdjustments();
     return allAdjustments.some(adj => adj.valueInfoId === valueInfoId);
   },
 
   // Check if any adjustments exist for an adjustmentId
-  hasAdjustmentsForAdjustmentId: (adjustmentId: string): boolean => {
-    const allAdjustments = NonAgriAdjustmentLocalStorage.getAllNonAgriAdjustments();
+  hasAdjustmentsForAdjustmentId: async (adjustmentId: string): Promise<boolean> => {
+    const allAdjustments = await NonAgriAdjustmentLocalStorage.getAllNonAgriAdjustments();
     return allAdjustments.some(adj => adj.adjustmentId === adjustmentId);
   },
 
   // Get adjustment count
-  getAdjustmentCount: (): number => {
-    const allAdjustments = NonAgriAdjustmentLocalStorage.getAllNonAgriAdjustments();
+  getAdjustmentCount: async (): Promise<number> => {
+    const allAdjustments = await NonAgriAdjustmentLocalStorage.getAllNonAgriAdjustments();
     return allAdjustments.length;
   },
 
   // Get adjustments with additional factors
-  getAdjustmentsWithAdditionalFactors: (): NonAgriAdjustment[] => {
-    const allAdjustments = NonAgriAdjustmentLocalStorage.getAllNonAgriAdjustments();
+  getAdjustmentsWithAdditionalFactors: async (): Promise<NonAgriAdjustment[]> => {
+    const allAdjustments = await NonAgriAdjustmentLocalStorage.getAllNonAgriAdjustments();
     return allAdjustments.filter(adj => adj.additionalFactor !== undefined);
   },
 
   // Get unique valueInfoIds
-  getUniqueValueInfoIds: (): string[] => {
-    const allAdjustments = NonAgriAdjustmentLocalStorage.getAllNonAgriAdjustments();
+  getUniqueValueInfoIds: async (): Promise<string[]> => {
+    const allAdjustments = await NonAgriAdjustmentLocalStorage.getAllNonAgriAdjustments();
     const uniqueIds = [...new Set(allAdjustments.map(adj => adj.valueInfoId))];
     return uniqueIds;
   },
 
   // Get unique adjustmentIds
-  getUniqueAdjustmentIds: (): string[] => {
-    const allAdjustments = NonAgriAdjustmentLocalStorage.getAllNonAgriAdjustments();
+  getUniqueAdjustmentIds: async (): Promise<string[]> => {
+    const allAdjustments = await NonAgriAdjustmentLocalStorage.getAllNonAgriAdjustments();
     const uniqueIds = [...new Set(allAdjustments.map(adj => adj.adjustmentId))];
     return uniqueIds;
   }
