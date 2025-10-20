@@ -1,5 +1,5 @@
 // src/pages/useNonAgriLand.tsx
-import { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useHistory } from 'react-router-dom';
 import { FormDataLocalStorage } from '../../utils/tablestorages/FormDataLocalStorage';
 import { ValueInfoLocalStorage } from '../../utils/tablestorages/ValueInfoLocalStorage';
@@ -54,7 +54,7 @@ export const useNonAgriLand = (formId: string | undefined) => {
     // Selected row state
     const [selectedRow, setSelectedRow] = useState<any>(null);
 
-    // UI state - these are now synchronous state values
+    // UI state
     const [visibleIcons, setVisibleIcons] = useState(adjustmentIcons);
     const [submitDisabledInfo, setSubmitDisabledInfo] = useState({ disabled: false, reason: '' });
     const [strippingInfo, setStrippingInfo] = useState({ 
@@ -65,6 +65,9 @@ export const useNonAgriLand = (formId: string | undefined) => {
         remainingArea: 0, 
         totalStripArea: 0 
     });
+
+    // Cache for stripping info to prevent unnecessary recalculations
+    const strippingInfoCache = useRef<{currentCount: number; nextNumber: number; hasStripping: boolean; canAddMore: boolean; remainingArea: number; totalStripArea: number} | null>(null);
 
     // Define loadLandAdjustments with useCallback to prevent infinite re-renders
     const loadLandAdjustments = useCallback(async () => {
@@ -128,47 +131,64 @@ export const useNonAgriLand = (formId: string | undefined) => {
                 console.log('Loaded form data from localStorage:', storedFormData);
                 setFormData(storedFormData);
 
-                // Fetch or create ValueInfo for this formId using the stored form data
-                if (storedFormData) {
-                    let valueInfo = await ValueInfoLocalStorage.getValueInfoByFormDataId(formId);
-                    if (!valueInfo) {
-                        valueInfo = await ValueInfoLocalStorage.addValueInfo({
-                            formDataId: formId,
-                            photoTagId: ''
-                        });
-                    }
-                    setValueInfoId(valueInfo.id);
+                // Check if form was found immediately after loading
+                if (!storedFormData) {
+                    showToastMessage('Form not found', 'danger');
+                    setIsLoading(false);
+                    return; // Exit early if no form data
                 }
+
+                // Fetch or create ValueInfo for this formId using the stored form data
+                let valueInfo = await ValueInfoLocalStorage.getValueInfoByFormDataId(formId);
+                if (!valueInfo) {
+                    valueInfo = await ValueInfoLocalStorage.addValueInfo({
+                        formDataId: formId,
+                        photoTagId: ''
+                    });
+                }
+                setValueInfoId(valueInfo.id);
+
             } catch (error) {
                 console.error('Error loading form data:', error);
                 showToastMessage('Error loading form data', 'danger');
             } finally {
                 setIsLoading(false);
             }
-
-            if (!formData) {
-                showToastMessage('Form not found', 'danger');
-            }
         }
     };
 
-    // Update stripping info and UI when calculations change
-    const updateStrippingInfoAndUI = useCallback(async () => {
+    // Optimized stripping info update with caching
+    const updateStrippingInfo = useCallback(async () => {
         try {
             const newStrippingInfo = await calculations.getStrippingInfo();
-            setStrippingInfo(newStrippingInfo);
             
-            const newSubmitDisabledInfo = await calculations.getSubmitDisabledInfo();
-            setSubmitDisabledInfo(newSubmitDisabledInfo);
-            
-            await updateVisibleIcons(newStrippingInfo);
+            // Only update if the data actually changed
+            if (!strippingInfoCache.current || 
+                JSON.stringify(strippingInfoCache.current) !== JSON.stringify(newStrippingInfo)) {
+                setStrippingInfo(newStrippingInfo);
+                strippingInfoCache.current = newStrippingInfo;
+            }
         } catch (error) {
             console.error('Error updating stripping info:', error);
         }
     }, [calculations]);
 
-    // Update visible icons based on current state
-    const updateVisibleIcons = useCallback(async (currentStrippingInfo: any) => {
+    // Optimized submit disabled info update
+    const updateSubmitDisabledInfo = useCallback(async () => {
+        try {
+            const newSubmitDisabledInfo = await calculations.getSubmitDisabledInfo();
+            setSubmitDisabledInfo(prev => 
+                JSON.stringify(prev) === JSON.stringify(newSubmitDisabledInfo) 
+                    ? prev 
+                    : newSubmitDisabledInfo
+            );
+        } catch (error) {
+            console.error('Error updating submit disabled info:', error);
+        }
+    }, [calculations]);
+
+    // Optimized visible icons update
+    const updateVisibleIcons = useCallback(async () => {
         const classification = formData?.classification;
         if (!classification) {
             setVisibleIcons(adjustmentIcons);
@@ -191,6 +211,7 @@ export const useNonAgriLand = (formId: string | undefined) => {
             })
         );
 
+        const currentStrippingInfo = strippingInfoCache.current || await calculations.getStrippingInfo();
         const { canAddMore } = currentStrippingInfo;
         const hasCornerInfluence = calculations.hasCornerInfluence;
         const hasStripping = calculations.hasStripping;
@@ -208,8 +229,21 @@ export const useNonAgriLand = (formId: string | undefined) => {
             return true;
         });
 
-        setVisibleIcons(filteredIcons);
+        setVisibleIcons(prev => 
+            JSON.stringify(prev) === JSON.stringify(filteredIcons) 
+                ? prev 
+                : filteredIcons
+        );
     }, [formData, calculations]);
+
+    // Batch update all UI states
+    const updateAllUI = useCallback(async () => {
+        await Promise.all([
+            updateStrippingInfo(),
+            updateSubmitDisabledInfo(),
+            updateVisibleIcons()
+        ]);
+    }, [updateStrippingInfo, updateSubmitDisabledInfo, updateVisibleIcons]);
 
     // Load adjustments when landAdjustments or valueInfoId changes
     useEffect(() => {
@@ -219,9 +253,15 @@ export const useNonAgriLand = (formId: string | undefined) => {
         }
     }, [landAdjustments, valueInfoId, calculations.adjustmentsVersion]);
 
+    // Initial load
     useEffect(() => {
-        loadFormData();
-        loadLandAdjustments();
+        const initialize = async () => {
+            await Promise.all([
+                loadFormData(),
+                loadLandAdjustments()
+            ]);
+        };
+        initialize();
     }, [formId]);
 
     // Load subclass rates when formData changes
@@ -231,24 +271,28 @@ export const useNonAgriLand = (formId: string | undefined) => {
         }
     }, [formData?.subclass, formData?.area]);
 
-    // Update UI when calculations change
+    // Update UI when calculations change - debounced to prevent excessive updates
     useEffect(() => {
-        updateStrippingInfoAndUI();
-    }, [calculations.currentAdjustments, calculations.hasCornerInfluence, calculations.hasStripping, updateStrippingInfoAndUI]);
+        const timeoutId = setTimeout(() => {
+            updateAllUI();
+        }, 100); // Small debounce to batch rapid changes
 
-    // Listen for form data updates from Forms page - FIXED VERSION
+        return () => clearTimeout(timeoutId);
+    }, [calculations.currentAdjustments, calculations.hasCornerInfluence, calculations.hasStripping, updateAllUI]);
+
+    // Listen for form data updates from Forms page
     useEffect(() => {
         const handleFormDataUpdate = (event: CustomEvent) => {
             if (event.detail && event.detail.formId === formId) {
                 console.log('Form data updated, reloading form data...');
-                loadFormData(); // Remove await - just call the function
+                loadFormData();
             }
         };
 
         const handleStorageChange = (e: StorageEvent) => {
             if (e.key === 'formUpdateTrigger') {
                 console.log('Form update detected via localStorage, reloading form data...');
-                loadFormData(); // Remove await - just call the function
+                loadFormData();
             }
         };
 
@@ -308,12 +352,12 @@ export const useNonAgriLand = (formId: string | undefined) => {
         isLoadingRates: calculations.isLoadingRates,
         hasCornerInfluence: calculations.hasCornerInfluence,
         hasStripping: calculations.hasStripping,
-        getStrippingInfo: getStrippingInfoSync, // Use synchronous version
+        getStrippingInfo: getStrippingInfoSync,
         getStrippingAdjustment: calculations.getStrippingAdjustment,
         showReverseDeleteWarning: modals.showReverseDeleteWarning,
         setShowReverseDeleteWarning: modals.setShowReverseDeleteWarning,
         reverseDeleteWarningMessage: modals.reverseDeleteWarningMessage,
-        submitDisabledInfo, // This is now a synchronous state value
+        submitDisabledInfo,
 
         // Handlers
         handleBack,

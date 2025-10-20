@@ -1,5 +1,6 @@
 // src/utils/PhotoTagLocalStorage.ts
 import { Geolocation } from '@capacitor/geolocation';
+import localforage from 'localforage';
 
 export interface PhotoTagData {
   id: string;
@@ -11,15 +12,22 @@ export interface PhotoTagData {
 
 const PHOTO_TAGS_KEY = 'photoTags';
 
-// Helper function to generate random string ID (consistent with FormDataLocalStorage)
+// Configure localForage
+const photoTagsStore = localforage.createInstance({
+  name: 'PhotoTagApp',
+  storeName: 'photo_tags',
+  description: 'Storage for photo tags and metadata'
+});
+
+// Helper function to generate random string ID
 const generateRandomId = (): string => {
   return Math.random().toString(36).substring(2, 15) + 
          Math.random().toString(36).substring(2, 15);
 };
 
-// Simple distance calculation (Haversine formula)
+// Distance calculation (same as before)
 const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
-  const R = 6371000; // Earth's radius in meters
+  const R = 6371000;
   const dLat = (lat2 - lat1) * Math.PI / 180;
   const dLon = (lon2 - lon1) * Math.PI / 180;
 
@@ -32,67 +40,56 @@ const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: numbe
 };
 
 export const PhotoTagLocalStorage = {
-  // Get ALL photo tags from localStorage
-  getAllPhotoTags: (): PhotoTagData[] => {
+  // Get ALL photo tags from localForage
+  async getAllPhotoTags(): Promise<PhotoTagData[]> {
     try {
-      const storedData = localStorage.getItem(PHOTO_TAGS_KEY);
+      const storedData = await photoTagsStore.getItem<PhotoTagData[]>(PHOTO_TAGS_KEY);
       if (storedData) {
-        const parsedData = JSON.parse(storedData);
-        // Handle both array format and legacy single object format
-        if (Array.isArray(parsedData)) {
-          return parsedData.map((tag: any) => ({
-            ...tag,
-            timestamp: new Date(tag.timestamp)
-          }));
-        } else if (parsedData && typeof parsedData === 'object' && parsedData.id) {
-          // Convert legacy single object to array
-          const convertedData = [{
-            ...parsedData,
-            timestamp: new Date(parsedData.timestamp)
-          }];
-          // Update storage to new format
-          localStorage.setItem(PHOTO_TAGS_KEY, JSON.stringify(convertedData));
-          return convertedData;
-        }
+        // Convert timestamp strings back to Date objects
+        return storedData.map(tag => ({
+          ...tag,
+          timestamp: new Date(tag.timestamp)
+        }));
       }
       return [];
     } catch (error) {
-      console.error('Error retrieving photo tags from localStorage:', error);
+      console.error('Error retrieving photo tags from localForage:', error);
       return [];
     }
   },
 
-  // Save ALL photo tags to localStorage
-  saveAllPhotoTags: (photoTags: PhotoTagData[]): void => {
+  // Save ALL photo tags to localForage
+  async saveAllPhotoTags(photoTags: PhotoTagData[]): Promise<void> {
     try {
-      localStorage.setItem(PHOTO_TAGS_KEY, JSON.stringify(photoTags));
+      await photoTagsStore.setItem(PHOTO_TAGS_KEY, photoTags);
     } catch (error) {
-      console.error('Error saving photo tags to localStorage:', error);
+      console.error('Error saving photo tags to localForage:', error);
+      throw error;
     }
   },
 
   // Get a specific photo tag by ID
-  getPhotoTag: (id: string): PhotoTagData | null => {
+  async getPhotoTag(id: string): Promise<PhotoTagData | null> {
     try {
-      const allPhotoTags = PhotoTagLocalStorage.getAllPhotoTags();
+      const allPhotoTags = await PhotoTagLocalStorage.getAllPhotoTags();
       return allPhotoTags.find(tag => tag.id === id) || null;
     } catch (error) {
-      console.error('Error retrieving photo tag from localStorage:', error);
+      console.error('Error retrieving photo tag:', error);
       return null;
     }
   },
 
-  // Add a new photo tag with consistent ID generation
-  addPhotoTag: (photoTagData: Omit<PhotoTagData, 'id'>): PhotoTagData => {
+  // Add a new photo tag
+  async addPhotoTag(photoTagData: Omit<PhotoTagData, 'id'>): Promise<PhotoTagData> {
     try {
-      const allPhotoTags = PhotoTagLocalStorage.getAllPhotoTags();
+      const allPhotoTags = await PhotoTagLocalStorage.getAllPhotoTags();
       const newPhotoTag: PhotoTagData = {
         ...photoTagData,
         id: generateRandomId()
       };
       
       const updatedPhotoTags = [...allPhotoTags, newPhotoTag];
-      PhotoTagLocalStorage.saveAllPhotoTags(updatedPhotoTags);
+      await PhotoTagLocalStorage.saveAllPhotoTags(updatedPhotoTags);
       
       return newPhotoTag;
     } catch (error) {
@@ -108,9 +105,7 @@ export const PhotoTagLocalStorage = {
       let longitude = 0;
 
       try {
-        // Use the working pattern from GeoTag service
         const position = await Geolocation.getCurrentPosition();
-        
         if (position?.coords) {
           latitude = position.coords.latitude;
           longitude = position.coords.longitude;
@@ -119,7 +114,7 @@ export const PhotoTagLocalStorage = {
         console.warn('Could not get location, using default coordinates:', locationError);
       }
 
-      return PhotoTagLocalStorage.addPhotoTag({
+      return await PhotoTagLocalStorage.addPhotoTag({
         photoName,
         longitude,
         latitude,
@@ -132,9 +127,9 @@ export const PhotoTagLocalStorage = {
   },
 
   // Update specific fields in photo tag data
-  updatePhotoTag: (id: string, updates: Partial<PhotoTagData>): PhotoTagData | null => {
+  async updatePhotoTag(id: string, updates: Partial<PhotoTagData>): Promise<PhotoTagData | null> {
     try {
-      const allPhotoTags = PhotoTagLocalStorage.getAllPhotoTags();
+      const allPhotoTags = await PhotoTagLocalStorage.getAllPhotoTags();
       const tagIndex = allPhotoTags.findIndex(tag => tag.id === id);
       
       if (tagIndex === -1) {
@@ -149,7 +144,7 @@ export const PhotoTagLocalStorage = {
       const updatedPhotoTags = [...allPhotoTags];
       updatedPhotoTags[tagIndex] = updatedTag;
       
-      PhotoTagLocalStorage.saveAllPhotoTags(updatedPhotoTags);
+      await PhotoTagLocalStorage.saveAllPhotoTags(updatedPhotoTags);
       return updatedTag;
     } catch (error) {
       console.error('Error updating photo tag:', error);
@@ -158,11 +153,11 @@ export const PhotoTagLocalStorage = {
   },
 
   // Delete photo tag by ID
-  deletePhotoTag: (id: string): boolean => {
+  async deletePhotoTag(id: string): Promise<boolean> {
     try {
-      const allPhotoTags = PhotoTagLocalStorage.getAllPhotoTags();
+      const allPhotoTags = await PhotoTagLocalStorage.getAllPhotoTags();
       const filteredTags = allPhotoTags.filter(tag => tag.id !== id);
-      PhotoTagLocalStorage.saveAllPhotoTags(filteredTags);
+      await PhotoTagLocalStorage.saveAllPhotoTags(filteredTags);
       return true;
     } catch (error) {
       console.error('Error deleting photo tag:', error);
@@ -170,18 +165,19 @@ export const PhotoTagLocalStorage = {
     }
   },
 
-  // Clear ALL photo tags from localStorage
-  clearAllPhotoTags: (): void => {
+  // Clear ALL photo tags
+  async clearAllPhotoTags(): Promise<void> {
     try {
-      localStorage.removeItem(PHOTO_TAGS_KEY);
+      await photoTagsStore.removeItem(PHOTO_TAGS_KEY);
     } catch (error) {
-      console.error('Error clearing photo tags from localStorage:', error);
+      console.error('Error clearing photo tags:', error);
+      throw error;
     }
   },
 
-  // Get photo tags by coordinates (within a certain radius)
-  getPhotoTagsByLocation: (latitude: number, longitude: number, radiusMeters: number = 100): PhotoTagData[] => {
-    const allPhotoTags = PhotoTagLocalStorage.getAllPhotoTags();
+  // Get photo tags by coordinates
+  async getPhotoTagsByLocation(latitude: number, longitude: number, radiusMeters: number = 100): Promise<PhotoTagData[]> {
+    const allPhotoTags = await PhotoTagLocalStorage.getAllPhotoTags();
     
     return allPhotoTags.filter(tag => {
       const distance = calculateDistance(
@@ -192,12 +188,12 @@ export const PhotoTagLocalStorage = {
   },
 
   // Get photo tags count
-  getPhotoTagsCount: (): number => {
-    const allPhotoTags = PhotoTagLocalStorage.getAllPhotoTags();
+  async getPhotoTagsCount(): Promise<number> {
+    const allPhotoTags = await PhotoTagLocalStorage.getAllPhotoTags();
     return allPhotoTags.length;
   },
 
-  // Generate a new random ID (consistent with FormDataLocalStorage)
+  // Generate a new random ID
   generateId: (): string => {
     return generateRandomId();
   }
