@@ -138,13 +138,13 @@ export const useMachineryData = () => {
   const loadMachineryData = async () => {
     setIsLoading(true);
     try {
-      const allValueInfo = ValueInfoLocalStorage.getAllValueInfo();
+      const allValueInfo = await ValueInfoLocalStorage.getAllValueInfo(); // Added await
       const formValueInfo = allValueInfo.filter(info => info.formDataId === formId);
       
       const machineryWithCalculations: {machineData: CalculatedMachineData, valueInfoId: string}[] = [];
       
       for (const valueInfo of formValueInfo) {
-        const machineData = await MachineDataLocalStorage.getMachineData(valueInfo.id); // Added await
+        const machineData = await MachineDataLocalStorage.getMachineData(valueInfo.id);
         if (machineData) {
           const remainingLife = calculateRemainingLife(machineData.yearsUsed, machineData.estimatedLife);
           const totalCost = calculateTotalCost(
@@ -182,7 +182,7 @@ export const useMachineryData = () => {
     if (!formId) return;
     
     try {
-      const formData = await FormDataLocalStorage.getFormData(formId); // Added await
+      const formData = await FormDataLocalStorage.getFormData(formId);
       if (!formData) return;
 
       const districtData = formData.district ? await getDistrictById(formData.district) : null;
@@ -193,7 +193,7 @@ export const useMachineryData = () => {
         ? `${declarantData.firstname} ${declarantData.lastname}`
         : 'Unknown Declarant';
 
-      const allValueInfo = ValueInfoLocalStorage.getAllValueInfo();
+      const allValueInfo = await ValueInfoLocalStorage.getAllValueInfo(); // Added await
       const formValueInfo = allValueInfo.filter(info => info.formDataId === formId);
       
       const tableData = formValueInfo.map(valueInfo => {
