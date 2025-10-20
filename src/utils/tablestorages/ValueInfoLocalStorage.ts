@@ -1,4 +1,5 @@
 // src/utils/ValueInfoLocalStorage.ts
+import localforage from 'localforage';
 
 export interface ValueInfo {
   id: string; // Random primary key
@@ -8,6 +9,13 @@ export interface ValueInfo {
 
 const VALUE_INFO_KEY = 'valueInfo';
 
+// Configure localForage instance for value info
+const valueInfoStore = localforage.createInstance({
+  name: 'PhotoTagApp',
+  storeName: 'value_info',
+  description: 'Storage for value info relationships'
+});
+
 // Helper function to generate random string ID (consistent with other storage utilities)
 const generateRandomId = (): string => {
   return Math.random().toString(36).substring(2, 15) + 
@@ -15,61 +23,52 @@ const generateRandomId = (): string => {
 };
 
 export const ValueInfoLocalStorage = {
-  // Get ALL value info entries from localStorage
-  getAllValueInfo: (): ValueInfo[] => {
+  // Get ALL value info entries from localForage
+  async getAllValueInfo(): Promise<ValueInfo[]> {
     try {
-      const storedData = localStorage.getItem(VALUE_INFO_KEY);
+      const storedData = await valueInfoStore.getItem<ValueInfo[]>(VALUE_INFO_KEY);
       if (storedData) {
-        const parsedData = JSON.parse(storedData);
-        // Handle both array format and legacy single object format
-        if (Array.isArray(parsedData)) {
-          return parsedData;
-        } else if (parsedData && typeof parsedData === 'object' && parsedData.id) {
-          // Convert legacy single object to array
-          const convertedData = [parsedData];
-          // Update storage to new format
-          localStorage.setItem(VALUE_INFO_KEY, JSON.stringify(convertedData));
-          return convertedData;
-        }
+        return storedData;
       }
       return [];
     } catch (error) {
-      console.error('Error retrieving value info from localStorage:', error);
+      console.error('Error retrieving value info from localForage:', error);
       return [];
     }
   },
 
-  // Save ALL value info entries to localStorage
-  saveAllValueInfo: (valueInfo: ValueInfo[]): void => {
+  // Save ALL value info entries to localForage
+  async saveAllValueInfo(valueInfo: ValueInfo[]): Promise<void> {
     try {
-      localStorage.setItem(VALUE_INFO_KEY, JSON.stringify(valueInfo));
+      await valueInfoStore.setItem(VALUE_INFO_KEY, valueInfo);
     } catch (error) {
-      console.error('Error saving value info to localStorage:', error);
+      console.error('Error saving value info to localForage:', error);
+      throw error;
     }
   },
 
   // Get a specific value info by ID
-  getValueInfo: (id: string): ValueInfo | null => {
+  async getValueInfo(id: string): Promise<ValueInfo | null> {
     try {
-      const allValueInfo = ValueInfoLocalStorage.getAllValueInfo();
+      const allValueInfo = await ValueInfoLocalStorage.getAllValueInfo();
       return allValueInfo.find(info => info.id === id) || null;
     } catch (error) {
-      console.error('Error retrieving value info from localStorage:', error);
+      console.error('Error retrieving value info from localForage:', error);
       return null;
     }
   },
 
   // Add a new value info entry
-  addValueInfo: (valueInfoData: Omit<ValueInfo, 'id'>): ValueInfo => {
+  async addValueInfo(valueInfoData: Omit<ValueInfo, 'id'>): Promise<ValueInfo> {
     try {
-      const allValueInfo = ValueInfoLocalStorage.getAllValueInfo();
+      const allValueInfo = await ValueInfoLocalStorage.getAllValueInfo();
       const newValueInfo: ValueInfo = {
         ...valueInfoData,
         id: generateRandomId()
       };
       
       const updatedValueInfo = [...allValueInfo, newValueInfo];
-      ValueInfoLocalStorage.saveAllValueInfo(updatedValueInfo);
+      await ValueInfoLocalStorage.saveAllValueInfo(updatedValueInfo);
       
       return newValueInfo;
     } catch (error) {
@@ -79,35 +78,35 @@ export const ValueInfoLocalStorage = {
   },
 
   // Get value info by formDataId
-  getValueInfoByFormDataId: (formDataId: string): ValueInfo | null => {
-    const allValueInfo = ValueInfoLocalStorage.getAllValueInfo();
+  async getValueInfoByFormDataId(formDataId: string): Promise<ValueInfo | null> {
+    const allValueInfo = await ValueInfoLocalStorage.getAllValueInfo();
     return allValueInfo.find(info => info.formDataId === formDataId) || null;
   },
 
   // Get value info by photoTagId
-  getValueInfoByPhotoTagId: (photoTagId: string): ValueInfo | null => {
-    const allValueInfo = ValueInfoLocalStorage.getAllValueInfo();
+  async getValueInfoByPhotoTagId(photoTagId: string): Promise<ValueInfo | null> {
+    const allValueInfo = await ValueInfoLocalStorage.getAllValueInfo();
     return allValueInfo.find(info => info.photoTagId === photoTagId) || null;
   },
 
   // Get all value info entries for a specific form data
-  getAllValueInfoByFormDataId: (formDataId: string): ValueInfo[] => {
-    const allValueInfo = ValueInfoLocalStorage.getAllValueInfo();
+  async getAllValueInfoByFormDataId(formDataId: string): Promise<ValueInfo[]> {
+    const allValueInfo = await ValueInfoLocalStorage.getAllValueInfo();
     return allValueInfo.filter(info => info.formDataId === formDataId);
   },
 
   // Get all value info entries for a specific photo tag
-  getAllValueInfoByPhotoTagId: (photoTagId: string): ValueInfo[] => {
-    const allValueInfo = ValueInfoLocalStorage.getAllValueInfo();
+  async getAllValueInfoByPhotoTagId(photoTagId: string): Promise<ValueInfo[]> {
+    const allValueInfo = await ValueInfoLocalStorage.getAllValueInfo();
     return allValueInfo.filter(info => info.photoTagId === photoTagId);
   },
 
   // Delete value info by ID
-  deleteValueInfo: (id: string): boolean => {
+  async deleteValueInfo(id: string): Promise<boolean> {
     try {
-      const allValueInfo = ValueInfoLocalStorage.getAllValueInfo();
+      const allValueInfo = await ValueInfoLocalStorage.getAllValueInfo();
       const filteredInfo = allValueInfo.filter(info => info.id !== id);
-      ValueInfoLocalStorage.saveAllValueInfo(filteredInfo);
+      await ValueInfoLocalStorage.saveAllValueInfo(filteredInfo);
       return true;
     } catch (error) {
       console.error('Error deleting value info:', error);
@@ -116,11 +115,11 @@ export const ValueInfoLocalStorage = {
   },
 
   // Delete all value info for a specific form data
-  deleteValueInfoByFormDataId: (formDataId: string): boolean => {
+  async deleteValueInfoByFormDataId(formDataId: string): Promise<boolean> {
     try {
-      const allValueInfo = ValueInfoLocalStorage.getAllValueInfo();
+      const allValueInfo = await ValueInfoLocalStorage.getAllValueInfo();
       const filteredInfo = allValueInfo.filter(info => info.formDataId !== formDataId);
-      ValueInfoLocalStorage.saveAllValueInfo(filteredInfo);
+      await ValueInfoLocalStorage.saveAllValueInfo(filteredInfo);
       return true;
     } catch (error) {
       console.error('Error deleting value info by formDataId:', error);
@@ -129,11 +128,11 @@ export const ValueInfoLocalStorage = {
   },
 
   // Delete all value info for a specific photo tag
-  deleteValueInfoByPhotoTagId: (photoTagId: string): boolean => {
+  async deleteValueInfoByPhotoTagId(photoTagId: string): Promise<boolean> {
     try {
-      const allValueInfo = ValueInfoLocalStorage.getAllValueInfo();
+      const allValueInfo = await ValueInfoLocalStorage.getAllValueInfo();
       const filteredInfo = allValueInfo.filter(info => info.photoTagId !== photoTagId);
-      ValueInfoLocalStorage.saveAllValueInfo(filteredInfo);
+      await ValueInfoLocalStorage.saveAllValueInfo(filteredInfo);
       return true;
     } catch (error) {
       console.error('Error deleting value info by photoTagId:', error);
@@ -141,19 +140,20 @@ export const ValueInfoLocalStorage = {
     }
   },
 
-  // Clear ALL value info from localStorage
-  clearAllValueInfo: (): void => {
+  // Clear ALL value info from localForage
+  async clearAllValueInfo(): Promise<void> {
     try {
-      localStorage.removeItem(VALUE_INFO_KEY);
+      await valueInfoStore.removeItem(VALUE_INFO_KEY);
     } catch (error) {
-      console.error('Error clearing value info from localStorage:', error);
+      console.error('Error clearing value info from localForage:', error);
+      throw error;
     }
   },
 
   // Update specific fields in value info
-  updateValueInfo: (id: string, updates: Partial<ValueInfo>): ValueInfo | null => {
+  async updateValueInfo(id: string, updates: Partial<ValueInfo>): Promise<ValueInfo | null> {
     try {
-      const allValueInfo = ValueInfoLocalStorage.getAllValueInfo();
+      const allValueInfo = await ValueInfoLocalStorage.getAllValueInfo();
       const infoIndex = allValueInfo.findIndex(info => info.id === id);
       
       if (infoIndex === -1) {
@@ -168,7 +168,7 @@ export const ValueInfoLocalStorage = {
       const updatedValueInfo = [...allValueInfo];
       updatedValueInfo[infoIndex] = updatedInfo;
       
-      ValueInfoLocalStorage.saveAllValueInfo(updatedValueInfo);
+      await ValueInfoLocalStorage.saveAllValueInfo(updatedValueInfo);
       return updatedInfo;
     } catch (error) {
       console.error('Error updating value info:', error);
@@ -177,8 +177,8 @@ export const ValueInfoLocalStorage = {
   },
 
   // Get value info count
-  getValueInfoCount: (): number => {
-    const allValueInfo = ValueInfoLocalStorage.getAllValueInfo();
+  async getValueInfoCount(): Promise<number> {
+    const allValueInfo = await ValueInfoLocalStorage.getAllValueInfo();
     return allValueInfo.length;
   },
 
