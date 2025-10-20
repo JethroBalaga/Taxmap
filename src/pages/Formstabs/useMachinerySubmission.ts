@@ -58,7 +58,7 @@ export const useMachinerySubmission = () => {
     showToastMessage('Starting machinery upload process...', 'warning');
 
     try {
-      const formData = FormDataLocalStorage.getFormData(formId);
+      const formData = await FormDataLocalStorage.getFormData(formId); // Added await
       if (!formData) throw new Error('Form data not found');
       if (formData.uploaded) throw new Error('Form already uploaded');
 
@@ -132,7 +132,7 @@ export const useMachinerySubmission = () => {
         });
 
         if (!formData.synced_id) {
-          FormDataLocalStorage.markFormAsUploaded(formId, databaseFormId);
+          await FormDataLocalStorage.markFormAsUploaded(formId, databaseFormId); // Added await
         }
       }
 
