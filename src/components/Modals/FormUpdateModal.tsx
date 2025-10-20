@@ -54,10 +54,10 @@ const FormUpdateModal: React.FC<FormUpdateModalProps> = ({
     }
   }, [isOpen, formId]);
 
-  const loadFormData = () => {
+  const loadFormData = async () => {
     setIsLoading(true);
     if (formId) {
-      const data = FormDataLocalStorage.getFormData(formId);
+      const data = await FormDataLocalStorage.getFormData(formId); // Added await
       if (data) {
         setFormData(data);
       }
@@ -166,11 +166,11 @@ const FormUpdateModal: React.FC<FormUpdateModalProps> = ({
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (formData && formId) {
       setIsUpdating(true);
       try {
-        const success = FormDataLocalStorage.updateFormData(formId, formData);
+        const success = await FormDataLocalStorage.updateFormData(formId, formData); // Added await
         if (success) {
           setShowSuccessAlert(true);
           onUpdate(formData);
