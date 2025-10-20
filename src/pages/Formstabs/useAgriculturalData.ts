@@ -125,10 +125,10 @@ export const useAgriculturalData = (formId: string) => {
     return frontage + weatherRoad + market;
   };
 
-  const loadData = () => {
+  const loadData = async () => {
     setIsLoading(true);
     try {
-      const form = FormDataLocalStorage.getFormData(formId);
+      const form = await FormDataLocalStorage.getFormData(formId); // Added await
       
       if (form) {
         setFormData(form);
@@ -143,7 +143,7 @@ export const useAgriculturalData = (formId: string) => {
           
           if (valueInfo) {
             setValueInfoId(valueInfo.id);
-            const agriData = AgriculturalDataLocalStorage.getAgriculturalDataByValueInfoId(valueInfo.id);
+            const agriData = await AgriculturalDataLocalStorage.getAgriculturalDataByValueInfoId(valueInfo.id); // Added await
             setAgriculturalData(agriData);
           }
         }
