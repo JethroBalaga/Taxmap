@@ -1,4 +1,6 @@
 // src/utils/BuildingAdjustmentLocalStorage.ts
+import localforage from 'localforage';
+
 export interface BuildingAdjustmentData {
   bldg_adjustment_id: string;
   Maincomponent: string;
@@ -12,36 +14,39 @@ export interface BuildingAdjustmentData {
 
 const BUILDING_ADJUSTMENT_KEY = 'buildingAdjustmentData';
 
+// Configure localForage instance
+const buildingAdjustmentStorage = localforage.createInstance({
+  name: 'BuildingAdjustmentDB',
+  storeName: 'building_adjustment_store'
+});
+
 export const BuildingAdjustmentLocalStorage = {
-  // Get ALL building adjustment data from localStorage
-  getAllBuildingAdjustmentData: (): BuildingAdjustmentData[] => {
+  // Get ALL building adjustment data from localForage
+  getAllBuildingAdjustmentData: async (): Promise<BuildingAdjustmentData[]> => {
     try {
-      const storedData = localStorage.getItem(BUILDING_ADJUSTMENT_KEY);
-      if (storedData) {
-        return JSON.parse(storedData);
-      }
-      return [];
+      const storedData = await buildingAdjustmentStorage.getItem<BuildingAdjustmentData[]>(BUILDING_ADJUSTMENT_KEY);
+      return storedData || [];
     } catch (error) {
-      console.error('Error retrieving building adjustment data from localStorage:', error);
+      console.error('Error retrieving building adjustment data from localForage:', error);
       return [];
     }
   },
 
   // Get a specific building adjustment data by bldg_adjustment_id
-  getBuildingAdjustmentData: (bldg_adjustment_id: string): BuildingAdjustmentData | null => {
+  getBuildingAdjustmentData: async (bldg_adjustment_id: string): Promise<BuildingAdjustmentData | null> => {
     try {
-      const allAdjustmentData = BuildingAdjustmentLocalStorage.getAllBuildingAdjustmentData();
+      const allAdjustmentData = await BuildingAdjustmentLocalStorage.getAllBuildingAdjustmentData();
       return allAdjustmentData.find(adjustment => adjustment.bldg_adjustment_id === bldg_adjustment_id) || null;
     } catch (error) {
-      console.error('Error retrieving building adjustment data from localStorage:', error);
+      console.error('Error retrieving building adjustment data from localForage:', error);
       return null;
     }
   },
 
   // Get all building adjustment data for a specific value_info_id
-  getBuildingAdjustmentsByValueInfoId: (value_info_id: string): BuildingAdjustmentData[] => {
+  getBuildingAdjustmentsByValueInfoId: async (value_info_id: string): Promise<BuildingAdjustmentData[]> => {
     try {
-      const allAdjustmentData = BuildingAdjustmentLocalStorage.getAllBuildingAdjustmentData();
+      const allAdjustmentData = await BuildingAdjustmentLocalStorage.getAllBuildingAdjustmentData();
       return allAdjustmentData.filter(adjustment => adjustment.value_info_id === value_info_id);
     } catch (error) {
       console.error('Error retrieving building adjustments by value_info_id:', error);
@@ -49,10 +54,10 @@ export const BuildingAdjustmentLocalStorage = {
     }
   },
 
-  // Save NEW building adjustment data to localStorage
-  saveBuildingAdjustmentData: (adjustmentData: BuildingAdjustmentData): void => {
+  // Save NEW building adjustment data to localForage
+  saveBuildingAdjustmentData: async (adjustmentData: BuildingAdjustmentData): Promise<void> => {
     try {
-      const allAdjustmentData = BuildingAdjustmentLocalStorage.getAllBuildingAdjustmentData();
+      const allAdjustmentData = await BuildingAdjustmentLocalStorage.getAllBuildingAdjustmentData();
 
       // Check if data already exists for this bldg_adjustment_id
       const existingIndex = allAdjustmentData.findIndex(
@@ -69,17 +74,17 @@ export const BuildingAdjustmentLocalStorage = {
         updatedAdjustmentData = [...allAdjustmentData, adjustmentData];
       }
 
-      localStorage.setItem(BUILDING_ADJUSTMENT_KEY, JSON.stringify(updatedAdjustmentData));
+      await buildingAdjustmentStorage.setItem(BUILDING_ADJUSTMENT_KEY, updatedAdjustmentData);
     } catch (error) {
-      console.error('Error saving building adjustment data to localStorage:', error);
+      console.error('Error saving building adjustment data to localForage:', error);
       throw error;
     }
   },
 
   // Update specific fields in building adjustment data for a specific bldg_adjustment_id
-  updateBuildingAdjustmentData: (bldg_adjustment_id: string, updates: Partial<BuildingAdjustmentData>): BuildingAdjustmentData | null => {
+  updateBuildingAdjustmentData: async (bldg_adjustment_id: string, updates: Partial<BuildingAdjustmentData>): Promise<BuildingAdjustmentData | null> => {
     try {
-      const allAdjustmentData = BuildingAdjustmentLocalStorage.getAllBuildingAdjustmentData();
+      const allAdjustmentData = await BuildingAdjustmentLocalStorage.getAllBuildingAdjustmentData();
       const adjustmentIndex = allAdjustmentData.findIndex(
         adjustment => adjustment.bldg_adjustment_id === bldg_adjustment_id
       );
@@ -94,7 +99,7 @@ export const BuildingAdjustmentLocalStorage = {
       };
 
       allAdjustmentData[adjustmentIndex] = updatedAdjustment;
-      localStorage.setItem(BUILDING_ADJUSTMENT_KEY, JSON.stringify(allAdjustmentData));
+      await buildingAdjustmentStorage.setItem(BUILDING_ADJUSTMENT_KEY, allAdjustmentData);
       return updatedAdjustment;
     } catch (error) {
       console.error('Error updating building adjustment data:', error);
@@ -103,13 +108,13 @@ export const BuildingAdjustmentLocalStorage = {
   },
 
   // Delete building adjustment data for a specific bldg_adjustment_id
-  deleteBuildingAdjustmentData: (bldg_adjustment_id: string): boolean => {
+  deleteBuildingAdjustmentData: async (bldg_adjustment_id: string): Promise<boolean> => {
     try {
-      const allAdjustmentData = BuildingAdjustmentLocalStorage.getAllBuildingAdjustmentData();
+      const allAdjustmentData = await BuildingAdjustmentLocalStorage.getAllBuildingAdjustmentData();
       const updatedAdjustmentData = allAdjustmentData.filter(
         adjustment => adjustment.bldg_adjustment_id !== bldg_adjustment_id
       );
-      localStorage.setItem(BUILDING_ADJUSTMENT_KEY, JSON.stringify(updatedAdjustmentData));
+      await buildingAdjustmentStorage.setItem(BUILDING_ADJUSTMENT_KEY, updatedAdjustmentData);
       return true;
     } catch (error) {
       console.error('Error deleting building adjustment data:', error);
@@ -118,13 +123,13 @@ export const BuildingAdjustmentLocalStorage = {
   },
 
   // Delete all building adjustment data for a specific value_info_id
-  deleteBuildingAdjustmentsByValueInfoId: (value_info_id: string): boolean => {
+  deleteBuildingAdjustmentsByValueInfoId: async (value_info_id: string): Promise<boolean> => {
     try {
-      const allAdjustmentData = BuildingAdjustmentLocalStorage.getAllBuildingAdjustmentData();
+      const allAdjustmentData = await BuildingAdjustmentLocalStorage.getAllBuildingAdjustmentData();
       const updatedAdjustmentData = allAdjustmentData.filter(
         adjustment => adjustment.value_info_id !== value_info_id
       );
-      localStorage.setItem(BUILDING_ADJUSTMENT_KEY, JSON.stringify(updatedAdjustmentData));
+      await buildingAdjustmentStorage.setItem(BUILDING_ADJUSTMENT_KEY, updatedAdjustmentData);
       return true;
     } catch (error) {
       console.error('Error deleting building adjustments by value_info_id:', error);
@@ -132,36 +137,36 @@ export const BuildingAdjustmentLocalStorage = {
     }
   },
 
-  // Clear ALL building adjustment data from localStorage
-  clearAllBuildingAdjustmentData: (): void => {
+  // Clear ALL building adjustment data from localForage
+  clearAllBuildingAdjustmentData: async (): Promise<void> => {
     try {
-      localStorage.removeItem(BUILDING_ADJUSTMENT_KEY);
+      await buildingAdjustmentStorage.removeItem(BUILDING_ADJUSTMENT_KEY);
     } catch (error) {
-      console.error('Error clearing building adjustment data from localStorage:', error);
+      console.error('Error clearing building adjustment data from localForage:', error);
     }
   },
 
   // Check if building adjustment data exists for a specific bldg_adjustment_id
-  hasBuildingAdjustmentData: (bldg_adjustment_id: string): boolean => {
-    const allAdjustmentData = BuildingAdjustmentLocalStorage.getAllBuildingAdjustmentData();
+  hasBuildingAdjustmentData: async (bldg_adjustment_id: string): Promise<boolean> => {
+    const allAdjustmentData = await BuildingAdjustmentLocalStorage.getAllBuildingAdjustmentData();
     return allAdjustmentData.some(adjustment => adjustment.bldg_adjustment_id === bldg_adjustment_id);
   },
 
   // Check if building adjustment data exists for a specific value_info_id
-  hasBuildingAdjustmentsForValueInfoId: (value_info_id: string): boolean => {
-    const allAdjustmentData = BuildingAdjustmentLocalStorage.getAllBuildingAdjustmentData();
+  hasBuildingAdjustmentsForValueInfoId: async (value_info_id: string): Promise<boolean> => {
+    const allAdjustmentData = await BuildingAdjustmentLocalStorage.getAllBuildingAdjustmentData();
     return allAdjustmentData.some(adjustment => adjustment.value_info_id === value_info_id);
   },
 
   // Get building adjustment data count
-  getBuildingAdjustmentCount: (): number => {
-    const allAdjustmentData = BuildingAdjustmentLocalStorage.getAllBuildingAdjustmentData();
+  getBuildingAdjustmentCount: async (): Promise<number> => {
+    const allAdjustmentData = await BuildingAdjustmentLocalStorage.getAllBuildingAdjustmentData();
     return allAdjustmentData.length;
   },
 
   // Get building adjustment data count for a specific value_info_id
-  getBuildingAdjustmentCountByValueInfoId: (value_info_id: string): number => {
-    const adjustments = BuildingAdjustmentLocalStorage.getBuildingAdjustmentsByValueInfoId(value_info_id);
+  getBuildingAdjustmentCountByValueInfoId: async (value_info_id: string): Promise<number> => {
+    const adjustments = await BuildingAdjustmentLocalStorage.getBuildingAdjustmentsByValueInfoId(value_info_id);
     return adjustments.length;
   }
 };
