@@ -200,14 +200,14 @@ export const usePhotoModal = ({
       let valueInfo = null;
 
       if (formData) {
-        savedFormData = await FormDataLocalStorage.saveFormData(formData); // Added await
+        savedFormData = await FormDataLocalStorage.saveFormData(formData);
         console.log('Form data saved:', savedFormData);
       }
 
       const finalLatitude = currentLocation?.latitude || 0;
       const finalLongitude = currentLocation?.longitude || 0;
 
-      photoTag = PhotoTagLocalStorage.addPhotoTag({
+      photoTag = await PhotoTagLocalStorage.addPhotoTag({
         photoName,
         longitude: finalLongitude,
         latitude: finalLatitude,
@@ -216,14 +216,14 @@ export const usePhotoModal = ({
       console.log('Photo tag saved:', photoTag);
 
       if (savedFormData && photoTag) {
-        valueInfo = ValueInfoLocalStorage.addValueInfo({
+        valueInfo = await ValueInfoLocalStorage.addValueInfo({
           formDataId: savedFormData.id,
           photoTagId: photoTag.id,
         });
         console.log('ValueInfo created:', valueInfo);
 
         if (agriculturalData && valueInfo) {
-          savedAgriculturalData = await AgriculturalDataLocalStorage.saveAgriculturalData({ // Added await
+          savedAgriculturalData = await AgriculturalDataLocalStorage.saveAgriculturalData({
             frontage: agriculturalData.frontage,
             weather_road: agriculturalData.weatherRoad,
             market: agriculturalData.market,
@@ -233,7 +233,7 @@ export const usePhotoModal = ({
         }
 
         if (buildingData && valueInfo) {
-          savedBuildingData = await BuildingDataLocalStorage.saveBuildingData({ // Added await
+          savedBuildingData = await BuildingDataLocalStorage.saveBuildingData({
             ...buildingData,
             valueInfoId: valueInfo.id.toString()
           });
@@ -241,7 +241,7 @@ export const usePhotoModal = ({
         }
 
         if (machineData && valueInfo) {
-          savedMachineData = await MachineDataLocalStorage.saveMachineData({ // Added await
+          savedMachineData = await MachineDataLocalStorage.saveMachineData({
             ...machineData,
             valueInfoId: valueInfo.id.toString()
           });
