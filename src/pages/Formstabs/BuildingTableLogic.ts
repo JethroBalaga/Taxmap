@@ -314,7 +314,7 @@ export const useBuildingTableLogic = (
         showToastMessage('Starting upload process...', 'warning');
 
         try {
-            const formData = FormDataLocalStorage.getFormData(form_id);
+            const formData = await FormDataLocalStorage.getFormData(form_id); // Added await
             if (!formData) throw new Error('Form data not found');
             if (formData.uploaded) throw new Error('Form already uploaded');
 
@@ -398,7 +398,7 @@ export const useBuildingTableLogic = (
             if (filteredAdjustments.length) await supabaseApi.insertBuildingAdjustments(databaseValueInfoId, filteredAdjustments);
 
             await supabaseApi.updateFormStatus(databaseFormId, 'New');
-            FormDataLocalStorage.markFormAsUploaded(form_id, databaseFormId);
+            await FormDataLocalStorage.markFormAsUploaded(form_id, databaseFormId); // Added await
 
             showToastMessage('Form submitted successfully! Data synchronized with server.', 'success');
 
