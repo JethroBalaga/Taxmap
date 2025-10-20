@@ -96,7 +96,7 @@ export const useAgriculturalSubmission = (formId: string) => {
     showToastMessage('Starting agricultural form upload process...', 'warning');
 
     try {
-      const formData = FormDataLocalStorage.getFormData(formId);
+      const formData = await FormDataLocalStorage.getFormData(formId); // Added await
       if (!formData) throw new Error('Form data not found');
       if (formData.uploaded) throw new Error('Form already uploaded');
 
@@ -163,7 +163,7 @@ export const useAgriculturalSubmission = (formId: string) => {
       if (!adjustmentSuccess) throw new Error('Failed to insert agricultural adjustment data');
 
       if (!formData.synced_id) {
-        FormDataLocalStorage.markFormAsUploaded(formId, databaseFormId);
+        await FormDataLocalStorage.markFormAsUploaded(formId, databaseFormId); // Added await
       }
 
       showToastMessage('Agricultural data submitted successfully! All data synchronized with server.', 'success');
