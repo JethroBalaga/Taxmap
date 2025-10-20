@@ -135,7 +135,7 @@ export const useMachineryData = () => {
     return total > 0 ? total.toFixed(2) : 'N/A';
   };
 
-  const loadMachineryData = () => {
+  const loadMachineryData = async () => {
     setIsLoading(true);
     try {
       const allValueInfo = ValueInfoLocalStorage.getAllValueInfo();
@@ -143,8 +143,8 @@ export const useMachineryData = () => {
       
       const machineryWithCalculations: {machineData: CalculatedMachineData, valueInfoId: string}[] = [];
       
-      formValueInfo.forEach(valueInfo => {
-        const machineData = MachineDataLocalStorage.getMachineData(valueInfo.id);
+      for (const valueInfo of formValueInfo) {
+        const machineData = await MachineDataLocalStorage.getMachineData(valueInfo.id); // Added await
         if (machineData) {
           const remainingLife = calculateRemainingLife(machineData.yearsUsed, machineData.estimatedLife);
           const totalCost = calculateTotalCost(
@@ -168,7 +168,7 @@ export const useMachineryData = () => {
             valueInfoId: valueInfo.id
           });
         }
-      });
+      }
       
       setMachineryData(machineryWithCalculations);
     } catch (error) {
@@ -182,7 +182,7 @@ export const useMachineryData = () => {
     if (!formId) return;
     
     try {
-      const formData = FormDataLocalStorage.getFormData(formId);
+      const formData = await FormDataLocalStorage.getFormData(formId); // Added await
       if (!formData) return;
 
       const districtData = formData.district ? await getDistrictById(formData.district) : null;
