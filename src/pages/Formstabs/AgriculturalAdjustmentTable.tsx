@@ -130,7 +130,7 @@ const AgriculturalAdjustmentTable: React.FC = () => {
               Back
             </IonButton>
           </IonButtons>
-          <IonTitle>Agricultural Adjustments</IonTitle>
+          <IonTitle>Agricultural Adjustments - Form {formId}</IonTitle>
           <IonButtons slot="end">
             <SubmitButton
               label="Submit Form"
@@ -187,24 +187,14 @@ const AgriculturalAdjustmentTable: React.FC = () => {
                     <IonCardContent>
                       <IonGrid>
                         <IonRow>
-                          <IonCol size="6" size-md="3">
+                          <IonCol size="6" size-md="6">
                             <IonText>
                               <strong>District:</strong> {formContext.districtName}
                             </IonText>
                           </IonCol>
-                          <IonCol size="6" size-md="3">
+                          <IonCol size="6" size-md="6">
                             <IonText>
                               <strong>Declarant:</strong> {formContext.declarantName}
-                            </IonText>
-                          </IonCol>
-                          <IonCol size="6" size-md="3">
-                            <IonText>
-                              <strong>Classification:</strong> {formContext.classification}
-                            </IonText>
-                          </IonCol>
-                          <IonCol size="6" size-md="3">
-                            <IonText>
-                              <strong>Actual Use:</strong> {formContext.actualUse}
                             </IonText>
                           </IonCol>
                         </IonRow>
