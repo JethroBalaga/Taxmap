@@ -197,7 +197,7 @@ const MachineryTable: React.FC = () => {
 
         <MachineUpdateModal
           isOpen={updateModalOpen}
-          onClose={() => setUpdateModalOpen(false)}
+          onClose={setUpdateModalOpen}
           onUpdate={handleMachineUpdate}
           existingData={selectedMachineData || undefined}
           valueInfoId={selectedValueInfoId}
