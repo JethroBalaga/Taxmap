@@ -192,7 +192,7 @@ export const useBuildingTableLogic = (
             const assessmentMap = new Map<string, AssessmentLevelInfo>();
 
             for (const id of ids) {
-                const data = BuildingDataLocalStorage.getBuildingData(id);
+                const data = await BuildingDataLocalStorage.getBuildingData(id); // Added await
                 if (!data) continue;
                 dataMap.set(id, data);
 
@@ -369,7 +369,7 @@ export const useBuildingTableLogic = (
 
             const databaseValueInfoId = await supabaseApi.insertValueInfo(databaseFormId, databaseTagId);
 
-            const buildingData = BuildingDataLocalStorage.getBuildingData(valueInfo.id);
+            const buildingData = await BuildingDataLocalStorage.getBuildingData(valueInfo.id); // Added await
             if (!buildingData) throw new Error('Building data not found');
 
             await supabaseApi.insertGeneralDescription(databaseValueInfoId, {
