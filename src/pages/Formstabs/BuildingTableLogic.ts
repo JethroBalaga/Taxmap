@@ -222,9 +222,9 @@ export const useBuildingTableLogic = (
         }
     }, [form_id, area, calculateMarketValues, getAssessmentLevelForBuilding]);
 
-    const loadBuildingAdjustments = useCallback(() => {
+    const loadBuildingAdjustments = useCallback(async () => {
         try {
-            const allAdjustments = BuildingAdjustmentLocalStorage.getAllBuildingAdjustmentData();
+            const allAdjustments = await BuildingAdjustmentLocalStorage.getAllBuildingAdjustmentData();
             const formBuildingIds = ValueInfoLocalStorage.getAllValueInfo().filter(info => info.formDataId === form_id).map(info => info.id);
             const filtered = allAdjustments.filter(adj => formBuildingIds.includes(adj.value_info_id));
             setBuildingAdjustments(filtered);
@@ -281,9 +281,9 @@ export const useBuildingTableLogic = (
         }
     };
 
-    const handleBuildingUpdate = (updatedData: any) => {
+    const handleBuildingUpdate = async (updatedData: any) => {
         try {
-            BuildingDataLocalStorage.updateBuildingData(selectedBuildingId, updatedData);
+            await BuildingDataLocalStorage.updateBuildingData(selectedBuildingId, updatedData);
             loadBuildingData();
             loadBuildingAdjustments();
             showToastMessage('Building updated successfully!', 'success');
@@ -385,7 +385,8 @@ export const useBuildingTableLogic = (
                 depreciation_rate: buildingData.depreciationRate?.toString() || null
             });
 
-            const adjustments = BuildingAdjustmentLocalStorage.getAllBuildingAdjustmentData()
+            const adjustments = await BuildingAdjustmentLocalStorage.getAllBuildingAdjustmentData();
+            const filteredAdjustments = adjustments
                 .filter(adj => adj.value_info_id === valueInfo.id)
                 .map(adj => ({
                     building_subcom_id: adj.buidlingsubcomponent,
@@ -394,7 +395,7 @@ export const useBuildingTableLogic = (
                     depreciation: adj.depreciation,
                     area: adj.area
                 }));
-            if (adjustments.length) await supabaseApi.insertBuildingAdjustments(databaseValueInfoId, adjustments);
+            if (filteredAdjustments.length) await supabaseApi.insertBuildingAdjustments(databaseValueInfoId, filteredAdjustments);
 
             await supabaseApi.updateFormStatus(databaseFormId, 'New');
             FormDataLocalStorage.markFormAsUploaded(form_id, databaseFormId);
