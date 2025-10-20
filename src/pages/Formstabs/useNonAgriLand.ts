@@ -54,6 +54,18 @@ export const useNonAgriLand = (formId: string | undefined) => {
     // Selected row state
     const [selectedRow, setSelectedRow] = useState<any>(null);
 
+    // UI state - these are now synchronous state values
+    const [visibleIcons, setVisibleIcons] = useState(adjustmentIcons);
+    const [submitDisabledInfo, setSubmitDisabledInfo] = useState({ disabled: false, reason: '' });
+    const [strippingInfo, setStrippingInfo] = useState({ 
+        currentCount: 0, 
+        nextNumber: 1, 
+        hasStripping: false, 
+        canAddMore: false, 
+        remainingArea: 0, 
+        totalStripArea: 0 
+    });
+
     // Define loadLandAdjustments with useCallback to prevent infinite re-renders
     const loadLandAdjustments = useCallback(async () => {
         setIsLoadingAdjustments(true);
@@ -86,12 +98,17 @@ export const useNonAgriLand = (formId: string | undefined) => {
         loadLandAdjustments
     });
 
+    // Create a synchronous version of getSubmitDisabledInfo for the submission hook
+    const getSubmitDisabledInfoSync = useCallback((): { disabled: boolean; reason: string } => {
+        return submitDisabledInfo;
+    }, [submitDisabledInfo]);
+
     const submission = useNonAgriSubmission({
         formId,
         formData,
         valueInfoId,
         currentAdjustments: calculations.currentAdjustments,
-        getSubmitDisabledInfo: calculations.getSubmitDisabledInfo
+        getSubmitDisabledInfo: getSubmitDisabledInfoSync
     });
 
     const showToastMessage = (message: string, color: 'success' | 'danger' | 'warning' = 'success') => {
@@ -105,30 +122,94 @@ export const useNonAgriLand = (formId: string | undefined) => {
             setIsLoading(true);
             console.log('Loading non-agricultural land form data for ID:', formId);
 
-            // ALWAYS load from localStorage to get the latest data
-            const storedFormData = await FormDataLocalStorage.getFormData(formId); // Added await
-            console.log('Loaded form data from localStorage:', storedFormData);
-            setFormData(storedFormData);
+            try {
+                // ALWAYS load from localStorage to get the latest data
+                const storedFormData = await FormDataLocalStorage.getFormData(formId);
+                console.log('Loaded form data from localStorage:', storedFormData);
+                setFormData(storedFormData);
 
-            // Fetch or create ValueInfo for this formId using the stored form data
-            if (storedFormData) {
-                let valueInfo = ValueInfoLocalStorage.getValueInfoByFormDataId(formId);
-                if (!valueInfo) {
-                    valueInfo = ValueInfoLocalStorage.addValueInfo({
-                        formDataId: formId,
-                        photoTagId: ''
-                    });
+                // Fetch or create ValueInfo for this formId using the stored form data
+                if (storedFormData) {
+                    let valueInfo = await ValueInfoLocalStorage.getValueInfoByFormDataId(formId);
+                    if (!valueInfo) {
+                        valueInfo = await ValueInfoLocalStorage.addValueInfo({
+                            formDataId: formId,
+                            photoTagId: ''
+                        });
+                    }
+                    setValueInfoId(valueInfo.id);
                 }
-                setValueInfoId(valueInfo.id);
+            } catch (error) {
+                console.error('Error loading form data:', error);
+                showToastMessage('Error loading form data', 'danger');
+            } finally {
+                setIsLoading(false);
             }
 
-            setIsLoading(false);
-
-            if (!storedFormData) {
+            if (!formData) {
                 showToastMessage('Form not found', 'danger');
             }
         }
     };
+
+    // Update stripping info and UI when calculations change
+    const updateStrippingInfoAndUI = useCallback(async () => {
+        try {
+            const newStrippingInfo = await calculations.getStrippingInfo();
+            setStrippingInfo(newStrippingInfo);
+            
+            const newSubmitDisabledInfo = await calculations.getSubmitDisabledInfo();
+            setSubmitDisabledInfo(newSubmitDisabledInfo);
+            
+            await updateVisibleIcons(newStrippingInfo);
+        } catch (error) {
+            console.error('Error updating stripping info:', error);
+        }
+    }, [calculations]);
+
+    // Update visible icons based on current state
+    const updateVisibleIcons = useCallback(async (currentStrippingInfo: any) => {
+        const classification = formData?.classification;
+        if (!classification) {
+            setVisibleIcons(adjustmentIcons);
+            return;
+        }
+
+        const classificationFilteredIcons = adjustmentIcons.filter(icon => !icon.hideFor.includes(classification));
+
+        // Update the stripping icon label
+        const updatedIcons = await Promise.all(
+            classificationFilteredIcons.map(async (icon) => {
+                if (icon.adjustmentType === 'Stripping') {
+                    const label = await calculations.getStrippingIconLabel();
+                    return {
+                        ...icon,
+                        label
+                    };
+                }
+                return icon;
+            })
+        );
+
+        const { canAddMore } = currentStrippingInfo;
+        const hasCornerInfluence = calculations.hasCornerInfluence;
+        const hasStripping = calculations.hasStripping;
+
+        // Mutual exclusion: Hide Stripping if Corner Influence exists, and vice versa
+        // Also hide stripping if max strips reached
+        const filteredIcons = updatedIcons.filter(icon => {
+            if (icon.adjustmentType === 'Stripping') {
+                if (!canAddMore) return false;
+                if (hasCornerInfluence) return false;
+            }
+            if (icon.adjustmentType === 'Corner Influence' && hasStripping) {
+                return false;
+            }
+            return true;
+        });
+
+        setVisibleIcons(filteredIcons);
+    }, [formData, calculations]);
 
     // Load adjustments when landAdjustments or valueInfoId changes
     useEffect(() => {
@@ -150,19 +231,24 @@ export const useNonAgriLand = (formId: string | undefined) => {
         }
     }, [formData?.subclass, formData?.area]);
 
-    // Listen for form data updates from Forms page
+    // Update UI when calculations change
+    useEffect(() => {
+        updateStrippingInfoAndUI();
+    }, [calculations.currentAdjustments, calculations.hasCornerInfluence, calculations.hasStripping, updateStrippingInfoAndUI]);
+
+    // Listen for form data updates from Forms page - FIXED VERSION
     useEffect(() => {
         const handleFormDataUpdate = (event: CustomEvent) => {
             if (event.detail && event.detail.formId === formId) {
                 console.log('Form data updated, reloading form data...');
-                loadFormData();
+                loadFormData(); // Remove await - just call the function
             }
         };
 
         const handleStorageChange = (e: StorageEvent) => {
             if (e.key === 'formUpdateTrigger') {
                 console.log('Form update detected via localStorage, reloading form data...');
-                loadFormData();
+                loadFormData(); // Remove await - just call the function
             }
         };
 
@@ -175,45 +261,6 @@ export const useNonAgriLand = (formId: string | undefined) => {
         };
     }, [formId]);
 
-    // Filter icons based on classification AND mutual exclusion rules
-    const getVisibleIcons = () => {
-        const classification = formData?.classification;
-        if (!classification) return adjustmentIcons;
-
-        const classificationFilteredIcons = adjustmentIcons.filter(icon => !icon.hideFor.includes(classification));
-
-        // Update the stripping icon label
-        const updatedIcons = classificationFilteredIcons.map(icon => {
-            if (icon.adjustmentType === 'Stripping') {
-                return {
-                    ...icon,
-                    label: calculations.getStrippingIconLabel()
-                };
-            }
-            return icon;
-        });
-
-        const { canAddMore } = calculations.getStrippingInfo();
-        const hasCornerInfluence = calculations.hasCornerInfluence;
-        const hasStripping = calculations.hasStripping;
-
-        // Mutual exclusion: Hide Stripping if Corner Influence exists, and vice versa
-        // Also hide stripping if max strips reached
-        return updatedIcons.filter(icon => {
-            if (icon.adjustmentType === 'Stripping') {
-                if (!canAddMore) return false;
-                if (hasCornerInfluence) return false;
-            }
-            if (icon.adjustmentType === 'Corner Influence' && hasStripping) {
-                return false;
-            }
-            return true;
-        });
-    };
-
-    const visibleIcons = getVisibleIcons();
-    const submitDisabledInfo = calculations.getSubmitDisabledInfo();
-
     const handleBack = () => {
         history.push('/menu/forms');
     };
@@ -225,6 +272,11 @@ export const useNonAgriLand = (formId: string | undefined) => {
     const onSubmit = () => {
         submission.onSubmit(showToastMessage);
     };
+
+    // Create synchronous versions for the UI components
+    const getStrippingInfoSync = useCallback(() => {
+        return strippingInfo;
+    }, [strippingInfo]);
 
     return {
         // State
@@ -256,12 +308,12 @@ export const useNonAgriLand = (formId: string | undefined) => {
         isLoadingRates: calculations.isLoadingRates,
         hasCornerInfluence: calculations.hasCornerInfluence,
         hasStripping: calculations.hasStripping,
-        getStrippingInfo: calculations.getStrippingInfo,
+        getStrippingInfo: getStrippingInfoSync, // Use synchronous version
         getStrippingAdjustment: calculations.getStrippingAdjustment,
         showReverseDeleteWarning: modals.showReverseDeleteWarning,
         setShowReverseDeleteWarning: modals.setShowReverseDeleteWarning,
         reverseDeleteWarningMessage: modals.reverseDeleteWarningMessage,
-        submitDisabledInfo,
+        submitDisabledInfo, // This is now a synchronous state value
 
         // Handlers
         handleBack,

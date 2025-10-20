@@ -52,7 +52,6 @@ const NonAgriLandTable: React.FC = () => {
         visibleIcons,
         subclassRates,
         isLoadingRates,
-        hasCornerInfluence,
         hasStripping,
         getStrippingInfo,
         getStrippingAdjustment,
