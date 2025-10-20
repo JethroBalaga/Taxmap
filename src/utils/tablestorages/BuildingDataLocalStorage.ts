@@ -1,4 +1,6 @@
 // src/utils/BuildingDataLocalStorage.ts
+import localforage from 'localforage';
+
 export interface BuildingData {
   valueInfoId: string; 
   structureType: string;
@@ -16,36 +18,39 @@ export interface BuildingData {
 
 const BUILDING_DATA_KEY = 'buildingData';
 
+// Configure localForage instance
+const buildingDataStorage = localforage.createInstance({
+  name: 'BuildingDataDB',
+  storeName: 'building_data_store'
+});
+
 export const BuildingDataLocalStorage = {
-  // Get ALL building data from localStorage
-  getAllBuildingData: (): BuildingData[] => {
+  // Get ALL building data from localForage
+  getAllBuildingData: async (): Promise<BuildingData[]> => {
     try {
-      const storedData = localStorage.getItem(BUILDING_DATA_KEY);
-      if (storedData) {
-        return JSON.parse(storedData);
-      }
-      return [];
+      const storedData = await buildingDataStorage.getItem<BuildingData[]>(BUILDING_DATA_KEY);
+      return storedData || [];
     } catch (error) {
-      console.error('Error retrieving building data from localStorage:', error);
+      console.error('Error retrieving building data from localForage:', error);
       return [];
     }
   },
 
   // Get a specific building data by valueInfoId
-  getBuildingData: (valueInfoId: string): BuildingData | null => {
+  getBuildingData: async (valueInfoId: string): Promise<BuildingData | null> => {
     try {
-      const allBuildingData = BuildingDataLocalStorage.getAllBuildingData();
+      const allBuildingData = await BuildingDataLocalStorage.getAllBuildingData();
       return allBuildingData.find(building => building.valueInfoId === valueInfoId) || null;
     } catch (error) {
-      console.error('Error retrieving building data from localStorage:', error);
+      console.error('Error retrieving building data from localForage:', error);
       return null;
     }
   },
 
-  // Save NEW building data to localStorage
-  saveBuildingData: (buildingData: BuildingData): void => {
+  // Save NEW building data to localForage
+  saveBuildingData: async (buildingData: BuildingData): Promise<void> => {
     try {
-      const allBuildingData = BuildingDataLocalStorage.getAllBuildingData();
+      const allBuildingData = await BuildingDataLocalStorage.getAllBuildingData();
       
       // Check if data already exists for this valueInfoId
       const existingIndex = allBuildingData.findIndex(
@@ -62,17 +67,17 @@ export const BuildingDataLocalStorage = {
         updatedBuildingData = [...allBuildingData, buildingData];
       }
       
-      localStorage.setItem(BUILDING_DATA_KEY, JSON.stringify(updatedBuildingData));
+      await buildingDataStorage.setItem(BUILDING_DATA_KEY, updatedBuildingData);
     } catch (error) {
-      console.error('Error saving building data to localStorage:', error);
+      console.error('Error saving building data to localForage:', error);
       throw error;
     }
   },
 
   // Update specific fields in building data for a specific valueInfoId
-  updateBuildingData: (valueInfoId: string, updates: Partial<BuildingData>): BuildingData | null => {
+  updateBuildingData: async (valueInfoId: string, updates: Partial<BuildingData>): Promise<BuildingData | null> => {
     try {
-      const allBuildingData = BuildingDataLocalStorage.getAllBuildingData();
+      const allBuildingData = await BuildingDataLocalStorage.getAllBuildingData();
       const buildingIndex = allBuildingData.findIndex(
         building => building.valueInfoId === valueInfoId
       );
@@ -87,7 +92,7 @@ export const BuildingDataLocalStorage = {
       };
       
       allBuildingData[buildingIndex] = updatedBuilding;
-      localStorage.setItem(BUILDING_DATA_KEY, JSON.stringify(allBuildingData));
+      await buildingDataStorage.setItem(BUILDING_DATA_KEY, allBuildingData);
       return updatedBuilding;
     } catch (error) {
       console.error('Error updating building data:', error);
@@ -96,13 +101,13 @@ export const BuildingDataLocalStorage = {
   },
 
   // Delete building data for a specific valueInfoId
-  deleteBuildingData: (valueInfoId: string): boolean => {
+  deleteBuildingData: async (valueInfoId: string): Promise<boolean> => {
     try {
-      const allBuildingData = BuildingDataLocalStorage.getAllBuildingData();
+      const allBuildingData = await BuildingDataLocalStorage.getAllBuildingData();
       const updatedBuildingData = allBuildingData.filter(
         building => building.valueInfoId !== valueInfoId
       );
-      localStorage.setItem(BUILDING_DATA_KEY, JSON.stringify(updatedBuildingData));
+      await buildingDataStorage.setItem(BUILDING_DATA_KEY, updatedBuildingData);
       return true;
     } catch (error) {
       console.error('Error deleting building data:', error);
@@ -110,24 +115,24 @@ export const BuildingDataLocalStorage = {
     }
   },
 
-  // Clear ALL building data from localStorage
-  clearAllBuildingData: (): void => {
+  // Clear ALL building data from localForage
+  clearAllBuildingData: async (): Promise<void> => {
     try {
-      localStorage.removeItem(BUILDING_DATA_KEY);
+      await buildingDataStorage.removeItem(BUILDING_DATA_KEY);
     } catch (error) {
-      console.error('Error clearing building data from localStorage:', error);
+      console.error('Error clearing building data from localForage:', error);
     }
   },
 
   // Check if building data exists for a specific valueInfoId
-  hasBuildingDataForInfoId: (valueInfoId: string): boolean => {
-    const allBuildingData = BuildingDataLocalStorage.getAllBuildingData();
+  hasBuildingDataForInfoId: async (valueInfoId: string): Promise<boolean> => {
+    const allBuildingData = await BuildingDataLocalStorage.getAllBuildingData();
     return allBuildingData.some(building => building.valueInfoId === valueInfoId);
   },
 
   // Get building data count
-  getBuildingDataCount: (): number => {
-    const allBuildingData = BuildingDataLocalStorage.getAllBuildingData();
+  getBuildingDataCount: async (): Promise<number> => {
+    const allBuildingData = await BuildingDataLocalStorage.getAllBuildingData();
     return allBuildingData.length;
   }
 };
