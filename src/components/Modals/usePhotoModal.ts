@@ -200,7 +200,7 @@ export const usePhotoModal = ({
       let valueInfo = null;
 
       if (formData) {
-        savedFormData = FormDataLocalStorage.saveFormData(formData);
+        savedFormData = await FormDataLocalStorage.saveFormData(formData); // Added await
         console.log('Form data saved:', savedFormData);
       }
 
@@ -223,7 +223,7 @@ export const usePhotoModal = ({
         console.log('ValueInfo created:', valueInfo);
 
         if (agriculturalData && valueInfo) {
-          savedAgriculturalData = AgriculturalDataLocalStorage.saveAgriculturalData({
+          savedAgriculturalData = await AgriculturalDataLocalStorage.saveAgriculturalData({ // Added await
             frontage: agriculturalData.frontage,
             weather_road: agriculturalData.weatherRoad,
             market: agriculturalData.market,
@@ -233,7 +233,7 @@ export const usePhotoModal = ({
         }
 
         if (buildingData && valueInfo) {
-          savedBuildingData = BuildingDataLocalStorage.saveBuildingData({
+          savedBuildingData = await BuildingDataLocalStorage.saveBuildingData({ // Added await
             ...buildingData,
             valueInfoId: valueInfo.id.toString()
           });
@@ -241,7 +241,7 @@ export const usePhotoModal = ({
         }
 
         if (machineData && valueInfo) {
-          savedMachineData = MachineDataLocalStorage.saveMachineData({
+          savedMachineData = await MachineDataLocalStorage.saveMachineData({ // Added await
             ...machineData,
             valueInfoId: valueInfo.id.toString()
           });
