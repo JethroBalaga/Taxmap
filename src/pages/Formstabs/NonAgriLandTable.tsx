@@ -59,6 +59,7 @@ const NonAgriLandTable: React.FC = () => {
         setShowReverseDeleteWarning,
         reverseDeleteWarningMessage,
         submitDisabledInfo,
+        isFormUploaded,
         
         // Handlers
         handleBack,
@@ -137,13 +138,13 @@ const NonAgriLandTable: React.FC = () => {
                     </IonButtons>
                     <IonTitle>Non-Agricultural Land - Form {formData.id}</IonTitle>
                     
-                    {/* Submit Button on the right side */}
+                    {/* Submit Button on the right side - UPDATED */}
                     <IonButtons slot="end">
                         <SubmitButton
-                            label="Submit Form"
+                            label={isFormUploaded ? "Form Already Submitted" : "Submit Form"}
                             onClick={onSubmit}
                             loading={isSubmitting}
-                            disabled={isSubmitting || submitDisabledInfo.disabled}
+                            disabled={isSubmitting || submitDisabledInfo.disabled || isFormUploaded}
                             className="header-submit-button"
                         />
                     </IonButtons>
@@ -180,6 +181,7 @@ const NonAgriLandTable: React.FC = () => {
                     setShowReverseDeleteWarning={setShowReverseDeleteWarning}
                     reverseDeleteWarningMessage={reverseDeleteWarningMessage}
                     submitDisabledInfo={submitDisabledInfo}
+                    isFormUploaded={isFormUploaded}
                     
                     // Handlers
                     onSubmit={onSubmit}

@@ -46,6 +46,7 @@ export const useNonAgriLand = (formId: string | undefined) => {
     const [showToast, setShowToast] = useState(false);
     const [toastMessage, setToastMessage] = useState('');
     const [toastColor, setToastColor] = useState<'success' | 'danger' | 'warning' | undefined>(undefined);
+    const [isFormUploaded, setIsFormUploaded] = useState(false); // NEW STATE
 
     // Land adjustments data
     const [landAdjustments, setLandAdjustments] = useState<LandAdjustmentData[]>([]);
@@ -130,6 +131,13 @@ export const useNonAgriLand = (formId: string | undefined) => {
                 const storedFormData = await FormDataLocalStorage.getFormData(formId);
                 console.log('Loaded form data from localStorage:', storedFormData);
                 setFormData(storedFormData);
+
+                // Check if form was uploaded - NEW CHECK
+                if (storedFormData?.uploaded) {
+                    setIsFormUploaded(true);
+                } else {
+                    setIsFormUploaded(false);
+                }
 
                 // Check if form was found immediately after loading
                 if (!storedFormData) {
@@ -358,6 +366,7 @@ export const useNonAgriLand = (formId: string | undefined) => {
         setShowReverseDeleteWarning: modals.setShowReverseDeleteWarning,
         reverseDeleteWarningMessage: modals.reverseDeleteWarningMessage,
         submitDisabledInfo,
+        isFormUploaded, // NEW RETURN VALUE
 
         // Handlers
         handleBack,

@@ -45,6 +45,7 @@ interface NonAgriLandUIProps {
     setShowReverseDeleteWarning: (show: boolean) => void;
     reverseDeleteWarningMessage: string;
     submitDisabledInfo: { disabled: boolean; reason: string };
+    isFormUploaded: boolean; // NEW PROP
     
     // New state for info modal
     showInfoModal: boolean;
@@ -159,6 +160,7 @@ export const NonAgriLandUI: React.FC<NonAgriLandUIProps> = ({
     setShowReverseDeleteWarning,
     reverseDeleteWarningMessage,
     submitDisabledInfo,
+    isFormUploaded, // NEW PROP
     
     // New props for info modal
     showInfoModal,
