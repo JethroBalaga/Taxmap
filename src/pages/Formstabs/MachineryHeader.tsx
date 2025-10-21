@@ -32,6 +32,7 @@ interface MachineryHeaderProps {
   machineryData: { machineData: CalculatedMachineData; valueInfoId: string }[];
   formContext: FormContextData | null;
   isLoadingContext: boolean;
+  isFormUploaded: boolean; // NEW PROP
 }
 
 const MachineryHeader: React.FC<MachineryHeaderProps> = ({
@@ -40,6 +41,7 @@ const MachineryHeader: React.FC<MachineryHeaderProps> = ({
   onSubmit,
   isSubmitting,
   machineryData,
+  isFormUploaded, // NEW PROP
 }) => {
   return (
     <IonHeader>
@@ -55,10 +57,10 @@ const MachineryHeader: React.FC<MachineryHeaderProps> = ({
 
         <IonButtons slot="end">
           <SubmitButton
-            label="Submit Form"
+            label={isFormUploaded ? "Form Already Submitted" : "Submit Form"} // UPDATED
             onClick={onSubmit}
             loading={isSubmitting}
-            disabled={machineryData.length === 0 || isSubmitting}
+            disabled={machineryData.length === 0 || isSubmitting || isFormUploaded} // UPDATED
             className="header-submit-button"
           />
         </IonButtons>

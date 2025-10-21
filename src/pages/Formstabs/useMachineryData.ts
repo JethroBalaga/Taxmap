@@ -39,6 +39,7 @@ export const useMachineryData = () => {
   const [formContext, setFormContext] = useState<FormContextData | null>(null);
   const [isLoadingContext, setIsLoadingContext] = useState(true);
   const [assessmentLevels, setAssessmentLevels] = useState<AssessmentLevelData[]>([]);
+  const [isFormUploaded, setIsFormUploaded] = useState(false); // NEW STATE
 
   const formatNumber = (value: string): string => {
     if (!value || value === 'N/A') return 'N/A';
@@ -56,6 +57,20 @@ export const useMachineryData = () => {
       if (data) setAssessmentLevels(data);
     } catch (error) {
       console.error('Error loading assessment levels:', error);
+    }
+  };
+
+  const checkFormUploaded = async () => {
+    if (!formId) return;
+    try {
+      const formData = await FormDataLocalStorage.getFormData(formId);
+      if (formData?.uploaded) {
+        setIsFormUploaded(true);
+      } else {
+        setIsFormUploaded(false);
+      }
+    } catch (error) {
+      console.error('Error checking form uploaded status:', error);
     }
   };
 
@@ -138,7 +153,7 @@ export const useMachineryData = () => {
   const loadMachineryData = async () => {
     setIsLoading(true);
     try {
-      const allValueInfo = await ValueInfoLocalStorage.getAllValueInfo(); // Added await
+      const allValueInfo = await ValueInfoLocalStorage.getAllValueInfo();
       const formValueInfo = allValueInfo.filter(info => info.formDataId === formId);
       
       const machineryWithCalculations: {machineData: CalculatedMachineData, valueInfoId: string}[] = [];
@@ -193,7 +208,7 @@ export const useMachineryData = () => {
         ? `${declarantData.firstname} ${declarantData.lastname}`
         : 'Unknown Declarant';
 
-      const allValueInfo = await ValueInfoLocalStorage.getAllValueInfo(); // Added await
+      const allValueInfo = await ValueInfoLocalStorage.getAllValueInfo();
       const formValueInfo = allValueInfo.filter(info => info.formDataId === formId);
       
       const tableData = formValueInfo.map(valueInfo => {
@@ -240,6 +255,7 @@ export const useMachineryData = () => {
   useEffect(() => {
     loadMachineryData();
     loadAssessmentLevels();
+    checkFormUploaded(); // ADDED
   }, [formId]);
 
   useEffect(() => {
@@ -252,6 +268,7 @@ export const useMachineryData = () => {
     isLoading,
     formContext,
     isLoadingContext,
+    isFormUploaded, // NEW RETURN
     handleBack,
     loadMachineryData
   };

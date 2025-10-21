@@ -75,6 +75,7 @@ const MachineryTable: React.FC = () => {
     isLoading,
     formContext,
     isLoadingContext,
+    isFormUploaded, // NEW
     handleBack,
     loadMachineryData
   } = useMachineryData();
@@ -108,6 +109,7 @@ const MachineryTable: React.FC = () => {
           machineryData={machineryData}
           formContext={formContext}
           isLoadingContext={isLoadingContext}
+          isFormUploaded={isFormUploaded} // NEW
         />
         <IonContent>
           <div className="loading-container">
@@ -129,6 +131,7 @@ const MachineryTable: React.FC = () => {
         machineryData={machineryData}
         formContext={formContext}
         isLoadingContext={isLoadingContext}
+        isFormUploaded={isFormUploaded} // NEW
       />
       
       <IonContent fullscreen>

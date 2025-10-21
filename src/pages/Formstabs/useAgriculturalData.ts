@@ -34,6 +34,7 @@ export const useAgriculturalData = (formId: string) => {
   const [subclassRates, setSubclassRates] = useState<SubclassRateData[]>([]);
   const [isLoadingRates, setIsLoadingRates] = useState(false);
   const [formContext, setFormContext] = useState<FormContextData | null>(null);
+  const [isFormUploaded, setIsFormUploaded] = useState(false); // NEW STATE
 
   const loadFormContext = async () => {
     if (!formData) return;
@@ -133,14 +134,21 @@ export const useAgriculturalData = (formId: string) => {
       if (form) {
         setFormData(form);
         
+        // Check if form was uploaded - NEW CHECK
+        if (form.uploaded) {
+          setIsFormUploaded(true);
+        } else {
+          setIsFormUploaded(false);
+        }
+        
         const isLandKind = form.kind?.toString() === '1';
         const isAgricultural = form.classification?.toString() === 'A';
         
         setIsValidForm(isLandKind && isAgricultural);
 
         if (isLandKind && isAgricultural) {
-          const valueInfos = await ValueInfoLocalStorage.getAllValueInfo(); // Added await
-          const valueInfo = valueInfos.find(info => info.formDataId === formId); // Changed to find
+          const valueInfos = await ValueInfoLocalStorage.getAllValueInfo();
+          const valueInfo = valueInfos.find(info => info.formDataId === formId);
           
           if (valueInfo) {
             setValueInfoId(valueInfo.id);
@@ -197,6 +205,7 @@ export const useAgriculturalData = (formId: string) => {
     subclassRates,
     isLoadingRates,
     formContext,
+    isFormUploaded, // NEW RETURN
     loadData,
     setShowUpdateModal,
     calculateTotalAdjustment

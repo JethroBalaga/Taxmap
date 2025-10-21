@@ -92,22 +92,27 @@ export const useAgriculturalSubmission = (formId: string) => {
   };
 
   const onSubmit = async () => {
+    // Check if form already uploaded
+    const formData = await FormDataLocalStorage.getFormData(formId);
+    if (formData?.uploaded) {
+      showToastMessage('Form already submitted', 'warning');
+      return;
+    }
+
     setIsSubmitting(true);
     showToastMessage('Starting agricultural form upload process...', 'warning');
 
     try {
-      const formData = await FormDataLocalStorage.getFormData(formId);
       if (!formData) throw new Error('Form data not found');
-      if (formData.uploaded) throw new Error('Form already uploaded');
 
-      const valueInfos = await ValueInfoLocalStorage.getAllValueInfo(); // Added await
-      const valueInfo = valueInfos.find(info => info.formDataId === formId); // Changed to find
+      const valueInfos = await ValueInfoLocalStorage.getAllValueInfo();
+      const valueInfo = valueInfos.find(info => info.formDataId === formId);
       if (!valueInfo) throw new Error('Value info not found');
 
       const agriData = await AgriculturalDataLocalStorage.getAgriculturalDataByValueInfoId(valueInfo.id);
       if (!agriData) throw new Error('Agricultural adjustment data not found');
 
-      const photoTag = await PhotoTagLocalStorage.getPhotoTag(valueInfo.photoTagId); // Added await
+      const photoTag = await PhotoTagLocalStorage.getPhotoTag(valueInfo.photoTagId);
       if (!photoTag) throw new Error('Photo tag not found');
 
       const databaseTagId = await supabaseApi.insertPhoto({

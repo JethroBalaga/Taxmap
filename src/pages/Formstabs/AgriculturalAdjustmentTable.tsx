@@ -46,7 +46,8 @@ const AgriculturalAdjustmentTable: React.FC = () => {
     isLoadingRates,
     formContext,
     loadData,
-    setShowUpdateModal
+    setShowUpdateModal,
+    isFormUploaded // NEW PROP
   } = useAgriculturalData(formId);
 
   const {
@@ -133,10 +134,10 @@ const AgriculturalAdjustmentTable: React.FC = () => {
           <IonTitle>Agricultural Adjustments - Form {formId}</IonTitle>
           <IonButtons slot="end">
             <SubmitButton
-              label="Submit Form"
+              label={isFormUploaded ? "Form Already Submitted" : "Submit Form"} // UPDATED
               onClick={onSubmit}
               loading={isSubmitting}
-              disabled={!agriculturalData || isSubmitting}
+              disabled={!agriculturalData || isSubmitting || isFormUploaded} // UPDATED
               className="header-submit-button"
             />
           </IonButtons>
