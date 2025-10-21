@@ -34,7 +34,7 @@ interface BuildingTableProps {
     actual_use: string;
     district?: number | null;
     subclass?: string;
-    formData?: any; // Add formData prop for the title
+    formData?: any;
 }
 
 const BuildingTableContent: React.FC<BuildingTableProps> = ({
@@ -47,7 +47,7 @@ const BuildingTableContent: React.FC<BuildingTableProps> = ({
     district,
     classification,
     subclass,
-    formData // Receive formData prop
+    formData
 }) => {
     const {
         buildingInfoIds,
@@ -60,6 +60,7 @@ const BuildingTableContent: React.FC<BuildingTableProps> = ({
         totalAdjustments,
         loading,
         isSubmitting,
+        isFormUploaded, // NEW
         showAdjustmentModal,
         selectedValueInfoId,
         existingAdjustmentData,
@@ -86,7 +87,6 @@ const BuildingTableContent: React.FC<BuildingTableProps> = ({
         handleUpdateClick,
         showToastMessage,
         handleSubmit,
-        // State setters
         setShowAdjustmentModal,
         setSelectedAdjustmentForUpdate,
         setShowUpdateAdjustmentModal,
@@ -107,14 +107,13 @@ const BuildingTableContent: React.FC<BuildingTableProps> = ({
                             Back
                         </IonButton>
                     </IonButtons>
-                    {/* Updated Title to show Form ID like non-agri land */}
                     <IonTitle>Building Assessment - Form {formData?.id || form_id}</IonTitle>
                     <IonButtons slot="end">
                         <SubmitButton
+                            label={isFormUploaded ? "Form Already Submitted" : "Submit"} // UPDATED
                             onClick={handleSubmit}
-                            disabled={isSubmitting}
+                            disabled={isSubmitting || isFormUploaded} // UPDATED
                             loading={isSubmitting}
-                            label="Submit"
                             className="header-submit-button"
                         />
                     </IonButtons>

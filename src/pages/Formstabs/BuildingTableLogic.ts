@@ -39,6 +39,7 @@ export const useBuildingTableLogic = (
     const [loading, setLoading] = useState(true);
     const [kindId] = useState<number>(2);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isFormUploaded, setIsFormUploaded] = useState(false); // NEW STATE
 
     // Modal states
     const [showAdjustmentModal, setShowAdjustmentModal] = useState(false);
@@ -62,30 +63,37 @@ export const useBuildingTableLogic = (
     const [toastMessage, setToastMessage] = useState('');
     const [toastColor, setToastColor] = useState<'success' | 'danger' | 'warning' | undefined>(undefined);
 
+    // Check if form is already uploaded
+    const checkFormUploaded = useCallback(async () => {
+        try {
+            const formData = await FormDataLocalStorage.getFormData(form_id);
+            if (formData?.uploaded) {
+                setIsFormUploaded(true);
+            } else {
+                setIsFormUploaded(false);
+            }
+        } catch (error) {
+            console.error('Error checking form uploaded status:', error);
+        }
+    }, [form_id]);
+
     // --- Photo Handling ---
     const getPhotoFile = useCallback(async (photoTag: any): Promise<Blob | null> => {
         try {
-            // Photos are stored in the "phototags" directory in the filesystem
             const photoPath = `phototags/${photoTag.photoName}`;
 
             if (Capacitor.isNativePlatform()) {
-                // For native apps, read from the data directory
                 const file = await Filesystem.readFile({
                     path: photoPath,
                     directory: Directory.Data
                 });
-
-                // Convert base64 to Blob
                 const blob = await (await fetch(`data:image/jpeg;base64,${file.data}`)).blob();
                 return blob;
             } else {
-                // For web, try to get from localStorage with the photoName as key
                 const photoData = localStorage.getItem(photoTag.photoName);
                 if (photoData) {
                     return await (await fetch(photoData)).blob();
                 }
-
-                // Fallback: check if photoData is stored directly in the photoTag
                 if (photoTag.photoData) {
                     return await (await fetch(photoTag.photoData)).blob();
                 }
@@ -104,14 +112,12 @@ export const useBuildingTableLogic = (
             const photoPath = `phototags/${photoTag.photoName}`;
 
             if (Capacitor.isNativePlatform()) {
-                // For native apps, get the file URI from the filesystem
                 const fileInfo = await Filesystem.getUri({
                     path: photoPath,
                     directory: Directory.Data
                 });
                 return fileInfo.uri;
             } else {
-                // For web, try to get the data URL from localStorage
                 return localStorage.getItem(photoTag.photoName);
             }
         } catch (error) {
@@ -133,7 +139,7 @@ export const useBuildingTableLogic = (
 
     const getAssessmentLevelForBuilding = useCallback(async (adjustedValue: number): Promise<AssessmentLevelInfo | null> => {
         try {
-            const numericValue = adjustedValue; // ← No rounding, use original value
+            const numericValue = adjustedValue;
             const levels = await getAssessmentLevelData();
             const matching = levels?.find(lvl => {
                 if (!lvl) return false;
@@ -148,6 +154,7 @@ export const useBuildingTableLogic = (
             return null;
         }
     }, [kindId, classification]);
+
     // --- Adjustments ---
     const calculateAllAdjustments = useCallback(async () => {
         const map = new Map<string, number>();
@@ -180,7 +187,7 @@ export const useBuildingTableLogic = (
     const loadBuildingData = useCallback(async () => {
         setLoading(true);
         try {
-            const allInfos = await ValueInfoLocalStorage.getAllValueInfo(); // Added await
+            const allInfos = await ValueInfoLocalStorage.getAllValueInfo();
             const filteredInfos = allInfos.filter(info => info.formDataId === form_id);
             const ids = filteredInfos.map(info => info.id);
             setBuildingInfoIds(ids);
@@ -225,7 +232,7 @@ export const useBuildingTableLogic = (
     const loadBuildingAdjustments = useCallback(async () => {
         try {
             const allAdjustments = await BuildingAdjustmentLocalStorage.getAllBuildingAdjustmentData();
-            const allInfos = await ValueInfoLocalStorage.getAllValueInfo(); // Added await
+            const allInfos = await ValueInfoLocalStorage.getAllValueInfo();
             const formBuildingIds = allInfos.filter(info => info.formDataId === form_id).map(info => info.id);
             const filtered = allAdjustments.filter(adj => formBuildingIds.includes(adj.value_info_id));
             setBuildingAdjustments(filtered);
@@ -237,7 +244,8 @@ export const useBuildingTableLogic = (
     useEffect(() => {
         loadBuildingData();
         loadBuildingAdjustments();
-    }, [form_id, kind, classification, area, declarant, actual_use, district, subclass, loadBuildingData, loadBuildingAdjustments]);
+        checkFormUploaded(); // ADDED
+    }, [form_id, kind, classification, area, declarant, actual_use, district, subclass, loadBuildingData, loadBuildingAdjustments, checkFormUploaded]);
 
     useEffect(() => {
         calculateAllAdjustments();
@@ -285,8 +293,8 @@ export const useBuildingTableLogic = (
     const handleBuildingUpdate = async (updatedData: any) => {
         try {
             await BuildingDataLocalStorage.updateBuildingData(selectedBuildingId, updatedData);
-            await loadBuildingData(); // Added await
-            await loadBuildingAdjustments(); // Added await
+            await loadBuildingData();
+            await loadBuildingAdjustments();
             showToastMessage('Building updated successfully!', 'success');
             setShowUpdateModal(false);
             setSelectedBuildingId('');
@@ -311,23 +319,27 @@ export const useBuildingTableLogic = (
 
     // --- Submit Form + Upload ---
     const handleSubmit = async () => {
+        // Check if form already uploaded
+        const formData = await FormDataLocalStorage.getFormData(form_id);
+        if (formData?.uploaded) {
+            showToastMessage('Form already submitted', 'warning');
+            return;
+        }
+
         setIsSubmitting(true);
         showToastMessage('Starting upload process...', 'warning');
 
         try {
-            const formData = await FormDataLocalStorage.getFormData(form_id);
             if (!formData) throw new Error('Form data not found');
-            if (formData.uploaded) throw new Error('Form already uploaded');
 
-            const valueInfos = await ValueInfoLocalStorage.getAllValueInfo(); // Added await
+            const valueInfos = await ValueInfoLocalStorage.getAllValueInfo();
             const filteredValueInfos = valueInfos.filter(info => info.formDataId === form_id);
             if (!filteredValueInfos.length) throw new Error('No value info found');
             const valueInfo = filteredValueInfos[0];
 
-            const photoTag = await PhotoTagLocalStorage.getPhotoTag(valueInfo.photoTagId); // Added await
+            const photoTag = await PhotoTagLocalStorage.getPhotoTag(valueInfo.photoTagId);
             if (!photoTag) throw new Error('Photo tag not found');
 
-            // Insert photo record into database
             const databaseTagId = await supabaseApi.insertPhoto({
                 photo: photoTag.photoName,
                 longitude: photoTag.longitude,
@@ -336,10 +348,8 @@ export const useBuildingTableLogic = (
             });
             if (!databaseTagId) throw new Error('Failed to insert photo record');
 
-            // Upload the actual photo file
             const photoFile = await getPhotoFile(photoTag);
             if (photoFile) {
-                // Use the database ID and original photo name for the storage path
                 const folderPath = `${databaseTagId}/${photoTag.photoName}`;
                 const { error: uploadError } = await supabase.storage.from('tag-photos').upload(folderPath, photoFile, {
                     contentType: 'image/jpeg',
@@ -349,14 +359,12 @@ export const useBuildingTableLogic = (
                     console.warn('Photo upload failed', uploadError);
                     showToastMessage('Form submitted but photo upload failed', 'warning');
                 } else {
-                    // Photo uploaded successfully - KEEP local copy (no cleanup)
                     console.log('Photo uploaded successfully, keeping local copy');
                 }
             } else {
                 showToastMessage('Form submitted but could not retrieve photo', 'warning');
             }
 
-            // Insert form, value info, general description, adjustments
             const databaseFormId = await supabaseApi.insertForm({
                 declarant_id: formData.declarantId || 0,
                 kind_id: parseInt(formData.kind),
@@ -423,6 +431,7 @@ export const useBuildingTableLogic = (
         totalAdjustments,
         loading,
         isSubmitting,
+        isFormUploaded, // NEW RETURN
         showAdjustmentModal,
         selectedValueInfoId,
         existingAdjustmentData,
