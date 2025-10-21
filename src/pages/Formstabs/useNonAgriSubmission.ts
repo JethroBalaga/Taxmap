@@ -1,10 +1,10 @@
-// src/pages/hooks/useNonAgriSubmission.ts
 import { useState } from "react";
 import { FormDataLocalStorage } from '../../utils/tablestorages/FormDataLocalStorage';
 import { ValueInfoLocalStorage } from '../../utils/tablestorages/ValueInfoLocalStorage';
 import { PhotoTagLocalStorage } from '../../utils/tablestorages/PhotoTagLocalStorage';
 import { supabaseApi } from '../../services/supabaseApi';
 import { supabase } from '../../utils/supaBaseClient';
+import { NonAgriAdjustmentLocalStorage } from '../../utils/tablestorages/NonAgriAdjustmentLocalStorage';
 
 interface UseNonAgriSubmissionProps {
     formId: string | undefined;
@@ -37,9 +37,18 @@ export const useNonAgriSubmission = ({
         return null;
     };
 
-    const insertNonAgriAdjustmentWithRetry = async (databaseValueInfoId: string, adjustmentId: string, retryCount = 0): Promise<boolean> => {
+    const insertNonAgriAdjustmentWithRetry = async (
+        databaseValueInfoId: string, 
+        adjustmentId: string, 
+        additionalFactor?: number,
+        retryCount = 0
+    ): Promise<boolean> => {
         try {
-            const result = await supabaseApi.insertNonAgriAdjustment(databaseValueInfoId, adjustmentId);
+            const result = await supabaseApi.insertNonAgriAdjustment(
+                databaseValueInfoId, 
+                adjustmentId,
+                additionalFactor
+            );
             
             // If no data returned but no error, consider it successful
             if (!result) {
@@ -52,10 +61,10 @@ export const useNonAgriSubmission = ({
             console.error(`Error inserting adjustment ${adjustmentId}:`, error);
             
             // Retry logic for transient errors
-            if (retryCount < 3 && error.message?.includes('timeout') || error.message?.includes('network')) {
+            if (retryCount < 3 && (error.message?.includes('timeout') || error.message?.includes('network'))) {
                 console.log(`Retrying adjustment ${adjustmentId}, attempt ${retryCount + 1}`);
                 await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
-                return insertNonAgriAdjustmentWithRetry(databaseValueInfoId, adjustmentId, retryCount + 1);
+                return insertNonAgriAdjustmentWithRetry(databaseValueInfoId, adjustmentId, additionalFactor, retryCount + 1);
             }
             
             throw error;
@@ -63,6 +72,13 @@ export const useNonAgriSubmission = ({
     };
 
     const onSubmit = async (showToastMessage: (message: string, color?: 'success' | 'danger' | 'warning') => void) => {
+        // Check if form already uploaded
+        const currentFormData = await FormDataLocalStorage.getFormData(formId!);
+        if (currentFormData?.uploaded) {
+            showToastMessage('Form already submitted', 'warning');
+            return;
+        }
+
         // Check if submission should be disabled due to stripping validation
         const submitDisabledInfo = getSubmitDisabledInfo();
         if (submitDisabledInfo.disabled) {
@@ -74,14 +90,12 @@ export const useNonAgriSubmission = ({
         showToastMessage('Starting non-agricultural land upload process...', 'warning');
 
         try {
-            const currentFormData = await FormDataLocalStorage.getFormData(formId!);
             if (!currentFormData) throw new Error('Form data not found');
-            if (currentFormData.uploaded) throw new Error('Form already uploaded');
 
-            const valueInfo = await ValueInfoLocalStorage.getValueInfo(valueInfoId); // Added await
+            const valueInfo = await ValueInfoLocalStorage.getValueInfo(valueInfoId);
             if (!valueInfo) throw new Error(`ValueInfo not found for ${valueInfoId}`);
 
-            const photoTag = await PhotoTagLocalStorage.getPhotoTag(valueInfo.photoTagId); // Added await
+            const photoTag = await PhotoTagLocalStorage.getPhotoTag(valueInfo.photoTagId);
             if (!photoTag) throw new Error('Photo tag not found');
 
             // Insert photo record
@@ -136,7 +150,16 @@ export const useNonAgriSubmission = ({
                 const adjustmentResults = [];
                 for (const adjustment of currentAdjustments) {
                     try {
-                        const success = await insertNonAgriAdjustmentWithRetry(databaseValueInfoId, adjustment.adjustmentId);
+                        const additionalFactorValue = await NonAgriAdjustmentLocalStorage.getAdditionalFactor(
+                            valueInfoId, 
+                            adjustment.adjustmentId
+                        );
+
+                        const success = await insertNonAgriAdjustmentWithRetry(
+                            databaseValueInfoId, 
+                            adjustment.adjustmentId,
+                            adjustment.adjustment_type === 'Stripping' ? additionalFactorValue : undefined
+                        );
                         adjustmentResults.push({
                             adjustmentId: adjustment.adjustmentId,
                             type: adjustment.adjustment_type,
