@@ -316,6 +316,9 @@ const Forms: React.FC = () => {
     )
     : [];
 
+  // Remove status column from form data before passing to DynamicTable
+  const formsWithoutStatus = filteredForms.map(({ status, ...form }) => form);
+
   return (
     <IonPage>
       <IonHeader>
@@ -362,8 +365,8 @@ const Forms: React.FC = () => {
                 ) : formData.length > 0 ? (
                   <>
                     <DynamicTable
-                      data={filteredForms}
-                      title={`Forms (${filteredForms.length} of ${formData.length})`}
+                      data={formsWithoutStatus}
+                      title={`Forms (${formsWithoutStatus.length} of ${formData.length})`}
                       keyField="id"
                       onRowClick={handleRowClick}
                       selectedRow={selectedForm}
