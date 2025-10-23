@@ -1,4 +1,3 @@
-// src/pages/hooks/useAgriculturalSubmission.ts
 import { useState } from 'react';
 import { FormDataLocalStorage } from '../../utils/tablestorages/FormDataLocalStorage';
 import { ValueInfoLocalStorage } from '../../utils/tablestorages/ValueInfoLocalStorage';
@@ -92,7 +91,6 @@ export const useAgriculturalSubmission = (formId: string) => {
   };
 
   const onSubmit = async () => {
-    // Check if form already uploaded
     const formData = await FormDataLocalStorage.getFormData(formId);
     if (formData?.uploaded) {
       showToastMessage('Form already submitted', 'warning');
@@ -170,6 +168,8 @@ export const useAgriculturalSubmission = (formId: string) => {
       if (!formData.synced_id) {
         await FormDataLocalStorage.markFormAsUploaded(formId, databaseFormId);
       }
+
+      window.dispatchEvent(new CustomEvent('formUploaded', { detail: { formId } }));
 
       showToastMessage('Agricultural data submitted successfully! All data synchronized with server.', 'success');
 
