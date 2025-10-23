@@ -40,7 +40,15 @@ const Login: React.FC = () => {
   const [alertMessage, setAlertMessage] = useState('');
   const [showAlert, setShowAlert] = useState(false);
   const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  // Get device information
+  const getDeviceInfo = () => {
+    // You can enhance this with more device detection logic
+    const deviceName = navigator.userAgent;
+    return deviceName;
+  };
 
   const doLogin = async () => {
     if (!usernameOrEmail || !password) {
@@ -53,12 +61,13 @@ const Login: React.FC = () => {
 
     try {
       let userEmail = usernameOrEmail;
+      let userId = '';
 
       // If input doesn't contain '@', treat it as username and look up the email
       if (!usernameOrEmail.includes('@')) {
         const { data: userData, error: userError } = await supabase
           .from('users')
-          .select('user_email')
+          .select('user_email, user_id, suspended')
           .eq('username', usernameOrEmail)
           .single();
 
@@ -68,7 +77,35 @@ const Login: React.FC = () => {
           setIsLoading(false);
           return;
         }
+
+        // Check if user is suspended
+        if (userData.suspended) {
+          setToastMessage('Your account has been suspended. Please contact administrator.');
+          setShowToast(true);
+          setIsLoading(false);
+          return;
+        }
+
         userEmail = userData.user_email;
+        userId = userData.user_id;
+      } else {
+        // If email was provided, check suspended status
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('user_id, suspended')
+          .eq('user_email', userEmail)
+          .single();
+
+        if (!userError && userData) {
+          // Check if user is suspended
+          if (userData.suspended) {
+            setToastMessage('Your account has been suspended. Please contact administrator.');
+            setShowToast(true);
+            setIsLoading(false);
+            return;
+          }
+          userId = userData.user_id;
+        }
       }
 
       // Verify credentials through Supabase Auth using the email
@@ -92,6 +129,50 @@ const Login: React.FC = () => {
       }
 
       if (data.session && data.user) {
+        // Get the actual user ID from auth response
+        const authUserId = data.user.id;
+        
+        // Check device registration
+        const deviceName = getDeviceInfo();
+        
+        // Check if device exists for this user
+        const { data: deviceData, error: deviceError } = await supabase
+          .from('deviceregistration')
+          .select('*')
+          .eq('user_id', authUserId)
+          .eq('device_name', deviceName)
+          .single();
+
+        if (deviceError || !deviceData) {
+          // Device doesn't exist, insert new device record
+          const { error: insertError } = await supabase
+            .from('deviceregistration')
+            .insert({
+              user_id: authUserId,
+              device_name: deviceName,
+              registered: false,
+              registered_at: null
+            });
+
+          if (insertError) {
+            console.error('Error inserting device:', insertError);
+          }
+
+          setToastMessage('New device detected. Please ask administrator to allow this device.');
+          setShowToast(true);
+          setIsLoading(false);
+          return;
+        }
+
+        // Device exists, check if it's registered
+        if (!deviceData.registered) {
+          setToastMessage('Device not approved. Please ask administrator to allow this device.');
+          setShowToast(true);
+          setIsLoading(false);
+          return;
+        }
+
+        // Device is registered, proceed with login
         // Store session in localStorage
         const sessionData: SessionData = {
           access_token: data.session.access_token,
@@ -107,10 +188,11 @@ const Login: React.FC = () => {
         storeSession(sessionData);
         
         // Login successful
+        setToastMessage('Login successful! Redirecting...');
         setShowToast(true);
         setTimeout(() => {
           navigation.push('/menu', 'forward', 'replace');
-        }, 300);
+        }, 1500);
       } else {
         setAlertMessage('Login failed. Please try again.');
         setShowAlert(true);
@@ -206,8 +288,8 @@ const Login: React.FC = () => {
         <IonToast
           isOpen={showToast}
           onDidDismiss={() => setShowToast(false)}
-          message="Login successful! Redirecting..."
-          duration={1500}
+          message={toastMessage}
+          duration={3000}
           position="top"
           color="primary"
         />
