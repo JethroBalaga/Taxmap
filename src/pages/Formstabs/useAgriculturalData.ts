@@ -1,4 +1,3 @@
-// src/pages/hooks/useAgriculturalData.ts
 import { useState, useEffect } from 'react';
 import { FormDataLocalStorage } from '../../utils/tablestorages/FormDataLocalStorage';
 import { ValueInfoLocalStorage } from '../../utils/tablestorages/ValueInfoLocalStorage';
@@ -34,7 +33,7 @@ export const useAgriculturalData = (formId: string) => {
   const [subclassRates, setSubclassRates] = useState<SubclassRateData[]>([]);
   const [isLoadingRates, setIsLoadingRates] = useState(false);
   const [formContext, setFormContext] = useState<FormContextData | null>(null);
-  const [isFormUploaded, setIsFormUploaded] = useState(false); // NEW STATE
+  const [isFormUploaded, setIsFormUploaded] = useState(false);
 
   const loadFormContext = async () => {
     if (!formData) return;
@@ -134,7 +133,6 @@ export const useAgriculturalData = (formId: string) => {
       if (form) {
         setFormData(form);
         
-        // Check if form was uploaded - NEW CHECK
         if (form.uploaded) {
           setIsFormUploaded(true);
         } else {
@@ -176,10 +174,18 @@ export const useAgriculturalData = (formId: string) => {
       }
     };
 
+    const handleFormUploaded = (event: CustomEvent) => {
+      if (event.detail.formId === formId) {
+        loadData();
+      }
+    };
+
     window.addEventListener('formDataUpdated', handleFormDataUpdated as EventListener);
+    window.addEventListener('formUploaded', handleFormUploaded as EventListener);
     
     return () => {
       window.removeEventListener('formDataUpdated', handleFormDataUpdated as EventListener);
+      window.removeEventListener('formUploaded', handleFormUploaded as EventListener);
     };
   }, [formId]);
 
@@ -205,7 +211,7 @@ export const useAgriculturalData = (formId: string) => {
     subclassRates,
     isLoadingRates,
     formContext,
-    isFormUploaded, // NEW RETURN
+    isFormUploaded,
     loadData,
     setShowUpdateModal,
     calculateTotalAdjustment
