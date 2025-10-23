@@ -63,52 +63,44 @@ const Login: React.FC = () => {
       let userEmail = usernameOrEmail;
       let userId = '';
 
-      // If input doesn't contain '@', treat it as username and look up the email
+      // STEP 1: Check if user exists and get user data
+      let userQuery;
       if (!usernameOrEmail.includes('@')) {
-        const { data: userData, error: userError } = await supabase
+        // Username lookup
+        userQuery = await supabase
           .from('users')
           .select('user_email, user_id, suspended')
           .eq('username', usernameOrEmail)
           .single();
-
-        if (userError || !userData) {
-          setAlertMessage('User not found. Please check your username or email.');
-          setShowAlert(true);
-          setIsLoading(false);
-          return;
-        }
-
-        // Check if user is suspended
-        if (userData.suspended) {
-          setToastMessage('Your account has been suspended. Please contact administrator.');
-          setShowToast(true);
-          setIsLoading(false);
-          return;
-        }
-
-        userEmail = userData.user_email;
-        userId = userData.user_id;
       } else {
-        // If email was provided, check suspended status
-        const { data: userData, error: userError } = await supabase
+        // Email lookup
+        userQuery = await supabase
           .from('users')
-          .select('user_id, suspended')
-          .eq('user_email', userEmail)
+          .select('user_email, user_id, suspended')
+          .eq('user_email', usernameOrEmail)
           .single();
-
-        if (!userError && userData) {
-          // Check if user is suspended
-          if (userData.suspended) {
-            setToastMessage('Your account has been suspended. Please contact administrator.');
-            setShowToast(true);
-            setIsLoading(false);
-            return;
-          }
-          userId = userData.user_id;
-        }
       }
 
-      // Verify credentials through Supabase Auth using the email
+      if (userQuery.error || !userQuery.data) {
+        setAlertMessage('User not found. Please check your username or email.');
+        setShowAlert(true);
+        setIsLoading(false);
+        return;
+      }
+
+      const userData = userQuery.data;
+      userEmail = userData.user_email;
+      userId = userData.user_id;
+
+      // STEP 2: Check if user is suspended FIRST
+      if (userData.suspended) {
+        setToastMessage('Your account has been suspended. Please contact administrator.');
+        setShowToast(true);
+        setIsLoading(false);
+        return; // Stop here if suspended
+      }
+
+      // STEP 3: Verify credentials through Supabase Auth
       const { data, error: authError } = await supabase.auth.signInWithPassword({
         email: userEmail,
         password
@@ -129,17 +121,14 @@ const Login: React.FC = () => {
       }
 
       if (data.session && data.user) {
-        // Get the actual user ID from auth response
-        const authUserId = data.user.id;
-        
-        // Check device registration
+        // STEP 4: Check device registration (only if user is not suspended and credentials are correct)
         const deviceName = getDeviceInfo();
         
         // Check if device exists for this user
         const { data: deviceData, error: deviceError } = await supabase
           .from('deviceregistration')
           .select('*')
-          .eq('user_id', authUserId)
+          .eq('user_id', userId)
           .eq('device_name', deviceName)
           .single();
 
@@ -148,7 +137,7 @@ const Login: React.FC = () => {
           const { error: insertError } = await supabase
             .from('deviceregistration')
             .insert({
-              user_id: authUserId,
+              user_id: userId,
               device_name: deviceName,
               registered: false,
               registered_at: null
@@ -172,7 +161,7 @@ const Login: React.FC = () => {
           return;
         }
 
-        // Device is registered, proceed with login
+        // STEP 5: Device is registered, proceed with login
         // Store session in localStorage
         const sessionData: SessionData = {
           access_token: data.session.access_token,
@@ -181,7 +170,6 @@ const Login: React.FC = () => {
           user: {
             id: data.user.id,
             email: data.user.email || '',
-            // Add other user properties you might need
           }
         };
         
