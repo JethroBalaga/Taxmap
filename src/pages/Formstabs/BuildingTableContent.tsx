@@ -19,9 +19,7 @@ import BuildingAdjustmentModal from "../../components/Modals/BuildingAdjustmentM
 import BuildingAdjustmentUpdateModal from "../../components/Modals/BuildingAdjustmentUpdateModal";
 import BuildingSubcomponentModal from "../../components/Modals/BuildingSubcomponentModal";
 import BuildingUpdateModal from "../../components/Modals/BuildingUpdateModal";
-import {
-    useBuildingTableLogic
-} from './BuildingTableLogic';
+import { useBuildingTableLogic } from './BuildingTableLogic';
 import "../../CSS/BuildingResponsive.css";
 import SubmitButton from "../../components/GlobalComponent/SubmitButton";
 
@@ -101,6 +99,58 @@ const BuildingTableContent: React.FC<BuildingTableProps> = ({
         setShowToast
     } = useBuildingTableLogic(form_id, kind, classification, area, declarant, actual_use, district, subclass);
 
+    console.log('BuildingTableContent rendering with:', {
+        form_id,
+        buildingInfoIds: buildingInfoIds.length,
+        buildingAdjustments: buildingAdjustments.length,
+        loading,
+        formData: formData?.id
+    });
+
+    // Function to refresh all data
+    const refreshAllData = React.useCallback(() => {
+        console.log('Refreshing all building data...');
+        loadBuildingData();
+        loadBuildingAdjustments();
+    }, [loadBuildingData, loadBuildingAdjustments]);
+
+    // Handle modal close with refresh
+    const handleAdjustmentModalClose = React.useCallback(() => {
+        console.log('Closing adjustment modal and refreshing data...');
+        setShowAdjustmentModal(false);
+        // Small delay to ensure modal is fully closed before refresh
+        setTimeout(() => {
+            refreshAllData();
+        }, 100);
+    }, [setShowAdjustmentModal, refreshAllData]);
+
+    // Handle modal save success with refresh
+    const handleAdjustmentSaveSuccess = React.useCallback(() => {
+        console.log('Adjustment saved successfully, refreshing data...');
+        refreshAllData();
+        setShowAdjustmentModal(false);
+        showToastMessage('Building adjustment saved successfully!', 'success');
+    }, [refreshAllData, setShowAdjustmentModal, showToastMessage]);
+
+    // Handle update modal close with refresh
+    const handleUpdateAdjustmentModalClose = React.useCallback(() => {
+        console.log('Closing update adjustment modal and refreshing data...');
+        setShowUpdateAdjustmentModal(false);
+        setSelectedAdjustmentForUpdate(null);
+        setTimeout(() => {
+            refreshAllData();
+        }, 100);
+    }, [setShowUpdateAdjustmentModal, setSelectedAdjustmentForUpdate, refreshAllData]);
+
+    // Handle update modal save success with refresh
+    const handleUpdateAdjustmentSaveSuccess = React.useCallback(() => {
+        console.log('Adjustment updated successfully, refreshing data...');
+        refreshAllData();
+        setShowUpdateAdjustmentModal(false);
+        setSelectedAdjustmentForUpdate(null);
+        showToastMessage('Building adjustment updated successfully!', 'success');
+    }, [refreshAllData, setShowUpdateAdjustmentModal, setSelectedAdjustmentForUpdate, showToastMessage]);
+
     return (
         <IonPage>
             <IonHeader>
@@ -125,55 +175,56 @@ const BuildingTableContent: React.FC<BuildingTableProps> = ({
             </IonHeader>
 
             <IonContent className="building-content">
-                <BuildingList
-                    form_id={form_id}
-                    district={district}
-                    declarant={declarant}
-                    kind={kind}
-                    classification={classification}
-                    subclass={subclass}
-                    actual_use={actual_use}
-                    area={area}
-                    loading={loading}
-                    buildingInfoIds={buildingInfoIds}
-                    buildingDataList={buildingDataList}
-                    baseMarketValues={baseMarketValues}
-                    adjustedMarketValues={adjustedMarketValues}
-                    assessmentLevels={assessmentLevels}
-                    buildingCodeRates={buildingCodeRates}
-                    totalAdjustments={totalAdjustments}
-                    onViewDetails={handleViewDetails}
-                    onUpdateClick={handleUpdateClick}
-                />
+                {loading ? (
+                    <div style={{ textAlign: 'center', padding: '20px' }}>
+                        <IonSpinner name="crescent" />
+                        <p>Loading building data...</p>
+                    </div>
+                ) : (
+                    <>
+                        <BuildingList
+                            form_id={form_id}
+                            district={district}
+                            declarant={declarant}
+                            kind={kind}
+                            classification={classification}
+                            subclass={subclass}
+                            actual_use={actual_use}
+                            area={area}
+                            loading={loading}
+                            buildingInfoIds={buildingInfoIds}
+                            buildingDataList={buildingDataList}
+                            baseMarketValues={baseMarketValues}
+                            adjustedMarketValues={adjustedMarketValues}
+                            assessmentLevels={assessmentLevels}
+                            buildingCodeRates={buildingCodeRates}
+                            totalAdjustments={totalAdjustments}
+                            onViewDetails={handleViewDetails}
+                            onUpdateClick={handleUpdateClick}
+                            formData={formData}
+                        />
 
-                <BuildingAdjustmentsTable
-                    buildingAdjustments={buildingAdjustments}
-                    buildingInfoIds={buildingInfoIds}
-                    onAdjustmentCreate={handleCreateAdjustment}
-                    onAdjustmentUpdate={handleAdjustmentUpdate}
-                    onAdjustmentsUpdate={() => {
-                        loadBuildingAdjustments();
-                        loadBuildingData();
-                    }}
-                    showToastMessage={showToastMessage}
-                    onSubcomponentClick={handleSubcomponentRowClick}
-                />
+                        <BuildingAdjustmentsTable
+                            buildingAdjustments={buildingAdjustments}
+                            buildingInfoIds={buildingInfoIds}
+                            onAdjustmentCreate={handleCreateAdjustment}
+                            onAdjustmentUpdate={handleAdjustmentUpdate}
+                            onAdjustmentsUpdate={refreshAllData}
+                            showToastMessage={showToastMessage}
+                            onSubcomponentClick={handleSubcomponentRowClick}
+                        />
+                    </>
+                )}
 
                 {/* Building Adjustment Modal */}
                 {showAdjustmentModal && selectedValueInfoId && (
                     <BuildingAdjustmentModal
                         isOpen={showAdjustmentModal}
-                        onClose={() => {
-                            setShowAdjustmentModal(false);
-                            loadBuildingAdjustments();
-                        }}
+                        onClose={handleAdjustmentModalClose}
                         valueInfoId={selectedValueInfoId}
                         existingData={existingAdjustmentData}
                         initialArea={area}
-                        onSaveSuccess={() => {
-                            loadBuildingData();
-                            loadBuildingAdjustments();
-                        }}
+                        onSaveSuccess={handleAdjustmentSaveSuccess}
                     />
                 )}
 
@@ -181,19 +232,10 @@ const BuildingTableContent: React.FC<BuildingTableProps> = ({
                 {showUpdateAdjustmentModal && selectedAdjustmentForUpdate && (
                     <BuildingAdjustmentUpdateModal
                         isOpen={showUpdateAdjustmentModal}
-                        onClose={() => {
-                            setShowUpdateAdjustmentModal(false);
-                            setSelectedAdjustmentForUpdate(null);
-                            loadBuildingAdjustments();
-                        }}
+                        onClose={handleUpdateAdjustmentModalClose}
                         valueInfoId={selectedAdjustmentForUpdate.value_info_id}
                         existingData={selectedAdjustmentForUpdate}
-                        onSaveSuccess={() => {
-                            loadBuildingData();
-                            loadBuildingAdjustments();
-                            setShowUpdateAdjustmentModal(false);
-                            setSelectedAdjustmentForUpdate(null);
-                        }}
+                        onSaveSuccess={handleUpdateAdjustmentSaveSuccess}
                     />
                 )}
 
@@ -215,6 +257,7 @@ const BuildingTableContent: React.FC<BuildingTableProps> = ({
                             setShowUpdateModal(false);
                             setSelectedBuildingId('');
                             setSelectedBuildingData(null);
+                            refreshAllData();
                         }}
                         onUpdate={handleBuildingUpdate}
                         buildingId={selectedBuildingId}

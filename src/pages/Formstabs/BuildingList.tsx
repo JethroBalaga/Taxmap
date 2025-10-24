@@ -34,6 +34,7 @@ interface BuildingListProps {
     totalAdjustments: Map<string, number>;
     onViewDetails: (buildingId: string) => void;
     onUpdateClick: (buildingId: string, buildingData: any) => void;
+    formData?: any; // Add formData prop
 }
 
 // Interface for the table data (only what we want to display)
@@ -64,7 +65,8 @@ const BuildingList: React.FC<BuildingListProps> = ({
     buildingCodeRates,
     totalAdjustments,
     onViewDetails,
-    onUpdateClick
+    onUpdateClick,
+    formData // Receive formData
 }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedBuildingId, setSelectedBuildingId] = useState<string | null>(null);
@@ -142,23 +144,45 @@ const BuildingList: React.FC<BuildingListProps> = ({
 
     return (
         <>
-            {/* Form Summary Section - Matching non-agri design */}
+            {/* Form Summary Section - Display form data from props */}
             <IonCard className="form-summary-card">
                 <IonCardContent>
                     <IonGrid style={{ margin: '0', padding: '0' }}>
                         <IonRow style={{ marginBottom: '4px' }}>
-                            <IonCol size="4" style={{ padding: '4px' }}><IonText><strong>District:</strong> {district || 'N/A'}</IonText></IonCol>
-                            <IonCol size="4" style={{ padding: '4px' }}><IonText><strong>Declarant ID:</strong> {declarant || 'N/A'}</IonText></IonCol>
-                            <IonCol size="4" style={{ padding: '4px' }}><IonText><strong>Kind:</strong> {kind || 'N/A'}</IonText></IonCol>
+                            <IonCol size="4" style={{ padding: '4px' }}>
+                                <IonText><strong>District:</strong> {district || 'N/A'}</IonText>
+                            </IonCol>
+                            <IonCol size="4" style={{ padding: '4px' }}>
+                                <IonText><strong>Declarant ID:</strong> {declarant || 'N/A'}</IonText>
+                            </IonCol>
+                            <IonCol size="4" style={{ padding: '4px' }}>
+                                <IonText><strong>Kind:</strong> {kind || 'N/A'}</IonText>
+                            </IonCol>
                         </IonRow>
                         <IonRow style={{ marginBottom: '4px' }}>
-                            <IonCol size="4" style={{ padding: '4px' }}><IonText><strong>Classification:</strong> {classification || 'N/A'}</IonText></IonCol>
-                            <IonCol size="4" style={{ padding: '4px' }}><IonText><strong>Subclass:</strong> {subclass || 'N/A'}</IonText></IonCol>
-                            <IonCol size="4" style={{ padding: '4px' }}><IonText><strong>Actual Use:</strong> {actual_use || 'N/A'}</IonText></IonCol>
+                            <IonCol size="4" style={{ padding: '4px' }}>
+                                <IonText><strong>Classification:</strong> {classification || 'N/A'}</IonText>
+                            </IonCol>
+                            <IonCol size="4" style={{ padding: '4px' }}>
+                                <IonText><strong>Subclass:</strong> {subclass || 'N/A'}</IonText>
+                            </IonCol>
+                            <IonCol size="4" style={{ padding: '4px' }}>
+                                <IonText><strong>Actual Use:</strong> {actual_use || 'N/A'}</IonText>
+                            </IonCol>
                         </IonRow>
                         <IonRow>
-                            <IonCol size="12" style={{ padding: '4px' }}><IonText><strong>Area:</strong> {area ? `${area.toLocaleString()} sq ft` : 'N/A'}</IonText></IonCol>
+                            <IonCol size="12" style={{ padding: '4px' }}>
+                                <IonText><strong>Area:</strong> {area ? `${area.toLocaleString()} sq ft` : 'N/A'}</IonText>
+                            </IonCol>
                         </IonRow>
+                        {/* Display additional form data if available */}
+                        {formData && (
+                            <IonRow>
+                                <IonCol size="12" style={{ padding: '4px' }}>
+                                    <IonText><strong>Form ID:</strong> {formData.id}</IonText>
+                                </IonCol>
+                            </IonRow>
+                        )}
                     </IonGrid>
                 </IonCardContent>
             </IonCard>

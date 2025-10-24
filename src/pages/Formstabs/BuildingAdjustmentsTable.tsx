@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
     IonButton,
     IonIcon,
@@ -35,6 +35,12 @@ const BuildingAdjustmentsTable: React.FC<BuildingAdjustmentsTableProps> = ({
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedAdjustmentId, setSelectedAdjustmentId] = useState<string | null>(null);
     const [showDeleteToast, setShowDeleteToast] = useState(false);
+    const [localAdjustments, setLocalAdjustments] = useState<BuildingAdjustmentData[]>(buildingAdjustments);
+
+    // Update local state when props change
+    useEffect(() => {
+        setLocalAdjustments(buildingAdjustments);
+    }, [buildingAdjustments]);
 
     const handleSearch = (e: any) => {
         setSearchTerm(e.detail.value || '');
@@ -46,7 +52,6 @@ const BuildingAdjustmentsTable: React.FC<BuildingAdjustmentsTableProps> = ({
     };
 
     const handleAdjustmentRowClick = (rowData: BuildingAdjustmentData) => {
-        // Only select the row, don't automatically show details
         handleSelectAdjustmentRow(rowData);
     };
 
@@ -56,8 +61,7 @@ const BuildingAdjustmentsTable: React.FC<BuildingAdjustmentsTableProps> = ({
             return;
         }
         
-        // Find the selected adjustment data
-        const selectedAdjustment = buildingAdjustments.find(
+        const selectedAdjustment = localAdjustments.find(
             adj => adj.bldg_adjustment_id === selectedAdjustmentId
         );
         
@@ -80,6 +84,7 @@ const BuildingAdjustmentsTable: React.FC<BuildingAdjustmentsTableProps> = ({
         try {
             const success = await BuildingAdjustmentLocalStorage.deleteBuildingAdjustmentData(selectedAdjustmentId!);
             if (success) {
+                // Force refresh by calling the update callback
                 onAdjustmentsUpdate();
                 setSelectedAdjustmentId(null);
                 showToastMessage('Building adjustment deleted successfully!', 'success');
@@ -100,20 +105,18 @@ const BuildingAdjustmentsTable: React.FC<BuildingAdjustmentsTableProps> = ({
             return;
         }
         
-        // Find the selected adjustment data
-        const selectedAdjustment = buildingAdjustments.find(
+        const selectedAdjustment = localAdjustments.find(
             adj => adj.bldg_adjustment_id === selectedAdjustmentId
         );
         
         if (selectedAdjustment) {
-            // Call the update function with the selected adjustment ID
             onAdjustmentUpdate(selectedAdjustmentId);
         } else {
             showToastMessage('Selected adjustment not found', 'danger');
         }
     };
 
-    const filteredAdjustments = buildingAdjustments.filter(adjustment => {
+    const filteredAdjustments = localAdjustments.filter(adjustment => {
         if (!searchTerm) return true;
         return Object.values(adjustment).some((value: any) =>
             value && value.toString().toLowerCase().includes(searchTerm.toLowerCase())
@@ -121,7 +124,6 @@ const BuildingAdjustmentsTable: React.FC<BuildingAdjustmentsTableProps> = ({
     });
 
     const filteredAdjustmentsForTable = filteredAdjustments.map(adj => {
-        // Remove value_info_id and Maincomponent from display
         const { value_info_id, Maincomponent, ...rest } = adj;
 
         const depreciationValue = (rest as any).depreciation;
@@ -168,7 +170,7 @@ const BuildingAdjustmentsTable: React.FC<BuildingAdjustmentsTableProps> = ({
 
     return (
         <>
-            {/* Search and Icons Section - Above the table like non-agri */}
+            {/* Search and Icons Section */}
             <div className="search-container">
                 <IonSearchbar
                     placeholder="Search adjustments..."
@@ -196,7 +198,7 @@ const BuildingAdjustmentsTable: React.FC<BuildingAdjustmentsTableProps> = ({
                 </div>
             </div>
 
-            {/* Building Adjustments Table - Matching non-agri design */}
+            {/* Building Adjustments Table */}
             <IonCard>
                 <IonCardContent>
                     {filteredAdjustments.length > 0 ? (

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { ValueInfoLocalStorage } from '../../utils/tablestorages/ValueInfoLocalStorage';
 import { BuildingDataLocalStorage } from '../../utils/tablestorages/BuildingDataLocalStorage';
 import { getBuildingCodeByCode } from '../../utils/buildingCodeLocalStorage';
@@ -28,6 +28,10 @@ export const useBuildingTableLogic = (
     district?: number | null,
     subclass?: string
 ) => {
+    const isMountedRef = useRef(true);
+    const [isInitialLoad, setIsInitialLoad] = useState(true);
+
+    // State declarations
     const [buildingInfoIds, setBuildingInfoIds] = useState<string[]>([]);
     const [buildingDataList, setBuildingDataList] = useState<Map<string, any>>(new Map());
     const [buildingCodeRates, setBuildingCodeRates] = useState<Map<string, number>>(new Map());
@@ -40,32 +44,38 @@ export const useBuildingTableLogic = (
     const [kindId] = useState<number>(2);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isFormUploaded, setIsFormUploaded] = useState(false);
-    const [showConfirmation, setShowConfirmation] = useState(false); // NEW STATE
+    const [showConfirmation, setShowConfirmation] = useState(false);
 
     // Modal states
     const [showAdjustmentModal, setShowAdjustmentModal] = useState(false);
     const [selectedValueInfoId, setSelectedValueInfoId] = useState<string | null>(null);
     const [existingAdjustmentData, setExistingAdjustmentData] = useState<BuildingAdjustmentData | null>(null);
-
     const [showUpdateAdjustmentModal, setShowUpdateAdjustmentModal] = useState(false);
     const [selectedAdjustmentForUpdate, setSelectedAdjustmentForUpdate] = useState<BuildingAdjustmentData | null>(null);
-
     const [showSubcomponentModal, setShowSubcomponentModal] = useState(false);
     const [selectedSubcomponentData, setSelectedSubcomponentData] = useState<BuildingSubcomponentData | null>(null);
     const [selectedAdjustmentArea, setSelectedAdjustmentArea] = useState<number>(0);
     const [selectedAdjustmentCompletion, setSelectedAdjustmentCompletion] = useState<string>('');
     const [selectedAdjustmentDepreciation, setSelectedAdjustmentDepreciation] = useState<string>('');
-
     const [showUpdateModal, setShowUpdateModal] = useState(false);
     const [selectedBuildingId, setSelectedBuildingId] = useState<string>('');
     const [selectedBuildingData, setSelectedBuildingData] = useState<any>(null);
-
     const [showToast, setShowToast] = useState(false);
     const [toastMessage, setToastMessage] = useState('');
     const [toastColor, setToastColor] = useState<'success' | 'danger' | 'warning' | undefined>(undefined);
 
+    // Cleanup on unmount
+    useEffect(() => {
+        isMountedRef.current = true;
+        return () => {
+            isMountedRef.current = false;
+        };
+    }, []);
+
     // Check if form is already uploaded
     const checkFormUploaded = useCallback(async () => {
+        if (!isMountedRef.current || !form_id) return;
+        
         try {
             const formData = await FormDataLocalStorage.getFormData(form_id);
             if (formData?.uploaded) {
@@ -78,23 +88,7 @@ export const useBuildingTableLogic = (
         }
     }, [form_id]);
 
-    // Add formUploaded event listener
-    useEffect(() => {
-        const handleFormUploaded = (event: CustomEvent) => {
-            if (event.detail && event.detail.formId === form_id) {
-                console.log('Form uploaded, reloading form data...');
-                checkFormUploaded();
-            }
-        };
-
-        window.addEventListener('formUploaded', handleFormUploaded as EventListener);
-        
-        return () => {
-            window.removeEventListener('formUploaded', handleFormUploaded as EventListener);
-        };
-    }, [form_id, checkFormUploaded]);
-
-    // --- Photo Handling ---
+    // Photo Handling
     const getPhotoFile = useCallback(async (photoTag: any): Promise<Blob | null> => {
         try {
             const photoPath = `phototags/${photoTag.photoName}`;
@@ -143,7 +137,7 @@ export const useBuildingTableLogic = (
         }
     }, []);
 
-    // --- Market Values ---
+    // Market Values
     const calculateMarketValues = useCallback((buildingCodeRate: number, depreciationRate: number | null, area: number, constructionPercent: number | null) => {
         const baseMarketValue = buildingCodeRate * area;
         let adjustedMarketValue = baseMarketValue;
@@ -172,8 +166,10 @@ export const useBuildingTableLogic = (
         }
     }, [kindId, classification]);
 
-    // --- Adjustments ---
+    // Adjustments
     const calculateAllAdjustments = useCallback(async () => {
+        if (!isMountedRef.current) return;
+        
         const map = new Map<string, number>();
         buildingInfoIds.forEach(id => map.set(id, 0));
 
@@ -197,16 +193,21 @@ export const useBuildingTableLogic = (
             map.set(buildingId, current + adjustedValue);
         }
 
-        setTotalAdjustments(map);
+        if (isMountedRef.current) {
+            setTotalAdjustments(map);
+        }
     }, [buildingAdjustments, buildingInfoIds]);
 
-    // --- Load Data ---
+    // Load Data Functions
     const loadBuildingData = useCallback(async () => {
-        setLoading(true);
+        if (!isMountedRef.current || !form_id) return;
+        
         try {
             const allInfos = await ValueInfoLocalStorage.getAllValueInfo();
             const filteredInfos = allInfos.filter(info => info.formDataId === form_id);
             const ids = filteredInfos.map(info => info.id);
+            
+            if (!isMountedRef.current) return;
             setBuildingInfoIds(ids);
 
             const dataMap = new Map<string, any>();
@@ -233,43 +234,92 @@ export const useBuildingTableLogic = (
                 }
             }
 
-            setBuildingDataList(dataMap);
-            setBuildingCodeRates(ratesMap);
-            setBaseMarketValues(baseMap);
-            setAdjustedMarketValues(adjustedMap);
-            setAssessmentLevels(assessmentMap);
+            if (isMountedRef.current) {
+                setBuildingDataList(dataMap);
+                setBuildingCodeRates(ratesMap);
+                setBaseMarketValues(baseMap);
+                setAdjustedMarketValues(adjustedMap);
+                setAssessmentLevels(assessmentMap);
+            }
 
         } catch (error) {
             console.error('Error loading building data:', error);
-        } finally {
-            setLoading(false);
         }
     }, [form_id, area, calculateMarketValues, getAssessmentLevelForBuilding]);
 
     const loadBuildingAdjustments = useCallback(async () => {
+        if (!isMountedRef.current || !form_id) return;
+        
         try {
             const allAdjustments = await BuildingAdjustmentLocalStorage.getAllBuildingAdjustmentData();
             const allInfos = await ValueInfoLocalStorage.getAllValueInfo();
             const formBuildingIds = allInfos.filter(info => info.formDataId === form_id).map(info => info.id);
             const filtered = allAdjustments.filter(adj => formBuildingIds.includes(adj.value_info_id));
-            setBuildingAdjustments(filtered);
+            
+            if (isMountedRef.current) {
+                setBuildingAdjustments(filtered);
+            }
         } catch (error) {
             console.error('Error loading building adjustments:', error);
         }
     }, [form_id]);
 
+    // SINGLE data loading effect - FIXED
     useEffect(() => {
-        loadBuildingData();
-        loadBuildingAdjustments();
-        checkFormUploaded();
-    }, [form_id, kind, classification, area, declarant, actual_use, district, subclass, loadBuildingData, loadBuildingAdjustments, checkFormUploaded]);
+        if (!form_id) return;
 
+        console.log('🔄 Loading data for form:', form_id);
+        
+        const loadAllData = async () => {
+            if (!isMountedRef.current) return;
+            
+            setLoading(true);
+            try {
+                await Promise.all([
+                    loadBuildingData(),
+                    loadBuildingAdjustments(),
+                    checkFormUploaded()
+                ]);
+            } catch (error) {
+                console.error('Error loading all data:', error);
+            } finally {
+                if (isMountedRef.current) {
+                    setLoading(false);
+                    setIsInitialLoad(false);
+                }
+            }
+        };
+
+        loadAllData();
+    }, [form_id]); // ONLY form_id as dependency
+
+    // Calculate adjustments when relevant data changes
     useEffect(() => {
-        calculateAllAdjustments();
-    }, [buildingAdjustments, buildingInfoIds, calculateAllAdjustments]);
+        if (!isInitialLoad && buildingInfoIds.length > 0) {
+            calculateAllAdjustments();
+        }
+    }, [buildingAdjustments, buildingInfoIds, isInitialLoad, calculateAllAdjustments]);
 
-    // --- Handlers ---
-    const handleViewDetails = (buildingId: string) => console.log('View details for building:', buildingId);
+    // Event listeners - ONLY for form uploaded
+    useEffect(() => {
+        const handleFormUploaded = (event: CustomEvent) => {
+            if (event.detail && event.detail.formId === form_id && isMountedRef.current) {
+                console.log('Form uploaded, checking status...');
+                checkFormUploaded();
+            }
+        };
+
+        window.addEventListener('formUploaded', handleFormUploaded as EventListener);
+        
+        return () => {
+            window.removeEventListener('formUploaded', handleFormUploaded as EventListener);
+        };
+    }, [form_id, checkFormUploaded]);
+
+    // Handlers
+    const handleViewDetails = (buildingId: string) => {
+        console.log('View details for building:', buildingId);
+    };
 
     const handleCreateAdjustment = () => {
         if (buildingInfoIds.length) {
@@ -329,17 +379,19 @@ export const useBuildingTableLogic = (
     };
 
     const showToastMessage = (message: string, color: 'success' | 'danger' | 'warning' = 'success') => {
+        if (!isMountedRef.current) return;
+        
         setToastMessage(message);
         setToastColor(color);
         setShowToast(true);
     };
 
-    // --- Submit Form + Upload ---
+    // Submit Form + Upload
     const submitForm = async () => {
-        // Close confirmation dialog immediately when submission starts
+        if (!isMountedRef.current) return;
+        
         setShowConfirmation(false);
         
-        // Check if form already uploaded
         const formData = await FormDataLocalStorage.getFormData(form_id);
         if (formData?.uploaded) {
             showToastMessage('Form already submitted', 'warning');
@@ -430,16 +482,16 @@ export const useBuildingTableLogic = (
             await supabaseApi.updateFormStatus(databaseFormId, 'New');
             await FormDataLocalStorage.markFormAsUploaded(form_id, databaseFormId);
 
-            // Dispatch event to notify form was uploaded
             window.dispatchEvent(new CustomEvent('formUploaded', { detail: { formId: form_id } }));
-
             showToastMessage('Form submitted successfully! Data synchronized with server.', 'success');
 
         } catch (error: any) {
             console.error('Upload failed:', error);
             showToastMessage(`Upload failed: ${error.message || 'Unknown error'}`, 'danger');
         } finally {
-            setIsSubmitting(false);
+            if (isMountedRef.current) {
+                setIsSubmitting(false);
+            }
         }
     };
 
@@ -451,7 +503,9 @@ export const useBuildingTableLogic = (
         setShowConfirmation(false);
     };
 
+    // Return ALL necessary functions and state
     return {
+        // State
         buildingInfoIds,
         buildingDataList,
         buildingCodeRates,
@@ -463,7 +517,7 @@ export const useBuildingTableLogic = (
         loading,
         isSubmitting,
         isFormUploaded,
-        showConfirmation, // NEW RETURN
+        showConfirmation,
         showAdjustmentModal,
         selectedValueInfoId,
         existingAdjustmentData,
@@ -481,6 +535,7 @@ export const useBuildingTableLogic = (
         toastMessage,
         toastColor,
 
+        // Setters
         setBuildingInfoIds,
         setBuildingDataList,
         setBuildingCodeRates,
@@ -491,7 +546,8 @@ export const useBuildingTableLogic = (
         setTotalAdjustments,
         setLoading,
         setIsSubmitting,
-        setShowConfirmation, // NEW RETURN
+        setIsFormUploaded,
+        setShowConfirmation,
         setShowAdjustmentModal,
         setSelectedValueInfoId,
         setExistingAdjustmentData,
@@ -509,6 +565,7 @@ export const useBuildingTableLogic = (
         setToastMessage,
         setToastColor,
 
+        // Functions
         loadBuildingData,
         loadBuildingAdjustments,
         handleViewDetails,
@@ -521,6 +578,7 @@ export const useBuildingTableLogic = (
         handleSubmit,
         submitForm,
         handleConfirmationDismiss,
-        getPhotoFilePath
+        getPhotoFilePath,
+        checkFormUploaded
     };
 };

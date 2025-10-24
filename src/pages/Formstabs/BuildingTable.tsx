@@ -1,4 +1,3 @@
-// BuildingTableWrapper.tsx
 import React, { useState, useEffect } from "react";
 import {
     IonPage,
@@ -10,7 +9,6 @@ import {
     IonIcon,
     IonTitle,
     IonSpinner,
-    useIonViewWillEnter,
     IonText
 } from "@ionic/react";
 import { arrowBack } from "ionicons/icons";
@@ -24,62 +22,45 @@ const BuildingTableWrapper: React.FC = () => {
     
     const [formData, setFormData] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string>('');
     
-    const loadFormData = () => {
-        if (formId) {
-            setIsLoading(true);
-            console.log('Loading form data from localStorage');
-            const data = FormDataLocalStorage.getFormData(formId);
-            setFormData(data);
+    const loadFormData = async () => {
+        if (!formId) {
+            setError('No form ID provided');
+            setIsLoading(false);
+            return;
+        }
+
+        console.log('Loading form data for building form ID:', formId);
+        
+        try {
+            const data = await FormDataLocalStorage.getFormData(formId);
+            console.log('Loaded building form data:', data);
+            
+            if (!data) {
+                setError(`Form with ID ${formId} not found`);
+                setFormData(null);
+            } else {
+                setFormData(data);
+            }
+        } catch (error) {
+            console.error('Error loading building form data:', error);
+            setError('Failed to load form data');
+            setFormData(null);
+        } finally {
             setIsLoading(false);
         }
     };
     
-    // Load form data when component mounts or formId changes
+    // Load data only once when component mounts or formId changes
     useEffect(() => {
         loadFormData();
     }, [formId]);
-    
-    // Refresh when the view becomes visible again
-    useIonViewWillEnter(() => {
-        console.log('View will enter, refreshing form data');
-        loadFormData();
-    });
     
     const handleBack = () => {
         history.push('/menu/forms');
     };
-    
-    // Listen for custom events or storage changes
-    useEffect(() => {
-        // Custom event listener for form updates
-        const handleFormUpdated = (event: any) => {
-            console.log('Form updated event received', event.detail);
-            if (!formId || event.detail.formId === formId) {
-                console.log('Refreshing form data due to update event');
-                loadFormData();
-            }
-        };
-        
-        // Listen for custom events
-        window.addEventListener('formUpdated', handleFormUpdated as EventListener);
-        
-        // Listen for storage events (works across tabs)
-        const handleStorageChange = (e: StorageEvent) => {
-            if (e.key === 'formData' || e.key?.includes('form_') || e.key === 'formUpdateTrigger') {
-                console.log('Storage change detected, refreshing form data');
-                loadFormData();
-            }
-        };
-        
-        window.addEventListener('storage', handleStorageChange);
-        
-        return () => {
-            window.removeEventListener('formUpdated', handleFormUpdated as EventListener);
-            window.removeEventListener('storage', handleStorageChange);
-        };
-    }, [formId]);
-    
+
     if (isLoading) {
         return (
             <IonPage>
@@ -97,7 +78,36 @@ const BuildingTableWrapper: React.FC = () => {
                 <IonContent>
                     <div style={{ textAlign: 'center', padding: '20px' }}>
                         <IonSpinner name="crescent" />
-                        <p>Loading form data...</p>
+                        <p>Loading building form data...</p>
+                    </div>
+                </IonContent>
+            </IonPage>
+        );
+    }
+    
+    if (error) {
+        return (
+            <IonPage>
+                <IonHeader>
+                    <IonToolbar>
+                        <IonButtons slot="start">
+                            <IonButton onClick={handleBack}>
+                                <IonIcon icon={arrowBack} />
+                                Back
+                            </IonButton>
+                        </IonButtons>
+                        <IonTitle>Building Assessment - Error</IonTitle>
+                    </IonToolbar>
+                </IonHeader>
+                <IonContent>
+                    <div style={{ textAlign: 'center', padding: '20px' }}>
+                        <IonText color="danger">
+                            <h3>Error Loading Form</h3>
+                            <p>{error}</p>
+                        </IonText>
+                        <IonButton onClick={handleBack}>
+                            Return to Forms
+                        </IonButton>
                     </div>
                 </IonContent>
             </IonPage>
@@ -120,7 +130,40 @@ const BuildingTableWrapper: React.FC = () => {
                 </IonHeader>
                 <IonContent>
                     <div style={{ textAlign: 'center', padding: '20px' }}>
-                        <IonText>Form not found</IonText>
+                        <IonText>Building form not found</IonText>
+                        <IonButton onClick={handleBack}>
+                            Return to Forms
+                        </IonButton>
+                    </div>
+                </IonContent>
+            </IonPage>
+        );
+    }
+
+    // Validate required form data
+    if (!formData.kind || !formData.classification || !formData.area) {
+        return (
+            <IonPage>
+                <IonHeader>
+                    <IonToolbar>
+                        <IonButtons slot="start">
+                            <IonButton onClick={handleBack}>
+                                <IonIcon icon={arrowBack} />
+                                Back
+                            </IonButton>
+                        </IonButtons>
+                        <IonTitle>Building Assessment - Invalid Form</IonTitle>
+                    </IonToolbar>
+                </IonHeader>
+                <IonContent>
+                    <div style={{ textAlign: 'center', padding: '20px' }}>
+                        <IonText color="warning">
+                            <h3>Invalid Form Data</h3>
+                            <p>This form is missing required information.</p>
+                        </IonText>
+                        <IonButton onClick={handleBack}>
+                            Return to Forms
+                        </IonButton>
                     </div>
                 </IonContent>
             </IonPage>
@@ -131,14 +174,14 @@ const BuildingTableWrapper: React.FC = () => {
         <BuildingTableContent
             form_id={formData.id}
             onBack={handleBack}
-            kind={formData.kind || ''}
-            classification={formData.classification || ''}
-            area={formData.area || 0}
+            kind={formData.kind}
+            classification={formData.classification}
+            area={parseFloat(formData.area) || 0}
             declarant={formData.declarantId?.toString() || ''}
             actual_use={formData.actualUse || ''}
             district={formData.district}
             subclass={formData.subclass}
-            formData={formData} // Pass the full formData for the title
+            formData={formData}
         />
     );
 };
