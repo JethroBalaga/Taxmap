@@ -1,4 +1,3 @@
-// src/pages/useNonAgriLand.tsx
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useHistory } from 'react-router-dom';
 import { FormDataLocalStorage } from '../../utils/tablestorages/FormDataLocalStorage';
@@ -46,7 +45,7 @@ export const useNonAgriLand = (formId: string | undefined) => {
     const [showToast, setShowToast] = useState(false);
     const [toastMessage, setToastMessage] = useState('');
     const [toastColor, setToastColor] = useState<'success' | 'danger' | 'warning' | undefined>(undefined);
-    const [isFormUploaded, setIsFormUploaded] = useState(false); // NEW STATE
+    const [isFormUploaded, setIsFormUploaded] = useState(false);
 
     // Land adjustments data
     const [landAdjustments, setLandAdjustments] = useState<LandAdjustmentData[]>([]);
@@ -297,6 +296,13 @@ export const useNonAgriLand = (formId: string | undefined) => {
             }
         };
 
+        const handleFormUploaded = (event: CustomEvent) => {
+            if (event.detail && event.detail.formId === formId) {
+                console.log('Form uploaded, reloading form data...');
+                loadFormData();
+            }
+        };
+
         const handleStorageChange = (e: StorageEvent) => {
             if (e.key === 'formUpdateTrigger') {
                 console.log('Form update detected via localStorage, reloading form data...');
@@ -305,10 +311,12 @@ export const useNonAgriLand = (formId: string | undefined) => {
         };
 
         window.addEventListener('formDataUpdated', handleFormDataUpdate as EventListener);
+        window.addEventListener('formUploaded', handleFormUploaded as EventListener);
         window.addEventListener('storage', handleStorageChange);
 
         return () => {
             window.removeEventListener('formDataUpdated', handleFormDataUpdate as EventListener);
+            window.removeEventListener('formUploaded', handleFormUploaded as EventListener);
             window.removeEventListener('storage', handleStorageChange);
         };
     }, [formId]);
@@ -322,7 +330,7 @@ export const useNonAgriLand = (formId: string | undefined) => {
     };
 
     const onSubmit = () => {
-        submission.onSubmit(showToastMessage);
+        submission.onSubmit();
     };
 
     // Create synchronous versions for the UI components
@@ -366,7 +374,12 @@ export const useNonAgriLand = (formId: string | undefined) => {
         setShowReverseDeleteWarning: modals.setShowReverseDeleteWarning,
         reverseDeleteWarningMessage: modals.reverseDeleteWarningMessage,
         submitDisabledInfo,
-        isFormUploaded, // NEW RETURN VALUE
+        isFormUploaded,
+
+        // New confirmation states
+        showConfirmation: submission.showConfirmation,
+        submitForm: submission.submitForm,
+        handleConfirmationDismiss: submission.handleConfirmationDismiss,
 
         // Handlers
         handleBack,
