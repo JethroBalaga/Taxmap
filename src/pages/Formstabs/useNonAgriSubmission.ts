@@ -22,6 +22,7 @@ export const useNonAgriSubmission = ({
     getSubmitDisabledInfo
 }: UseNonAgriSubmissionProps) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showConfirmation, setShowConfirmation] = useState(false);
 
     const validateDate = (dateString: string | null): string | null => {
         if (!dateString) return null;
@@ -71,7 +72,7 @@ export const useNonAgriSubmission = ({
         }
     };
 
-    const onSubmit = async (showToastMessage: (message: string, color?: 'success' | 'danger' | 'warning') => void) => {
+    const submitForm = async (showToastMessage: (message: string, color?: 'success' | 'danger' | 'warning') => void) => {
         // Check if form already uploaded
         const currentFormData = await FormDataLocalStorage.getFormData(formId!);
         if (currentFormData?.uploaded) {
@@ -200,6 +201,9 @@ export const useNonAgriSubmission = ({
                 await FormDataLocalStorage.markFormAsUploaded(formId!, databaseFormId);
             }
 
+            // Dispatch event to notify form was uploaded
+            window.dispatchEvent(new CustomEvent('formUploaded', { detail: { formId } }));
+
             showToastMessage('Non-agricultural land data submitted successfully! All data synchronized with server.', 'success');
 
         } catch (error: any) {
@@ -210,8 +214,19 @@ export const useNonAgriSubmission = ({
         }
     };
 
+    const onSubmit = (showToastMessage: (message: string, color?: 'success' | 'danger' | 'warning') => void) => {
+        setShowConfirmation(true);
+    };
+
+    const handleConfirmationDismiss = () => {
+        setShowConfirmation(false);
+    };
+
     return {
         isSubmitting,
-        onSubmit
+        showConfirmation,
+        onSubmit,
+        submitForm,
+        handleConfirmationDismiss
     };
 };
