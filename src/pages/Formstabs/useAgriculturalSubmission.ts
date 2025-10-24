@@ -96,6 +96,9 @@ export const useAgriculturalSubmission = (formId: string) => {
   };
 
   const submitForm = async () => {
+    // Close confirmation dialog immediately when submission starts
+    setShowConfirmation(false);
+    
     // Check if form already uploaded
     const formData = await FormDataLocalStorage.getFormData(formId);
     if (formData?.uploaded) {
