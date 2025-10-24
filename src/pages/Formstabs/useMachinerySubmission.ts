@@ -1,4 +1,3 @@
-// src/hooks/useMachinerySubmission.ts
 import { useState } from 'react';
 import { PhotoTagLocalStorage } from '../../utils/tablestorages/PhotoTagLocalStorage';
 import { ValueInfoLocalStorage } from '../../utils/tablestorages/ValueInfoLocalStorage';
@@ -15,6 +14,7 @@ export const useMachinerySubmission = () => {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [toastColor, setToastColor] = useState<'success' | 'danger' | 'warning' | undefined>(undefined);
+  const [showConfirmation, setShowConfirmation] = useState(false);
 
   const getPhotoFile = async (photoTag: any): Promise<Blob | null> => {
     try {
@@ -53,20 +53,28 @@ export const useMachinerySubmission = () => {
     setShowToast(true);
   };
 
-  const handleSubmit = async (formId: string, machineryData: { machineData: CalculatedMachineData, valueInfoId: string }[]) => {
+  const submitForm = async (formId: string, machineryData: { machineData: CalculatedMachineData, valueInfoId: string }[]) => {
+    // Close confirmation dialog immediately when submission starts
+    setShowConfirmation(false);
+    
+    // Check if form already uploaded
+    const formData = await FormDataLocalStorage.getFormData(formId);
+    if (formData?.uploaded) {
+      showToastMessage('Form already submitted', 'warning');
+      return;
+    }
+
     setIsSubmitting(true);
     showToastMessage('Starting machinery upload process...', 'warning');
 
     try {
-      const formData = await FormDataLocalStorage.getFormData(formId);
       if (!formData) throw new Error('Form data not found');
-      if (formData.uploaded) throw new Error('Form already uploaded');
 
       for (const { machineData, valueInfoId } of machineryData) {
-        const valueInfo = await ValueInfoLocalStorage.getValueInfo(valueInfoId); // Added await
+        const valueInfo = await ValueInfoLocalStorage.getValueInfo(valueInfoId);
         if (!valueInfo) throw new Error(`ValueInfo not found for ${valueInfoId}`);
 
-        const photoTag = await PhotoTagLocalStorage.getPhotoTag(valueInfo.photoTagId); // Added await
+        const photoTag = await PhotoTagLocalStorage.getPhotoTag(valueInfo.photoTagId);
         if (!photoTag) throw new Error('Photo tag not found');
 
         const databaseTagId = await supabaseApi.insertPhoto({
@@ -136,6 +144,9 @@ export const useMachinerySubmission = () => {
         }
       }
 
+      // Dispatch event to notify form was uploaded
+      window.dispatchEvent(new CustomEvent('formUploaded', { detail: { formId } }));
+
       showToastMessage('Machinery data submitted successfully! All data synchronized with server.', 'success');
 
     } catch (error: any) {
@@ -146,12 +157,23 @@ export const useMachinerySubmission = () => {
     }
   };
 
+  const handleSubmit = () => {
+    setShowConfirmation(true);
+  };
+
+  const handleConfirmationDismiss = () => {
+    setShowConfirmation(false);
+  };
+
   return {
     isSubmitting,
     showToast,
     toastMessage,
     toastColor,
+    showConfirmation,
     handleSubmit,
+    submitForm,
+    handleConfirmationDismiss,
     showToastMessage,
     setShowToast
   };
