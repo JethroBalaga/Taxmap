@@ -1,4 +1,3 @@
-// src/pages/NonAgriLandTable.tsx
 import React from "react";
 import {
     IonPage,
@@ -11,7 +10,8 @@ import {
     IonToast,
     IonTitle,
     IonSpinner,
-    IonText
+    IonText,
+    IonAlert
 } from "@ionic/react";
 import { arrowBack } from "ionicons/icons";
 import { useHistory, useParams } from 'react-router-dom';
@@ -60,6 +60,11 @@ const NonAgriLandTable: React.FC = () => {
         reverseDeleteWarningMessage,
         submitDisabledInfo,
         isFormUploaded,
+        
+        // New confirmation states
+        showConfirmation,
+        submitForm,
+        handleConfirmationDismiss,
         
         // Handlers
         handleBack,
@@ -206,6 +211,25 @@ const NonAgriLandTable: React.FC = () => {
                     position="middle"
                     color={toastColor}
                     duration={3000}
+                />
+
+                <IonAlert
+                    isOpen={showConfirmation}
+                    onDidDismiss={handleConfirmationDismiss}
+                    header={'Confirm Submission'}
+                    message={'Are you sure you want to submit this non-agricultural land form? This action cannot be undone.'}
+                    buttons={[
+                        {
+                            text: 'Cancel',
+                            role: 'cancel',
+                            cssClass: 'secondary'
+                        },
+                        {
+                            text: 'Submit',
+                            role: 'confirm',
+                            handler: () => submitForm(showToastMessage)
+                        }
+                    ]}
                 />
             </IonContent>
         </IonPage>
