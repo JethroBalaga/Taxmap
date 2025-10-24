@@ -73,6 +73,9 @@ export const useNonAgriSubmission = ({
     };
 
     const submitForm = async (showToastMessage: (message: string, color?: 'success' | 'danger' | 'warning') => void) => {
+        // Close confirmation dialog immediately when submission starts
+        setShowConfirmation(false);
+        
         // Check if form already uploaded
         const currentFormData = await FormDataLocalStorage.getFormData(formId!);
         if (currentFormData?.uploaded) {
