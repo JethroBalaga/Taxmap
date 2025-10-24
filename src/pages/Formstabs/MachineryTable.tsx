@@ -13,6 +13,7 @@ import {
   IonCardHeader,
   IonCardTitle,
   IonCardContent,
+  IonAlert
 } from '@ionic/react';
 import { useParams, useHistory } from 'react-router-dom';
 import { construct, locationOutline, person } from 'ionicons/icons';
@@ -75,7 +76,7 @@ const MachineryTable: React.FC = () => {
     isLoading,
     formContext,
     isLoadingContext,
-    isFormUploaded, // NEW
+    isFormUploaded,
     handleBack,
     loadMachineryData
   } = useMachineryData();
@@ -85,7 +86,10 @@ const MachineryTable: React.FC = () => {
     showToast: submissionShowToast,
     toastMessage: submissionToastMessage,
     toastColor: submissionToastColor,
+    showConfirmation,
     handleSubmit,
+    submitForm,
+    handleConfirmationDismiss,
     setShowToast: setSubmissionShowToast
   } = useMachinerySubmission();
 
@@ -104,12 +108,12 @@ const MachineryTable: React.FC = () => {
         <MachineryHeader 
           formId={formId}
           onBack={handleBack}
-          onSubmit={() => handleSubmit(formId, machineryData)}
+          onSubmit={handleSubmit}
           isSubmitting={isSubmitting}
           machineryData={machineryData}
           formContext={formContext}
           isLoadingContext={isLoadingContext}
-          isFormUploaded={isFormUploaded} // NEW
+          isFormUploaded={isFormUploaded}
         />
         <IonContent>
           <div className="loading-container">
@@ -126,12 +130,12 @@ const MachineryTable: React.FC = () => {
       <MachineryHeader 
         formId={formId}
         onBack={handleBack}
-        onSubmit={() => handleSubmit(formId, machineryData)}
+        onSubmit={handleSubmit}
         isSubmitting={isSubmitting}
         machineryData={machineryData}
         formContext={formContext}
         isLoadingContext={isLoadingContext}
-        isFormUploaded={isFormUploaded} // NEW
+        isFormUploaded={isFormUploaded}
       />
       
       <IonContent fullscreen>
@@ -213,6 +217,25 @@ const MachineryTable: React.FC = () => {
           position="middle"
           color={submissionToastColor}
           duration={3000}
+        />
+
+        <IonAlert
+          isOpen={showConfirmation}
+          onDidDismiss={handleConfirmationDismiss}
+          header={'Confirm Submission'}
+          message={'Are you sure you want to submit this machinery form? This action cannot be undone.'}
+          buttons={[
+            {
+              text: 'Cancel',
+              role: 'cancel',
+              cssClass: 'secondary'
+            },
+            {
+              text: 'Submit',
+              role: 'confirm',
+              handler: () => submitForm(formId, machineryData)
+            }
+          ]}
         />
       </IonContent>
     </IonPage>
