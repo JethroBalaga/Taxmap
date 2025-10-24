@@ -214,7 +214,7 @@ export const useNonAgriSubmission = ({
         }
     };
 
-    const onSubmit = (showToastMessage: (message: string, color?: 'success' | 'danger' | 'warning') => void) => {
+    const onSubmit = () => {
         setShowConfirmation(true);
     };
 
