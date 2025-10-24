@@ -79,6 +79,7 @@ export const useAgriculturalSubmission = (formId: string) => {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [toastColor, setToastColor] = useState<'success' | 'danger' | 'warning' | undefined>(undefined);
+  const [showConfirmation, setShowConfirmation] = useState(false);
 
   const showToastMessage = (message: string, color: 'success' | 'danger' | 'warning' = 'success') => {
     setToastMessage(message);
@@ -90,7 +91,12 @@ export const useAgriculturalSubmission = (formId: string) => {
     setShowToast(false);
   };
 
-  const onSubmit = async () => {
+  const handleConfirmationDismiss = () => {
+    setShowConfirmation(false);
+  };
+
+  const submitForm = async () => {
+    // Check if form already uploaded
     const formData = await FormDataLocalStorage.getFormData(formId);
     if (formData?.uploaded) {
       showToastMessage('Form already submitted', 'warning');
@@ -169,6 +175,7 @@ export const useAgriculturalSubmission = (formId: string) => {
         await FormDataLocalStorage.markFormAsUploaded(formId, databaseFormId);
       }
 
+      // Dispatch event to notify form was uploaded
       window.dispatchEvent(new CustomEvent('formUploaded', { detail: { formId } }));
 
       showToastMessage('Agricultural data submitted successfully! All data synchronized with server.', 'success');
@@ -181,12 +188,19 @@ export const useAgriculturalSubmission = (formId: string) => {
     }
   };
 
+  const onSubmit = () => {
+    setShowConfirmation(true);
+  };
+
   return {
     isSubmitting,
     showToast,
     toastMessage,
     toastColor,
+    showConfirmation,
     onSubmit,
-    handleToastDismiss
+    submitForm,
+    handleToastDismiss,
+    handleConfirmationDismiss
   };
 };
