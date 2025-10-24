@@ -1,4 +1,3 @@
-// src/hooks/useMachineryData.ts
 import { useState, useEffect } from 'react';
 import { useParams, useHistory } from 'react-router-dom';
 import { MachineDataLocalStorage, MachineData } from '../../utils/tablestorages/MachineDataLocalStorage';
@@ -39,7 +38,7 @@ export const useMachineryData = () => {
   const [formContext, setFormContext] = useState<FormContextData | null>(null);
   const [isLoadingContext, setIsLoadingContext] = useState(true);
   const [assessmentLevels, setAssessmentLevels] = useState<AssessmentLevelData[]>([]);
-  const [isFormUploaded, setIsFormUploaded] = useState(false); // NEW STATE
+  const [isFormUploaded, setIsFormUploaded] = useState(false);
 
   const formatNumber = (value: string): string => {
     if (!value || value === 'N/A') return 'N/A';
@@ -255,12 +254,28 @@ export const useMachineryData = () => {
   useEffect(() => {
     loadMachineryData();
     loadAssessmentLevels();
-    checkFormUploaded(); // ADDED
+    checkFormUploaded();
   }, [formId]);
 
   useEffect(() => {
     loadFormContext();
   }, [formId, machineryData, assessmentLevels]);
+
+  // Add formUploaded event listener
+  useEffect(() => {
+    const handleFormUploaded = (event: CustomEvent) => {
+      if (event.detail && event.detail.formId === formId) {
+        console.log('Form uploaded, reloading form data...');
+        checkFormUploaded();
+      }
+    };
+
+    window.addEventListener('formUploaded', handleFormUploaded as EventListener);
+    
+    return () => {
+      window.removeEventListener('formUploaded', handleFormUploaded as EventListener);
+    };
+  }, [formId]);
 
   return {
     formId,
@@ -268,7 +283,7 @@ export const useMachineryData = () => {
     isLoading,
     formContext,
     isLoadingContext,
-    isFormUploaded, // NEW RETURN
+    isFormUploaded,
     handleBack,
     loadMachineryData
   };
