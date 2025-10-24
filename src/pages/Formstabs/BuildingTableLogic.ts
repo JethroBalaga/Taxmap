@@ -39,7 +39,8 @@ export const useBuildingTableLogic = (
     const [loading, setLoading] = useState(true);
     const [kindId] = useState<number>(2);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [isFormUploaded, setIsFormUploaded] = useState(false); // NEW STATE
+    const [isFormUploaded, setIsFormUploaded] = useState(false);
+    const [showConfirmation, setShowConfirmation] = useState(false); // NEW STATE
 
     // Modal states
     const [showAdjustmentModal, setShowAdjustmentModal] = useState(false);
@@ -76,6 +77,22 @@ export const useBuildingTableLogic = (
             console.error('Error checking form uploaded status:', error);
         }
     }, [form_id]);
+
+    // Add formUploaded event listener
+    useEffect(() => {
+        const handleFormUploaded = (event: CustomEvent) => {
+            if (event.detail && event.detail.formId === form_id) {
+                console.log('Form uploaded, reloading form data...');
+                checkFormUploaded();
+            }
+        };
+
+        window.addEventListener('formUploaded', handleFormUploaded as EventListener);
+        
+        return () => {
+            window.removeEventListener('formUploaded', handleFormUploaded as EventListener);
+        };
+    }, [form_id, checkFormUploaded]);
 
     // --- Photo Handling ---
     const getPhotoFile = useCallback(async (photoTag: any): Promise<Blob | null> => {
@@ -244,7 +261,7 @@ export const useBuildingTableLogic = (
     useEffect(() => {
         loadBuildingData();
         loadBuildingAdjustments();
-        checkFormUploaded(); // ADDED
+        checkFormUploaded();
     }, [form_id, kind, classification, area, declarant, actual_use, district, subclass, loadBuildingData, loadBuildingAdjustments, checkFormUploaded]);
 
     useEffect(() => {
@@ -318,7 +335,10 @@ export const useBuildingTableLogic = (
     };
 
     // --- Submit Form + Upload ---
-    const handleSubmit = async () => {
+    const submitForm = async () => {
+        // Close confirmation dialog immediately when submission starts
+        setShowConfirmation(false);
+        
         // Check if form already uploaded
         const formData = await FormDataLocalStorage.getFormData(form_id);
         if (formData?.uploaded) {
@@ -410,6 +430,9 @@ export const useBuildingTableLogic = (
             await supabaseApi.updateFormStatus(databaseFormId, 'New');
             await FormDataLocalStorage.markFormAsUploaded(form_id, databaseFormId);
 
+            // Dispatch event to notify form was uploaded
+            window.dispatchEvent(new CustomEvent('formUploaded', { detail: { formId: form_id } }));
+
             showToastMessage('Form submitted successfully! Data synchronized with server.', 'success');
 
         } catch (error: any) {
@@ -418,6 +441,14 @@ export const useBuildingTableLogic = (
         } finally {
             setIsSubmitting(false);
         }
+    };
+
+    const handleSubmit = () => {
+        setShowConfirmation(true);
+    };
+
+    const handleConfirmationDismiss = () => {
+        setShowConfirmation(false);
     };
 
     return {
@@ -431,7 +462,8 @@ export const useBuildingTableLogic = (
         totalAdjustments,
         loading,
         isSubmitting,
-        isFormUploaded, // NEW RETURN
+        isFormUploaded,
+        showConfirmation, // NEW RETURN
         showAdjustmentModal,
         selectedValueInfoId,
         existingAdjustmentData,
@@ -459,6 +491,7 @@ export const useBuildingTableLogic = (
         setTotalAdjustments,
         setLoading,
         setIsSubmitting,
+        setShowConfirmation, // NEW RETURN
         setShowAdjustmentModal,
         setSelectedValueInfoId,
         setExistingAdjustmentData,
@@ -486,6 +519,8 @@ export const useBuildingTableLogic = (
         handleUpdateClick,
         showToastMessage,
         handleSubmit,
+        submitForm,
+        handleConfirmationDismiss,
         getPhotoFilePath
     };
 };
