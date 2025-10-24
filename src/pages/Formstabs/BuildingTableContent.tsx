@@ -9,7 +9,8 @@ import {
     IonIcon,
     IonToast,
     IonTitle,
-    IonSpinner
+    IonSpinner,
+    IonAlert
 } from "@ionic/react";
 import { arrowBack } from "ionicons/icons";
 import BuildingList from './BuildingList';
@@ -60,7 +61,8 @@ const BuildingTableContent: React.FC<BuildingTableProps> = ({
         totalAdjustments,
         loading,
         isSubmitting,
-        isFormUploaded, // NEW
+        isFormUploaded,
+        showConfirmation,
         showAdjustmentModal,
         selectedValueInfoId,
         existingAdjustmentData,
@@ -87,6 +89,8 @@ const BuildingTableContent: React.FC<BuildingTableProps> = ({
         handleUpdateClick,
         showToastMessage,
         handleSubmit,
+        submitForm,
+        handleConfirmationDismiss,
         setShowAdjustmentModal,
         setSelectedAdjustmentForUpdate,
         setShowUpdateAdjustmentModal,
@@ -110,9 +114,9 @@ const BuildingTableContent: React.FC<BuildingTableProps> = ({
                     <IonTitle>Building Assessment - Form {formData?.id || form_id}</IonTitle>
                     <IonButtons slot="end">
                         <SubmitButton
-                            label={isFormUploaded ? "Form Already Submitted" : "Submit"} // UPDATED
+                            label={isFormUploaded ? "Form Already Submitted" : "Submit"}
                             onClick={handleSubmit}
-                            disabled={isSubmitting || isFormUploaded} // UPDATED
+                            disabled={isSubmitting || isFormUploaded}
                             loading={isSubmitting}
                             className="header-submit-button"
                         />
@@ -225,6 +229,25 @@ const BuildingTableContent: React.FC<BuildingTableProps> = ({
                     position="middle"
                     color={toastColor}
                     duration={3000}
+                />
+
+                <IonAlert
+                    isOpen={showConfirmation}
+                    onDidDismiss={handleConfirmationDismiss}
+                    header={'Confirm Submission'}
+                    message={'Are you sure you want to submit this building form? This action cannot be undone.'}
+                    buttons={[
+                        {
+                            text: 'Cancel',
+                            role: 'cancel',
+                            cssClass: 'secondary'
+                        },
+                        {
+                            text: 'Submit',
+                            role: 'confirm',
+                            handler: submitForm
+                        }
+                    ]}
                 />
             </IonContent>
         </IonPage>
