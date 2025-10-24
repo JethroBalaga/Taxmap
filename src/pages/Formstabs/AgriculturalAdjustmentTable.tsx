@@ -19,6 +19,7 @@ import {
   IonCardHeader,
   IonCardTitle,
   IonToast,
+  IonAlert
 } from '@ionic/react';
 import { arrowBack, leaf, trendingUp, calculator, arrowUpCircleOutline } from 'ionicons/icons';
 import { useParams, useHistory } from 'react-router-dom';
@@ -47,7 +48,7 @@ const AgriculturalAdjustmentTable: React.FC = () => {
     formContext,
     loadData,
     setShowUpdateModal,
-    isFormUploaded // NEW PROP
+    isFormUploaded
   } = useAgriculturalData(formId);
 
   const {
@@ -55,8 +56,11 @@ const AgriculturalAdjustmentTable: React.FC = () => {
     showToast,
     toastMessage,
     toastColor,
+    showConfirmation,
     onSubmit,
-    handleToastDismiss
+    submitForm,
+    handleToastDismiss,
+    handleConfirmationDismiss
   } = useAgriculturalSubmission(formId);
 
   const {
@@ -134,10 +138,10 @@ const AgriculturalAdjustmentTable: React.FC = () => {
           <IonTitle>Agricultural Adjustments - Form {formId}</IonTitle>
           <IonButtons slot="end">
             <SubmitButton
-              label={isFormUploaded ? "Form Already Submitted" : "Submit Form"} // UPDATED
+              label={isFormUploaded ? "Form Already Submitted" : "Submit Form"}
               onClick={onSubmit}
               loading={isSubmitting}
-              disabled={!agriculturalData || isSubmitting || isFormUploaded} // UPDATED
+              disabled={!agriculturalData || isSubmitting || isFormUploaded}
               className="header-submit-button"
             />
           </IonButtons>
@@ -353,6 +357,25 @@ const AgriculturalAdjustmentTable: React.FC = () => {
           position="middle"
           color={toastColor}
           duration={3000}
+        />
+
+        <IonAlert
+          isOpen={showConfirmation}
+          onDidDismiss={handleConfirmationDismiss}
+          header={'Confirm Submission'}
+          message={'Are you sure you want to submit this agricultural form? This action cannot be undone.'}
+          buttons={[
+            {
+              text: 'Cancel',
+              role: 'cancel',
+              cssClass: 'secondary'
+            },
+            {
+              text: 'Submit',
+              role: 'confirm',
+              handler: submitForm
+            }
+          ]}
         />
       </IonContent>
     </IonPage>
