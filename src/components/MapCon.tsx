@@ -13,6 +13,11 @@ import { getMarkerIconByKind } from '../utils/markerIcons';
 import MapMarkerPopup from './MapMarkerPopup';
 import '../CSS/Map.css';
 
+// Import marker icons for filter panel
+import buildingMarkerIconUrl from '../assets/Building.png';
+import equipmentMarkerIconUrl from '../assets/Equipment.png';
+import landMarkerIconUrl from '../assets/Land.png';
+
 const OPENSTREETMAP_URL = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 const SATELLITE_URL = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
 const manoloFortichBounds = L.latLngBounds(
@@ -103,6 +108,187 @@ const CreateOutlineControl = ({ onClick }: { onClick: () => void }) => {
     controlRef.current.addTo(map);
     return () => controlRef.current?.remove();
   }, [map, onClick]);
+
+  return null;
+};
+
+// Filter Control Component
+const FilterControl = ({ 
+  onFilterChange,
+  currentFilter,
+  photoTags
+}: { 
+  onFilterChange: (filter: string) => void;
+  currentFilter: string;
+  photoTags: PhotoTagData[];
+}) => {
+  const map = useMap();
+  const controlRef = useRef<any>(null);
+  const [showFilterPanel, setShowFilterPanel] = useState(false);
+  const [markerCounts, setMarkerCounts] = useState({
+    all: 0,
+    land: 0,
+    building: 0,
+    equipment: 0
+  });
+
+  // Count markers by type
+  const getMarkerCounts = useCallback(async () => {
+    const counts = {
+      all: photoTags.length,
+      land: 0,
+      building: 0,
+      equipment: 0
+    };
+
+    for (const tag of photoTags) {
+      try {
+        const valueInfo = await ValueInfoLocalStorage.getValueInfoByPhotoTagId(tag.id);
+        if (valueInfo) {
+          const formData = await FormDataLocalStorage.getFormData(valueInfo.formDataId);
+          if (formData && formData.kind) {
+            const kindStr = String(formData.kind).trim();
+            switch (kindStr) {
+              case '1':
+              case 'LAND':
+              case 'land':
+                counts.land++;
+                break;
+              case '2':
+              case 'BUILDING':
+              case 'building':
+                counts.building++;
+                break;
+              case '3':
+              case 'MACHINERY':
+              case 'machinery':
+              case 'EQUIPMENT':
+              case 'equipment':
+                counts.equipment++;
+                break;
+            }
+          }
+        }
+      } catch (error) {
+        console.log(`Error counting marker for ${tag.id}:`, error);
+      }
+    }
+
+    return counts;
+  }, [photoTags]);
+
+  useEffect(() => {
+    const loadCounts = async () => {
+      const counts = await getMarkerCounts();
+      setMarkerCounts(counts);
+    };
+    loadCounts();
+  }, [getMarkerCounts]);
+
+  useEffect(() => {
+    let closePanel: (e: MouseEvent) => void;
+
+    const CustomControl = L.Control.extend({
+      options: { position: 'topright' },
+      onAdd: function () {
+        const container = L.DomUtil.create('div', 'leaflet-control filter-toggle-container');
+        
+        // Filter button
+        const button = L.DomUtil.create('button', 'filter-toggle-btn', container);
+        button.type = 'button';
+        button.title = 'Filter Markers';
+        button.innerHTML = `
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/>
+          </svg>
+          <span>Filter</span>
+        `;
+        
+        L.DomEvent.on(button, 'click', (e) => {
+          L.DomEvent.stop(e);
+          setShowFilterPanel(!showFilterPanel);
+        });
+
+        // Filter panel
+        const panel = L.DomUtil.create('div', 'filter-panel');
+        panel.style.display = showFilterPanel ? 'block' : 'none';
+        panel.innerHTML = `
+          <div class="filter-options">
+            <div class="filter-section">
+              <div class="filter-section-title">Show Markers</div>
+              <button class="filter-option ${currentFilter === 'all' ? 'active' : ''}" data-filter="all">
+                <span class="filter-label">All Markers</span>
+                <span class="filter-badge">${markerCounts.all}</span>
+              </button>
+            </div>
+            <div class="filter-section">
+              <div class="filter-section-title">By Type</div>
+              <div class="filter-fan">
+                <button class="filter-option ${currentFilter === 'land' ? 'active' : ''}" data-filter="land">
+                  <img src="${landMarkerIconUrl}" alt="Land" class="filter-icon">
+                  <span class="filter-label">Land</span>
+                  <span class="filter-badge">${markerCounts.land}</span>
+                </button>
+                <button class="filter-option ${currentFilter === 'building' ? 'active' : ''}" data-filter="building">
+                  <img src="${buildingMarkerIconUrl}" alt="Building" class="filter-icon">
+                  <span class="filter-label">Building</span>
+                  <span class="filter-badge">${markerCounts.building}</span>
+                </button>
+                <button class="filter-option ${currentFilter === 'equipment' ? 'active' : ''}" data-filter="equipment">
+                  <img src="${equipmentMarkerIconUrl}" alt="Equipment" class="filter-icon">
+                  <span class="filter-label">Equipment</span>
+                  <span class="filter-badge">${markerCounts.equipment}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+
+        // Add click handlers for filter options
+        L.DomEvent.on(panel, 'click', (e) => {
+          const target = e.target as HTMLElement;
+          const filterOption = target.closest('.filter-option') as HTMLElement;
+          if (filterOption && filterOption.dataset.filter) {
+            L.DomEvent.stop(e);
+            onFilterChange(filterOption.dataset.filter);
+            setShowFilterPanel(false);
+          }
+        });
+
+        container.appendChild(panel);
+        
+        // Close panel when clicking outside
+        closePanel = (e: MouseEvent) => {
+          if (!container.contains(e.target as Node)) {
+            setShowFilterPanel(false);
+          }
+        };
+        
+        document.addEventListener('click', closePanel);
+        
+        return container;
+      }
+    });
+
+    controlRef.current = new CustomControl();
+    controlRef.current.addTo(map);
+    
+    return () => {
+      document.removeEventListener('click', closePanel);
+      controlRef.current?.remove();
+    };
+  }, [map, showFilterPanel, currentFilter, markerCounts, onFilterChange]);
+
+  // Update panel visibility when state changes
+  useEffect(() => {
+    if (controlRef.current) {
+      const container = controlRef.current.getContainer();
+      const panel = container?.querySelector('.filter-panel');
+      if (panel) {
+        panel.style.display = showFilterPanel ? 'block' : 'none';
+      }
+    }
+  }, [showFilterPanel]);
 
   return null;
 };
@@ -240,7 +426,6 @@ const MapLogic = ({
         isSatelliteView={isSatelliteView} 
         onToggle={onToggleSatellite} 
       />
-      <CreateOutlineControl onClick={onOpenForm} />
     </>
   );
 };
@@ -253,12 +438,15 @@ const MapCon: React.FC = () => {
   const [selectedPhotoTagId, setSelectedPhotoTagId] = useState<string | null>(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [isSatelliteView, setIsSatelliteView] = useState(false);
+  const [currentFilter, setCurrentFilter] = useState<string>('all');
+  const [filteredPhotoTags, setFilteredPhotoTags] = useState<PhotoTagData[]>([]);
 
   // Use a useCallback to memoize the loading function
   const loadPhotoTags = useCallback(async () => {
     const tags = await PhotoTagLocalStorage.getAllPhotoTags();
     console.log('Loaded photo tags:', tags.length, 'tags:', tags);
     setPhotoTags(tags);
+    setFilteredPhotoTags(tags); // Initially show all
   }, []);
 
   // Use useIonViewWillEnter to refresh data whenever the view is navigated to
@@ -284,6 +472,47 @@ const MapCon: React.FC = () => {
     };
   }, []);
 
+  // Filter photo tags based on current filter
+  useEffect(() => {
+    const filterTags = async () => {
+      if (currentFilter === 'all') {
+        setFilteredPhotoTags(photoTags);
+        return;
+      }
+
+      const filtered = [];
+      for (const tag of photoTags) {
+        try {
+          const valueInfo = await ValueInfoLocalStorage.getValueInfoByPhotoTagId(tag.id);
+          if (valueInfo) {
+            const formData = await FormDataLocalStorage.getFormData(valueInfo.formDataId);
+            if (formData && formData.kind) {
+              const kindStr = String(formData.kind).trim();
+              
+              const matchesFilter = 
+                (currentFilter === 'land' && 
+                  (kindStr === '1' || kindStr === 'LAND' || kindStr === 'land')) ||
+                (currentFilter === 'building' && 
+                  (kindStr === '2' || kindStr === 'BUILDING' || kindStr === 'building')) ||
+                (currentFilter === 'equipment' && 
+                  (kindStr === '3' || kindStr === 'MACHINERY' || kindStr === 'machinery' || 
+                   kindStr === 'EQUIPMENT' || kindStr === 'equipment'));
+              
+              if (matchesFilter) {
+                filtered.push(tag);
+              }
+            }
+          }
+        } catch (error) {
+          console.log(`Error filtering tag ${tag.id}:`, error);
+        }
+      }
+      setFilteredPhotoTags(filtered);
+    };
+
+    filterTags();
+  }, [photoTags, currentFilter]);
+
   const handleFormDismiss = () => {
     setShowForm(false);
     loadPhotoTags();
@@ -300,6 +529,11 @@ const MapCon: React.FC = () => {
 
   const handleToggleSatellite = () => {
     setIsSatelliteView(!isSatelliteView);
+  };
+
+  const handleFilterChange = (filter: string) => {
+    setCurrentFilter(filter);
+    console.log(`Filter changed to: ${filter}`);
   };
 
   const currentTileUrl = isSatelliteView ? SATELLITE_URL : OPENSTREETMAP_URL;
@@ -328,9 +562,9 @@ const MapCon: React.FC = () => {
               maxZoom={MAX_ZOOM}
             />
             
-            {/* Display photo markers */}
+            {/* Display filtered photo markers */}
             <PhotoMarkers
-              photoTags={photoTags}
+              photoTags={filteredPhotoTags}
               onMarkerClick={handleMarkerClick}
             />
             
@@ -339,6 +573,16 @@ const MapCon: React.FC = () => {
               isSatelliteView={isSatelliteView}
               onToggleSatellite={handleToggleSatellite}
             />
+
+            {/* Filter Control ABOVE Create Button */}
+            <FilterControl 
+              onFilterChange={handleFilterChange}
+              currentFilter={currentFilter}
+              photoTags={photoTags}
+            />
+
+            {/* Create Button BELOW Filter */}
+            <CreateOutlineControl onClick={() => setShowForm(true)} />
           </MapContainer>
 
           {/* Internet status notification */}
