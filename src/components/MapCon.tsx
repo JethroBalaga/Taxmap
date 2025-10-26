@@ -31,6 +31,11 @@ const MIN_ZOOM_UNLOCKED = 12;
 const MAX_ZOOM = 22;
 const CREATE_OUTLINE_PATH = "M384 224v184a40 40 0 0 1-40 40H104a40 40 0 0 1-40-40V168a40 40 0 0 1 40-40h167.48M336 64h112v112M224 288L440 72";
 
+// Update the MapCon props interface
+interface MapConProps {
+  searchQuery?: string;
+}
+
 // Satellite Toggle Control Component
 const SatelliteToggleControl = ({ 
   isSatelliteView, 
@@ -431,7 +436,7 @@ const MapLogic = ({
 };
 
 // Main Map Component
-const MapCon: React.FC = () => {
+const MapCon: React.FC<MapConProps> = ({ searchQuery = '' }) => {
   const [isMounted, setIsMounted] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [photoTags, setPhotoTags] = useState<PhotoTagData[]>([]);
@@ -440,6 +445,7 @@ const MapCon: React.FC = () => {
   const [isSatelliteView, setIsSatelliteView] = useState(false);
   const [currentFilter, setCurrentFilter] = useState<string>('all');
   const [filteredPhotoTags, setFilteredPhotoTags] = useState<PhotoTagData[]>([]);
+  const [searchedPhotoTags, setSearchedPhotoTags] = useState<PhotoTagData[]>([]);
 
   // Use a useCallback to memoize the loading function
   const loadPhotoTags = useCallback(async () => {
@@ -447,6 +453,7 @@ const MapCon: React.FC = () => {
     console.log('Loaded photo tags:', tags.length, 'tags:', tags);
     setPhotoTags(tags);
     setFilteredPhotoTags(tags); // Initially show all
+    setSearchedPhotoTags(tags); // Initially show all
   }, []);
 
   // Use useIonViewWillEnter to refresh data whenever the view is navigated to
@@ -513,6 +520,59 @@ const MapCon: React.FC = () => {
     filterTags();
   }, [photoTags, currentFilter]);
 
+  // Search functionality - without remarks
+  useEffect(() => {
+    const searchProperties = async () => {
+      if (!searchQuery.trim()) {
+        setSearchedPhotoTags(filteredPhotoTags);
+        return;
+      }
+
+      const query = searchQuery.toLowerCase().trim();
+      const searched = [];
+
+      for (const tag of filteredPhotoTags) {
+        try {
+          const valueInfo = await ValueInfoLocalStorage.getValueInfoByPhotoTagId(tag.id);
+          if (valueInfo) {
+            const formData = await FormDataLocalStorage.getFormData(valueInfo.formDataId);
+            if (formData) {
+              // Search in form data fields (without remarks)
+              const matchesSearch = 
+                (formData.id && String(formData.id).toLowerCase().includes(query)) ||
+                (formData.kind && String(formData.kind).toLowerCase().includes(query)) ||
+                (formData.classification && String(formData.classification).toLowerCase().includes(query)) ||
+                (formData.area && String(formData.area).includes(query));
+              // Removed remarks field completely
+
+              if (matchesSearch) {
+                searched.push(tag);
+                continue;
+              }
+            }
+          }
+
+          // Search in photo tag metadata
+          const tagMatchesSearch =
+            (tag.id && String(tag.id).toLowerCase().includes(query)) ||
+            (tag.photoName && String(tag.photoName).toLowerCase().includes(query)) ||
+            (tag.latitude && String(tag.latitude).includes(query)) ||
+            (tag.longitude && String(tag.longitude).includes(query));
+
+          if (tagMatchesSearch) {
+            searched.push(tag);
+          }
+        } catch (error) {
+          console.log(`Error searching tag ${tag.id}:`, error);
+        }
+      }
+
+      setSearchedPhotoTags(searched);
+    };
+
+    searchProperties();
+  }, [filteredPhotoTags, searchQuery]);
+
   const handleFormDismiss = () => {
     setShowForm(false);
     loadPhotoTags();
@@ -562,9 +622,9 @@ const MapCon: React.FC = () => {
               maxZoom={MAX_ZOOM}
             />
             
-            {/* Display filtered photo markers */}
+            {/* Display searched photo markers */}
             <PhotoMarkers
-              photoTags={filteredPhotoTags}
+              photoTags={searchedPhotoTags}
               onMarkerClick={handleMarkerClick}
             />
             

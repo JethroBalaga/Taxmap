@@ -9,7 +9,8 @@ import {
   IonCardSubtitle,
   IonCardTitle,
   IonLoading,
-  IonToast
+  IonToast,
+  IonSearchbar
 } from '@ionic/react';
 import { useEffect, useState } from 'react';
 import MapCon from '../components/MapCon';
@@ -23,6 +24,7 @@ const Map: React.FC = () => {
   const [loadingMessage, setLoadingMessage] = useState<string>('Loading data...');
   const [showError, setShowError] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState<string>('');
 
   useEffect(() => {
     const fetchUserAndData = async () => {
@@ -70,13 +72,34 @@ const Map: React.FC = () => {
     fetchUserAndData();
   }, []);
 
+  const handleSearch = (event: CustomEvent) => {
+    setSearchQuery(event.detail.value || '');
+  };
+
+  const handleClearSearch = () => {
+    setSearchQuery('');
+  };
+
   return (
     <IonPage>
       <IonHeader>
         <IonToolbar>
           <IonTitle>Map</IonTitle>
         </IonToolbar>
+        
+        {/* Search Bar in Header - BELOW the title */}
+        <IonToolbar>
+          <IonSearchbar
+            value={searchQuery}
+            onIonInput={handleSearch}
+            onIonClear={handleClearSearch}
+            placeholder="Search Form..."
+            className="map-searchbar"
+            animated
+          />
+        </IonToolbar>
       </IonHeader>
+      
       <IonContent fullscreen className="map-content">
         <IonLoading isOpen={loading} message={loadingMessage} />
         
@@ -88,6 +111,8 @@ const Map: React.FC = () => {
           color="danger"
           position="top"
         />
+
+        {/* Remove the old search bar container since it's now in header */}
         
         {username && (
           <div className="username-center-top">
@@ -101,7 +126,7 @@ const Map: React.FC = () => {
         )}
 
         <IonCard className="map-card">
-          <MapCon/>
+          <MapCon searchQuery={searchQuery} />
         </IonCard>
       </IonContent>
     </IonPage>

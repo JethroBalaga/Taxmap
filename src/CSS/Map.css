@@ -3,7 +3,24 @@
   position: relative;
 }
 
-/* Remove username display completely */
+/* Search Bar Styles - Now in header */
+.map-searchbar {
+  --background: rgba(255, 255, 255, 0.95);
+  --backdrop-filter: blur(10px);
+  --border-radius: 8px;
+  --box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  --placeholder-color: #666;
+  padding: 8px 16px;
+  width: 50%; /* Half width */
+  margin: 0 auto; /* Center it */
+}
+
+/* Remove the old search bar container styles */
+.search-bar-container {
+  display: none;
+}
+
+/* Remove username styles since we're hiding it */
 .username-center-top {
   display: none;
 }
@@ -279,6 +296,11 @@
 
 /* Responsive design for smaller screens */
 @media (max-width: 768px) {
+  .map-searchbar {
+    padding: 6px 12px;
+    width: 80%; /* Wider on mobile for better usability */
+  }
+  
   /* Adjust map controls for mobile */
   .satellite-toggle-btn,
   .filter-toggle-btn {
