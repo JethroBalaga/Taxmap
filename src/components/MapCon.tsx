@@ -11,8 +11,10 @@ import { FormDataLocalStorage } from '../utils/tablestorages/FormDataLocalStorag
 import { ValueInfoLocalStorage } from '../utils/tablestorages/ValueInfoLocalStorage';
 import { getMarkerIconByKind } from '../utils/markerIcons';
 import MapMarkerPopup from './MapMarkerPopup';
+import '../CSS/Map.css';
 
-const TILE_LAYER_URL = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+const OPENSTREETMAP_URL = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+const SATELLITE_URL = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
 const manoloFortichBounds = L.latLngBounds(
   L.latLng(8.25, 124.75),
   L.latLng(8.45, 124.95)
@@ -23,6 +25,53 @@ const MIN_ZOOM_LOCKED = 14;
 const MIN_ZOOM_UNLOCKED = 12;
 const MAX_ZOOM = 22;
 const CREATE_OUTLINE_PATH = "M384 224v184a40 40 0 0 1-40 40H104a40 40 0 0 1-40-40V168a40 40 0 0 1 40-40h167.48M336 64h112v112M224 288L440 72";
+
+// Satellite Toggle Control Component
+const SatelliteToggleControl = ({ 
+  isSatelliteView, 
+  onToggle 
+}: { 
+  isSatelliteView: boolean;
+  onToggle: () => void;
+}) => {
+  const map = useMap();
+  const controlRef = useRef<any>(null);
+
+  useEffect(() => {
+    const CustomControl = L.Control.extend({
+      options: { position: 'topleft' },
+      onAdd: function () {
+        const container = L.DomUtil.create('div', 'leaflet-control satellite-toggle-container');
+        const button = L.DomUtil.create('button', 'satellite-toggle-btn', container);
+        button.type = 'button';
+        button.title = isSatelliteView ? 'Switch to Standard Map' : 'Switch to Satellite View';
+        button.innerHTML = `
+          <svg viewBox="0 0 24 24" width="20" height="20">
+            <path fill="currentColor" d="${isSatelliteView ? 
+              'M12,2C8.13,2,5,5.13,5,9c0,5.25,7,13,7,13s7-7.75,7-13C19,5.13,15.87,2,12,2z M12,11.5c-1.38,0-2.5-1.12-2.5-2.5s1.12-2.5,2.5-2.5s2.5,1.12,2.5,2.5S13.38,11.5,12,11.5z' :
+              'M12,2C8.13,2,5,5.13,5,9c0,5.25,7,13,7,13s7-7.75,7-13C19,5.13,15.87,2,12,2z M12,11.5c-1.38,0-2.5-1.12-2.5-2.5s1.12-2.5,2.5-2.5s2.5,1.12,2.5,2.5S13.38,11.5,12,11.5z'
+            }"/>
+          </svg>
+          <span>${isSatelliteView ? 'Map' : 'Satellite'}</span>
+        `;
+        
+        L.DomEvent.on(button, 'click', (e) => {
+          L.DomEvent.stop(e);
+          onToggle();
+        });
+        
+        return container;
+      }
+    });
+
+    controlRef.current = new CustomControl();
+    controlRef.current.addTo(map);
+    
+    return () => controlRef.current?.remove();
+  }, [map, isSatelliteView, onToggle]);
+
+  return null;
+};
 
 // Create Button Component
 const CreateOutlineControl = ({ onClick }: { onClick: () => void }) => {
@@ -109,7 +158,15 @@ const PhotoMarkers: React.FC<{
 };
 
 // Component to set up the map logic
-const MapLogic = ({ onOpenForm }: { onOpenForm: () => void }) => {
+const MapLogic = ({ 
+  onOpenForm, 
+  isSatelliteView, 
+  onToggleSatellite 
+}: { 
+  onOpenForm: () => void;
+  isSatelliteView: boolean;
+  onToggleSatellite: () => void;
+}) => {
   const map = useMap();
   const tileLayerRef = useRef<any>(null);
   const [allowZoomOut, setAllowZoomOut] = useState(false);
@@ -122,9 +179,12 @@ const MapLogic = ({ onOpenForm }: { onOpenForm: () => void }) => {
       storeName: 'map_tiles'
     });
 
-    // Add Offline Tile Layer
-    const offlineLayer = (L.tileLayer as any).offline(TILE_LAYER_URL, {
-      attribution: 'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics',
+    // Add Offline Tile Layer - use the current view type
+    const currentTileUrl = isSatelliteView ? SATELLITE_URL : OPENSTREETMAP_URL;
+    const offlineLayer = (L.tileLayer as any).offline(currentTileUrl, {
+      attribution: isSatelliteView 
+        ? 'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics'
+        : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       noWrap: true,
       minZoom: MIN_ZOOM_LOCKED,
       maxZoom: MAX_ZOOM,
@@ -172,9 +232,17 @@ const MapLogic = ({ onOpenForm }: { onOpenForm: () => void }) => {
       map.off('move', enforceRestrictions);
       offlineLayer.remove();
     };
-  }, [map, allowZoomOut]);
+  }, [map, allowZoomOut, isSatelliteView]);
 
-  return <CreateOutlineControl onClick={onOpenForm} />;
+  return (
+    <>
+      <SatelliteToggleControl 
+        isSatelliteView={isSatelliteView} 
+        onToggle={onToggleSatellite} 
+      />
+      <CreateOutlineControl onClick={onOpenForm} />
+    </>
+  );
 };
 
 // Main Map Component
@@ -184,6 +252,7 @@ const MapCon: React.FC = () => {
   const [photoTags, setPhotoTags] = useState<PhotoTagData[]>([]);
   const [selectedPhotoTagId, setSelectedPhotoTagId] = useState<string | null>(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [isSatelliteView, setIsSatelliteView] = useState(false);
 
   // Use a useCallback to memoize the loading function
   const loadPhotoTags = useCallback(async () => {
@@ -229,75 +298,17 @@ const MapCon: React.FC = () => {
     setSelectedPhotoTagId(photoTagId);
   };
 
+  const handleToggleSatellite = () => {
+    setIsSatelliteView(!isSatelliteView);
+  };
+
+  const currentTileUrl = isSatelliteView ? SATELLITE_URL : OPENSTREETMAP_URL;
+  const currentAttribution = isSatelliteView 
+    ? 'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics'
+    : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+
   return (
-    <div style={{ height: '100vh', width: '100%', overflow: 'hidden', position: 'relative' }}>
-      <style>{`
-        .create-outline-btn {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          width: 30px;
-          height: 30px;
-          background: white;
-          border-radius: 50%;
-          box-shadow: 0 1px 5px rgba(0,0,0,0.4);
-          cursor: pointer;
-        }
-        .create-outline-btn:hover {
-          background: #f4f4f4;
-          transform: scale(1.1);
-        }
-        
-        /* Ensure Leaflet markers display correctly */
-        .leaflet-marker-icon {
-          border: none !important;
-          background: transparent !important;
-        }
-        
-        /* Make markers more interactive */
-        .leaflet-marker-icon:hover {
-          transform: scale(1.2);
-          transition: transform 0.2s ease;
-          z-index: 1000;
-        }
-
-        /* Popup overlay */
-        .popup-overlay {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background-color: rgba(0, 0, 0, 0.5);
-          z-index: 999;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-        }
-        
-        /* Internet status notification */
-        .internet-status {
-          position: absolute;
-          bottom: 10px;
-          left: 50%;
-          transform: translateX(-50%);
-          background-color: #ff4d4f;
-          color: white;
-          padding: 8px 16px;
-          border-radius: 4px;
-          z-index: 1000;
-          font-size: 14px;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-        
-        .internet-status.online {
-          background-color: #52c41a;
-        }
-      `}</style>
-
+    <div className="map-content" style={{ height: '100vh', width: '100%', overflow: 'hidden', position: 'relative' }}>
       {isMounted && (
         <>
           <MapContainer
@@ -309,10 +320,10 @@ const MapCon: React.FC = () => {
             maxBounds={manoloFortichBounds}
             maxBoundsViscosity={1.0}
           >
-            {/* This only renders the base layer visually (non-offline) */}
+            {/* Base tile layer */}
             <TileLayer
-              url={TILE_LAYER_URL}
-              attribution='Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics'
+              url={currentTileUrl}
+              attribution={currentAttribution}
               maxNativeZoom={18}
               maxZoom={MAX_ZOOM}
             />
@@ -323,7 +334,11 @@ const MapCon: React.FC = () => {
               onMarkerClick={handleMarkerClick}
             />
             
-            <MapLogic onOpenForm={() => setShowForm(true)} />
+            <MapLogic 
+              onOpenForm={() => setShowForm(true)} 
+              isSatelliteView={isSatelliteView}
+              onToggleSatellite={handleToggleSatellite}
+            />
           </MapContainer>
 
           {/* Internet status notification */}
