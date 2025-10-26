@@ -90,7 +90,7 @@ const Map: React.FC = () => {
         />
         
         {username && (
-          <div className="username-below-header">
+          <div className="username-center-top">
             <IonCard className="username-card">
               <IonCardHeader>
                 <IonCardSubtitle>Welcome back,</IonCardSubtitle>

@@ -574,14 +574,14 @@ const MapCon: React.FC = () => {
               onToggleSatellite={handleToggleSatellite}
             />
 
-            {/* Filter Control ABOVE Create Button */}
+            {/* Filter Control FIRST (will appear ABOVE) */}
             <FilterControl 
               onFilterChange={handleFilterChange}
               currentFilter={currentFilter}
               photoTags={photoTags}
             />
 
-            {/* Create Button BELOW Filter */}
+            {/* Create Button SECOND (will appear BELOW) */}
             <CreateOutlineControl onClick={() => setShowForm(true)} />
           </MapContainer>
 

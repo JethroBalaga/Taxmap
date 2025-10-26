@@ -1,3 +1,28 @@
+/* Map content container */
+.map-content {
+  position: relative;
+}
+
+/* Remove username display completely */
+.username-center-top {
+  display: none;
+}
+
+/* Map card styling */
+.map-card {
+  margin: 0;
+  height: 100%;
+  width: 100%;
+  position: relative;
+}
+
+/* This ensures the map container fills the card */
+.map-card > div {
+  height: 100%;
+  width: 100%;
+}
+
+/* Map controls styling */
 .create-outline-btn {
   display: flex;
   align-items: center;
@@ -181,12 +206,21 @@
   text-transform: uppercase;
 }
 
-/* Update control container for multiple buttons - REVERSE ORDER to put filter above create */
+/* FIX: Update control container for multiple buttons - NORMAL ORDER to put filter ABOVE create */
 .leaflet-control-container .leaflet-top.leaflet-right {
   display: flex;
-  flex-direction: column-reverse; /* This puts filter above create button */
+  flex-direction: column; /* Normal order - filter above create */
   align-items: flex-end;
   gap: 10px;
+}
+
+/* Ensure the filter control comes before create control in the DOM order */
+.leaflet-control-container .leaflet-top.leaflet-right .leaflet-control:nth-child(1) {
+  order: 1; /* Filter button */
+}
+
+.leaflet-control-container .leaflet-top.leaflet-right .leaflet-control:nth-child(2) {
+  order: 2; /* Create button */
 }
 
 /* Ensure Leaflet markers display correctly */
@@ -238,60 +272,23 @@
   background-color: #52c41a;
 }
 
-/* Map content container */
-.map-content {
-  position: relative;
-}
-
-/* Username positioned below the header but away from map controls */
+/* Remove the old username positioning styles */
 .username-below-header {
-  position: absolute;
-  top: 70px; /* Below header */
-  right: 70px; /* Position on the right side away from zoom controls */
-  z-index: 1000;
-  pointer-events: none;
-  max-width: 250px; /* Limit width so it doesn't get too wide */
+  display: none;
 }
 
-/* Username card styling */
-.username-card {
-  margin: 0;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(5px);
-  -webkit-backdrop-filter: blur(5px);
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  pointer-events: auto;
-}
-
-.username-card ion-card-header {
-  padding: 10px 15px;
-}
-
-.username-card ion-card-subtitle {
-  font-size: 0.8rem;
-  color: #666;
-  margin: 0;
-}
-
-.username-card .username-title {
-  font-size: 1rem;
-  font-weight: 600;
-  color: #3880ff;
-  margin: 0;
-}
-
-/* Map card styling */
-.map-card {
-  margin: 0;
-  height: 100%;
-  width: 100%;
-  position: relative;
-}
-
-/* This ensures the map container fills the card */
-.map-card > div {
-  height: 100%;
-  width: 100%;
+/* Responsive design for smaller screens */
+@media (max-width: 768px) {
+  /* Adjust map controls for mobile */
+  .satellite-toggle-btn,
+  .filter-toggle-btn {
+    min-width: 80px;
+    font-size: 11px;
+    padding: 0 6px;
+  }
+  
+  .filter-panel {
+    min-width: 180px;
+    padding: 12px;
+  }
 }
