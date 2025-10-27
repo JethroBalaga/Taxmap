@@ -39,22 +39,71 @@
   width: 100%;
 }
 
-/* Map controls styling */
+/* Map controls styling - Circular buttons without labels */
+.satellite-toggle-btn,
+.filter-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px; /* Circular size */
+  height: 40px; /* Circular size */
+  background: white;
+  border: none;
+  border-radius: 50%; /* Makes it circular */
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  cursor: pointer;
+  padding: 0;
+  color: #333;
+  transition: all 0.2s ease;
+}
+
+.satellite-toggle-btn:hover,
+.filter-toggle-btn:hover {
+  background: #f4f4f4;
+  transform: scale(1.05);
+}
+
+.satellite-toggle-btn:active,
+.filter-toggle-btn:active {
+  background: #e9e9e9;
+  transform: scale(0.95);
+}
+
+/* Remove labels from buttons */
+.satellite-toggle-btn span,
+.filter-toggle-btn span {
+  display: none; /* Hide the text labels */
+}
+
+/* Adjust SVG sizing for circular buttons */
+.satellite-toggle-btn svg,
+.filter-toggle-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Create button styling */
 .create-outline-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
+  width: 40px;
+  height: 40px;
   background: white;
   border-radius: 50%;
-  box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
   cursor: pointer;
+  transition: all 0.2s ease;
 }
 
 .create-outline-btn:hover {
   background: #f4f4f4;
-  transform: scale(1.1);
+  transform: scale(1.05);
+}
+
+.create-outline-btn:active {
+  background: #e9e9e9;
+  transform: scale(0.95);
 }
 
 /* Satellite toggle button styles - POSITIONED ABOVE ZOOM CONTROLS */
@@ -80,69 +129,37 @@
   margin-top: 0;
 }
 
-.satellite-toggle-btn {
+/* FIX: Proper control container layout for top-right buttons - REVERSED ORDER */
+.leaflet-control-container .leaflet-top.leaflet-right {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  width: auto;
-  min-width: 90px;
-  height: 30px;
-  background: white;
-  border: none;
-  border-radius: 4px;
-  box-shadow: 0 1px 5px rgba(0,0,0,0.4);
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 500;
-  padding: 0 8px;
-  color: #333;
+  flex-direction: column-reverse; /* REVERSED order - create above filter */
+  align-items: flex-end;
+  gap: 10px;
 }
 
-.satellite-toggle-btn:hover {
-  background: #f4f4f4;
-}
-
-.satellite-toggle-btn:active {
-  background: #e9e9e9;
-}
-
-/* Filter button styles */
-.filter-toggle-container {
+/* Ensure proper spacing between controls */
+.leaflet-control-container .leaflet-top.leaflet-right .leaflet-control {
+  margin-top: 10px;
   margin-bottom: 0;
 }
 
-.filter-toggle-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  width: auto;
-  min-width: 90px;
-  height: 30px;
-  background: white;
-  border: none;
-  border-radius: 4px;
-  box-shadow: 0 1px 5px rgba(0,0,0,0.4);
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 500;
-  padding: 0 8px;
-  color: #333;
+/* Specific order for our controls - CREATE ABOVE FILTER */
+.leaflet-control-container .leaflet-top.leaflet-right .leaflet-control.create-outline-control {
+  order: 1; /* Create button first (will appear above) */
 }
 
-.filter-toggle-btn:hover {
-  background: #f4f4f4;
+.leaflet-control-container .leaflet-top.leaflet-right .filter-toggle-container {
+  order: 2; /* Filter button second (will appear below) */
 }
 
-.filter-toggle-btn:active {
-  background: #e9e9e9;
+/* Filter panel positioning fix */
+.filter-toggle-container {
+  position: relative;
 }
 
-/* Filter panel styles */
 .filter-panel {
   position: absolute;
-  top: 40px;
+  top: 45px; /* Position below the circular button */
   right: 0;
   background: white;
   border-radius: 8px;
@@ -223,23 +240,6 @@
   text-transform: uppercase;
 }
 
-/* FIX: Update control container for multiple buttons - NORMAL ORDER to put filter ABOVE create */
-.leaflet-control-container .leaflet-top.leaflet-right {
-  display: flex;
-  flex-direction: column; /* Normal order - filter above create */
-  align-items: flex-end;
-  gap: 10px;
-}
-
-/* Ensure the filter control comes before create control in the DOM order */
-.leaflet-control-container .leaflet-top.leaflet-right .leaflet-control:nth-child(1) {
-  order: 1; /* Filter button */
-}
-
-.leaflet-control-container .leaflet-top.leaflet-right .leaflet-control:nth-child(2) {
-  order: 2; /* Create button */
-}
-
 /* Ensure Leaflet markers display correctly */
 .leaflet-marker-icon {
   border: none !important;
@@ -303,14 +303,22 @@
   
   /* Adjust map controls for mobile */
   .satellite-toggle-btn,
-  .filter-toggle-btn {
-    min-width: 80px;
-    font-size: 11px;
-    padding: 0 6px;
+  .filter-toggle-btn,
+  .create-outline-btn {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .satellite-toggle-btn svg,
+  .filter-toggle-btn svg,
+  .create-outline-btn svg {
+    width: 18px;
+    height: 18px;
   }
   
   .filter-panel {
     min-width: 180px;
     padding: 12px;
+    top: 42px; /* Adjust for smaller button size */
   }
 }
