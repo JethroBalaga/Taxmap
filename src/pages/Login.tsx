@@ -45,7 +45,6 @@ const Login: React.FC = () => {
 
   // Get device information
   const getDeviceInfo = () => {
-    // You can enhance this with more device detection logic
     const deviceName = navigator.userAgent;
     return deviceName;
   };
@@ -66,14 +65,12 @@ const Login: React.FC = () => {
       // STEP 1: Check if user exists and get user data
       let userQuery;
       if (!usernameOrEmail.includes('@')) {
-        // Username lookup
         userQuery = await supabase
           .from('users')
           .select('user_email, user_id, suspended')
           .eq('username', usernameOrEmail)
           .single();
       } else {
-        // Email lookup
         userQuery = await supabase
           .from('users')
           .select('user_email, user_id, suspended')
@@ -92,12 +89,12 @@ const Login: React.FC = () => {
       userEmail = userData.user_email;
       userId = userData.user_id;
 
-      // STEP 2: Check if user is suspended FIRST
+      // STEP 2: Check if user is suspended
       if (userData.suspended) {
         setToastMessage('Your account has been suspended. Please contact administrator.');
         setShowToast(true);
         setIsLoading(false);
-        return; // Stop here if suspended
+        return;
       }
 
       // STEP 3: Verify credentials through Supabase Auth
@@ -107,7 +104,6 @@ const Login: React.FC = () => {
       });
 
       if (authError) {
-        // Handle specific password errors
         if (authError.message.includes('Invalid login credentials')) {
           setAlertMessage('Incorrect username/email or password. Please try again.');
         } else if (authError.message.includes('Email not confirmed')) {
@@ -121,10 +117,9 @@ const Login: React.FC = () => {
       }
 
       if (data.session && data.user) {
-        // STEP 4: Check device registration (only if user is not suspended and credentials are correct)
         const deviceName = getDeviceInfo();
-        
-        // Check if device exists for this user
+
+        // STEP 4: Check if device is registered
         const { data: deviceData, error: deviceError } = await supabase
           .from('deviceregistration')
           .select('*')
@@ -133,7 +128,6 @@ const Login: React.FC = () => {
           .single();
 
         if (deviceError || !deviceData) {
-          // Device doesn't exist, insert new device record
           const { error: insertError } = await supabase
             .from('deviceregistration')
             .insert({
@@ -153,7 +147,6 @@ const Login: React.FC = () => {
           return;
         }
 
-        // Device exists, check if it's registered
         if (!deviceData.registered) {
           setToastMessage('Device not approved. Please ask administrator to allow this device.');
           setShowToast(true);
@@ -161,8 +154,19 @@ const Login: React.FC = () => {
           return;
         }
 
-        // STEP 5: Device is registered, proceed with login
-        // Store session in localStorage
+        // ✅ STEP 5: Device is registered, log user activity
+        try {
+          await supabase.rpc('log_user_login', {
+            p_user_id: userId,
+            p_user_email: userEmail,
+            p_device_id: deviceData.device_id
+          });
+          console.log('Login activity logged successfully');
+        } catch (logError) {
+          console.error('Failed to log user activity:', logError);
+        }
+
+        // ✅ STEP 6: Store session in localStorage
         const sessionData: SessionData = {
           access_token: data.session.access_token,
           refresh_token: data.session.refresh_token,
@@ -172,10 +176,9 @@ const Login: React.FC = () => {
             email: data.user.email || '',
           }
         };
-        
+
         storeSession(sessionData);
-        
-        // Login successful
+
         setToastMessage('Login successful! Redirecting...');
         setShowToast(true);
         setTimeout(() => {
