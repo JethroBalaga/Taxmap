@@ -56,24 +56,6 @@ const getPhotoFile = async (photoTag: any): Promise<Blob | null> => {
   }
 };
 
-const cleanupLocalPhotos = async (photoTag: any) => {
-  try {
-    const photoPath = `phototags/${photoTag.photoName}`;
-
-    if (Capacitor.isNativePlatform()) {
-      await Filesystem.deleteFile({
-        path: photoPath,
-        directory: Directory.Data
-      });
-      console.log('Local photo cleaned up successfully');
-    } else {
-      localStorage.removeItem(photoTag.photoName);
-    }
-  } catch (error) {
-    console.warn('Could not clean up local photo:', error);
-  }
-};
-
 export const useAgriculturalSubmission = (formId: string) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showToast, setShowToast] = useState(false);
@@ -96,10 +78,8 @@ export const useAgriculturalSubmission = (formId: string) => {
   };
 
   const submitForm = async () => {
-    // Close confirmation dialog immediately when submission starts
     setShowConfirmation(false);
     
-    // Check if form already uploaded
     const formData = await FormDataLocalStorage.getFormData(formId);
     if (formData?.uploaded) {
       showToastMessage('Form already submitted', 'warning');
@@ -141,9 +121,8 @@ export const useAgriculturalSubmission = (formId: string) => {
         if (uploadError) {
           console.warn('Photo upload failed', uploadError);
           showToastMessage('Form submitted but photo upload failed', 'warning');
-        } else {
-          await cleanupLocalPhotos(photoTag);
         }
+        // Photo remains in local storage - no cleanup
       } else {
         showToastMessage('Form submitted but could not retrieve photo', 'warning');
       }
@@ -178,7 +157,6 @@ export const useAgriculturalSubmission = (formId: string) => {
         await FormDataLocalStorage.markFormAsUploaded(formId, databaseFormId);
       }
 
-      // Dispatch event to notify form was uploaded
       window.dispatchEvent(new CustomEvent('formUploaded', { detail: { formId } }));
 
       showToastMessage('Agricultural data submitted successfully! All data synchronized with server.', 'success');
