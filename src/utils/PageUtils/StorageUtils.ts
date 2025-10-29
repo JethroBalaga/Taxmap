@@ -1,3 +1,5 @@
+// src/utils/PageUtils/StorageUtils.ts
+
 import { StorageInfo, StorageItem, StorageInstance, RecordCounter, StorageRecordCount } from './StorageTypes';
 
 export const formatBytes = (bytes: number): string => {
@@ -76,6 +78,8 @@ export const calculateStorageUsage = async (
               displayValue = `${value.length} form records`;
             } else if (key === 'valueInfo' && Array.isArray(value)) {
               displayValue = `${value.length} value info records`;
+            } else if (key === 'photoTags' && Array.isArray(value)) {
+              displayValue = `${value.length} photo tag records`;
             } else if (typeof value === 'object') {
               displayValue = 'Object data';
             } else {
