@@ -27,7 +27,8 @@ import { MachineDataLocalStorage } from '../utils/tablestorages/MachineDataLocal
 import { NonAgriAdjustmentLocalStorage } from '../utils/tablestorages/NonAgriAdjustmentLocalStorage';
 import { getActualUsedData, hasActualUsedData } from '../utils/actualUsedLocalStorage';
 import { getAssessmentLevelData, getAssessmentLevelCount } from '../utils/assessmentLevelLocalStorage';
-import { getBarangayData, getBarangayCount } from '../utils/barangayLocalStorage'; // Add this import
+import { getBarangayData, getBarangayCount } from '../utils/barangayLocalStorage';
+import { getBuildingCodeCount } from '../utils/buildingCodeLocalStorage'; // Add this import
 
 // Import our split components
 import { InfoCard, StorageOverviewCard, StorageItemsCard } from './StorageCards';
@@ -85,9 +86,14 @@ const assessmentLevelStorage = localForage.createInstance({
   storeName: 'assessment_level_data'
 });
 
-const barangayStorage = localForage.createInstance({ // Add this instance
+const barangayStorage = localForage.createInstance({
   name: 'TaxAppStorage',
   storeName: 'barangay_data'
+});
+
+const buildingCodeStorage = localForage.createInstance({ // Add this instance
+  name: 'TaxAppStorage',
+  storeName: 'building_code_data'
 });
 
 // ADD NEW STORAGE INSTANCES HERE
@@ -103,7 +109,8 @@ const storageInstances: StorageInstance[] = [
   { name: 'NonAgriAdjustmentDB', instance: nonAgriAdjustmentStorage },
   { name: 'ActualUsedDB', instance: actualUsedStorage },
   { name: 'AssessmentLevelDB', instance: assessmentLevelStorage },
-  { name: 'BarangayDB', instance: barangayStorage } // Add this line
+  { name: 'BarangayDB', instance: barangayStorage },
+  { name: 'BuildingCodeDB', instance: buildingCodeStorage } // Add this line
   // Add more instances here as you create them...
 ];
 
@@ -125,10 +132,14 @@ const recordCounters: RecordCounter[] = [
     const data = await getAssessmentLevelData();
     return data ? data.length : 0;
   }, color: 'primary' },
-  { name: 'Barangays', getCount: async () => { // Add this counter
+  { name: 'Barangays', getCount: async () => {
     const data = await getBarangayData();
     return data ? data.length : 0;
-  }, color: 'secondary' }
+  }, color: 'secondary' },
+  { name: 'Building Codes', getCount: async () => { // Add this counter
+    const count = await getBuildingCodeCount();
+    return count;
+  }, color: 'tertiary' }
   // Add more counters here as you create them...
 ];
 
