@@ -25,12 +25,20 @@ import {
 import { refreshOutline } from 'ionicons/icons';
 import localForage from 'localforage';
 import { FormDataLocalStorage } from '../utils/tablestorages/FormDataLocalStorage';
+import { ValueInfoLocalStorage } from '../utils/tablestorages/ValueInfoLocalStorage';
 
-// Create the same instance you're using in FormDataLocalStorage
+// Create instances for all your storage systems
 const formDataStorage = localForage.createInstance({
   name: 'FormDataDB',
   storeName: 'form_data_store'
 });
+
+const valueInfoStorage = localForage.createInstance({
+  name: 'PhotoTagApp',
+  storeName: 'value_info'
+});
+
+// Add more instances here as you create them...
 
 interface StorageInfo {
   totalSize: number;
@@ -47,6 +55,20 @@ interface StorageItem {
   value?: any;
 }
 
+interface InfoItem {
+  label: string;
+  value: string | number;
+  slot?: 'end';
+  color?: string;
+  badge?: boolean;
+}
+
+interface StorageRecordCount {
+  name: string;
+  count: number;
+  color?: string;
+}
+
 const Storage: React.FC = () => {
     const [storageInfo, setStorageInfo] = useState<StorageInfo>({
         totalSize: 0,
@@ -58,16 +80,66 @@ const Storage: React.FC = () => {
     const [storageItems, setStorageItems] = useState<StorageItem[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [driver, setDriver] = useState<string>('');
-    const [formDataCount, setFormDataCount] = useState(0);
+    const [recordCounts, setRecordCounts] = useState<StorageRecordCount[]>([]);
+
+    // All storage instances to check - ADD NEW INSTANCES HERE
+    const storageInstances = [
+        { name: 'Default', instance: localForage },
+        { name: 'FormDataDB', instance: formDataStorage },
+        { name: 'ValueInfoDB', instance: valueInfoStorage }
+        // Add more instances here as you create them...
+    ];
+
+    // All record counters - ADD NEW COUNTERS HERE
+    const recordCounters = [
+        { name: 'Form Data', getCount: () => FormDataLocalStorage.getAllFormData().then(data => data.length), color: 'primary' },
+        { name: 'Value Info', getCount: () => ValueInfoLocalStorage.getAllValueInfo().then(data => data.length), color: 'secondary' }
+        // Add more counters here as you create them...
+    ];
+
+    // Info items for the storage information card
+    const getInfoItems = (): InfoItem[] => [
+        { label: 'Storage Driver', value: driver || 'Unknown', slot: 'end' },
+        { label: 'Total Available', value: formatBytes(storageInfo.totalSize), slot: 'end', color: 'success' },
+        { label: 'Status', value: isLoading ? 'Loading...' : 'Ready', slot: 'end' },
+        ...recordCounts.map(record => ({
+            label: record.name,
+            value: record.count,
+            slot: 'end' as const,
+            badge: true
+        }))
+    ];
+
+    // Stats items for the storage overview card
+    const getStatsItems = (): InfoItem[] => [
+        { label: 'Total Storage Items', value: storageInfo.itemCount, slot: 'end' },
+        { label: 'Used Space', value: formatBytes(storageInfo.usedSize), slot: 'end' },
+        { label: 'Free Space', value: formatBytes(storageInfo.freeSize), slot: 'end', color: 'success' },
+        ...recordCounts.map(record => ({
+            label: record.name,
+            value: record.count,
+            slot: 'end' as const
+        }))
+    ];
 
     const calculateStorageUsage = async (): Promise<StorageInfo> => {
         try {
-            // Check both default localForage and your FormDataDB instance
-            await localForage.ready();
-            await formDataStorage.ready();
+            // Initialize all storage instances
+            await Promise.all(storageInstances.map(async ({ instance }) => {
+                await instance.ready();
+            }));
             
             const currentDriver = localForage.driver();
             setDriver(currentDriver);
+
+            // Get record counts from all storage systems
+            const counts = await Promise.all(
+                recordCounters.map(async (counter) => {
+                    const count = await counter.getCount();
+                    return { name: counter.name, count, color: counter.color };
+                })
+            );
+            setRecordCounts(counts);
 
             // Get actual storage quota
             let storageLimit = 2 * 1024 * 1024 * 1024; // Default to 2GB
@@ -83,70 +155,45 @@ const Storage: React.FC = () => {
                 }
             }
 
-            // Get keys from both storage instances
-            const defaultKeys = await localForage.keys();
-            const formDataKeys = await formDataStorage.keys();
-            
-            console.log('Default storage keys:', defaultKeys);
-            console.log('FormDataDB keys:', formDataKeys);
-
             let totalSize = 0;
             const items: StorageItem[] = [];
 
-            // Check default localForage instance
-            for (const key of defaultKeys) {
-                try {
-                    const value = await localForage.getItem(key);
-                    if (value !== null && value !== undefined) {
-                        const jsonString = JSON.stringify(value);
-                        const itemSize = new Blob([jsonString]).size;
-                        totalSize += itemSize;
-                        items.push({ 
-                            key, 
-                            size: itemSize,
-                            database: 'Default',
-                            value: typeof value === 'object' ? 'Object data' : String(value)
-                        });
-                    }
-                } catch (error) {
-                    console.warn(`Error processing default key ${key}:`, error);
-                }
-            }
+            // Process all storage instances
+            for (const { name, instance } of storageInstances) {
+                const keys = await instance.keys();
+                console.log(`${name} storage keys:`, keys);
 
-            // Check FormDataDB instance (where your form data is stored)
-            for (const key of formDataKeys) {
-                try {
-                    const value = await formDataStorage.getItem(key);
-                    if (value !== null && value !== undefined) {
-                        const jsonString = JSON.stringify(value);
-                        const itemSize = new Blob([jsonString]).size;
-                        totalSize += itemSize;
-                        
-                        // Format the display for form data
-                        let displayValue = 'Form data';
-                        if (key === 'formData' && Array.isArray(value)) {
-                            displayValue = `${value.length} form records`;
+                for (const key of keys) {
+                    try {
+                        const value = await instance.getItem(key);
+                        if (value !== null && value !== undefined) {
+                            const jsonString = JSON.stringify(value);
+                            const itemSize = new Blob([jsonString]).size;
+                            totalSize += itemSize;
+                            
+                            // Format display value
+                            let displayValue = 'Data';
+                            if (key === 'formData' && Array.isArray(value)) {
+                                displayValue = `${value.length} form records`;
+                            } else if (key === 'valueInfo' && Array.isArray(value)) {
+                                displayValue = `${value.length} value info records`;
+                            } else if (typeof value === 'object') {
+                                displayValue = 'Object data';
+                            } else {
+                                displayValue = String(value);
+                            }
+                            
+                            items.push({ 
+                                key, 
+                                size: itemSize,
+                                database: name,
+                                value: displayValue
+                            });
                         }
-                        
-                        items.push({ 
-                            key, 
-                            size: itemSize,
-                            database: 'FormDataDB',
-                            value: displayValue
-                        });
+                    } catch (error) {
+                        console.warn(`Error processing ${name} key ${key}:`, error);
                     }
-                } catch (error) {
-                    console.warn(`Error processing FormDataDB key ${key}:`, error);
                 }
-            }
-
-            // Get form data count from your FormDataLocalStorage
-            try {
-                const formData = await FormDataLocalStorage.getAllFormData();
-                setFormDataCount(formData.length);
-                console.log(`Found ${formData.length} form records`);
-            } catch (error) {
-                console.error('Error getting form data count:', error);
             }
 
             // Sort items by size (largest first)
@@ -158,7 +205,8 @@ const Storage: React.FC = () => {
                 totalItems: items.length,
                 totalSize,
                 storageLimit,
-                usagePercentage
+                usagePercentage,
+                recordCounts: counts
             });
 
             setStorageItems(items);
@@ -172,7 +220,6 @@ const Storage: React.FC = () => {
             };
         } catch (error) {
             console.error('Error calculating storage usage:', error);
-            // Fallback to 2GB on error
             const fallbackLimit = 2 * 1024 * 1024 * 1024;
             return {
                 totalSize: fallbackLimit,
@@ -222,6 +269,48 @@ const Storage: React.FC = () => {
         return 'danger';
     };
 
+    const renderInfoList = (items: InfoItem[]) => (
+        <IonList lines="none">
+            {items.map((item, index) => (
+                <IonItem key={index}>
+                    <IonLabel>{item.label}</IonLabel>
+                    {item.badge ? (
+                        <IonBadge slot="end" color={item.color as any || 'primary'}>
+                            {item.value}
+                        </IonBadge>
+                    ) : (
+                        <IonNote slot={item.slot} color={item.color as any}>
+                            {item.value}
+                        </IonNote>
+                    )}
+                </IonItem>
+            ))}
+        </IonList>
+    );
+
+    const renderStorageItem = (item: StorageItem, index: number) => (
+        <IonItem key={index}>
+            <IonLabel>
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
+                    <h3 style={{ wordBreak: 'break-all', margin: 0 }}>{item.key}</h3>
+                    <IonBadge color="medium" style={{ marginLeft: '8px' }}>
+                        {item.database}
+                    </IonBadge>
+                </div>
+                <p><strong>Size:</strong> {formatBytes(item.size)}</p>
+                {item.value && (
+                    <p style={{ 
+                        fontSize: '0.8em', 
+                        color: '#666',
+                        marginTop: '4px'
+                    }}>
+                        <strong>Content:</strong> {item.value}
+                    </p>
+                )}
+            </IonLabel>
+        </IonItem>
+    );
+
     return (
         <IonPage>
             <IonHeader>
@@ -241,32 +330,13 @@ const Storage: React.FC = () => {
                 </IonRefresher>
 
                 <div className="ion-padding">
-                    {/* Debug Info */}
+                    {/* Storage Information Card */}
                     <IonCard color="light">
                         <IonCardHeader>
                             <IonCardTitle>Storage Information</IonCardTitle>
                         </IonCardHeader>
                         <IonCardContent>
-                            <IonList lines="none">
-                                <IonItem>
-                                    <IonLabel>Storage Driver</IonLabel>
-                                    <IonNote slot="end">{driver || 'Unknown'}</IonNote>
-                                </IonItem>
-                                <IonItem>
-                                    <IonLabel>Form Data Records</IonLabel>
-                                    <IonBadge slot="end" color="primary">{formDataCount}</IonBadge>
-                                </IonItem>
-                                <IonItem>
-                                    <IonLabel>Total Available</IonLabel>
-                                    <IonNote slot="end" color="success">
-                                        {formatBytes(storageInfo.totalSize)}
-                                    </IonNote>
-                                </IonItem>
-                                <IonItem>
-                                    <IonLabel>Status</IonLabel>
-                                    <IonNote slot="end">{isLoading ? 'Loading...' : 'Ready'}</IonNote>
-                                </IonItem>
-                            </IonList>
+                            {renderInfoList(getInfoItems())}
                         </IonCardContent>
                     </IonCard>
 
@@ -293,27 +363,10 @@ const Storage: React.FC = () => {
                             <IonProgressBar 
                                 value={storageInfo.usagePercentage / 100} 
                                 color={getProgressBarColor(storageInfo.usagePercentage)}
-                            ></IonProgressBar>
+                            />
 
                             <div className="ion-margin-top">
-                                <IonList lines="none">
-                                    <IonItem>
-                                        <IonLabel>Total Storage Items</IonLabel>
-                                        <IonText slot="end">{storageInfo.itemCount}</IonText>
-                                    </IonItem>
-                                    <IonItem>
-                                        <IonLabel>Form Data Records</IonLabel>
-                                        <IonText slot="end">{formDataCount}</IonText>
-                                    </IonItem>
-                                    <IonItem>
-                                        <IonLabel>Used Space</IonLabel>
-                                        <IonText slot="end">{formatBytes(storageInfo.usedSize)}</IonText>
-                                    </IonItem>
-                                    <IonItem>
-                                        <IonLabel>Free Space</IonLabel>
-                                        <IonText slot="end" color="success">{formatBytes(storageInfo.freeSize)}</IonText>
-                                    </IonItem>
-                                </IonList>
+                                {renderInfoList(getStatsItems())}
                             </div>
                         </IonCardContent>
                     </IonCard>
@@ -326,28 +379,7 @@ const Storage: React.FC = () => {
                             </IonCardHeader>
                             <IonCardContent>
                                 <IonList>
-                                    {storageItems.map((item, index) => (
-                                        <IonItem key={index}>
-                                            <IonLabel>
-                                                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
-                                                    <h3 style={{ wordBreak: 'break-all', margin: 0 }}>{item.key}</h3>
-                                                    <IonBadge color="medium" style={{ marginLeft: '8px' }}>
-                                                        {item.database}
-                                                    </IonBadge>
-                                                </div>
-                                                <p><strong>Size:</strong> {formatBytes(item.size)}</p>
-                                                {item.value && (
-                                                    <p style={{ 
-                                                        fontSize: '0.8em', 
-                                                        color: '#666',
-                                                        marginTop: '4px'
-                                                    }}>
-                                                        <strong>Content:</strong> {item.value}
-                                                    </p>
-                                                )}
-                                            </IonLabel>
-                                        </IonItem>
-                                    ))}
+                                    {storageItems.map(renderStorageItem)}
                                 </IonList>
                             </IonCardContent>
                         </IonCard>
@@ -357,7 +389,7 @@ const Storage: React.FC = () => {
                                 <IonCardContent className="ion-text-center">
                                     <IonText color="medium">
                                         <h3>No items in local storage</h3>
-                                        <p>Both default and FormDataDB storage are empty</p>
+                                        <p>All storage instances are empty</p>
                                     </IonText>
                                 </IonCardContent>
                             </IonCard>
