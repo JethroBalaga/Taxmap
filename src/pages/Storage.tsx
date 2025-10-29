@@ -33,7 +33,8 @@ import { getBuildingComponentData } from '../utils/buildingComponentLocalStorage
 import { getBuildingSubcomponentData } from '../utils/BuildingSubcomponentLocalStorage';
 import { getClassificationData } from '../utils/classificationLocalStorage';
 import { getDeclarantData } from '../utils/DeclarantLocalStorage';
-import { getDistrictData } from '../utils/districtLocalStorage'; // Add this import
+import { getDistrictData } from '../utils/districtLocalStorage';
+import { getEquipmentData } from '../utils/equipmentLocalStorage'; // Add this import
 
 // Import our split components
 import { InfoCard, StorageOverviewCard, StorageItemsCard } from './StorageCards';
@@ -121,9 +122,14 @@ const declarantStorage = localForage.createInstance({
   storeName: 'declarant_data'
 });
 
-const districtStorage = localForage.createInstance({ // Add this instance
+const districtStorage = localForage.createInstance({
   name: 'TaxAppStorage',
   storeName: 'district_data'
+});
+
+const equipmentStorage = localForage.createInstance({ // Add this instance
+  name: 'TaxAppStorage',
+  storeName: 'equipment_data'
 });
 
 // ADD NEW STORAGE INSTANCES HERE
@@ -145,7 +151,8 @@ const storageInstances: StorageInstance[] = [
   { name: 'BuildingSubcomponentDB', instance: buildingSubcomponentStorage },
   { name: 'ClassificationDB', instance: classificationStorage },
   { name: 'DeclarantDB', instance: declarantStorage },
-  { name: 'DistrictDB', instance: districtStorage } // Add this line
+  { name: 'DistrictDB', instance: districtStorage },
+  { name: 'EquipmentDB', instance: equipmentStorage } // Add this line
 ];
 
 // ADD NEW RECORD COUNTERS HERE
@@ -190,10 +197,14 @@ const recordCounters: RecordCounter[] = [
     const data = await getDeclarantData();
     return data ? data.length : 0;
   }, color: 'medium' },
-  { name: 'Districts', getCount: async () => { // Add this counter
+  { name: 'Districts', getCount: async () => {
     const data = await getDistrictData();
     return data ? data.length : 0;
-  }, color: 'dark' }
+  }, color: 'dark' },
+  { name: 'Equipment', getCount: async () => { // Add this counter
+    const data = await getEquipmentData();
+    return data ? data.length : 0;
+  }, color: 'primary' }
 ];
 
 const Storage: React.FC = () => {
