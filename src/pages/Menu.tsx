@@ -14,7 +14,7 @@ import {
     IonList,
     IonLabel
 } from '@ionic/react'
-import { mapOutline, logOutOutline, documentTextOutline } from 'ionicons/icons';
+import { mapOutline, logOutOutline, documentTextOutline, serverOutline } from 'ionicons/icons';
 import { Redirect, Route } from 'react-router';
 import { useIonRouter } from '@ionic/react';
 import Map from './Map';
@@ -25,10 +25,12 @@ import BuildingTable from './Formstabs/BuildingTable';
 import MachineryTable from './Formstabs/MachineryTable';
 import AgriculturalAdjustmentTable from './Formstabs/AgriculturalAdjustmentTable';
 import NonAgriLandTable from './Formstabs/NonAgriLandTable';
+import Storage from './Storage';
 
 const Menu: React.FC = () => {
     const router = useIonRouter();
     const path = [
+        { name: 'Storage', url: '/menu/storage', icon: serverOutline },
         { name: 'Map', url: '/menu/map', icon: mapOutline },
         { name: 'Forms', url: '/menu/forms', icon: documentTextOutline },
     ]
@@ -82,6 +84,7 @@ const Menu: React.FC = () => {
                 </IonHeader>
                 <IonContent className="ion-padding">
                     <IonRouterOutlet id="main">
+                        <Route exact path="/menu/storage" component={Storage} />
                         <Route exact path="/menu/map" component={Map} />
                         <Route exact path="/menu/forms" component={Forms} />
                         <Route exact path="/menu/forms/buildingtable/:formId" component={BuildingTable} />
@@ -89,7 +92,7 @@ const Menu: React.FC = () => {
                         <Route path="/menu/forms/agriculturaltable/:formId" component={AgriculturalAdjustmentTable} />
                         <Route path="/menu/forms/nonagriltable/:formId" component={NonAgriLandTable} />
                         <Route exact path="/menu">
-                            <Redirect to="/menu/map" />
+                            <Redirect to="/menu/storage" />
                         </Route>
                     </IonRouterOutlet>
                 </IonContent>

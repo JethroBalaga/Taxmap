@@ -17,12 +17,11 @@ import {
     IonLabel,
     IonButton,
     IonIcon,
-    IonAlert,
     IonRefresher,
     IonRefresherContent,
     IonText
 } from '@ionic/react';
-import { trashOutline, refreshOutline } from 'ionicons/icons';
+import { refreshOutline } from 'ionicons/icons';
 import localForage from 'localforage';
 
 interface StorageInfo {
@@ -42,7 +41,6 @@ const Storage: React.FC = () => {
         itemCount: 0
     });
     const [storageItems, setStorageItems] = useState<Array<{ key: string, size: number }>>([]);
-    const [showClearAlert, setShowClearAlert] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
     const calculateStorageUsage = async (): Promise<StorageInfo> => {
@@ -53,17 +51,23 @@ const Storage: React.FC = () => {
 
             // Calculate size for each item
             for (const key of keys) {
-                const value = await localForage.getItem(key);
-                const itemSize = new Blob([JSON.stringify(value)]).size;
-                totalSize += itemSize;
-                items.push({ key, size: itemSize });
+                try {
+                    const value = await localForage.getItem(key);
+                    if (value !== null && value !== undefined) {
+                        const itemSize = new Blob([JSON.stringify(value)]).size;
+                        totalSize += itemSize;
+                        items.push({ key, size: itemSize });
+                    }
+                } catch (error) {
+                    console.warn(`Error processing key ${key}:`, error);
+                }
             }
 
             // Sort items by size (largest first)
             items.sort((a, b) => b.size - a.size);
 
-            // For localForage, we'll assume a reasonable limit (usually 5-50MB depending on browser)
-            // You can adjust this based on your specific needs
+            // For localForage, typical limits are 5-50MB depending on browser
+            // Using 50MB as a reasonable estimate
             const estimatedLimit = 50 * 1024 * 1024; // 50MB in bytes
             const usagePercentage = (totalSize / estimatedLimit) * 100;
 
@@ -72,7 +76,7 @@ const Storage: React.FC = () => {
             return {
                 totalSize: estimatedLimit,
                 usedSize: totalSize,
-                freeSize: estimatedLimit - totalSize,
+                freeSize: Math.max(0, estimatedLimit - totalSize),
                 usagePercentage: Math.min(usagePercentage, 100),
                 itemCount: keys.length
             };
@@ -112,16 +116,6 @@ const Storage: React.FC = () => {
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     };
 
-    const handleClearStorage = async () => {
-        try {
-            await localForage.clear();
-            await loadStorageInfo();
-            setShowClearAlert(false);
-        } catch (error) {
-            console.error('Error clearing storage:', error);
-        }
-    };
-
     const handleRefresh = (event: any) => {
         loadStorageInfo().then(() => {
             event.detail.complete();
@@ -138,16 +132,10 @@ const Storage: React.FC = () => {
         <IonPage>
             <IonHeader>
                 <IonToolbar>
-                    <IonButtons slot="start">
-                        <IonMenuButton />
-                    </IonButtons>
                     <IonTitle>Storage</IonTitle>
                     <IonButtons slot="end">
                         <IonButton onClick={loadStorageInfo} disabled={isLoading}>
                             <IonIcon icon={refreshOutline} slot="icon-only" />
-                        </IonButton>
-                        <IonButton onClick={() => setShowClearAlert(true)} color="danger">
-                            <IonIcon icon={trashOutline} slot="icon-only" />
                         </IonButton>
                     </IonButtons>
                 </IonToolbar>
@@ -162,7 +150,7 @@ const Storage: React.FC = () => {
                     {/* Storage Overview Card */}
                     <IonCard>
                         <IonCardHeader>
-                            <IonCardTitle>Storage Overview</IonCardTitle>
+                            <IonCardTitle>Local Storage Overview</IonCardTitle>
                         </IonCardHeader>
                         <IonCardContent>
                             <div className="ion-text-center ion-margin-bottom">
@@ -182,7 +170,7 @@ const Storage: React.FC = () => {
                             <div className="ion-margin-top">
                                 <IonList lines="none">
                                     <IonItem>
-                                        <IonLabel>Total Items</IonLabel>
+                                        <IonLabel>Total Items Stored</IonLabel>
                                         <IonText slot="end">{storageInfo.itemCount}</IonText>
                                     </IonItem>
                                     <IonItem>
@@ -190,7 +178,7 @@ const Storage: React.FC = () => {
                                         <IonText slot="end">{formatBytes(storageInfo.usedSize)}</IonText>
                                     </IonItem>
                                     <IonItem>
-                                        <IonLabel>Free Space</IonLabel>
+                                        <IonLabel>Available Space</IonLabel>
                                         <IonText slot="end">{formatBytes(storageInfo.freeSize)}</IonText>
                                     </IonItem>
                                 </IonList>
@@ -202,7 +190,7 @@ const Storage: React.FC = () => {
                     {storageItems.length > 0 && (
                         <IonCard>
                             <IonCardHeader>
-                                <IonCardTitle>Stored Items</IonCardTitle>
+                                <IonCardTitle>Stored Items ({storageItems.length})</IonCardTitle>
                             </IonCardHeader>
                             <IonCardContent>
                                 <IonList>
@@ -219,37 +207,18 @@ const Storage: React.FC = () => {
                         </IonCard>
                     )}
 
-                    {/* No Items Message */}
+                    {/* No Items Message - This should rarely show if you're using localForage */}
                     {storageItems.length === 0 && !isLoading && (
                         <IonCard>
                             <IonCardContent className="ion-text-center">
                                 <IonText color="medium">
-                                    <h3>No items in storage</h3>
-                                    <p>Your local storage is empty</p>
+                                    <h3>No items in local storage</h3>
+                                    <p>LocalForage storage is currently empty</p>
                                 </IonText>
                             </IonCardContent>
                         </IonCard>
                     )}
                 </div>
-
-                {/* Clear Storage Alert */}
-                <IonAlert
-                    isOpen={showClearAlert}
-                    onDidDismiss={() => setShowClearAlert(false)}
-                    header={'Clear Storage'}
-                    message={'Are you sure you want to clear all local storage? This action cannot be undone.'}
-                    buttons={[
-                        {
-                            text: 'Cancel',
-                            role: 'cancel',
-                        },
-                        {
-                            text: 'Clear',
-                            role: 'destructive',
-                            handler: handleClearStorage
-                        }
-                    ]}
-                />
             </IonContent>
         </IonPage>
     );
