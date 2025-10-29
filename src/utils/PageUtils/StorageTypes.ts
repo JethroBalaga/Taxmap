@@ -1,3 +1,5 @@
+// src/utils/PageUtils/StorageTypes.ts
+
 import localForage from 'localforage';
 
 export interface StorageInfo {
