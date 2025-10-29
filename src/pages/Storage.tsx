@@ -22,7 +22,8 @@ import { ValueInfoLocalStorage } from '../utils/tablestorages/ValueInfoLocalStor
 import { PhotoTagLocalStorage } from '../utils/tablestorages/PhotoTagLocalStorage';
 import { AgriculturalDataLocalStorage } from '../utils/tablestorages/AgriculturalDataLocalStorage';
 import { BuildingAdjustmentLocalStorage } from '../utils/tablestorages/BuildingAdjustmentLocalStorage';
-import { BuildingDataLocalStorage } from '../utils/tablestorages/BuildingDataLocalStorage'; // Add this import
+import { BuildingDataLocalStorage } from '../utils/tablestorages/BuildingDataLocalStorage';
+import { MachineDataLocalStorage } from '../utils/tablestorages/MachineDataLocalStorage'; // Add this import
 
 // Import our split components
 import { InfoCard, StorageOverviewCard, StorageItemsCard } from './StorageCards';
@@ -55,9 +56,14 @@ const buildingAdjustmentStorage = localForage.createInstance({
   storeName: 'building_adjustment_store'
 });
 
-const buildingDataStorage = localForage.createInstance({ // Add this instance
+const buildingDataStorage = localForage.createInstance({
   name: 'BuildingDataDB',
   storeName: 'building_data_store'
+});
+
+const machineDataStorage = localForage.createInstance({ // Add this instance
+  name: 'MachineDataStorage',
+  storeName: 'machine_data_store'
 });
 
 // ADD NEW STORAGE INSTANCES HERE
@@ -68,7 +74,8 @@ const storageInstances: StorageInstance[] = [
   { name: 'PhotoTagsDB', instance: photoTagsStorage },
   { name: 'AgriculturalDB', instance: agriculturalStorage },
   { name: 'BuildingAdjustmentDB', instance: buildingAdjustmentStorage },
-  { name: 'BuildingDataDB', instance: buildingDataStorage } // Add this line
+  { name: 'BuildingDataDB', instance: buildingDataStorage },
+  { name: 'MachineDataDB', instance: machineDataStorage } // Add this line
   // Add more instances here as you create them...
 ];
 
@@ -79,7 +86,8 @@ const recordCounters: RecordCounter[] = [
   { name: 'Photo Tags', getCount: () => PhotoTagLocalStorage.getAllPhotoTags().then(data => data.length), color: 'tertiary' },
   { name: 'Agricultural Data', getCount: () => AgriculturalDataLocalStorage.getAllAgriculturalData().then(data => data.length), color: 'success' },
   { name: 'Building Adjustments', getCount: () => BuildingAdjustmentLocalStorage.getAllBuildingAdjustmentData().then(data => data.length), color: 'warning' },
-  { name: 'Building Data', getCount: () => BuildingDataLocalStorage.getAllBuildingData().then(data => data.length), color: 'danger' } // Add this line
+  { name: 'Building Data', getCount: () => BuildingDataLocalStorage.getAllBuildingData().then(data => data.length), color: 'danger' },
+  { name: 'Machine Data', getCount: () => MachineDataLocalStorage.getAllMachineData().then(data => data.length), color: 'medium' } // Add this line
   // Add more counters here as you create them...
 ];
 
