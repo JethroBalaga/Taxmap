@@ -26,7 +26,8 @@ import { BuildingDataLocalStorage } from '../utils/tablestorages/BuildingDataLoc
 import { MachineDataLocalStorage } from '../utils/tablestorages/MachineDataLocalStorage';
 import { NonAgriAdjustmentLocalStorage } from '../utils/tablestorages/NonAgriAdjustmentLocalStorage';
 import { getActualUsedData, hasActualUsedData } from '../utils/actualUsedLocalStorage';
-import { getAssessmentLevelData, getAssessmentLevelCount } from '../utils/assessmentLevelLocalStorage'; // Add this import
+import { getAssessmentLevelData, getAssessmentLevelCount } from '../utils/assessmentLevelLocalStorage';
+import { getBarangayData, getBarangayCount } from '../utils/barangayLocalStorage'; // Add this import
 
 // Import our split components
 import { InfoCard, StorageOverviewCard, StorageItemsCard } from './StorageCards';
@@ -79,9 +80,14 @@ const actualUsedStorage = localForage.createInstance({
   storeName: 'actual_used_data'
 });
 
-const assessmentLevelStorage = localForage.createInstance({ // Add this instance
+const assessmentLevelStorage = localForage.createInstance({
   name: 'TaxAppStorage',
   storeName: 'assessment_level_data'
+});
+
+const barangayStorage = localForage.createInstance({ // Add this instance
+  name: 'TaxAppStorage',
+  storeName: 'barangay_data'
 });
 
 // ADD NEW STORAGE INSTANCES HERE
@@ -96,7 +102,8 @@ const storageInstances: StorageInstance[] = [
   { name: 'MachineDataDB', instance: machineDataStorage },
   { name: 'NonAgriAdjustmentDB', instance: nonAgriAdjustmentStorage },
   { name: 'ActualUsedDB', instance: actualUsedStorage },
-  { name: 'AssessmentLevelDB', instance: assessmentLevelStorage } // Add this line
+  { name: 'AssessmentLevelDB', instance: assessmentLevelStorage },
+  { name: 'BarangayDB', instance: barangayStorage } // Add this line
   // Add more instances here as you create them...
 ];
 
@@ -114,10 +121,14 @@ const recordCounters: RecordCounter[] = [
     const data = await getActualUsedData();
     return data ? data.length : 0;
   }, color: 'dark' },
-  { name: 'Assessment Levels', getCount: async () => { // Add this counter
+  { name: 'Assessment Levels', getCount: async () => {
     const data = await getAssessmentLevelData();
     return data ? data.length : 0;
-  }, color: 'primary' }
+  }, color: 'primary' },
+  { name: 'Barangays', getCount: async () => { // Add this counter
+    const data = await getBarangayData();
+    return data ? data.length : 0;
+  }, color: 'secondary' }
   // Add more counters here as you create them...
 ];
 
