@@ -25,7 +25,8 @@ import { BuildingAdjustmentLocalStorage } from '../utils/tablestorages/BuildingA
 import { BuildingDataLocalStorage } from '../utils/tablestorages/BuildingDataLocalStorage';
 import { MachineDataLocalStorage } from '../utils/tablestorages/MachineDataLocalStorage';
 import { NonAgriAdjustmentLocalStorage } from '../utils/tablestorages/NonAgriAdjustmentLocalStorage';
-import { getActualUsedData, hasActualUsedData } from '../utils/actualUsedLocalStorage'; // Add this import
+import { getActualUsedData, hasActualUsedData } from '../utils/actualUsedLocalStorage';
+import { getAssessmentLevelData, getAssessmentLevelCount } from '../utils/assessmentLevelLocalStorage'; // Add this import
 
 // Import our split components
 import { InfoCard, StorageOverviewCard, StorageItemsCard } from './StorageCards';
@@ -73,9 +74,14 @@ const nonAgriAdjustmentStorage = localForage.createInstance({
   storeName: 'non_agri_adjustment_store'
 });
 
-const actualUsedStorage = localForage.createInstance({ // Add this instance
+const actualUsedStorage = localForage.createInstance({
   name: 'TaxAppStorage',
   storeName: 'actual_used_data'
+});
+
+const assessmentLevelStorage = localForage.createInstance({ // Add this instance
+  name: 'TaxAppStorage',
+  storeName: 'assessment_level_data'
 });
 
 // ADD NEW STORAGE INSTANCES HERE
@@ -89,7 +95,8 @@ const storageInstances: StorageInstance[] = [
   { name: 'BuildingDataDB', instance: buildingDataStorage },
   { name: 'MachineDataDB', instance: machineDataStorage },
   { name: 'NonAgriAdjustmentDB', instance: nonAgriAdjustmentStorage },
-  { name: 'ActualUsedDB', instance: actualUsedStorage } // Add this line
+  { name: 'ActualUsedDB', instance: actualUsedStorage },
+  { name: 'AssessmentLevelDB', instance: assessmentLevelStorage } // Add this line
   // Add more instances here as you create them...
 ];
 
@@ -103,10 +110,14 @@ const recordCounters: RecordCounter[] = [
   { name: 'Building Data', getCount: () => BuildingDataLocalStorage.getAllBuildingData().then(data => data.length), color: 'danger' },
   { name: 'Machine Data', getCount: () => MachineDataLocalStorage.getAllMachineData().then(data => data.length), color: 'medium' },
   { name: 'Non-Agri Adjustments', getCount: () => NonAgriAdjustmentLocalStorage.getAllNonAgriAdjustments().then(data => data.length), color: 'light' },
-  { name: 'Actual Used Data', getCount: async () => { // Add this counter
+  { name: 'Actual Used Data', getCount: async () => {
     const data = await getActualUsedData();
     return data ? data.length : 0;
-  }, color: 'dark' }
+  }, color: 'dark' },
+  { name: 'Assessment Levels', getCount: async () => { // Add this counter
+    const data = await getAssessmentLevelData();
+    return data ? data.length : 0;
+  }, color: 'primary' }
   // Add more counters here as you create them...
 ];
 
