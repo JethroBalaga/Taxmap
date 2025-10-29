@@ -90,8 +90,10 @@ export const calculateStorageUsage = async (
               displayValue = `${value.length} machine data records`;
             } else if (key === 'nonAgriAdjustments' && Array.isArray(value)) {
               displayValue = `${value.length} non-agri adjustment records`;
-            } else if (key === 'data' && Array.isArray(value)) { // Add this condition for actual used data
+            } else if (key === 'data' && Array.isArray(value)) {
               displayValue = `${value.length} actual used records`;
+            } else if (key === 'data' && Array.isArray(value) && name === 'AssessmentLevelDB') { // Add this condition
+              displayValue = `${value.length} assessment level records`;
             } else if (key === 'metadata' && typeof value === 'object') {
               displayValue = 'Metadata information';
             } else if (typeof value === 'object') {
