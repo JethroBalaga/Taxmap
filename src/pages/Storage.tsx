@@ -39,7 +39,8 @@ import { getKindData } from '../utils/kindLocalStorage';
 import { getLandAdjustmentData } from '../utils/landAdjustmentLocalStorage';
 import { getStructureTypeData } from '../utils/structureTypeLocalStorage';
 import { getSubclassData } from '../utils/subclassLocalStorage';
-import { getSubclassRateData } from '../utils/subclassRateLocalStorage'; // Add this import
+import { getSubclassRateData } from '../utils/subclassRateLocalStorage';
+import { getTaxRateData } from '../utils/taxRateLocalStorage'; // Add this import
 
 // Import our split components
 import { InfoCard, StorageOverviewCard, StorageItemsCard } from './StorageCards';
@@ -157,9 +158,14 @@ const subclassStorage = localForage.createInstance({
   storeName: 'subclass_data'
 });
 
-const subclassRateStorage = localForage.createInstance({ // Add this instance
+const subclassRateStorage = localForage.createInstance({
   name: 'TaxAppStorage',
   storeName: 'subclass_rate_data'
+});
+
+const taxRateStorage = localForage.createInstance({ // Add this instance
+  name: 'TaxAppStorage',
+  storeName: 'tax_rate_data'
 });
 
 // ADD NEW STORAGE INSTANCES HERE
@@ -187,7 +193,8 @@ const storageInstances: StorageInstance[] = [
   { name: 'LandAdjustmentDB', instance: landAdjustmentStorage },
   { name: 'StructureTypeDB', instance: structureTypeStorage },
   { name: 'SubclassDB', instance: subclassStorage },
-  { name: 'SubclassRateDB', instance: subclassRateStorage } // Add this line
+  { name: 'SubclassRateDB', instance: subclassRateStorage },
+  { name: 'TaxRateDB', instance: taxRateStorage } // Add this line
 ];
 
 // ADD NEW RECORD COUNTERS HERE
@@ -256,10 +263,14 @@ const recordCounters: RecordCounter[] = [
     const data = await getSubclassData();
     return data ? data.length : 0;
   }, color: 'warning' },
-  { name: 'Subclass Rates', getCount: async () => { // Add this counter
+  { name: 'Subclass Rates', getCount: async () => {
     const data = await getSubclassRateData();
     return data ? data.length : 0;
-  }, color: 'danger' }
+  }, color: 'danger' },
+  { name: 'Tax Rates', getCount: async () => { // Add this counter
+    const data = await getTaxRateData();
+    return data ? data.length : 0;
+  }, color: 'medium' }
 ];
 
 const Storage: React.FC = () => {
