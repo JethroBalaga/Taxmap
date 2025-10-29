@@ -37,7 +37,8 @@ import { getDistrictData } from '../utils/districtLocalStorage';
 import { getEquipmentData } from '../utils/equipmentLocalStorage';
 import { getKindData } from '../utils/kindLocalStorage';
 import { getLandAdjustmentData } from '../utils/landAdjustmentLocalStorage';
-import { getStructureTypeData } from '../utils/structureTypeLocalStorage'; // Add this import
+import { getStructureTypeData } from '../utils/structureTypeLocalStorage';
+import { getSubclassData } from '../utils/subclassLocalStorage'; // Add this import
 
 // Import our split components
 import { InfoCard, StorageOverviewCard, StorageItemsCard } from './StorageCards';
@@ -145,9 +146,14 @@ const landAdjustmentStorage = localForage.createInstance({
   storeName: 'land_adjustment_data'
 });
 
-const structureTypeStorage = localForage.createInstance({ // Add this instance
+const structureTypeStorage = localForage.createInstance({
   name: 'TaxAppStorage',
   storeName: 'structure_type_data'
+});
+
+const subclassStorage = localForage.createInstance({ // Add this instance
+  name: 'TaxAppStorage',
+  storeName: 'subclass_data'
 });
 
 // ADD NEW STORAGE INSTANCES HERE
@@ -173,7 +179,8 @@ const storageInstances: StorageInstance[] = [
   { name: 'EquipmentDB', instance: equipmentStorage },
   { name: 'KindDB', instance: kindStorage },
   { name: 'LandAdjustmentDB', instance: landAdjustmentStorage },
-  { name: 'StructureTypeDB', instance: structureTypeStorage } // Add this line
+  { name: 'StructureTypeDB', instance: structureTypeStorage },
+  { name: 'SubclassDB', instance: subclassStorage } // Add this line
 ];
 
 // ADD NEW RECORD COUNTERS HERE
@@ -234,10 +241,14 @@ const recordCounters: RecordCounter[] = [
     const data = await getLandAdjustmentData();
     return data ? data.length : 0;
   }, color: 'tertiary' },
-  { name: 'Structure Types', getCount: async () => { // Add this counter
+  { name: 'Structure Types', getCount: async () => {
     const data = await getStructureTypeData();
     return data ? data.length : 0;
-  }, color: 'success' }
+  }, color: 'success' },
+  { name: 'Subclasses', getCount: async () => { // Add this counter
+    const data = await getSubclassData();
+    return data ? data.length : 0;
+  }, color: 'warning' }
 ];
 
 const Storage: React.FC = () => {
