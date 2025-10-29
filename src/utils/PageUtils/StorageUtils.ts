@@ -118,8 +118,10 @@ export const calculateStorageUsage = async (
               displayValue = `${value.length} structure type records`;
             } else if (key === 'data' && Array.isArray(value) && name === 'SubclassDB') {
               displayValue = `${value.length} subclass records`;
-            } else if (key === 'data' && Array.isArray(value) && name === 'SubclassRateDB') { // Add this condition
+            } else if (key === 'data' && Array.isArray(value) && name === 'SubclassRateDB') {
               displayValue = `${value.length} subclass rate records`;
+            } else if (key === 'data' && Array.isArray(value) && name === 'TaxRateDB') { // Add this condition
+              displayValue = `${value.length} tax rate records`;
             } else if (key === 'metadata' && typeof value === 'object') {
               displayValue = 'Metadata information';
             } else if (typeof value === 'object') {
