@@ -61,17 +61,12 @@ export const InfoList: React.FC<{ items: InfoItem[] }> = ({ items }) => (
 
 export const StorageOverviewCard: React.FC<{ 
   storageInfo: StorageInfo;
-  recordCounts: StorageRecordCount[];
-}> = ({ storageInfo, recordCounts }) => {
+}> = ({ storageInfo }) => {
   const statsItems: InfoItem[] = [
     { label: 'Total Storage Items', value: storageInfo.itemCount, slot: 'end' },
     { label: 'Used Space', value: formatBytes(storageInfo.usedSize), slot: 'end' },
-    { label: 'Free Space', value: formatBytes(storageInfo.freeSize), slot: 'end', color: 'success' },
-    ...recordCounts.map(record => ({
-      label: record.name,
-      value: record.count,
-      slot: 'end' as const
-    }))
+    { label: 'Free Space', value: formatBytes(storageInfo.freeSize), slot: 'end', color: 'success' }
+    // Removed the redundant record counts - they're already in Storage Information
   ];
 
   return (
