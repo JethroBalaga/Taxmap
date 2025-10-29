@@ -34,7 +34,8 @@ import { getBuildingSubcomponentData } from '../utils/BuildingSubcomponentLocalS
 import { getClassificationData } from '../utils/classificationLocalStorage';
 import { getDeclarantData } from '../utils/DeclarantLocalStorage';
 import { getDistrictData } from '../utils/districtLocalStorage';
-import { getEquipmentData } from '../utils/equipmentLocalStorage'; // Add this import
+import { getEquipmentData } from '../utils/equipmentLocalStorage';
+import { getKindData } from '../utils/kindLocalStorage'; // Add this import
 
 // Import our split components
 import { InfoCard, StorageOverviewCard, StorageItemsCard } from './StorageCards';
@@ -127,9 +128,14 @@ const districtStorage = localForage.createInstance({
   storeName: 'district_data'
 });
 
-const equipmentStorage = localForage.createInstance({ // Add this instance
+const equipmentStorage = localForage.createInstance({
   name: 'TaxAppStorage',
   storeName: 'equipment_data'
+});
+
+const kindStorage = localForage.createInstance({ // Add this instance
+  name: 'TaxAppStorage',
+  storeName: 'kind_data'
 });
 
 // ADD NEW STORAGE INSTANCES HERE
@@ -152,7 +158,8 @@ const storageInstances: StorageInstance[] = [
   { name: 'ClassificationDB', instance: classificationStorage },
   { name: 'DeclarantDB', instance: declarantStorage },
   { name: 'DistrictDB', instance: districtStorage },
-  { name: 'EquipmentDB', instance: equipmentStorage } // Add this line
+  { name: 'EquipmentDB', instance: equipmentStorage },
+  { name: 'KindDB', instance: kindStorage } // Add this line
 ];
 
 // ADD NEW RECORD COUNTERS HERE
@@ -201,10 +208,14 @@ const recordCounters: RecordCounter[] = [
     const data = await getDistrictData();
     return data ? data.length : 0;
   }, color: 'dark' },
-  { name: 'Equipment', getCount: async () => { // Add this counter
+  { name: 'Equipment', getCount: async () => {
     const data = await getEquipmentData();
     return data ? data.length : 0;
-  }, color: 'primary' }
+  }, color: 'primary' },
+  { name: 'Kinds', getCount: async () => { // Add this counter
+    const data = await getKindData();
+    return data ? data.length : 0;
+  }, color: 'secondary' }
 ];
 
 const Storage: React.FC = () => {
