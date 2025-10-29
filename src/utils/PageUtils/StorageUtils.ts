@@ -106,8 +106,10 @@ export const calculateStorageUsage = async (
               displayValue = `${value.length} classification records`;
             } else if (key === 'data' && Array.isArray(value) && name === 'DeclarantDB') {
               displayValue = `${value.length} declarant records`;
-            } else if (key === 'data' && Array.isArray(value) && name === 'DistrictDB') { // Add this condition
+            } else if (key === 'data' && Array.isArray(value) && name === 'DistrictDB') {
               displayValue = `${value.length} district records`;
+            } else if (key === 'data' && Array.isArray(value) && name === 'EquipmentDB') { // Add this condition
+              displayValue = `${value.length} equipment records`;
             } else if (key === 'metadata' && typeof value === 'object') {
               displayValue = 'Metadata information';
             } else if (typeof value === 'object') {
