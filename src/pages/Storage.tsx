@@ -23,7 +23,8 @@ import { PhotoTagLocalStorage } from '../utils/tablestorages/PhotoTagLocalStorag
 import { AgriculturalDataLocalStorage } from '../utils/tablestorages/AgriculturalDataLocalStorage';
 import { BuildingAdjustmentLocalStorage } from '../utils/tablestorages/BuildingAdjustmentLocalStorage';
 import { BuildingDataLocalStorage } from '../utils/tablestorages/BuildingDataLocalStorage';
-import { MachineDataLocalStorage } from '../utils/tablestorages/MachineDataLocalStorage'; // Add this import
+import { MachineDataLocalStorage } from '../utils/tablestorages/MachineDataLocalStorage';
+import { NonAgriAdjustmentLocalStorage } from '../utils/tablestorages/NonAgriAdjustmentLocalStorage'; // Add this import
 
 // Import our split components
 import { InfoCard, StorageOverviewCard, StorageItemsCard } from './StorageCards';
@@ -61,9 +62,14 @@ const buildingDataStorage = localForage.createInstance({
   storeName: 'building_data_store'
 });
 
-const machineDataStorage = localForage.createInstance({ // Add this instance
+const machineDataStorage = localForage.createInstance({
   name: 'MachineDataStorage',
   storeName: 'machine_data_store'
+});
+
+const nonAgriAdjustmentStorage = localForage.createInstance({ // Add this instance
+  name: 'NonAgriAdjustmentStorage',
+  storeName: 'non_agri_adjustment_store'
 });
 
 // ADD NEW STORAGE INSTANCES HERE
@@ -75,7 +81,8 @@ const storageInstances: StorageInstance[] = [
   { name: 'AgriculturalDB', instance: agriculturalStorage },
   { name: 'BuildingAdjustmentDB', instance: buildingAdjustmentStorage },
   { name: 'BuildingDataDB', instance: buildingDataStorage },
-  { name: 'MachineDataDB', instance: machineDataStorage } // Add this line
+  { name: 'MachineDataDB', instance: machineDataStorage },
+  { name: 'NonAgriAdjustmentDB', instance: nonAgriAdjustmentStorage } // Add this line
   // Add more instances here as you create them...
 ];
 
@@ -87,7 +94,8 @@ const recordCounters: RecordCounter[] = [
   { name: 'Agricultural Data', getCount: () => AgriculturalDataLocalStorage.getAllAgriculturalData().then(data => data.length), color: 'success' },
   { name: 'Building Adjustments', getCount: () => BuildingAdjustmentLocalStorage.getAllBuildingAdjustmentData().then(data => data.length), color: 'warning' },
   { name: 'Building Data', getCount: () => BuildingDataLocalStorage.getAllBuildingData().then(data => data.length), color: 'danger' },
-  { name: 'Machine Data', getCount: () => MachineDataLocalStorage.getAllMachineData().then(data => data.length), color: 'medium' } // Add this line
+  { name: 'Machine Data', getCount: () => MachineDataLocalStorage.getAllMachineData().then(data => data.length), color: 'medium' },
+  { name: 'Non-Agri Adjustments', getCount: () => NonAgriAdjustmentLocalStorage.getAllNonAgriAdjustments().then(data => data.length), color: 'light' } // Add this line
   // Add more counters here as you create them...
 ];
 
