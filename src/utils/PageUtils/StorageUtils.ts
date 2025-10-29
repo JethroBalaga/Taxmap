@@ -112,8 +112,10 @@ export const calculateStorageUsage = async (
               displayValue = `${value.length} equipment records`;
             } else if (key === 'data' && Array.isArray(value) && name === 'KindDB') {
               displayValue = `${value.length} kind records`;
-            } else if (key === 'data' && Array.isArray(value) && name === 'LandAdjustmentDB') { // Add this condition
+            } else if (key === 'data' && Array.isArray(value) && name === 'LandAdjustmentDB') {
               displayValue = `${value.length} land adjustment records`;
+            } else if (key === 'data' && Array.isArray(value) && name === 'StructureTypeDB') { // Add this condition
+              displayValue = `${value.length} structure type records`;
             } else if (key === 'metadata' && typeof value === 'object') {
               displayValue = 'Metadata information';
             } else if (typeof value === 'object') {
