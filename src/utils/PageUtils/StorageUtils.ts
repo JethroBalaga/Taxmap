@@ -82,8 +82,10 @@ export const calculateStorageUsage = async (
               displayValue = `${value.length} photo tag records`;
             } else if (key === 'agriculturalData' && Array.isArray(value)) {
               displayValue = `${value.length} agricultural data records`;
-            } else if (key === 'buildingAdjustmentData' && Array.isArray(value)) { // Add this condition
+            } else if (key === 'buildingAdjustmentData' && Array.isArray(value)) {
               displayValue = `${value.length} building adjustment records`;
+            } else if (key === 'buildingData' && Array.isArray(value)) { // Add this condition
+              displayValue = `${value.length} building data records`;
             } else if (typeof value === 'object') {
               displayValue = 'Object data';
             } else {
