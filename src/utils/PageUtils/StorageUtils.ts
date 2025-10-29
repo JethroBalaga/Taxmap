@@ -102,8 +102,10 @@ export const calculateStorageUsage = async (
               displayValue = `${value.length} building component records`;
             } else if (key === 'data' && Array.isArray(value) && name === 'BuildingSubcomponentDB') {
               displayValue = `${value.length} building subcomponent records`;
-            } else if (key === 'data' && Array.isArray(value) && name === 'ClassificationDB') { // Add this condition
+            } else if (key === 'data' && Array.isArray(value) && name === 'ClassificationDB') {
               displayValue = `${value.length} classification records`;
+            } else if (key === 'data' && Array.isArray(value) && name === 'DeclarantDB') { // Add this condition
+              displayValue = `${value.length} declarant records`;
             } else if (key === 'metadata' && typeof value === 'object') {
               displayValue = 'Metadata information';
             } else if (typeof value === 'object') {
