@@ -98,8 +98,10 @@ export const calculateStorageUsage = async (
               displayValue = `${value.length} barangay records`;
             } else if (key === 'data' && Array.isArray(value) && name === 'BuildingCodeDB') {
               displayValue = `${value.length} building code records`;
-            } else if (key === 'data' && Array.isArray(value) && name === 'BuildingComponentDB') { // Add this condition
+            } else if (key === 'data' && Array.isArray(value) && name === 'BuildingComponentDB') {
               displayValue = `${value.length} building component records`;
+            } else if (key === 'data' && Array.isArray(value) && name === 'BuildingSubcomponentDB') { // Add this condition
+              displayValue = `${value.length} building subcomponent records`;
             } else if (key === 'metadata' && typeof value === 'object') {
               displayValue = 'Metadata information';
             } else if (typeof value === 'object') {
