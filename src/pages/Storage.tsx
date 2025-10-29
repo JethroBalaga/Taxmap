@@ -29,7 +29,8 @@ import { getActualUsedData, hasActualUsedData } from '../utils/actualUsedLocalSt
 import { getAssessmentLevelData, getAssessmentLevelCount } from '../utils/assessmentLevelLocalStorage';
 import { getBarangayData, getBarangayCount } from '../utils/barangayLocalStorage';
 import { getBuildingCodeCount } from '../utils/buildingCodeLocalStorage';
-import { getBuildingComponentData } from '../utils/buildingComponentLocalStorage'; // Add this import
+import { getBuildingComponentData } from '../utils/buildingComponentLocalStorage';
+import { getBuildingSubcomponentData } from '../utils/BuildingSubcomponentLocalStorage'; // Add this import
 
 // Import our split components
 import { InfoCard, StorageOverviewCard, StorageItemsCard } from './StorageCards';
@@ -97,9 +98,14 @@ const buildingCodeStorage = localForage.createInstance({
   storeName: 'building_code_data'
 });
 
-const buildingComponentStorage = localForage.createInstance({ // Add this instance
+const buildingComponentStorage = localForage.createInstance({
   name: 'TaxAppStorage',
   storeName: 'building_component_data'
+});
+
+const buildingSubcomponentStorage = localForage.createInstance({ // Add this instance
+  name: 'TaxAppStorage',
+  storeName: 'building_subcomponent_data'
 });
 
 // ADD NEW STORAGE INSTANCES HERE
@@ -117,7 +123,8 @@ const storageInstances: StorageInstance[] = [
   { name: 'AssessmentLevelDB', instance: assessmentLevelStorage },
   { name: 'BarangayDB', instance: barangayStorage },
   { name: 'BuildingCodeDB', instance: buildingCodeStorage },
-  { name: 'BuildingComponentDB', instance: buildingComponentStorage } // Add this line
+  { name: 'BuildingComponentDB', instance: buildingComponentStorage },
+  { name: 'BuildingSubcomponentDB', instance: buildingSubcomponentStorage } // Add this line
 ];
 
 // ADD NEW RECORD COUNTERS HERE
@@ -146,10 +153,14 @@ const recordCounters: RecordCounter[] = [
     const count = await getBuildingCodeCount();
     return count;
   }, color: 'tertiary' },
-  { name: 'Building Components', getCount: async () => { // Add this counter
+  { name: 'Building Components', getCount: async () => {
     const data = await getBuildingComponentData();
     return data ? data.length : 0;
-  }, color: 'success' }
+  }, color: 'success' },
+  { name: 'Building Subcomponents', getCount: async () => { // Add this counter
+    const data = await getBuildingSubcomponentData();
+    return data ? data.length : 0;
+  }, color: 'warning' }
 ];
 
 const Storage: React.FC = () => {
