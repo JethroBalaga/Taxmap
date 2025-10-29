@@ -80,6 +80,8 @@ export const calculateStorageUsage = async (
               displayValue = `${value.length} value info records`;
             } else if (key === 'photoTags' && Array.isArray(value)) {
               displayValue = `${value.length} photo tag records`;
+            } else if (key === 'agriculturalData' && Array.isArray(value)) { // Add this condition
+              displayValue = `${value.length} agricultural data records`;
             } else if (typeof value === 'object') {
               displayValue = 'Object data';
             } else {
