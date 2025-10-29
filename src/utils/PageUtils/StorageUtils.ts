@@ -84,8 +84,10 @@ export const calculateStorageUsage = async (
               displayValue = `${value.length} agricultural data records`;
             } else if (key === 'buildingAdjustmentData' && Array.isArray(value)) {
               displayValue = `${value.length} building adjustment records`;
-            } else if (key === 'buildingData' && Array.isArray(value)) { // Add this condition
+            } else if (key === 'buildingData' && Array.isArray(value)) {
               displayValue = `${value.length} building data records`;
+            } else if (key === 'machineData' && Array.isArray(value)) { // Add this condition
+              displayValue = `${value.length} machine data records`;
             } else if (typeof value === 'object') {
               displayValue = 'Object data';
             } else {
