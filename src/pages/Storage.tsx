@@ -20,6 +20,7 @@ import localForage from 'localforage';
 import { FormDataLocalStorage } from '../utils/tablestorages/FormDataLocalStorage';
 import { ValueInfoLocalStorage } from '../utils/tablestorages/ValueInfoLocalStorage';
 import { PhotoTagLocalStorage } from '../utils/tablestorages/PhotoTagLocalStorage';
+import { AgriculturalDataLocalStorage } from '../utils/tablestorages/AgriculturalDataLocalStorage'; // Add this import
 
 // Import our split components
 import { InfoCard, StorageOverviewCard, StorageItemsCard } from './StorageCards';
@@ -42,12 +43,18 @@ const photoTagsStorage = localForage.createInstance({
   storeName: 'photo_tags'
 });
 
+const agriculturalStorage = localForage.createInstance({ // Add this instance
+  name: 'AgriculturalDataDB',
+  storeName: 'agricultural_store'
+});
+
 // ADD NEW STORAGE INSTANCES HERE
 const storageInstances: StorageInstance[] = [
   { name: 'Default', instance: localForage },
   { name: 'FormDataDB', instance: formDataStorage },
   { name: 'ValueInfoDB', instance: valueInfoStorage },
-  { name: 'PhotoTagsDB', instance: photoTagsStorage }
+  { name: 'PhotoTagsDB', instance: photoTagsStorage },
+  { name: 'AgriculturalDB', instance: agriculturalStorage } // Add this line
   // Add more instances here as you create them...
 ];
 
@@ -55,7 +62,8 @@ const storageInstances: StorageInstance[] = [
 const recordCounters: RecordCounter[] = [
   { name: 'Form Data', getCount: () => FormDataLocalStorage.getAllFormData().then(data => data.length), color: 'primary' },
   { name: 'Value Info', getCount: () => ValueInfoLocalStorage.getAllValueInfo().then(data => data.length), color: 'secondary' },
-  { name: 'Photo Tags', getCount: () => PhotoTagLocalStorage.getAllPhotoTags().then(data => data.length), color: 'tertiary' }
+  { name: 'Photo Tags', getCount: () => PhotoTagLocalStorage.getAllPhotoTags().then(data => data.length), color: 'tertiary' },
+  { name: 'Agricultural Data', getCount: () => AgriculturalDataLocalStorage.getAllAgriculturalData().then(data => data.length), color: 'success' } // Add this line
   // Add more counters here as you create them...
 ];
 
