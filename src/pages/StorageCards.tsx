@@ -1,3 +1,5 @@
+// src/components/Storage/StorageCards.tsx
+
 import React from 'react';
 import {
     IonCard,
