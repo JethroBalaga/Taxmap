@@ -1,3 +1,5 @@
+// src/components/Storage/Storage.tsx
+
 import React, { useState, useEffect } from 'react';
 import {
     IonContent,
@@ -17,11 +19,11 @@ import localForage from 'localforage';
 // Import your storage systems
 import { FormDataLocalStorage } from '../utils/tablestorages/FormDataLocalStorage';
 import { ValueInfoLocalStorage } from '../utils/tablestorages/ValueInfoLocalStorage';
-// Import more storage systems as you create them...
+import { PhotoTagLocalStorage } from '../utils/tablestorages/PhotoTagLocalStorage';
 
 // Import our split components
 import { InfoCard, StorageOverviewCard, StorageItemsCard } from './StorageCards';
-import { calculateStorageUsage, formatBytes } from '../utils/PageUtils/StorageUtils'; // Add formatBytes import
+import { calculateStorageUsage, formatBytes } from '../utils/PageUtils/StorageUtils';
 import { StorageInstance, RecordCounter, InfoItem, StorageInfo, StorageItem, StorageRecordCount } from '../utils/PageUtils/StorageTypes';
 
 // Create instances for all your storage systems
@@ -35,18 +37,25 @@ const valueInfoStorage = localForage.createInstance({
   storeName: 'value_info'
 });
 
+const photoTagsStorage = localForage.createInstance({
+  name: 'PhotoTagApp',
+  storeName: 'photo_tags'
+});
+
 // ADD NEW STORAGE INSTANCES HERE
 const storageInstances: StorageInstance[] = [
   { name: 'Default', instance: localForage },
   { name: 'FormDataDB', instance: formDataStorage },
-  { name: 'ValueInfoDB', instance: valueInfoStorage }
+  { name: 'ValueInfoDB', instance: valueInfoStorage },
+  { name: 'PhotoTagsDB', instance: photoTagsStorage }
   // Add more instances here as you create them...
 ];
 
 // ADD NEW RECORD COUNTERS HERE
 const recordCounters: RecordCounter[] = [
   { name: 'Form Data', getCount: () => FormDataLocalStorage.getAllFormData().then(data => data.length), color: 'primary' },
-  { name: 'Value Info', getCount: () => ValueInfoLocalStorage.getAllValueInfo().then(data => data.length), color: 'secondary' }
+  { name: 'Value Info', getCount: () => ValueInfoLocalStorage.getAllValueInfo().then(data => data.length), color: 'secondary' },
+  { name: 'Photo Tags', getCount: () => PhotoTagLocalStorage.getAllPhotoTags().then(data => data.length), color: 'tertiary' }
   // Add more counters here as you create them...
 ];
 
