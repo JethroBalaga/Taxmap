@@ -36,7 +36,8 @@ import { getDeclarantData } from '../utils/DeclarantLocalStorage';
 import { getDistrictData } from '../utils/districtLocalStorage';
 import { getEquipmentData } from '../utils/equipmentLocalStorage';
 import { getKindData } from '../utils/kindLocalStorage';
-import { getLandAdjustmentData } from '../utils/landAdjustmentLocalStorage'; // Add this import
+import { getLandAdjustmentData } from '../utils/landAdjustmentLocalStorage';
+import { getStructureTypeData } from '../utils/structureTypeLocalStorage'; // Add this import
 
 // Import our split components
 import { InfoCard, StorageOverviewCard, StorageItemsCard } from './StorageCards';
@@ -139,9 +140,14 @@ const kindStorage = localForage.createInstance({
   storeName: 'kind_data'
 });
 
-const landAdjustmentStorage = localForage.createInstance({ // Add this instance
+const landAdjustmentStorage = localForage.createInstance({
   name: 'TaxAppStorage',
   storeName: 'land_adjustment_data'
+});
+
+const structureTypeStorage = localForage.createInstance({ // Add this instance
+  name: 'TaxAppStorage',
+  storeName: 'structure_type_data'
 });
 
 // ADD NEW STORAGE INSTANCES HERE
@@ -166,7 +172,8 @@ const storageInstances: StorageInstance[] = [
   { name: 'DistrictDB', instance: districtStorage },
   { name: 'EquipmentDB', instance: equipmentStorage },
   { name: 'KindDB', instance: kindStorage },
-  { name: 'LandAdjustmentDB', instance: landAdjustmentStorage } // Add this line
+  { name: 'LandAdjustmentDB', instance: landAdjustmentStorage },
+  { name: 'StructureTypeDB', instance: structureTypeStorage } // Add this line
 ];
 
 // ADD NEW RECORD COUNTERS HERE
@@ -223,10 +230,14 @@ const recordCounters: RecordCounter[] = [
     const data = await getKindData();
     return data ? data.length : 0;
   }, color: 'secondary' },
-  { name: 'Land Adjustments', getCount: async () => { // Add this counter
+  { name: 'Land Adjustments', getCount: async () => {
     const data = await getLandAdjustmentData();
     return data ? data.length : 0;
-  }, color: 'tertiary' }
+  }, color: 'tertiary' },
+  { name: 'Structure Types', getCount: async () => { // Add this counter
+    const data = await getStructureTypeData();
+    return data ? data.length : 0;
+  }, color: 'success' }
 ];
 
 const Storage: React.FC = () => {
