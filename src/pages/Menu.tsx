@@ -92,7 +92,7 @@ const Menu: React.FC = () => {
                         <Route path="/menu/forms/agriculturaltable/:formId" component={AgriculturalAdjustmentTable} />
                         <Route path="/menu/forms/nonagriltable/:formId" component={NonAgriLandTable} />
                         <Route exact path="/menu">
-                            <Redirect to="/menu/storage" />
+                            <Redirect to="/menu/map" />
                         </Route>
                     </IonRouterOutlet>
                 </IonContent>

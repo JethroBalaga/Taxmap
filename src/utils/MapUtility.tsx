@@ -68,16 +68,6 @@ import {
   getCurrentBuildingCodeVersion
 } from './buildingCodeLocalStorage';
 import { 
-  getDeclarantData, 
-  isDeclarantDataFresh,
-  clearDeclarantData,
-  getStoredDeclarantVersion,
-  getDeclarantTimestamp,
-  hasDeclarantData,
-  getDeclarantDataSize,
-  getCurrentDeclarantVersion
-} from './DeclarantLocalStorage';
-import { 
   getBuildingComponentData, 
   isBuildingComponentDataFresh,
   clearBuildingComponentData,
@@ -130,7 +120,6 @@ import { KindFetcher } from './dataFetchers/KindFetcher';
 import { AssessmentLevelFetcher } from './dataFetchers/AssessmentLevelFetcher';
 import { StructureTypeFetcher } from './dataFetchers/StructureTypeFetcher';
 import { BuildingCodeFetcher } from './dataFetchers/BuildingCodeFetcher';
-import { DeclarantFetcher } from './dataFetchers/DeclarantFetcher';
 import { BuildingComponentFetcher } from './dataFetchers/BuildingComponentFetcher';
 import { BuildingSubcomponentFetcher } from './dataFetchers/BuildingSubcomponentFetcher';
 import { EquipmentFetcher } from './dataFetchers/EquipmentFetcher';
@@ -144,7 +133,7 @@ export interface FetchDataResult {
 }
 
 export class MapDataManager {
-  // Check if all data is fresh (including land adjustment data)
+  // Check if all data is fresh (declarant data removed)
   static async checkAllDataFreshness(): Promise<boolean> {
     try {
       const [
@@ -159,10 +148,9 @@ export class MapDataManager {
         isAssessmentLevelFresh,
         isStructureTypeFresh,
         isBuildingCodeFresh,
-        isDeclarantFresh,
         isBuildingComponentFresh,
         isBuildingSubcomponentFresh,
-        isLandAdjustmentFresh, // ADDED LAND ADJUSTMENT
+        isLandAdjustmentFresh,
         isEquipmentFresh
       ] = await Promise.all([
         isClassificationDataFresh(),
@@ -176,19 +164,18 @@ export class MapDataManager {
         isAssessmentLevelDataFresh(),
         isStructureTypeDataFresh(),
         isBuildingCodeDataFresh(),
-        isDeclarantDataFresh(),
         isBuildingComponentDataFresh(),
         isBuildingSubcomponentDataFresh(),
-        isLandAdjustmentDataFresh(), // ADDED LAND ADJUSTMENT
+        isLandAdjustmentDataFresh(),
         isEquipmentDataFresh()
       ]);
 
       return isClassFresh && isSubclassFresh && isRateFresh &&
              isActualUsedFresh && isDistrictFresh && isBarangayFresh &&
              isTaxRateFresh && isKindFresh && isAssessmentLevelFresh &&
-             isStructureTypeFresh && isBuildingCodeFresh && isDeclarantFresh &&
+             isStructureTypeFresh && isBuildingCodeFresh &&
              isBuildingComponentFresh && isBuildingSubcomponentFresh &&
-             isLandAdjustmentFresh && // ADDED LAND ADJUSTMENT
+             isLandAdjustmentFresh &&
              isEquipmentFresh;
     } catch (error) {
       console.error('Error checking data freshness:', error);
@@ -196,7 +183,7 @@ export class MapDataManager {
     }
   }
 
-  // Fetch all data that needs updating (including land adjustment data)
+  // Fetch all data that needs updating (declarant data removed)
   static async fetchAllRequiredData(): Promise<{
     results: FetchDataResult[];
     hasErrors: boolean;
@@ -217,10 +204,9 @@ export class MapDataManager {
       existingAssessmentLevelData, isAssessmentLevelFresh,
       existingStructureTypeData, isStructureTypeFresh,
       existingBuildingCodeData, isBuildingCodeFresh,
-      existingDeclarantData, isDeclarantFresh,
       existingBuildingComponentData, isBuildingComponentFresh,
       existingBuildingSubcomponentData, isBuildingSubcomponentFresh,
-      existingLandAdjustmentData, isLandAdjustmentFresh, // ADDED LAND ADJUSTMENT
+      existingLandAdjustmentData, isLandAdjustmentFresh,
       existingEquipmentData, isEquipmentFresh
     ] = await Promise.all([
       getClassificationData(), isClassificationDataFresh(),
@@ -234,10 +220,9 @@ export class MapDataManager {
       getAssessmentLevelData(), isAssessmentLevelDataFresh(),
       getStructureTypeData(), isStructureTypeDataFresh(),
       getBuildingCodeData(), isBuildingCodeDataFresh(),
-      getDeclarantData(), isDeclarantDataFresh(),
       getBuildingComponentData(), isBuildingComponentDataFresh(),
       getBuildingSubcomponentData(), isBuildingSubcomponentDataFresh(),
-      getLandAdjustmentData(), isLandAdjustmentDataFresh(), // ADDED LAND ADJUSTMENT
+      getLandAdjustmentData(), isLandAdjustmentDataFresh(),
       getEquipmentData(), isEquipmentDataFresh()
     ]);
 
@@ -308,12 +293,6 @@ export class MapDataManager {
       if (!result.success) hasErrors = true;
     }
 
-    if (!existingDeclarantData || !isDeclarantFresh) {
-      const result = await DeclarantFetcher.fetchData();
-      results.push(result);
-      if (!result.success) hasErrors = true;
-    }
-
     if (!existingBuildingComponentData || !isBuildingComponentFresh) {
       const result = await BuildingComponentFetcher.fetchData();
       results.push(result);
@@ -326,7 +305,6 @@ export class MapDataManager {
       if (!result.success) hasErrors = true;
     }
 
-    // ADDED LAND ADJUSTMENT FETCHING
     if (!existingLandAdjustmentData || !isLandAdjustmentFresh) {
       const result = await LandAdjustmentFetcher.fetchData();
       results.push(result);
@@ -342,7 +320,7 @@ export class MapDataManager {
     return { results, hasErrors };
   }
 
-  // Clear all data (including land adjustment data)
+  // Clear all data (declarant data removed)
   static async clearAllData(): Promise<FetchDataResult[]> {
     const results: FetchDataResult[] = [];
     
@@ -353,10 +331,9 @@ export class MapDataManager {
         clearAssessmentLevelData(),
         clearStructureTypeData(),
         clearBuildingCodeData(),
-        clearDeclarantData(),
         clearBuildingComponentData(),
         clearBuildingSubcomponentData(),
-        clearLandAdjustmentData(), // ADDED LAND ADJUSTMENT CLEAR
+        clearLandAdjustmentData(),
         clearEquipmentData()
       ]);
       
@@ -405,39 +382,6 @@ export class MapDataManager {
       version: storedVersion,
       size,
       currentVersion: getCurrentLandAdjustmentVersion()
-    };
-  }
-
-  // Get declarant data statistics
-  static async getDeclarantDataStats(): Promise<{
-    exists: boolean;
-    isFresh: boolean;
-    timestamp: number | null;
-    version: number | null;
-    size: number;
-    currentVersion: number;
-  }> {
-    const [
-      exists,
-      isFresh,
-      timestamp,
-      storedVersion,
-      size
-    ] = await Promise.all([
-      hasDeclarantData(),
-      isDeclarantDataFresh(),
-      getDeclarantTimestamp(),
-      getStoredDeclarantVersion(),
-      getDeclarantDataSize()
-    ]);
-
-    return {
-      exists,
-      isFresh,
-      timestamp,
-      version: storedVersion,
-      size,
-      currentVersion: getCurrentDeclarantVersion()
     };
   }
 
@@ -672,49 +616,45 @@ export class MapDataManager {
     };
   }
 
-  // Get all data statistics
+  // Get all data statistics (declarant removed)
   static async getAllDataStats(): Promise<{
-    declarant: Awaited<ReturnType<typeof MapDataManager.getDeclarantDataStats>>;
     kind: Awaited<ReturnType<typeof MapDataManager.getKindDataStats>>;
     assessmentLevel: Awaited<ReturnType<typeof MapDataManager.getAssessmentLevelDataStats>>;
     structureType: Awaited<ReturnType<typeof MapDataManager.getStructureTypeDataStats>>;
     buildingCode: Awaited<ReturnType<typeof MapDataManager.getBuildingCodeDataStats>>;
     buildingComponent: Awaited<ReturnType<typeof MapDataManager.getBuildingComponentDataStats>>;
     buildingSubcomponent: Awaited<ReturnType<typeof MapDataManager.getBuildingSubcomponentDataStats>>;
-    landAdjustment: Awaited<ReturnType<typeof MapDataManager.getLandAdjustmentDataStats>>; // ADDED LAND ADJUSTMENT
+    landAdjustment: Awaited<ReturnType<typeof MapDataManager.getLandAdjustmentDataStats>>;
     equipment: Awaited<ReturnType<typeof MapDataManager.getEquipmentDataStats>>;
   }> {
     const [
-      declarantStats,
       kindStats,
       assessmentLevelStats,
       structureTypeStats,
       buildingCodeStats,
       buildingComponentStats,
       buildingSubcomponentStats,
-      landAdjustmentStats, // ADDED LAND ADJUSTMENT
+      landAdjustmentStats,
       equipmentStats
     ] = await Promise.all([
-      this.getDeclarantDataStats(),
       this.getKindDataStats(),
       this.getAssessmentLevelDataStats(),
       this.getStructureTypeDataStats(),
       this.getBuildingCodeDataStats(),
       this.getBuildingComponentDataStats(),
       this.getBuildingSubcomponentDataStats(),
-      this.getLandAdjustmentDataStats(), // ADDED LAND ADJUSTMENT
+      this.getLandAdjustmentDataStats(),
       this.getEquipmentDataStats()
     ]);
 
     return {
-      declarant: declarantStats,
       kind: kindStats,
       assessmentLevel: assessmentLevelStats,
       structureType: structureTypeStats,
       buildingCode: buildingCodeStats,
       buildingComponent: buildingComponentStats,
       buildingSubcomponent: buildingSubcomponentStats,
-      landAdjustment: landAdjustmentStats, // ADDED LAND ADJUSTMENT
+      landAdjustment: landAdjustmentStats,
       equipment: equipmentStats
     };
   }
