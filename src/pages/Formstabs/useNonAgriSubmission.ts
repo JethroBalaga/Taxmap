@@ -5,6 +5,8 @@ import { PhotoTagLocalStorage } from '../../utils/tablestorages/PhotoTagLocalSto
 import { supabaseApi } from '../../services/supabaseApi';
 import { supabase } from '../../utils/supaBaseClient';
 import { NonAgriAdjustmentLocalStorage } from '../../utils/tablestorages/NonAgriAdjustmentLocalStorage';
+import { Directory, Filesystem } from '@capacitor/filesystem';
+import { Capacitor } from '@capacitor/core';
 
 interface UseNonAgriSubmissionProps {
     formId: string | undefined;
@@ -33,9 +35,36 @@ export const useNonAgriSubmission = ({
         }
     };
 
-    const getPhotoFile = async (photoTag: any): Promise<File | null> => {
-        // Implement photo file retrieval logic
-        return null;
+    // FIXED: Added proper photo file retrieval implementation
+    const getPhotoFile = async (photoTag: any): Promise<Blob | null> => {
+        try {
+            const photoPath = `phototags/${photoTag.photoName}`;
+            
+            if (Capacitor.isNativePlatform()) {
+                const file = await Filesystem.readFile({
+                    path: photoPath,
+                    directory: Directory.Data
+                });
+                const blob = await (await fetch(`data:image/jpeg;base64,${file.data}`)).blob();
+                return blob;
+            } else {
+                const photoData = localStorage.getItem(photoTag.photoName);
+                if (photoData && photoData.startsWith('data:')) {
+                    return await (await fetch(photoData)).blob();
+                }
+                if (photoTag.photoData) {
+                    return await (await fetch(photoTag.photoData)).blob();
+                }
+                if (photoTag.photoName && photoTag.photoName.startsWith('data:image')) {
+                    return await (await fetch(photoTag.photoName)).blob();
+                }
+            }
+            console.warn('Photo not found for upload in any storage location', photoTag);
+            return null;
+        } catch (error) {
+            console.error('Error getting photo file:', error);
+            return null;
+        }
     };
 
     const insertNonAgriAdjustmentWithRetry = async (
@@ -127,12 +156,12 @@ export const useNonAgriSubmission = ({
                 showToastMessage('Form submitted but could not retrieve photo', 'warning');
             }
 
-            // Insert form record
+            // FIXED: Insert form record with correct field mapping
             let databaseFormId = currentFormData.synced_id;
             if (!databaseFormId) {
                 databaseFormId = await supabaseApi.insertForm({
-                    declarant_id: currentFormData.declarantId || 0,
-                    kind_id: parseInt(currentFormData.kind),
+                    declarant: currentFormData.declarant, // CHANGED: from declarant_id to declarant
+                    kind_id: typeof currentFormData.kind === 'string' ? parseInt(currentFormData.kind) : currentFormData.kind, // Handle both string and number
                     class_id: currentFormData.classification,
                     area: currentFormData.area.toString(),
                     district_id: currentFormData.district,
@@ -154,15 +183,17 @@ export const useNonAgriSubmission = ({
                 const adjustmentResults = [];
                 for (const adjustment of currentAdjustments) {
                     try {
-                        const additionalFactorValue = await NonAgriAdjustmentLocalStorage.getAdditionalFactor(
-                            valueInfoId, 
-                            adjustment.adjustmentId
-                        );
+                        // FIXED: Get additional factor from the adjustment data
+                        const additionalFactorValue = adjustment.additional_factor || 
+                            await NonAgriAdjustmentLocalStorage.getAdditionalFactor(
+                                valueInfoId, 
+                                adjustment.adjustmentId
+                            );
 
                         const success = await insertNonAgriAdjustmentWithRetry(
                             databaseValueInfoId, 
                             adjustment.adjustmentId,
-                            adjustment.adjustment_type === 'Stripping' ? additionalFactorValue : undefined
+                            adjustment.adjustment_type === 'Stripping' ? additionalFactorValue : additionalFactorValue
                         );
                         adjustmentResults.push({
                             adjustmentId: adjustment.adjustmentId,

@@ -1,4 +1,3 @@
-// src/components/Modals/BuildingViewUI.tsx
 import React from 'react';
 import {
   IonGrid,
@@ -15,7 +14,8 @@ import {
   IonSpinner,
   IonNote
 } from '@ionic/react';
-import { FormData } from './Form';
+// Import from the same source as Form component
+import { FormData } from '../../utils/tablestorages/FormDataLocalStorage';
 import { BuildingData } from './BuildingModal';
 import { StructureTypeData } from '../../utils/structureTypeLocalStorage';
 import { BuildingCodeData } from '../../utils/buildingCodeLocalStorage';

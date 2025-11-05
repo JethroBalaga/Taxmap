@@ -70,6 +70,10 @@ export const useMachinerySubmission = () => {
     try {
       if (!formData) throw new Error('Form data not found');
 
+      // Use a single form for all machinery entries
+      let databaseFormId = formData.synced_id;
+      let isNewForm = false;
+
       for (const { machineData, valueInfoId } of machineryData) {
         const valueInfo = await ValueInfoLocalStorage.getValueInfo(valueInfoId);
         if (!valueInfo) throw new Error(`ValueInfo not found for ${valueInfoId}`);
@@ -77,6 +81,7 @@ export const useMachinerySubmission = () => {
         const photoTag = await PhotoTagLocalStorage.getPhotoTag(valueInfo.photoTagId);
         if (!photoTag) throw new Error('Photo tag not found');
 
+        // Insert photo record
         const databaseTagId = await supabaseApi.insertPhoto({
           photo: photoTag.photoName,
           longitude: photoTag.longitude,
@@ -85,6 +90,7 @@ export const useMachinerySubmission = () => {
         });
         if (!databaseTagId) throw new Error('Failed to insert photo record');
 
+        // Upload photo file
         const photoFile = await getPhotoFile(photoTag);
         if (photoFile) {
           const folderPath = `${databaseTagId}/${photoTag.photoName}`;
@@ -100,11 +106,11 @@ export const useMachinerySubmission = () => {
           showToastMessage('Form submitted but could not retrieve photo', 'warning');
         }
 
-        let databaseFormId = formData.synced_id;
+        // FIXED: Insert form only once (for the first machinery entry)
         if (!databaseFormId) {
           databaseFormId = await supabaseApi.insertForm({
-            declarant_id: formData.declarantId || 0,
-            kind_id: parseInt(formData.kind),
+            declarant: formData.declarant, // CHANGED: from declarant_id to declarant
+            kind_id: typeof formData.kind === 'string' ? parseInt(formData.kind) : formData.kind, // Handle both string and number
             class_id: formData.classification,
             area: formData.area.toString(),
             district_id: formData.district,
@@ -113,11 +119,14 @@ export const useMachinerySubmission = () => {
             status: 'New'
           });
           if (!databaseFormId) throw new Error('Failed to insert form');
+          isNewForm = true;
         }
 
+        // Insert value info linking form and photo
         const databaseValueInfoId = await supabaseApi.insertValueInfo(databaseFormId, databaseTagId);
 
-        await supabaseApi.insertMachineData(databaseValueInfoId, {
+        // FIXED: Insert machine data with correct field mappings
+        const machineDataId = await supabaseApi.insertMachineData(databaseValueInfoId, {
           selected_equipment: machineData.selectedEquipment || null,
           serial_no: machineData.serialNo || null,
           machine_description: machineData.machineDescription || null,
@@ -139,9 +148,14 @@ export const useMachinerySubmission = () => {
           depreciation: validateNumber(machineData.depreciation)
         });
 
-        if (!formData.synced_id) {
-          await FormDataLocalStorage.markFormAsUploaded(formId, databaseFormId);
+        if (!machineDataId) {
+          throw new Error('Failed to insert machine data');
         }
+      }
+
+      // Mark form as uploaded in local storage if it's a new form
+      if (isNewForm && databaseFormId) {
+        await FormDataLocalStorage.markFormAsUploaded(formId, databaseFormId);
       }
 
       // Dispatch event to notify form was uploaded

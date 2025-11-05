@@ -4,12 +4,12 @@ import { MachineDataLocalStorage, MachineData } from '../../utils/tablestorages/
 import { ValueInfoLocalStorage } from '../../utils/tablestorages/ValueInfoLocalStorage';
 import { FormDataLocalStorage } from '../../utils/tablestorages/FormDataLocalStorage';
 import { getDistrictById } from '../../utils/districtLocalStorage';
-import { getDeclarantById } from '../../utils/DeclarantLocalStorage';
+// REMOVED: getDeclarantById - since declarant is now a string
 import { getAssessmentLevelData, AssessmentLevelData } from '../../utils/assessmentLevelLocalStorage';
 
 export interface FormContextData {
   districtName: string;
-  declarantName: string;
+  declarantName: string; // This is now the direct declarant string
   classification: string;
   actualUse: string;
   valueInfoTableData: Array<{
@@ -192,6 +192,7 @@ export const useMachineryData = () => {
     }
   };
 
+  // FIXED: Updated form context loading
   const loadFormContext = async () => {
     if (!formId) return;
     
@@ -202,10 +203,8 @@ export const useMachineryData = () => {
       const districtData = formData.district ? await getDistrictById(formData.district) : null;
       const districtName = districtData?.district_name || 'Unknown District';
 
-      const declarantData = formData.declarantId ? await getDeclarantById(formData.declarantId) : null;
-      const declarantName = declarantData 
-        ? `${declarantData.firstname} ${declarantData.lastname}`
-        : 'Unknown Declarant';
+      // FIXED: Directly use declarant string from formData
+      const declarantName = formData.declarant || 'Unknown Declarant';
 
       const allValueInfo = await ValueInfoLocalStorage.getAllValueInfo();
       const formValueInfo = allValueInfo.filter(info => info.formDataId === formId);
@@ -214,17 +213,21 @@ export const useMachineryData = () => {
         const machineEntry = machineryData.find(item => item.valueInfoId === valueInfo.id);
         const adjustedMarketValue = machineEntry ? machineEntry.machineData.adjustedMarketValue : 'N/A';
         
+        // FIXED: Handle kind conversion properly
+        const kindId = typeof formData.kind === 'string' ? parseInt(formData.kind) : formData.kind || 3;
+        const classification = formData.classification || '';
+        
         const { rate: assessmentLevel, rawRate } = getAssessmentLevelRate(
           adjustedMarketValue, 
-          parseInt(formData.kind) || 3,
-          formData.classification || ''
+          kindId,
+          classification
         );
 
         const assessedValue = calculateAssessedValue(adjustedMarketValue, rawRate);
         
         return {
           value_info_id: valueInfo.id,
-          classification: formData.classification || 'Not specified',
+          classification: classification || 'Not specified',
           actual_used: formData.actualUse || 'Not specified',
           base_market_value: machineEntry ? formatNumber(machineEntry.machineData.totalCost) : 'N/A',
           adjusted_market_value: machineEntry ? formatNumber(adjustedMarketValue) : 'N/A',

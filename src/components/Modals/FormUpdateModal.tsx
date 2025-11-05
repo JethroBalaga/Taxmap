@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from 'react';
 import { FormDataLocalStorage, FormData } from '../../utils/tablestorages/FormDataLocalStorage';
 import { getDistrictData } from '../../utils/districtLocalStorage';
-import { getDeclarantData } from '../../utils/DeclarantLocalStorage';
 import { getKindData } from '../../utils/kindLocalStorage';
 import { getClassificationData } from '../../utils/classificationLocalStorage';
 import { getSubclassesByClassId } from '../../utils/subclassLocalStorage';
@@ -28,17 +27,13 @@ const FormUpdateModal: React.FC<FormUpdateModalProps> = ({
   const [showErrorAlert, setShowErrorAlert] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
 
-  // Data states
   const [districts, setDistricts] = useState<any[]>([]);
-  const [declarants, setDeclarants] = useState<any[]>([]);
   const [kinds, setKinds] = useState<any[]>([]);
   const [classifications, setClassifications] = useState<any[]>([]);
   const [subclasses, setSubclasses] = useState<any[]>([]);
   const [actualUses, setActualUses] = useState<any[]>([]);
 
-  // Loading states
   const [isLoadingDistricts, setIsLoadingDistricts] = useState(true);
-  const [isLoadingDeclarants, setIsLoadingDeclarants] = useState(true);
   const [isLoadingKinds, setIsLoadingKinds] = useState(true);
   const [isLoadingClassifications, setIsLoadingClassifications] = useState(true);
   const [isLoadingSubclasses, setIsLoadingSubclasses] = useState(false);
@@ -49,7 +44,6 @@ const FormUpdateModal: React.FC<FormUpdateModalProps> = ({
       loadFormData();
       loadAllData();
     } else {
-      // Reset form data when modal is closed
       setFormData(null);
     }
   }, [isOpen, formId]);
@@ -57,7 +51,7 @@ const FormUpdateModal: React.FC<FormUpdateModalProps> = ({
   const loadFormData = async () => {
     setIsLoading(true);
     if (formId) {
-      const data = await FormDataLocalStorage.getFormData(formId); // Added await
+      const data = await FormDataLocalStorage.getFormData(formId);
       if (data) {
         setFormData(data);
       }
@@ -68,32 +62,27 @@ const FormUpdateModal: React.FC<FormUpdateModalProps> = ({
   const loadAllData = async () => {
     try {
       setIsLoadingDistricts(true);
-      setIsLoadingDeclarants(true);
       setIsLoadingKinds(true);
       setIsLoadingClassifications(true);
 
-      const [districtData, declarantData, kindData, classificationData] = await Promise.all([
+      const [districtData, kindData, classificationData] = await Promise.all([
         getDistrictData(),
-        getDeclarantData(),
         getKindData(),
         getClassificationData()
       ]);
 
       if (districtData) setDistricts(districtData);
-      if (declarantData) setDeclarants(declarantData);
       if (kindData) setKinds(kindData);
       if (classificationData) setClassifications(classificationData);
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {
       setIsLoadingDistricts(false);
-      setIsLoadingDeclarants(false);
       setIsLoadingKinds(false);
       setIsLoadingClassifications(false);
     }
   };
 
-  // Load subclasses when classification changes
   useEffect(() => {
     const fetchSubclasses = async () => {
       if (!formData?.classification) {
@@ -119,7 +108,6 @@ const FormUpdateModal: React.FC<FormUpdateModalProps> = ({
     }
   }, [formData?.classification]);
 
-  // Load actual uses when classification changes
   useEffect(() => {
     const fetchActualUses = async () => {
       if (!formData?.classification) {
@@ -145,7 +133,6 @@ const FormUpdateModal: React.FC<FormUpdateModalProps> = ({
     }
   }, [formData?.classification]);
 
-  // Clear subclass when kind is BUILDING (ID 2)
   useEffect(() => {
     if (formData?.kind === "2") {
       handleInputChange('subclass', null);
@@ -153,7 +140,6 @@ const FormUpdateModal: React.FC<FormUpdateModalProps> = ({
   }, [formData?.kind]);
 
   const handleInputChange = (field: keyof FormData, value: any) => {
-    // Don't allow changing the kind field
     if (field === 'kind') {
       return;
     }
@@ -170,7 +156,7 @@ const FormUpdateModal: React.FC<FormUpdateModalProps> = ({
     if (formData && formId) {
       setIsUpdating(true);
       try {
-        const success = await FormDataLocalStorage.updateFormData(formId, formData); // Added await
+        const success = await FormDataLocalStorage.updateFormData(formId, formData);
         if (success) {
           setShowSuccessAlert(true);
           onUpdate(formData);
@@ -208,13 +194,11 @@ const FormUpdateModal: React.FC<FormUpdateModalProps> = ({
       showSuccessAlert={showSuccessAlert}
       showErrorAlert={showErrorAlert}
       districts={districts}
-      declarants={declarants}
       kinds={kinds}
       classifications={classifications}
       subclasses={subclasses}
       actualUses={actualUses}
       isLoadingDistricts={isLoadingDistricts}
-      isLoadingDeclarants={isLoadingDeclarants}
       isLoadingKinds={isLoadingKinds}
       isLoadingClassifications={isLoadingClassifications}
       isLoadingSubclasses={isLoadingSubclasses}

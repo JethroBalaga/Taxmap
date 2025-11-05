@@ -71,6 +71,22 @@ const BuildingList: React.FC<BuildingListProps> = ({
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedBuildingId, setSelectedBuildingId] = useState<string | null>(null);
 
+    // Debug logging to identify the issue
+    React.useEffect(() => {
+        console.log('BuildingList Debug - FormData:', formData);
+        console.log('BuildingList Debug - Declarant prop:', declarant);
+        console.log('BuildingList Debug - All individual props:', {
+            form_id,
+            district,
+            declarant,
+            kind,
+            classification,
+            subclass,
+            actual_use,
+            area
+        });
+    }, [formData, declarant, form_id, district, kind, classification, subclass, actual_use, area]);
+
     const handleSearch = (e: any) => {
         setSearchTerm(e.detail.value || '');
     };
@@ -144,38 +160,37 @@ const BuildingList: React.FC<BuildingListProps> = ({
 
     return (
         <>
-            {/* Form Summary Section - Display form data from props */}
+            {/* Form Summary Section - Updated to use formData directly */}
             <IonCard className="form-summary-card">
                 <IonCardContent>
                     <IonGrid style={{ margin: '0', padding: '0' }}>
                         <IonRow style={{ marginBottom: '4px' }}>
                             <IonCol size="4" style={{ padding: '4px' }}>
-                                <IonText><strong>District:</strong> {district || 'N/A'}</IonText>
+                                <IonText><strong>District:</strong> {formData?.district || district || 'N/A'}</IonText>
                             </IonCol>
                             <IonCol size="4" style={{ padding: '4px' }}>
-                                <IonText><strong>Declarant ID:</strong> {declarant || 'N/A'}</IonText>
+                                <IonText><strong>Declarant:</strong> {formData?.declarant || declarant || 'N/A'}</IonText>
                             </IonCol>
                             <IonCol size="4" style={{ padding: '4px' }}>
-                                <IonText><strong>Kind:</strong> {kind || 'N/A'}</IonText>
+                                <IonText><strong>Kind:</strong> {formData?.kind || kind || 'N/A'}</IonText>
                             </IonCol>
                         </IonRow>
                         <IonRow style={{ marginBottom: '4px' }}>
                             <IonCol size="4" style={{ padding: '4px' }}>
-                                <IonText><strong>Classification:</strong> {classification || 'N/A'}</IonText>
+                                <IonText><strong>Classification:</strong> {formData?.classification || classification || 'N/A'}</IonText>
                             </IonCol>
                             <IonCol size="4" style={{ padding: '4px' }}>
-                                <IonText><strong>Subclass:</strong> {subclass || 'N/A'}</IonText>
+                                <IonText><strong>Subclass:</strong> {formData?.subclass || subclass || 'N/A'}</IonText>
                             </IonCol>
                             <IonCol size="4" style={{ padding: '4px' }}>
-                                <IonText><strong>Actual Use:</strong> {actual_use || 'N/A'}</IonText>
+                                <IonText><strong>Actual Use:</strong> {formData?.actualUse || actual_use || 'N/A'}</IonText>
                             </IonCol>
                         </IonRow>
                         <IonRow>
                             <IonCol size="12" style={{ padding: '4px' }}>
-                                <IonText><strong>Area:</strong> {area ? `${area.toLocaleString()} sq ft` : 'N/A'}</IonText>
+                                <IonText><strong>Area:</strong> {formData?.area ? `${formData.area.toLocaleString()} sq ft` : area ? `${area.toLocaleString()} sq ft` : 'N/A'}</IonText>
                             </IonCol>
                         </IonRow>
-                        {/* Display additional form data if available */}
                         {formData && (
                             <IonRow>
                                 <IonCol size="12" style={{ padding: '4px' }}>

@@ -1,8 +1,10 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
+import { IonButton, IonIcon } from '@ionic/react';
+import { refresh } from 'ionicons/icons';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import 'leaflet.offline'; // offline plugin
+import 'leaflet.offline';
 import localforage from 'localforage';
 import { useIonViewWillEnter } from '@ionic/react';
 import Form from './Modals/Form';
@@ -31,10 +33,54 @@ const MIN_ZOOM_UNLOCKED = 12;
 const MAX_ZOOM = 22;
 const CREATE_OUTLINE_PATH = "M384 224v184a40 40 0 0 1-40 40H104a40 40 0 0 1-40-40V168a40 40 0 0 1 40-40h167.48M336 64h112v112M224 288L440 72";
 
-// Update the MapCon props interface
 interface MapConProps {
   searchQuery?: string;
 }
+
+// Refresh Control Component
+const RefreshControl = ({ 
+  onRefresh 
+}: { 
+  onRefresh: () => void;
+}) => {
+  const map = useMap();
+  const controlRef = useRef<any>(null);
+
+  useEffect(() => {
+    const CustomControl = L.Control.extend({
+      options: { position: 'topright' },
+      onAdd: function () {
+        const container = L.DomUtil.create('div', 'leaflet-control refresh-control-container');
+        
+        const button = L.DomUtil.create('button', 'refresh-control-btn', container);
+        button.type = 'button';
+        button.title = 'Refresh Map Data';
+        button.innerHTML = `
+          <div style="display: flex; align-items: center; gap: 8px; padding: 8px 12px;">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+              <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+            </svg>
+            <span style="font-size: 14px; font-weight: 500;">Refresh</span>
+          </div>
+        `;
+        
+        L.DomEvent.on(button, 'click', (e) => {
+          L.DomEvent.stop(e);
+          onRefresh();
+        });
+        
+        return container;
+      }
+    });
+
+    controlRef.current = new CustomControl();
+    controlRef.current.addTo(map);
+    
+    return () => controlRef.current?.remove();
+  }, [map, onRefresh]);
+
+  return null;
+};
 
 // Satellite Toggle Control Component
 const SatelliteToggleControl = ({ 
@@ -352,11 +398,13 @@ const PhotoMarkers: React.FC<{
 const MapLogic = ({ 
   onOpenForm, 
   isSatelliteView, 
-  onToggleSatellite 
+  onToggleSatellite,
+  onRefresh
 }: { 
   onOpenForm: () => void;
   isSatelliteView: boolean;
   onToggleSatellite: () => void;
+  onRefresh: () => void;
 }) => {
   const map = useMap();
   const tileLayerRef = useRef<any>(null);
@@ -431,6 +479,9 @@ const MapLogic = ({
         isSatelliteView={isSatelliteView} 
         onToggle={onToggleSatellite} 
       />
+      
+      {/* Refresh Control - positioned below filter */}
+      <RefreshControl onRefresh={onRefresh} />
     </>
   );
 };
@@ -455,6 +506,12 @@ const MapCon: React.FC<MapConProps> = ({ searchQuery = '' }) => {
     setFilteredPhotoTags(tags); // Initially show all
     setSearchedPhotoTags(tags); // Initially show all
   }, []);
+
+  // Refresh function
+  const handleRefresh = () => {
+    console.log('Refreshing map data...');
+    loadPhotoTags();
+  };
 
   // Use useIonViewWillEnter to refresh data whenever the view is navigated to
   useIonViewWillEnter(() => {
@@ -542,8 +599,8 @@ const MapCon: React.FC<MapConProps> = ({ searchQuery = '' }) => {
                 (formData.id && String(formData.id).toLowerCase().includes(query)) ||
                 (formData.kind && String(formData.kind).toLowerCase().includes(query)) ||
                 (formData.classification && String(formData.classification).toLowerCase().includes(query)) ||
-                (formData.area && String(formData.area).includes(query));
-              // Removed remarks field completely
+                (formData.area && String(formData.area).includes(query)) ||
+                (formData.declarant && String(formData.declarant).toLowerCase().includes(query));
 
               if (matchesSearch) {
                 searched.push(tag);
@@ -573,14 +630,9 @@ const MapCon: React.FC<MapConProps> = ({ searchQuery = '' }) => {
     searchProperties();
   }, [filteredPhotoTags, searchQuery]);
 
-  const handleFormDismiss = () => {
+  const handleFormClose = () => {
     setShowForm(false);
-    loadPhotoTags();
-  };
-
-  const handleFormSuccess = () => {
-    setShowForm(false);
-    loadPhotoTags();
+    loadPhotoTags(); // Refresh the markers when form closes
   };
 
   const handleMarkerClick = (photoTagId: string) => {
@@ -632,6 +684,7 @@ const MapCon: React.FC<MapConProps> = ({ searchQuery = '' }) => {
               onOpenForm={() => setShowForm(true)} 
               isSatelliteView={isSatelliteView}
               onToggleSatellite={handleToggleSatellite}
+              onRefresh={handleRefresh}
             />
 
             {/* Filter Control FIRST (will appear ABOVE) */}
@@ -648,14 +701,14 @@ const MapCon: React.FC<MapConProps> = ({ searchQuery = '' }) => {
           {/* Internet status notification */}
           {!isOnline && (
             <div className="internet-status">
-              <span>⚠️ No internet connection. Map may not display correctly.</span>
+              <span>No internet connection. Map may not display correctly.</span>
             </div>
           )}
 
           <Form
             isOpen={showForm}
-            onDismiss={handleFormDismiss}
-            onSuccess={handleFormSuccess}
+            onDismiss={handleFormClose}
+            onSuccess={handleFormClose}
           />
 
           {/* Popup overlay and content */}

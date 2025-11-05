@@ -67,11 +67,11 @@ interface NonAgriLandUIProps {
     setAdjustmentToDelete: (adjustment: any) => void;
 }
 
-// Grid data configuration array
+// Grid data configuration array - FIXED: Changed declarantId to declarant
 const getGridData = (formData: any) => [
     [
         { label: "District:", value: formData?.district || 'N/A' },
-        { label: "Declarant ID:", value: formData?.declarantId || 'N/A' },
+        { label: "Declarant:", value: formData?.declarant || 'N/A' }, // FIXED: declarantId → declarant
         { label: "Kind:", value: formData?.kind || 'N/A' },
         { label: "Classification:", value: formData?.classification || 'N/A' }
     ],

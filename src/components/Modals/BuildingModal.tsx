@@ -1,4 +1,3 @@
-// src/components/Modals/BuildingModal.tsx
 import React from 'react';
 import {
   IonModal,
@@ -12,7 +11,8 @@ import {
 } from '@ionic/react';
 import { closeOutline } from 'ionicons/icons';
 import BuildingView from './BuildingView';
-import { FormData } from './Form';
+// Import from the same source as Form component
+import { FormData } from '../../utils/tablestorages/FormDataLocalStorage';
 import '../../CSS/modal.css';
 
 export interface BuildingData {

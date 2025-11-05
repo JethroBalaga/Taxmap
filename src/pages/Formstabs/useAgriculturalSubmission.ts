@@ -102,6 +102,7 @@ export const useAgriculturalSubmission = (formId: string) => {
       const photoTag = await PhotoTagLocalStorage.getPhotoTag(valueInfo.photoTagId);
       if (!photoTag) throw new Error('Photo tag not found');
 
+      // Insert photo record
       const databaseTagId = await supabaseApi.insertPhoto({
         photo: photoTag.photoName,
         longitude: photoTag.longitude,
@@ -111,6 +112,7 @@ export const useAgriculturalSubmission = (formId: string) => {
       
       if (!databaseTagId) throw new Error('Failed to insert photo record');
 
+      // Upload photo file
       const photoFile = await getPhotoFile(photoTag);
       if (photoFile) {
         const folderPath = `${databaseTagId}/${photoTag.photoName}`;
@@ -127,11 +129,12 @@ export const useAgriculturalSubmission = (formId: string) => {
         showToastMessage('Form submitted but could not retrieve photo', 'warning');
       }
 
+      // FIXED: Insert form with correct field mapping
       let databaseFormId = formData.synced_id;
       if (!databaseFormId) {
         databaseFormId = await supabaseApi.insertForm({
-          declarant_id: formData.declarantId || 0,
-          kind_id: parseInt(formData.kind),
+          declarant: formData.declarant, // CHANGED: from declarant_id to declarant
+          kind_id: typeof formData.kind === 'string' ? parseInt(formData.kind) : formData.kind, // Handle both string and number
           class_id: formData.classification,
           area: formData.area.toString(),
           district_id: formData.district,
@@ -142,21 +145,25 @@ export const useAgriculturalSubmission = (formId: string) => {
         if (!databaseFormId) throw new Error('Failed to insert form');
       }
 
+      // Insert value info linking form and photo
       const databaseValueInfoId = await supabaseApi.insertValueInfo(databaseFormId, databaseTagId);
       if (!databaseValueInfoId) throw new Error('Failed to insert value info');
 
-      const adjustmentSuccess = await supabaseApi.insertAgriLandAdjustment(databaseValueInfoId, {
+      // FIXED: Insert agricultural adjustment data and handle return value
+      const adjustmentId = await supabaseApi.insertAgriLandAdjustment(databaseValueInfoId, {
         frontage: validateNumber(agriData.frontage),
         weather_road: validateNumber(agriData.weather_road),
         market: validateNumber(agriData.market)
       });
 
-      if (!adjustmentSuccess) throw new Error('Failed to insert agricultural adjustment data');
+      if (!adjustmentId) throw new Error('Failed to insert agricultural adjustment data');
 
+      // Mark form as uploaded in local storage if it wasn't already synced
       if (!formData.synced_id) {
         await FormDataLocalStorage.markFormAsUploaded(formId, databaseFormId);
       }
 
+      // Trigger form uploaded event
       window.dispatchEvent(new CustomEvent('formUploaded', { detail: { formId } }));
 
       showToastMessage('Agricultural data submitted successfully! All data synchronized with server.', 'success');

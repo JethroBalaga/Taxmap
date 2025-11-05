@@ -4,7 +4,7 @@ import localforage from 'localforage';
 export interface FormData {
   id: string; // Random primary key
   district: number | null;
-  declarantId: number | null;
+  declarant: string; // CHANGED: Now a string instead of declarantId number
   kind: string;
   classification: string;
   subclass: string;
@@ -154,5 +154,23 @@ export const FormDataLocalStorage = {
   // Generate a new random ID
   generateId: (): string => {
     return generateRandomId();
+  },
+
+  // NEW: Search forms by declarant name
+  searchFormsByDeclarant: async (declarantName: string): Promise<FormData[]> => {
+    const allForms = await FormDataLocalStorage.getAllFormData();
+    const searchTerm = declarantName.toLowerCase();
+    return allForms.filter(form => 
+      form.declarant && form.declarant.toLowerCase().includes(searchTerm)
+    );
+  },
+
+  // NEW: Get all unique declarant names
+  getAllDeclarants: async (): Promise<string[]> => {
+    const allForms = await FormDataLocalStorage.getAllFormData();
+    const declarants = allForms
+      .map(form => form.declarant)
+      .filter((declarant): declarant is string => !!declarant); // Filter out null/undefined
+    return [...new Set(declarants)]; // Return unique values
   }
 };

@@ -1,7 +1,7 @@
 import { supabase } from './../utils/supaBaseClient';
 
 export interface FormData {
-  declarant_id: number;
+  declarant: string; // CHANGED: from declarant_id to declarant
   kind_id: number;
   class_id: string;
   area: string;
@@ -120,7 +120,7 @@ export const supabaseApi = {
    */
   async insertForm(formData: FormData): Promise<string> {
     const { data, error } = await supabase.rpc('insert_form_and_return_id', {
-      p_declarant_id: formData.declarant_id,
+      p_declarant: formData.declarant, // CHANGED: from p_declarant_id to p_declarant
       p_kind_id: formData.kind_id,
       p_class_id: formData.class_id,
       p_area: formData.area,

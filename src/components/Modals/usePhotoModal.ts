@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Camera, CameraResultType, CameraSource, CameraDirection } from '@capacitor/camera';
 import { Geolocation } from '@capacitor/geolocation';
 import { Filesystem, Directory } from '@capacitor/filesystem';
-import { FormData } from './Form';
+import { FormData } from '../../utils/tablestorages/FormDataLocalStorage';
 import { BuildingData } from './BuildingModal';
 import { MachineData } from './MachineModal';
 import { AgriculturalLandAdjustmentData } from './AgriculturalLandAdjustmentModal';
@@ -18,7 +18,7 @@ interface UsePhotoModalProps {
   isOpen: boolean;
   onClose: () => void;
   onPhotoTaken: (photo: string) => void;
-  formData?: FormData;
+  formData?: FormData; // Keep as formData
   buildingData?: BuildingData;
   machineData?: MachineData | null;
   agriculturalData?: AgriculturalLandAdjustmentData | null;
@@ -30,7 +30,7 @@ export const usePhotoModal = ({
   isOpen,
   onClose,
   onPhotoTaken,
-  formData,
+  formData, // Keep as formData
   buildingData,
   machineData,
   agriculturalData,

@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { DeclarantData, getDeclarantData } from '../../utils/DeclarantLocalStorage';
 import { DistrictData, getDistrictData } from '../../utils/districtLocalStorage';
 import { KindData, getKindData } from '../../utils/kindLocalStorage';
 import { ClassificationData, getClassificationData } from '../../utils/classificationLocalStorage';
@@ -11,15 +10,8 @@ import MachineModal, { MachineData } from './MachineModal';
 import PhotoModal from './PhotoModal';
 import AgriculturalLandAdjustmentModal, { AgriculturalLandAdjustmentData } from './AgriculturalLandAdjustmentModal';
 
-export interface FormData {
-  district: number | null;
-  declarantId: number | null;
-  kind: string;
-  classification: string;
-  subclass: string;
-  actualUse: string;
-  area: number;
-}
+// Import the correct FormData interface
+import { FormData } from '../../utils/tablestorages/FormDataLocalStorage';
 
 interface FormProps {
   isOpen: boolean;
@@ -28,26 +20,20 @@ interface FormProps {
 }
 
 const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
-  // State declarations
   const [district, setDistrict] = useState<number | null>(null);
-  const [declarantId, setDeclarantId] = useState<number | null>(null);
+  const [declarant, setDeclarant] = useState<string>('');
   const [kind, setKind] = useState('');
   const [classification, setClassification] = useState('');
   const [subclass, setSubclass] = useState('');
   const [actualUse, setActualUse] = useState('');
   const [area, setArea] = useState<number>(0);
   const [districts, setDistricts] = useState<DistrictData[]>([]);
-  const [declarants, setDeclarants] = useState<DeclarantData[]>([]);
   const [kinds, setKinds] = useState<KindData[]>([]);
   const [classifications, setClassifications] = useState<ClassificationData[]>([]);
   const [subclasses, setSubclasses] = useState<SubclassData[]>([]);
   const [actualUses, setActualUses] = useState<ActualUsedData[]>([]);
-  const [filteredDeclarants, setFilteredDeclarants] = useState<DeclarantData[]>([]);
-  const [searchText, setSearchText] = useState('');
-  const [showDeclarantSearch, setShowDeclarantSearch] = useState(false);
   const [isFormValid, setIsFormValid] = useState(false);
   const [isLoadingDistricts, setIsLoadingDistricts] = useState(true);
-  const [isLoadingDeclarants, setIsLoadingDeclarants] = useState(true);
   const [isLoadingKinds, setIsLoadingKinds] = useState(true);
   const [isLoadingClassifications, setIsLoadingClassifications] = useState(true);
   const [isLoadingSubclasses, setIsLoadingSubclasses] = useState(false);
@@ -60,7 +46,6 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
   const [machineData, setMachineData] = useState<MachineData | null>(null);
   const [agriculturalData, setAgriculturalData] = useState<AgriculturalLandAdjustmentData | null>(null);
 
-  // Memoized values to prevent unnecessary recalculations
   const isBuilding = useMemo((): boolean => {
     if (!kind || isLoadingKinds || kinds.length === 0) return false;
     const selectedKind = kinds.find(k => k.kind_id.toString() === kind);
@@ -81,65 +66,55 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
 
   const isAgriculturalLand = useMemo((): boolean => {
     if (!kind || !classification || isLoadingKinds || isLoadingClassifications) return false;
-    
+
     const selectedKind = kinds.find(k => k.kind_id.toString() === kind);
     const selectedClassification = classifications.find(c => c.class_id === classification);
-    
-    return (selectedKind?.description?.toLowerCase().includes('land') || false) && 
-           (selectedClassification?.classification?.toLowerCase().includes('agricultural') || false);
+
+    return (selectedKind?.description?.toLowerCase().includes('land') || false) &&
+      (selectedClassification?.classification?.toLowerCase().includes('agricultural') || false);
   }, [kind, classification, isLoadingKinds, isLoadingClassifications, kinds, classifications]);
 
-  const formattedActualUses = useMemo((): Array<{value: string, label: string}> => {
+  const formattedActualUses = useMemo((): Array<{ value: string, label: string }> => {
     return actualUses.map(actualUse => ({
       value: actualUse.actual_used_id,
       label: `${actualUse.actual_used_id} - ${actualUse.description}`
     }));
   }, [actualUses]);
 
-  const selectedDeclarantDisplay = useMemo(() => {
-    if (!declarantId) return 'Select Declarant';
-    const selected = declarants.find(d => d.declarant_id === declarantId);
-    return selected ? `${selected.declarant_id} - ${selected.firstname} ${selected.lastname}` : 'Select Declarant';
-  }, [declarantId, declarants]);
-
+  // Create a complete FormData object with default values for all required fields
   const formData: FormData = useMemo(() => ({
     district,
-    declarantId,
+    declarant,
     kind,
     classification,
     subclass,
     actualUse,
-    area
-  }), [district, declarantId, kind, classification, subclass, actualUse, area]);
+    area,
+    id: '', // Will be generated by FormDataLocalStorage
+    status: 'unploaded',
+    uploaded: false
+  }), [district, declarant, kind, classification, subclass, actualUse, area]);
 
-  // Data loading effect
   useEffect(() => {
     const loadData = async () => {
       try {
         setIsLoadingDistricts(true);
-        setIsLoadingDeclarants(true);
         setIsLoadingKinds(true);
         setIsLoadingClassifications(true);
 
-        const [districtData, declarantData, kindData, classificationData] = await Promise.all([
+        const [districtData, kindData, classificationData] = await Promise.all([
           getDistrictData(),
-          getDeclarantData(),
           getKindData(),
           getClassificationData()
         ]);
 
         if (districtData) setDistricts(districtData);
-        if (declarantData) {
-          setDeclarants(declarantData);
-          setFilteredDeclarants(declarantData);
-        }
         if (kindData) setKinds(kindData);
         if (classificationData) setClassifications(classificationData);
       } catch (error) {
         console.error('Error loading data:', error);
       } finally {
         setIsLoadingDistricts(false);
-        setIsLoadingDeclarants(false);
         setIsLoadingKinds(false);
         setIsLoadingClassifications(false);
       }
@@ -148,7 +123,6 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
     if (isOpen) loadData();
   }, [isOpen]);
 
-  // Fetch subclasses when classification changes
   useEffect(() => {
     const fetchSubclasses = async () => {
       if (!classification) {
@@ -162,7 +136,7 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
       try {
         const subclassData = await getSubclassesByClassId(classification);
         setSubclasses(subclassData || []);
-        
+
         if (subclass && !subclassData?.some(s => s.subclass_id === subclass)) {
           setSubclass('');
         }
@@ -178,7 +152,6 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
     fetchSubclasses();
   }, [classification, subclass]);
 
-  // Fetch actual uses when classification changes - FOR ALL KINDS
   useEffect(() => {
     const fetchActualUses = async () => {
       if (!classification) {
@@ -192,7 +165,7 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
       try {
         const actualUsedData = await getActualUsedByClassId(classification);
         setActualUses(actualUsedData || []);
-        
+
         if (actualUse && !actualUsedData?.some(a => a.actual_used_id === actualUse)) {
           setActualUse('');
         }
@@ -208,47 +181,26 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
     fetchActualUses();
   }, [classification, actualUse]);
 
-  // Filter declarants based on search text
-  useEffect(() => {
-    if (!searchText) {
-      setFilteredDeclarants(declarants);
-    } else {
-      const filtered = declarants.filter(declarant => {
-        const fullName = `${declarant.firstname} ${declarant.lastname}`.toLowerCase();
-        const idString = declarant.declarant_id.toString();
-        return (
-          fullName.includes(searchText.toLowerCase()) ||
-          idString.includes(searchText)
-        );
-      });
-      setFilteredDeclarants(filtered);
-    }
-  }, [searchText, declarants]);
-
-  // Check form validity - Area is NOT required for Machinery kind
   useEffect(() => {
     const baseValid = district !== null &&
-      declarantId !== null &&
+      declarant.trim() !== '' &&
       kind.trim() !== '' &&
       classification.trim() !== '' &&
       actualUse.trim() !== '';
 
-    // Area is required for all kinds EXCEPT machinery
     const isValid = isMachineryKind ? baseValid : baseValid && area > 0;
-    
-    setIsFormValid(isValid);
-  }, [district, declarantId, kind, classification, area, actualUse, isMachineryKind]);
 
-  // Memoized callbacks to prevent unnecessary re-renders
+    setIsFormValid(isValid);
+  }, [district, declarant, kind, classification, area, actualUse, isMachineryKind]);
+
   const resetForm = useCallback(() => {
     setDistrict(null);
-    setDeclarantId(null);
+    setDeclarant('');
     setKind('');
     setClassification('');
     setSubclass('');
     setActualUse('');
     setArea(0);
-    setSearchText('');
     setBuildingData(null);
     setMachineData(null);
     setAgriculturalData(null);
@@ -264,8 +216,6 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
     } else if (isAgriculturalLand) {
       setShowAgriculturalModal(true);
     } else {
-      // For non-agricultural land and other kinds, directly open photo modal
-      console.log('Opening PhotoModal for non-agricultural land/other kind');
       setShowPhotoModal(true);
     }
   }, [isFormValid, isBuilding, isMachineryKind, isAgriculturalLand]);
@@ -307,31 +257,15 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
   }, [resetForm, onSuccess]);
 
   const handlePhotoModalSuccess = useCallback(() => {
-    console.log('Final submission complete with data:', {
-      formData,
-      buildingData,
-      machineData,
-      agriculturalData
-    });
     setShowPhotoModal(false);
     resetForm();
     onSuccess();
-  }, [formData, buildingData, machineData, agriculturalData, resetForm, onSuccess]);
-
-  const handleSelectDeclarant = useCallback((id: number) => {
-    setDeclarantId(id);
-    setShowDeclarantSearch(false);
-    setSearchText('');
-  }, []);
+  }, [resetForm, onSuccess]);
 
   const handleDismiss = useCallback(() => {
     resetForm();
     onDismiss();
   }, [resetForm, onDismiss]);
-
-  const showDeclarantSearchHandler = useCallback(() => {
-    setShowDeclarantSearch(true);
-  }, []);
 
   return (
     <>
@@ -340,9 +274,8 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
         onDismiss={handleDismiss}
         district={district}
         setDistrict={setDistrict}
-        declarantName={selectedDeclarantDisplay}
-        declarantId={declarantId}
-        showDeclarantSearch={showDeclarantSearchHandler}
+        declarant={declarant}
+        setDeclarant={setDeclarant}
         kind={kind}
         setKind={setKind}
         classification={classification}
@@ -368,13 +301,6 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
         isBuildingKind={isBuilding}
         isLandKind={isLandKind}
         isMachineryKind={isMachineryKind}
-        showDeclarantSearchModal={showDeclarantSearch}
-        setShowDeclarantSearchModal={setShowDeclarantSearch}
-        searchText={searchText}
-        setSearchText={setSearchText}
-        filteredDeclarants={filteredDeclarants}
-        onSelectDeclarant={handleSelectDeclarant}
-        isLoadingDeclarants={isLoadingDeclarants}
       />
 
       {showBuildingModal && (
@@ -402,7 +328,7 @@ const Form: React.FC<FormProps> = ({ isOpen, onDismiss, onSuccess }) => {
       <PhotoModal
         isOpen={showPhotoModal}
         onClose={handlePhotoModalClose}
-        onPhotoTaken={() => {}}
+        onPhotoTaken={() => { }}
         formData={formData}
         buildingData={buildingData}
         machineData={machineData}

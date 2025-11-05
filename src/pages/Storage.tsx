@@ -32,7 +32,7 @@ import { getBuildingCodeCount } from '../utils/buildingCodeLocalStorage';
 import { getBuildingComponentData } from '../utils/buildingComponentLocalStorage';
 import { getBuildingSubcomponentData } from '../utils/BuildingSubcomponentLocalStorage';
 import { getClassificationData } from '../utils/classificationLocalStorage';
-import { getDeclarantData } from '../utils/DeclarantLocalStorage';
+// REMOVED: getDeclarantData import - since declarant is now a string
 import { getDistrictData } from '../utils/districtLocalStorage';
 import { getEquipmentData } from '../utils/equipmentLocalStorage';
 import { getKindData } from '../utils/kindLocalStorage';
@@ -40,7 +40,7 @@ import { getLandAdjustmentData } from '../utils/landAdjustmentLocalStorage';
 import { getStructureTypeData } from '../utils/structureTypeLocalStorage';
 import { getSubclassData } from '../utils/subclassLocalStorage';
 import { getSubclassRateData } from '../utils/subclassRateLocalStorage';
-import { getTaxRateData } from '../utils/taxRateLocalStorage'; // Add this import
+import { getTaxRateData } from '../utils/taxRateLocalStorage';
 
 // Import our split components
 import { InfoCard, StorageOverviewCard, StorageItemsCard } from './StorageCards';
@@ -123,11 +123,7 @@ const classificationStorage = localForage.createInstance({
   storeName: 'classification_data'
 });
 
-const declarantStorage = localForage.createInstance({
-  name: 'TaxAppStorage',
-  storeName: 'declarant_data'
-});
-
+// REMOVED: declarantStorage instance - since declarant is now a string
 const districtStorage = localForage.createInstance({
   name: 'TaxAppStorage',
   storeName: 'district_data'
@@ -163,12 +159,12 @@ const subclassRateStorage = localForage.createInstance({
   storeName: 'subclass_rate_data'
 });
 
-const taxRateStorage = localForage.createInstance({ // Add this instance
+const taxRateStorage = localForage.createInstance({
   name: 'TaxAppStorage',
   storeName: 'tax_rate_data'
 });
 
-// ADD NEW STORAGE INSTANCES HERE
+// UPDATED: Remove declarant storage from instances
 const storageInstances: StorageInstance[] = [
   { name: 'Default', instance: localForage },
   { name: 'FormDataDB', instance: formDataStorage },
@@ -186,7 +182,7 @@ const storageInstances: StorageInstance[] = [
   { name: 'BuildingComponentDB', instance: buildingComponentStorage },
   { name: 'BuildingSubcomponentDB', instance: buildingSubcomponentStorage },
   { name: 'ClassificationDB', instance: classificationStorage },
-  { name: 'DeclarantDB', instance: declarantStorage },
+  // REMOVED: DeclarantDB from storage instances
   { name: 'DistrictDB', instance: districtStorage },
   { name: 'EquipmentDB', instance: equipmentStorage },
   { name: 'KindDB', instance: kindStorage },
@@ -194,10 +190,10 @@ const storageInstances: StorageInstance[] = [
   { name: 'StructureTypeDB', instance: structureTypeStorage },
   { name: 'SubclassDB', instance: subclassStorage },
   { name: 'SubclassRateDB', instance: subclassRateStorage },
-  { name: 'TaxRateDB', instance: taxRateStorage } // Add this line
+  { name: 'TaxRateDB', instance: taxRateStorage }
 ];
 
-// ADD NEW RECORD COUNTERS HERE
+// UPDATED: Remove declarant counter from record counters
 const recordCounters: RecordCounter[] = [
   { name: 'Form Data', getCount: () => FormDataLocalStorage.getAllFormData().then(data => data.length), color: 'primary' },
   { name: 'Value Info', getCount: () => ValueInfoLocalStorage.getAllValueInfo().then(data => data.length), color: 'secondary' },
@@ -235,10 +231,7 @@ const recordCounters: RecordCounter[] = [
     const data = await getClassificationData();
     return data ? data.length : 0;
   }, color: 'danger' },
-  { name: 'Declarants', getCount: async () => {
-    const data = await getDeclarantData();
-    return data ? data.length : 0;
-  }, color: 'medium' },
+  // REMOVED: Declarants counter - since declarant is now a string in form data
   { name: 'Districts', getCount: async () => {
     const data = await getDistrictData();
     return data ? data.length : 0;
@@ -267,7 +260,7 @@ const recordCounters: RecordCounter[] = [
     const data = await getSubclassRateData();
     return data ? data.length : 0;
   }, color: 'danger' },
-  { name: 'Tax Rates', getCount: async () => { // Add this counter
+  { name: 'Tax Rates', getCount: async () => {
     const data = await getTaxRateData();
     return data ? data.length : 0;
   }, color: 'medium' }

@@ -386,7 +386,7 @@ export const useBuildingTableLogic = (
         setShowToast(true);
     };
 
-    // Submit Form + Upload
+    // Submit Form + Upload - FIXED to handle declarant as string
     const submitForm = async () => {
         if (!isMountedRef.current) return;
         
@@ -437,9 +437,10 @@ export const useBuildingTableLogic = (
                 showToastMessage('Form submitted but could not retrieve photo', 'warning');
             }
 
+            // FIXED: Insert form with correct field mapping
             const databaseFormId = await supabaseApi.insertForm({
-                declarant_id: formData.declarantId || 0,
-                kind_id: parseInt(formData.kind),
+                declarant: formData.declarant, // CHANGED: from declarant_name to declarant
+                kind_id: typeof formData.kind === 'string' ? parseInt(formData.kind) : formData.kind, // Handle both string and number
                 class_id: formData.classification,
                 area: formData.area.toString(),
                 district_id: formData.district,

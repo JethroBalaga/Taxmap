@@ -5,7 +5,6 @@ import { AgriculturalDataLocalStorage } from '../../utils/tablestorages/Agricult
 import { getCurrentRateForSubclass } from '../../utils/subclassRateLocalStorage';
 import { getAssessmentLevelsInRange, AssessmentLevelData } from '../../utils/assessmentLevelLocalStorage';
 import { getDistrictById } from '../../utils/districtLocalStorage';
-import { getDeclarantById } from '../../utils/DeclarantLocalStorage';
 
 interface SubclassRateData {
   value_info_id: string;
@@ -35,6 +34,7 @@ export const useAgriculturalData = (formId: string) => {
   const [formContext, setFormContext] = useState<FormContextData | null>(null);
   const [isFormUploaded, setIsFormUploaded] = useState(false);
 
+  // FIXED: Completely removed declarantId reference
   const loadFormContext = async () => {
     if (!formData) return;
 
@@ -42,10 +42,8 @@ export const useAgriculturalData = (formId: string) => {
       const districtData = formData.district ? await getDistrictById(formData.district) : null;
       const districtName = districtData?.district_name || 'Unknown District';
 
-      const declarantData = formData.declarantId ? await getDeclarantById(formData.declarantId) : null;
-      const declarantName = declarantData
-        ? `${declarantData.firstname} ${declarantData.lastname}`
-        : 'Unknown Declarant';
+      // FIXED: Use declarant string directly - NO MORE DECLARANT ID
+      const declarantName = formData.declarant || 'Not specified';
 
       setFormContext({
         districtName,
@@ -55,6 +53,13 @@ export const useAgriculturalData = (formId: string) => {
       });
     } catch (error) {
       console.error('Error loading form context:', error);
+      // Set fallback context even if there's an error
+      setFormContext({
+        districtName: 'Error loading district',
+        declarantName: formData?.declarant || 'Error loading declarant',
+        classification: formData?.classification || 'Not specified',
+        actualUse: formData?.actualUse || 'Not specified'
+      });
     }
   };
 
@@ -84,7 +89,7 @@ export const useAgriculturalData = (formId: string) => {
         if (subclassId) {
           const rate = await getCurrentRateForSubclass(subclassId);
           if (rate !== null) {
-            const area = parseFloat(formData.area) || 0;
+            const area = formData.area || 0;
             const baseMarketValue = area * rate;
             
             const totalAdjustment = calculateTotalAdjustment();
@@ -93,8 +98,9 @@ export const useAgriculturalData = (formId: string) => {
             
             const adjustedMarketValue = baseMarketValue * (adjustedMarketValuePercentage / 100);
             
-            const kindId = parseInt(formData.kind) || 1;
+            const kindId = typeof formData.kind === 'string' ? parseInt(formData.kind) : formData.kind || 1;
             const classId = formData.classification || 'A';
+            
             const assessmentLevel = await getAssessmentLevel(adjustedMarketValue, kindId, classId);
             
             ratesData.push({
@@ -119,18 +125,35 @@ export const useAgriculturalData = (formId: string) => {
 
   const calculateTotalAdjustment = () => {
     if (!agriculturalData) return 0;
-    const frontage = parseFloat(agriculturalData.frontage) || 0;
-    const weatherRoad = parseFloat(agriculturalData.weather_road) || 0;
-    const market = parseFloat(agriculturalData.market) || 0;
+    
+    const frontage = agriculturalData.frontage || 0;
+    const weatherRoad = agriculturalData.weather_road || 0;
+    const market = agriculturalData.market || 0;
+    
     return frontage + weatherRoad + market;
   };
 
+  // FIXED: Enhanced data loading with better debug logging
   const loadData = async () => {
     setIsLoading(true);
     try {
       const form = await FormDataLocalStorage.getFormData(formId);
       
       if (form) {
+        console.log('🔍 AGRICULTURAL DATA - Loaded form:', {
+          id: form.id,
+          declarant: form.declarant,
+          hasDeclarant: !!form.declarant,
+          declarantValue: form.declarant,
+          district: form.district,
+          kind: form.kind,
+          classification: form.classification,
+          area: form.area,
+          // Check if declarantId exists (it shouldn't)
+          hasDeclarantId: 'declarantId' in form,
+          declarantIdValue: (form as any).declarantId
+        });
+        
         setFormData(form);
         
         if (form.uploaded) {
@@ -152,9 +175,12 @@ export const useAgriculturalData = (formId: string) => {
             setValueInfoId(valueInfo.id);
             const agriData = await AgriculturalDataLocalStorage.getAgriculturalDataByValueInfoId(valueInfo.id);
             setAgriculturalData(agriData);
+          } else {
+            console.warn('No value info found for form:', formId);
           }
         }
       } else {
+        console.warn('No form data found for ID:', formId);
         setIsValidForm(false);
       }
     } catch (error) {
@@ -166,7 +192,9 @@ export const useAgriculturalData = (formId: string) => {
   };
 
   useEffect(() => {
-    loadData();
+    if (formId) {
+      loadData();
+    }
 
     const handleFormDataUpdated = (event: CustomEvent) => {
       if (event.detail.formId === formId) {

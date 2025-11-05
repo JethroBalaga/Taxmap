@@ -21,7 +21,7 @@ import {
   IonToast
 } from '@ionic/react';
 import { close, camera, informationCircle, location, locationOutline, warning, compass } from 'ionicons/icons';
-import { FormData } from './Form';
+import { FormData } from '../../utils/tablestorages/FormDataLocalStorage';
 import { BuildingData } from './BuildingModal';
 import { MachineData } from './MachineModal';
 import { AgriculturalLandAdjustmentData } from './AgriculturalLandAdjustmentModal';
@@ -34,7 +34,7 @@ interface PhotoModalProps {
   isOpen: boolean;
   onClose: () => void;
   onPhotoTaken: (photo: string) => void;
-  formData?: FormData;
+  formData?: FormData
   buildingData?: BuildingData;
   machineData?: MachineData | null;
   agriculturalData?: AgriculturalLandAdjustmentData | null;
@@ -78,7 +78,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
     isOpen,
     onClose,
     onPhotoTaken,
-    formData,
+    formData, // Pass as formData
     buildingData,
     machineData,
     agriculturalData,

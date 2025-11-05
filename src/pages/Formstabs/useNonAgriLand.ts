@@ -120,15 +120,31 @@ export const useNonAgriLand = (formId: string | undefined) => {
         setShowToast(true);
     };
 
+    // FIXED: Enhanced form data loading with detailed debugging
     const loadFormData = async () => {
         if (formId) {
             setIsLoading(true);
-            console.log('Loading non-agricultural land form data for ID:', formId);
+            console.log('🔍 NON-AGRI - Loading form data for ID:', formId);
 
             try {
                 // ALWAYS load from localStorage to get the latest data
                 const storedFormData = await FormDataLocalStorage.getFormData(formId);
-                console.log('Loaded form data from localStorage:', storedFormData);
+                
+                // FIXED: Added detailed debug logging
+                console.log('🔍 NON-AGRI - Loaded form data:', {
+                    id: storedFormData?.id,
+                    declarant: storedFormData?.declarant,
+                    hasDeclarant: !!storedFormData?.declarant,
+                    declarantValue: storedFormData?.declarant,
+                    district: storedFormData?.district,
+                    kind: storedFormData?.kind,
+                    classification: storedFormData?.classification,
+                    area: storedFormData?.area,
+                    // Check for legacy declarantId (should not exist)
+                    hasDeclarantId: storedFormData ? 'declarantId' in storedFormData : false,
+                    declarantIdValue: storedFormData ? (storedFormData as any).declarantId : 'N/A'
+                });
+                
                 setFormData(storedFormData);
 
                 // Check if form was uploaded - NEW CHECK
@@ -143,6 +159,15 @@ export const useNonAgriLand = (formId: string | undefined) => {
                     showToastMessage('Form not found', 'danger');
                     setIsLoading(false);
                     return; // Exit early if no form data
+                }
+
+                // FIXED: Check if declarant field exists and log warning if missing
+                if (!storedFormData.declarant) {
+                    console.warn('⚠️ NON-AGRI - DECLARANT FIELD MISSING in form data:', {
+                        formId: storedFormData.id,
+                        availableFields: Object.keys(storedFormData),
+                        declarantValue: storedFormData.declarant
+                    });
                 }
 
                 // Fetch or create ValueInfo for this formId using the stored form data

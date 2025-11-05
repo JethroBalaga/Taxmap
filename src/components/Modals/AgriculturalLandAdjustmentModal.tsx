@@ -18,7 +18,8 @@ import {
   IonCol,
 } from '@ionic/react';
 import { closeOutline } from 'ionicons/icons';
-import { FormData } from './Form';
+// Import from the same source as Form component
+import { FormData } from '../../utils/tablestorages/FormDataLocalStorage';
 import Next from '../GlobalComponent/Next';
 import { getLandAdjustmentData } from '../../utils/landAdjustmentLocalStorage';
 

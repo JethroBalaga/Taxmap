@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BuildingData } from './BuildingModal';
-import { FormData } from './Form';
+// Import from the same source as Form component
+import { FormData } from '../../utils/tablestorages/FormDataLocalStorage';
 import { StructureTypeData, getStructureTypeData } from '../../utils/structureTypeLocalStorage';
 import { BuildingCodeData, getBuildingCodesByStructureCode } from '../../utils/buildingCodeLocalStorage';
 import BuildingViewUI from './BuildingViewUI';
