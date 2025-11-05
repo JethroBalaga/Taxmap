@@ -1,4 +1,3 @@
-// src/pages/AgriculturalAdjustmentTable.tsx
 import React from 'react';
 import {
   IonPage,

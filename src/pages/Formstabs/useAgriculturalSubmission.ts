@@ -124,17 +124,16 @@ export const useAgriculturalSubmission = (formId: string) => {
           console.warn('Photo upload failed', uploadError);
           showToastMessage('Form submitted but photo upload failed', 'warning');
         }
-        // Photo remains in local storage - no cleanup
       } else {
         showToastMessage('Form submitted but could not retrieve photo', 'warning');
       }
 
-      // FIXED: Insert form with correct field mapping
+      // Insert form with correct field mapping
       let databaseFormId = formData.synced_id;
       if (!databaseFormId) {
         databaseFormId = await supabaseApi.insertForm({
-          declarant: formData.declarant, // CHANGED: from declarant_id to declarant
-          kind_id: typeof formData.kind === 'string' ? parseInt(formData.kind) : formData.kind, // Handle both string and number
+          declarant: formData.declarant,
+          kind_id: typeof formData.kind === 'string' ? parseInt(formData.kind) : formData.kind,
           class_id: formData.classification,
           area: formData.area.toString(),
           district_id: formData.district,
@@ -149,7 +148,7 @@ export const useAgriculturalSubmission = (formId: string) => {
       const databaseValueInfoId = await supabaseApi.insertValueInfo(databaseFormId, databaseTagId);
       if (!databaseValueInfoId) throw new Error('Failed to insert value info');
 
-      // FIXED: Insert agricultural adjustment data and handle return value
+      // Insert agricultural adjustment data
       const adjustmentId = await supabaseApi.insertAgriLandAdjustment(databaseValueInfoId, {
         frontage: validateNumber(agriData.frontage),
         weather_road: validateNumber(agriData.weather_road),

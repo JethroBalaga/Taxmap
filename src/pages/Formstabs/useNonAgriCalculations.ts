@@ -117,13 +117,9 @@ export const useNonAgriCalculations = ({
         }
     };
 
-    const calculateAssessmentLevel = async (adjustedMarketValue: string, kindId: number, classification: string): Promise<string> => {
-        if (adjustedMarketValue === 'N/A') return 'N/A';
-        
+    // SIMPLIFIED: Get assessment level by kind_id and class_id only (no range checking)
+    const calculateAssessmentLevel = async (kindId: number, classification: string): Promise<string> => {
         try {
-            const marketValue = parseFloat(adjustedMarketValue);
-            if (isNaN(marketValue) || marketValue <= 0) return 'N/A';
-
             const assessmentLevels = await getAssessmentLevelData();
             if (!assessmentLevels || assessmentLevels.length === 0) {
                 return 'N/A';
@@ -131,11 +127,10 @@ export const useNonAgriCalculations = ({
 
             const numericKindId = typeof kindId === 'string' ? parseInt(kindId) : kindId;
             
+            // SIMPLIFIED: Find assessment level by kind_id and class_id only, no range checking
             const matchingLevel = assessmentLevels.find(level => 
                 level.kind_id === numericKindId &&
-                level.class_id === classification &&
-                marketValue >= level.range1 &&
-                marketValue <= level.range2
+                level.class_id === classification
             );
 
             return matchingLevel ? matchingLevel.rate_percent : 'N/A';
@@ -269,8 +264,8 @@ export const useNonAgriCalculations = ({
                     adjustmentMarketValue = calculateAdjustmentMarketValue(baseMarketValue, adjustmentsWithCalculations);
                 }
 
+                // SIMPLIFIED: Pass only kind_id and classification, no market value for range checking
                 const assessmentLevel = await calculateAssessmentLevel(
-                    adjustmentMarketValue,
                     formData.kind,
                     formData.classification
                 );

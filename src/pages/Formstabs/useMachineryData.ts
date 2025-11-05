@@ -4,12 +4,11 @@ import { MachineDataLocalStorage, MachineData } from '../../utils/tablestorages/
 import { ValueInfoLocalStorage } from '../../utils/tablestorages/ValueInfoLocalStorage';
 import { FormDataLocalStorage } from '../../utils/tablestorages/FormDataLocalStorage';
 import { getDistrictById } from '../../utils/districtLocalStorage';
-// REMOVED: getDeclarantById - since declarant is now a string
 import { getAssessmentLevelData, AssessmentLevelData } from '../../utils/assessmentLevelLocalStorage';
 
 export interface FormContextData {
   districtName: string;
-  declarantName: string; // This is now the direct declarant string
+  declarantName: string;
   classification: string;
   actualUse: string;
   valueInfoTableData: Array<{
@@ -73,12 +72,8 @@ export const useMachineryData = () => {
     }
   };
 
-  const getAssessmentLevelRate = (adjustedMarketValue: string, kindId: number, classification: string): { rate: string, rawRate: number } => {
-    if (!adjustedMarketValue || adjustedMarketValue === 'N/A') return { rate: 'N/A', rawRate: 0 };
-    
-    const value = parseFloat(adjustedMarketValue);
-    if (isNaN(value)) return { rate: 'N/A', rawRate: 0 };
-    
+  // SIMPLIFIED: Get assessment level by kind_id and class_id only (no range checking)
+  const getAssessmentLevelRate = (kindId: number, classification: string): { rate: string, rawRate: number } => {
     const relevantAssessmentLevels = assessmentLevels.filter(level => 
       level.kind_id === kindId && 
       level.class_id === classification
@@ -86,15 +81,8 @@ export const useMachineryData = () => {
 
     if (relevantAssessmentLevels.length === 0) return { rate: 'N/A', rawRate: 0 };
 
-    const matchingLevel = relevantAssessmentLevels.find(level => 
-      value >= level.range1 && value <= level.range2
-    );
-
-    if (!matchingLevel && relevantAssessmentLevels.length > 0) {
-      const rate = relevantAssessmentLevels[0].rate_percent;
-      const rawRate = parseFloat(rate.replace('%', '')) || 0;
-      return { rate: rate.includes('%') ? rate : `${rate}%`, rawRate };
-    }
+    // SIMPLIFIED: Just take the first matching assessment level (no range checking)
+    const matchingLevel = relevantAssessmentLevels[0];
 
     if (matchingLevel) {
       const rate = matchingLevel.rate_percent;
@@ -192,7 +180,6 @@ export const useMachineryData = () => {
     }
   };
 
-  // FIXED: Updated form context loading
   const loadFormContext = async () => {
     if (!formId) return;
     
@@ -203,7 +190,6 @@ export const useMachineryData = () => {
       const districtData = formData.district ? await getDistrictById(formData.district) : null;
       const districtName = districtData?.district_name || 'Unknown District';
 
-      // FIXED: Directly use declarant string from formData
       const declarantName = formData.declarant || 'Unknown Declarant';
 
       const allValueInfo = await ValueInfoLocalStorage.getAllValueInfo();
@@ -213,12 +199,11 @@ export const useMachineryData = () => {
         const machineEntry = machineryData.find(item => item.valueInfoId === valueInfo.id);
         const adjustedMarketValue = machineEntry ? machineEntry.machineData.adjustedMarketValue : 'N/A';
         
-        // FIXED: Handle kind conversion properly
         const kindId = typeof formData.kind === 'string' ? parseInt(formData.kind) : formData.kind || 3;
         const classification = formData.classification || '';
         
+        // SIMPLIFIED: Pass only kind_id and classification, no market value
         const { rate: assessmentLevel, rawRate } = getAssessmentLevelRate(
-          adjustedMarketValue, 
           kindId,
           classification
         );
@@ -264,7 +249,6 @@ export const useMachineryData = () => {
     loadFormContext();
   }, [formId, machineryData, assessmentLevels]);
 
-  // Add formUploaded event listener
   useEffect(() => {
     const handleFormUploaded = (event: CustomEvent) => {
       if (event.detail && event.detail.formId === formId) {

@@ -3,7 +3,7 @@ import { FormDataLocalStorage } from '../../utils/tablestorages/FormDataLocalSto
 import { ValueInfoLocalStorage } from '../../utils/tablestorages/ValueInfoLocalStorage';
 import { AgriculturalDataLocalStorage } from '../../utils/tablestorages/AgriculturalDataLocalStorage';
 import { getCurrentRateForSubclass } from '../../utils/subclassRateLocalStorage';
-import { getAssessmentLevelsInRange, AssessmentLevelData } from '../../utils/assessmentLevelLocalStorage';
+import { getAssessmentLevelData, AssessmentLevelData } from '../../utils/assessmentLevelLocalStorage';
 import { getDistrictById } from '../../utils/districtLocalStorage';
 
 interface SubclassRateData {
@@ -34,7 +34,6 @@ export const useAgriculturalData = (formId: string) => {
   const [formContext, setFormContext] = useState<FormContextData | null>(null);
   const [isFormUploaded, setIsFormUploaded] = useState(false);
 
-  // FIXED: Completely removed declarantId reference
   const loadFormContext = async () => {
     if (!formData) return;
 
@@ -42,7 +41,6 @@ export const useAgriculturalData = (formId: string) => {
       const districtData = formData.district ? await getDistrictById(formData.district) : null;
       const districtName = districtData?.district_name || 'Unknown District';
 
-      // FIXED: Use declarant string directly - NO MORE DECLARANT ID
       const declarantName = formData.declarant || 'Not specified';
 
       setFormContext({
@@ -53,7 +51,6 @@ export const useAgriculturalData = (formId: string) => {
       });
     } catch (error) {
       console.error('Error loading form context:', error);
-      // Set fallback context even if there's an error
       setFormContext({
         districtName: 'Error loading district',
         declarantName: formData?.declarant || 'Error loading declarant',
@@ -63,10 +60,17 @@ export const useAgriculturalData = (formId: string) => {
     }
   };
 
-  const getAssessmentLevel = async (adjustedMarketValue: number, kindId: number, classId: string): Promise<AssessmentLevelData | null> => {
+  // SIMPLIFIED: Get assessment level by kind_id and class_id only (no range checking)
+  const getAssessmentLevel = async (kindId: number, classId: string): Promise<AssessmentLevelData | null> => {
     try {
-      const assessmentLevels = await getAssessmentLevelsInRange(adjustedMarketValue, kindId, new Date().getFullYear());
-      const matchingLevel = assessmentLevels.find(level => level.class_id === classId);
+      const assessmentLevels = await getAssessmentLevelData();
+      if (!assessmentLevels) return null;
+      
+      // Find the assessment level that matches both kind_id and class_id
+      const matchingLevel = assessmentLevels.find(level => 
+        level.kind_id === kindId && level.class_id === classId
+      );
+      
       return matchingLevel || null;
     } catch (error) {
       console.error('Error getting assessment level:', error);
@@ -101,7 +105,8 @@ export const useAgriculturalData = (formId: string) => {
             const kindId = typeof formData.kind === 'string' ? parseInt(formData.kind) : formData.kind || 1;
             const classId = formData.classification || 'A';
             
-            const assessmentLevel = await getAssessmentLevel(adjustedMarketValue, kindId, classId);
+            // SIMPLIFIED: Get assessment level using only kind_id and class_id
+            const assessmentLevel = await getAssessmentLevel(kindId, classId);
             
             ratesData.push({
               value_info_id: valueInfoId,
@@ -126,14 +131,13 @@ export const useAgriculturalData = (formId: string) => {
   const calculateTotalAdjustment = () => {
     if (!agriculturalData) return 0;
     
-    const frontage = agriculturalData.frontage || 0;
-    const weatherRoad = agriculturalData.weather_road || 0;
-    const market = agriculturalData.market || 0;
+    const frontage = parseFloat(agriculturalData.frontage) || 0;
+    const weatherRoad = parseFloat(agriculturalData.weather_road) || 0;
+    const market = parseFloat(agriculturalData.market) || 0;
     
     return frontage + weatherRoad + market;
   };
 
-  // FIXED: Enhanced data loading with better debug logging
   const loadData = async () => {
     setIsLoading(true);
     try {
@@ -149,7 +153,6 @@ export const useAgriculturalData = (formId: string) => {
           kind: form.kind,
           classification: form.classification,
           area: form.area,
-          // Check if declarantId exists (it shouldn't)
           hasDeclarantId: 'declarantId' in form,
           declarantIdValue: (form as any).declarantId
         });

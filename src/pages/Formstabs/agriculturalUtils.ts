@@ -1,4 +1,3 @@
-// src/pages/utils/agriculturalUtils.ts
 import { AssessmentLevelData } from '../../utils/assessmentLevelLocalStorage';
 
 interface SubclassRateData {
@@ -32,7 +31,7 @@ export const agriculturalUtils = (formData: any, agriculturalData: any, subclass
 
   const getDisplayableFormData = () => {
     if (!formData) return {};
-    const { status, uploaded, id, ...displayableData } = formData; // Added 'id' to exclusion
+    const { status, uploaded, id, ...displayableData } = formData;
     return displayableData;
   };
 
