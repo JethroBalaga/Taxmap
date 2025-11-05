@@ -166,7 +166,7 @@ const BuildingTableContent: React.FC<BuildingTableProps> = ({
                         <SubmitButton
                             label={isFormUploaded ? "Form Already Submitted" : "Submit"}
                             onClick={handleSubmit}
-                            disabled={isSubmitting || isFormUploaded}
+                            disabled={isSubmitting || isFormUploaded || buildingAdjustments.length === 0}
                             loading={isSubmitting}
                             className="header-submit-button"
                         />

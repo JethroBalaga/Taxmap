@@ -10,8 +10,11 @@ import {
   IonCardTitle,
   IonLoading,
   IonToast,
-  IonSearchbar
+  IonSearchbar,
+  IonButton,
+  IonIcon
 } from '@ionic/react';
+import { refresh } from 'ionicons/icons'; // Import the refresh icon
 import { useEffect, useState } from 'react';
 import MapCon from '../components/MapCon';
 import { getUserData } from '../utils/localStorage';
@@ -72,6 +75,31 @@ const Map: React.FC = () => {
     fetchUserAndData();
   }, []);
 
+  const handleRefresh = async () => {
+    setLoading(true);
+    setLoadingMessage('Refreshing data...');
+    
+    // Force refresh all data
+    const { results, hasErrors } = await MapDataManager.fetchAllRequiredData();
+    
+    // Handle errors
+    if (hasErrors) {
+      const errorMessages = results
+        .filter(result => !result.success)
+        .map(result => result.message)
+        .join(', ');
+      
+      setErrorMessage(`Errors occurred: ${errorMessages}`);
+      setShowError(true);
+    } else {
+      // Show success message
+      setErrorMessage('Data refreshed successfully!');
+      setShowError(true);
+    }
+    
+    setLoading(false);
+  };
+
   const handleSearch = (event: CustomEvent) => {
     setSearchQuery(event.detail.value || '');
   };
@@ -84,7 +112,15 @@ const Map: React.FC = () => {
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>Map</IonTitle>
+          <IonTitle slot="start">Map</IonTitle>
+          <IonButton 
+            slot="end" 
+            fill="clear" 
+            onClick={handleRefresh}
+            disabled={loading}
+          >
+            <IonIcon icon={refresh} />
+          </IonButton>
         </IonToolbar>
         
         {/* Search Bar in Header - BELOW the title */}
@@ -108,12 +144,10 @@ const Map: React.FC = () => {
           onDidDismiss={() => setShowError(false)}
           message={errorMessage}
           duration={5000}
-          color="danger"
+          color={errorMessage.includes('successfully') ? 'success' : 'danger'}
           position="top"
         />
 
-        {/* Remove the old search bar container since it's now in header */}
-        
         {username && (
           <div className="username-center-top">
             <IonCard className="username-card">
