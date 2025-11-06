@@ -85,7 +85,16 @@ import {
   getBuildingSubcomponentTimestamp,
   hasBuildingSubcomponentData,
   getBuildingSubcomponentDataSize,
-  getCurrentBuildingSubcomponentVersion
+  getCurrentBuildingSubcomponentVersion,
+  // Add these new imports for the updated interface
+  getFreshBuildingSubcomponentData,
+  getBuildingSubcomponentById,
+  getBuildingSubcomponentByBuildingComId,
+  getAllBuildingSubcomponentDescriptions,
+  searchBuildingSubcomponentByDescription,
+  forceMigration,
+  getCurrentSchemaHash,
+  getStoredSchemaHash
 } from './BuildingSubcomponentLocalStorage';
 import { 
   getEquipmentData, 
@@ -657,5 +666,34 @@ export class MapDataManager {
       landAdjustment: landAdjustmentStats,
       equipment: equipmentStats
     };
+  }
+
+  // NEW: Building Subcomponent specific methods
+  static async getBuildingSubcomponentById(buildingSubcomId: string) {
+    return getBuildingSubcomponentById(buildingSubcomId);
+  }
+
+  static async getBuildingSubcomponentByBuildingComId(buildingComId: string) {
+    return getBuildingSubcomponentByBuildingComId(buildingComId);
+  }
+
+  static async getAllBuildingSubcomponentDescriptions() {
+    return getAllBuildingSubcomponentDescriptions();
+  }
+
+  static async searchBuildingSubcomponentByDescription(searchTerm: string) {
+    return searchBuildingSubcomponentByDescription(searchTerm);
+  }
+
+  static async forceBuildingSubcomponentMigration() {
+    return forceMigration();
+  }
+
+  static getCurrentBuildingSubcomponentSchemaHash() {
+    return getCurrentSchemaHash();
+  }
+
+  static async getStoredBuildingSubcomponentSchemaHash() {
+    return getStoredSchemaHash();
   }
 }

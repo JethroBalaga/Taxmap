@@ -6,6 +6,7 @@ export interface BuildingSubcomponentData {
   description: string;
   rate: number;
   building_com_id: string;
+  percent: boolean;
 }
 
 const buildingSubcomponentStore = localForage.createInstance({
@@ -26,7 +27,8 @@ const generateSchemaHash = (): string => {
     building_subcom_id: 'string',
     description: 'string',
     rate: 'number',
-    building_com_id: 'string'
+    building_com_id: 'string',
+    percent: 'boolean'
   };
   return JSON.stringify(schema);
 };
@@ -55,7 +57,14 @@ const migrateToCurrentVersion = (data: any[], fromVersion: number): BuildingSubc
       migratedItem.building_com_id = item.building_com_id;
     }
 
-    const validProperties = new Set(['building_subcom_id', 'description', 'rate', 'building_com_id']);
+    // Handle the new percent field - default to false for migrated data
+    if (typeof item.percent === 'boolean') {
+      migratedItem.percent = item.percent;
+    } else {
+      migratedItem.percent = false; // Default value for migrated records
+    }
+
+    const validProperties = new Set(['building_subcom_id', 'description', 'rate', 'building_com_id', 'percent']);
     Object.keys(migratedItem).forEach(key => {
       if (!validProperties.has(key)) {
         delete migratedItem[key as keyof BuildingSubcomponentData];
@@ -76,7 +85,8 @@ const validateData = (data: any[]): data is BuildingSubcomponentData[] => {
       typeof item.building_subcom_id === 'string' &&
       typeof item.description === 'string' &&
       typeof item.rate === 'number' &&
-      typeof item.building_com_id === 'string'
+      typeof item.building_com_id === 'string' &&
+      typeof item.percent === 'boolean'
     );
   });
 };

@@ -9,7 +9,7 @@ export class BuildingSubcomponentFetcher extends BaseFetcher {
     try {
       const { data, error } = await supabase
         .from('building_subcomponenttbl')
-        .select('building_subcom_id, description, rate, building_com_id')
+        .select('building_subcom_id, description, rate, building_com_id, percent')
         .order('building_subcom_id', { ascending: true });
 
       if (error) {
