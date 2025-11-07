@@ -14,7 +14,8 @@ import {
     IonGrid,
     IonRow,
     IonCol,
-    IonText
+    IonText,
+    IonBadge
 } from '@ionic/react';
 import { closeCircleOutline } from 'ionicons/icons';
 import { BuildingSubcomponentData } from '../../utils/BuildingSubcomponentLocalStorage';
@@ -26,6 +27,7 @@ interface BuildingSubcomponentModalProps {
     area: number;
     completionPercent: string;
     depreciation: string;
+    baseMarketValue?: number; // Add base market value prop
 }
 
 const BuildingSubcomponentModal: React.FC<BuildingSubcomponentModalProps> = ({
@@ -34,7 +36,8 @@ const BuildingSubcomponentModal: React.FC<BuildingSubcomponentModalProps> = ({
     subcomponentData,
     area,
     completionPercent,
-    depreciation
+    depreciation,
+    baseMarketValue = 0 // Default to 0 if not provided
 }) => {
     // Convert string values to numbers, using a robust check for validity
     const completionPercentValue = parseFloat(completionPercent);
@@ -43,27 +46,43 @@ const BuildingSubcomponentModal: React.FC<BuildingSubcomponentModalProps> = ({
     const depreciationAsNumber = parseFloat(depreciation);
     const validDepreciation = !isNaN(depreciationAsNumber) ? depreciationAsNumber : 0;
 
-    // Calculate market value: area x rate
-    const marketValue = subcomponentData && typeof subcomponentData.rate === 'number'
-        ? area * subcomponentData.rate
-        : 0;
+    // Calculate values based on percent boolean
+    let marketValue = 0;
+    let calculationDetails = '';
+    let rateDisplay = 'N/A';
+    let rateType = '';
+
+    if (subcomponentData && typeof subcomponentData.rate === 'number') {
+        if (subcomponentData.percent) {
+            // Percent mode: rate is percentage of base market value
+            const percentageRate = subcomponentData.rate / 100;
+            const newRateValue = baseMarketValue * percentageRate;
+            marketValue = newRateValue * area;
+            
+            rateDisplay = `${subcomponentData.rate}%`;
+            rateType = 'percentage';
+            calculationDetails = `Base Market Value × Rate % × Area = ₱${baseMarketValue.toLocaleString()} × ${subcomponentData.rate}% × ${area.toLocaleString()}`;
+        } else {
+            // Fixed rate mode: original calculation
+            marketValue = area * subcomponentData.rate;
+            
+            rateDisplay = `₱${subcomponentData.rate.toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            })}`;
+            rateType = 'fixed';
+            calculationDetails = `Area × Rate = ${area.toLocaleString()} × ${subcomponentData.rate.toLocaleString()}`;
+        }
+    }
 
     // Calculate value after applying completion percent
     const valueAfterCompletion = marketValue * (validCompletionPercent / 100);
     
     // Calculate the depreciation amount based on the value after completion
-    // The depreciation value (e.g., "2") is a percentage.
     const depreciationAmount = valueAfterCompletion * (validDepreciation / 100);
 
     // Calculate final adjusted market value: value after completion - depreciation amount
     const finalAdjustedMarketValue = valueAfterCompletion - depreciationAmount;
-
-    const formattedRate = subcomponentData && typeof subcomponentData.rate === 'number'
-        ? `₱${subcomponentData.rate.toLocaleString(undefined, {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-        })}`
-        : 'N/A';
 
     const formattedMarketValue = `₱${marketValue.toLocaleString(undefined, {
         minimumFractionDigits: 2,
@@ -75,11 +94,11 @@ const BuildingSubcomponentModal: React.FC<BuildingSubcomponentModalProps> = ({
         maximumFractionDigits: 2
     })}`;
 
-    const formattedDepreciation = `${validDepreciation}%`; // Display as percentage
+    const formattedDepreciation = `${validDepreciation}%`;
     const formattedDepreciationAmount = `₱${depreciationAmount.toLocaleString(undefined, {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2
-    })}`; // Display the calculated amount in pesos
+    })}`;
 
     const formattedFinalAdjustedMarketValue = `₱${finalAdjustedMarketValue.toLocaleString(undefined, {
         minimumFractionDigits: 2,
@@ -110,11 +129,25 @@ const BuildingSubcomponentModal: React.FC<BuildingSubcomponentModalProps> = ({
                     <IonCard className="form-section">
                         <IonCardContent>
                             <IonGrid className="custom-grid">
+                                {/* Rate Type Indicator */}
+                                <IonRow>
+                                    <IonCol size="12" className="custom-col">
+                                        <div style={{ textAlign: 'center', marginBottom: '16px' }}>
+                                            <IonBadge 
+                                                color={rateType === 'percentage' ? 'primary' : 'success'}
+                                                style={{ fontSize: '14px', padding: '8px 16px' }}
+                                            >
+                                                {rateType === 'percentage' ? 'Percentage Rate' : 'Fixed Rate'}
+                                            </IonBadge>
+                                        </div>
+                                    </IonCol>
+                                </IonRow>
+
                                 <IonRow>
                                     <IonCol size="12" size-md="6" className="custom-col">
                                         <div className="rate-display">
                                             <IonText className="calculation-title">Rate</IonText>
-                                            <div className="rate-value">{formattedRate}</div>
+                                            <div className="rate-value">{rateDisplay}</div>
                                         </div>
                                     </IonCol>
                                     <IonCol size="12" size-md="6" className="custom-col">
@@ -125,12 +158,29 @@ const BuildingSubcomponentModal: React.FC<BuildingSubcomponentModalProps> = ({
                                     </IonCol>
                                 </IonRow>
 
+                                {/* Show Base Market Value when in percentage mode */}
+                                {rateType === 'percentage' && baseMarketValue > 0 && (
+                                    <IonRow>
+                                        <IonCol size="12" className="custom-col">
+                                            <div className="rate-display">
+                                                <IonText className="calculation-title">Base Market Value</IonText>
+                                                <div className="rate-value">
+                                                    ₱{baseMarketValue.toLocaleString(undefined, {
+                                                        minimumFractionDigits: 2,
+                                                        maximumFractionDigits: 2
+                                                    })}
+                                                </div>
+                                            </div>
+                                        </IonCol>
+                                    </IonRow>
+                                )}
+
                                 <IonRow>
                                     <IonCol size="12" className="custom-col">
                                         <div className="calculation-display market-value">
                                             <IonText className="calculation-title">Market Value Calculation</IonText>
                                             <div className="calculation-details">
-                                                Area × Rate = {area.toLocaleString()} × {subcomponentData.rate.toLocaleString()} 
+                                                {calculationDetails}
                                             </div>
                                             <div className="calculation-result">{formattedMarketValue}</div>
                                         </div>

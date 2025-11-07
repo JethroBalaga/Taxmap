@@ -71,6 +71,7 @@ const BuildingTableContent: React.FC<BuildingTableProps> = ({
         selectedAdjustmentArea,
         selectedAdjustmentCompletion,
         selectedAdjustmentDepreciation,
+        selectedBaseMarketValue, // Get the selected base market value
         showUpdateModal,
         selectedBuildingId,
         selectedBuildingData,
@@ -207,11 +208,15 @@ const BuildingTableContent: React.FC<BuildingTableProps> = ({
                         <BuildingAdjustmentsTable
                             buildingAdjustments={buildingAdjustments}
                             buildingInfoIds={buildingInfoIds}
+                            baseMarketValues={baseMarketValues} // Pass base market values
                             onAdjustmentCreate={handleCreateAdjustment}
                             onAdjustmentUpdate={handleAdjustmentUpdate}
                             onAdjustmentsUpdate={refreshAllData}
                             showToastMessage={showToastMessage}
-                            onSubcomponentClick={handleSubcomponentRowClick}
+                            onSubcomponentClick={(rowData, baseMarketValue) => {
+                                // Pass base market value to the modal
+                                handleSubcomponentRowClick(rowData, baseMarketValue);
+                            }}
                         />
                     </>
                 )}
@@ -239,7 +244,7 @@ const BuildingTableContent: React.FC<BuildingTableProps> = ({
                     />
                 )}
 
-                {/* Building Subcomponent Modal */}
+                {/* Building Subcomponent Modal - UPDATED with baseMarketValue */}
                 <BuildingSubcomponentModal
                     isOpen={showSubcomponentModal}
                     onClose={() => setShowSubcomponentModal(false)}
@@ -247,6 +252,7 @@ const BuildingTableContent: React.FC<BuildingTableProps> = ({
                     area={selectedAdjustmentArea}
                     completionPercent={selectedAdjustmentCompletion}
                     depreciation={selectedAdjustmentDepreciation}
+                    baseMarketValue={selectedBaseMarketValue} // Pass the base market value
                 />
 
                 {/* Building Update Modal */}

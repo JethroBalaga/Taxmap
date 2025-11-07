@@ -1,31 +1,33 @@
 import React, { useState, useEffect } from "react";
 import {
+    IonCard,
+    IonCardContent,
     IonButton,
     IonIcon,
     IonSearchbar,
     IonText,
     IonToast,
-    IonCard,
-    IonCardContent
 } from "@ionic/react";
 import { createOutline, arrowUpCircleOutline, trashOutline, informationCircleOutline } from "ionicons/icons";
 import DynamicTable from "../../components/GlobalComponent/DynamicTable";
-import { BuildingAdjustmentData,BuildingAdjustmentLocalStorage} from "../../utils/tablestorages/BuildingAdjustmentLocalStorage";
+import { BuildingAdjustmentData, BuildingAdjustmentLocalStorage } from "../../utils/tablestorages/BuildingAdjustmentLocalStorage";
 import "../../CSS/BuildingResponsive.css";
 
 interface BuildingAdjustmentsTableProps {
     buildingAdjustments: BuildingAdjustmentData[];
     buildingInfoIds: string[];
+    baseMarketValues: Map<string, number>; // Add base market values prop
     onAdjustmentCreate: () => void;
     onAdjustmentUpdate: (adjustmentId: string) => void;
     onAdjustmentsUpdate: () => void;
     showToastMessage: (message: string, color?: 'success' | 'danger' | 'warning') => void;
-    onSubcomponentClick: (rowData: BuildingAdjustmentData) => void;
+    onSubcomponentClick: (rowData: BuildingAdjustmentData, baseMarketValue: number) => void; // Updated to include base market value
 }
 
 const BuildingAdjustmentsTable: React.FC<BuildingAdjustmentsTableProps> = ({
     buildingAdjustments,
     buildingInfoIds,
+    baseMarketValues, // Receive base market values
     onAdjustmentCreate,
     onAdjustmentUpdate,
     onAdjustmentsUpdate,
@@ -66,7 +68,10 @@ const BuildingAdjustmentsTable: React.FC<BuildingAdjustmentsTableProps> = ({
         );
         
         if (selectedAdjustment && selectedAdjustment.buidlingsubcomponent) {
-            onSubcomponentClick(selectedAdjustment);
+            // Get the base market value for this building
+            const buildingBaseMarketValue = baseMarketValues.get(selectedAdjustment.value_info_id) || 0;
+            
+            onSubcomponentClick(selectedAdjustment, buildingBaseMarketValue);
         } else {
             showToastMessage('No subcomponent data available for this adjustment', 'warning');
         }
