@@ -1,3 +1,4 @@
+/* MachineFaasBack.css - OPTIMIZED FOR ANDROID */
 .machine-faas-back-page {
   --padding-start: 0;
   --padding-end: 0;
@@ -7,12 +8,22 @@
   width: 100%;
   background: white;
   padding: 6mm;
-  font-family: Arial, sans-serif;
+  font-family: 'Arial', 'Roboto', sans-serif;
   font-size: 10px;
   line-height: 1.2;
-  -webkit-print-color-adjust: exact !important;
-  print-color-adjust: exact !important;
-  color-adjust: exact !important;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+  color-adjust: exact;
+  /* Performance optimizations */
+  transform: translateZ(0);
+  will-change: transform;
+  backface-visibility: hidden;
+  -webkit-font-smoothing: antialiased;
+  /* Prevent text selection for better performance */
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
 }
 
 .section-header {
@@ -23,6 +34,8 @@
   padding: 4px;
   text-align: center;
   border: 1px solid #000;
+  /* Performance */
+  transform: translateZ(0);
 }
 
 .table {
@@ -31,6 +44,9 @@
   margin-top: 4px;
   table-layout: fixed;
   border: 1px solid #000;
+  /* Performance - force GPU rendering */
+  transform: translateZ(0);
+  will-change: transform;
 }
 
 .table th,
@@ -43,6 +59,11 @@
   overflow: hidden;
   word-wrap: break-word;
   box-sizing: border-box;
+  /* Prevent text selection */
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
 }
 
 /* Set specific column widths for better PDF layout */
@@ -86,15 +107,22 @@
   -webkit-appearance: none;
   -moz-appearance: none;
   appearance: none;
+  /* Performance */
+  transform: translateZ(0);
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
 }
 
 .table input:focus {
   background-color: #f0f8ff;
+  outline: 1px solid #2c5aa0;
 }
 
 .subtotal-row td {
   font-weight: bold;
-  background-color: #e6f3ff;
+  background-color: #e6f3ff !important;
   font-size: 9px;
 }
 
@@ -105,6 +133,7 @@
   align-items: center;
   font-size: 10px;
   flex-wrap: wrap;
+  transform: translateZ(0);
 }
 
 .tax-row label {
@@ -118,6 +147,7 @@
   width: 12px;
   height: 12px;
   accent-color: #2c5aa0;
+  transform: translateZ(0);
 }
 
 .signature-container {
@@ -125,6 +155,7 @@
   display: flex;
   justify-content: space-between;
   font-size: 10px;
+  transform: translateZ(0);
 }
 
 .sig-line {
@@ -146,6 +177,7 @@
   line-height: 1.2;
   border-top: 1px solid #000;
   padding-top: 5px;
+  transform: translateZ(0);
 }
 
 .powered {
@@ -172,7 +204,7 @@
   text-align: center;
 }
 
-/* Generate PDF Button Styling - BLUE BUTTON */
+/* Generate PDF Button Styling - OPTIMIZED */
 .generate-pdf-btn {
   --background: #2c5aa0 !important;
   --background-hover: #1e3f7a !important;
@@ -184,17 +216,28 @@
   --padding-start: 12px !important;
   --padding-end: 12px !important;
   font-weight: bold !important;
+  /* Performance optimizations */
+  transform: translateZ(0);
+  will-change: transform;
+  transition: all 0.2s ease !important;
 }
 
 .generate-pdf-btn:hover {
   --background: #1e3f7a !important;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(44, 90, 160, 0.3);
+  transform: translateY(-1px) translateZ(0);
+  box-shadow: 0 2px 4px rgba(44, 90, 160, 0.3);
 }
 
 .generate-pdf-btn:active {
   --background: #16325c !important;
-  transform: translateY(0);
+  transform: translateY(0) translateZ(0);
+}
+
+/* Loading state for PDF generation */
+.generate-pdf-btn.loading {
+  --background: #1e3f7a !important;
+  opacity: 0.8;
+  pointer-events: none;
 }
 
 /* Android-specific optimizations */
@@ -202,6 +245,7 @@
   .sheet {
     padding: 4mm;
     font-size: 9px;
+    transform: translateZ(0);
   }
   
   .table th,
@@ -223,22 +267,55 @@
     gap: 15px;
     align-items: center;
   }
+  
+  /* Reduce animations on mobile */
+  .generate-pdf-btn {
+    transition: none !important;
+  }
 }
 
-/* Print styles for PDF generation */
+/* High-density screens */
+@media screen and (min-resolution: 2dppx) {
+  .sheet {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* Print styles for PDF generation - SIMPLIFIED */
 @media print {
   .sheet {
     padding: 0;
     margin: 0;
     width: 100% !important;
+    /* Reset transforms for print */
+    transform: none !important;
   }
   
   .table input {
     border: none !important;
     background: transparent !important;
+    /* Enable text selection for print */
+    -webkit-user-select: text !important;
+    -moz-user-select: text !important;
+    -ms-user-select: text !important;
+    user-select: text !important;
   }
   
   .subtotal-row td {
     background-color: #e6f3ff !important;
   }
+  
+  /* Hide interactive elements in print */
+  .generate-pdf-btn {
+    display: none !important;
+  }
+}
+
+/* Performance: Reduce repaints for static elements */
+.section-header,
+.table th,
+.subtotal-row td {
+  will-change: transform;
+  transform: translateZ(0);
 }
