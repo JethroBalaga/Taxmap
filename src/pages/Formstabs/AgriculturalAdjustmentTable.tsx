@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   IonPage,
   IonHeader,
@@ -25,6 +25,7 @@ import { useParams, useHistory } from 'react-router-dom';
 import { useAgriculturalData } from './useAgriculturalData';
 import { useAgriculturalSubmission } from './useAgriculturalSubmission';
 import AgricultureLandUpdateModal from '../../components/Modals/AgricultureLandUpdateModal';
+import LandFaasBackModal from '../../components/PropertyDetail/LandFaasBackModal';
 import DynamicTable from '../../components/GlobalComponent/DynamicTable';
 import SubmitButton from '../../components/GlobalComponent/SubmitButton';
 import { agriculturalUtils } from './agriculturalUtils';
@@ -47,7 +48,8 @@ const AgriculturalAdjustmentTable: React.FC = () => {
     formContext,
     loadData,
     setShowUpdateModal,
-    isFormUploaded
+    isFormUploaded,
+    calculateTotalAdjustment
   } = useAgriculturalData(formId);
 
   const {
@@ -69,12 +71,78 @@ const AgriculturalAdjustmentTable: React.FC = () => {
     tableData
   } = agriculturalUtils(formData, agriculturalData, subclassRates);
 
+  // ADD STATE FOR LAND FAAS MODAL
+  const [showLandFaasModal, setShowLandFaasModal] = useState(false);
+
   const handleBack = () => {
     history.push('/menu/forms');
   };
 
   const handleUpdateClick = () => {
     setShowUpdateModal(true);
+  };
+
+  // ADD HANDLER FOR OPENING LAND FAAS MODAL
+  const handleOpenLandFaas = () => {
+    setShowLandFaasModal(true);
+  };
+
+  // ADD HANDLER FOR CLOSING LAND FAAS MODAL
+  const handleCloseLandFaas = () => {
+    setShowLandFaasModal(false);
+  };
+
+  // CORRECTED HELPER FUNCTIONS WITH DYNAMIC CALCULATIONS
+  const calculateBaseMarketValue = () => {
+    // Calculate total base market value from all subclass rates
+    if (!subclassRates || subclassRates.length === 0) return 0;
+    
+    return subclassRates.reduce((total, rate) => {
+      return total + (rate.baseMarketValue || 0);
+    }, 0);
+  };
+
+  const calculateAdjustedMarketValue = () => {
+    // Calculate total adjusted market value dynamically based on current agricultural data
+    if (!subclassRates || subclassRates.length === 0) return 0;
+    
+    const totalAdjustmentValue = calculateTotalAdjustment();
+    const adjustedMarketValuePercentage = totalAdjustmentValue < 0 ? 
+      100 + totalAdjustmentValue : 100 - totalAdjustmentValue;
+    
+    return subclassRates.reduce((total, rate) => {
+      const baseValue = rate.baseMarketValue || 0;
+      const adjustedValue = baseValue * (adjustedMarketValuePercentage / 100);
+      return total + adjustedValue;
+    }, 0);
+  };
+
+  const getAssessmentLevel = () => {
+    // Get the primary assessment level (use the first subclass rate's assessment level)
+    if (!subclassRates || subclassRates.length === 0) return null;
+    
+    // Return the assessment level from the first subclass rate
+    // Since all should have the same assessment level for the same form
+    return subclassRates[0]?.assessmentLevel || null;
+  };
+
+  // Calculate agricultural adjustments for the FAAS modal
+  const calculateAgriculturalAdjustments = () => {
+    if (!agriculturalData) return { totalAdjustment: 0, adjustments: [] };
+
+    const frontage = parseFloat(agriculturalData.frontage) || 0;
+    const weatherRoad = parseFloat(agriculturalData.weather_road) || 0;
+    const market = parseFloat(agriculturalData.market) || 0;
+    
+    const totalAdjustmentValue = frontage + weatherRoad + market;
+    
+    const adjustments = [
+      { description: "Frontage", value: frontage },
+      { description: "Weather Road", value: weatherRoad },
+      { description: "Market", value: market }
+    ].filter(adj => adj.value !== 0);
+
+    return { totalAdjustment: totalAdjustmentValue, adjustments };
   };
 
   if (isLoading) {
@@ -241,78 +309,114 @@ const AgriculturalAdjustmentTable: React.FC = () => {
             )}
 
             {agriculturalData && (
-              <IonRow>
-                <IonCol size="12">
-                  <IonCard className="agricultural-card">
-                    <IonCardHeader>
-                      <div className="card-header-with-update">
-                        <IonCardTitle className="agricultural-title">
-                          <IonIcon icon={leaf} className="agricultural-title-icon" />
-                          Agricultural Adjustment Data
-                        </IonCardTitle>
-                        <IonButton
-                          fill="clear"
-                          className="icon-blue update-button"
-                          onClick={handleUpdateClick}
-                        >
-                          <IonIcon icon={arrowUpCircleOutline} className="update-icon" />
-                          <span className="update-text">Update Agricultural Data</span>
-                        </IonButton>
-                      </div>
-                    </IonCardHeader>
+              <>
+                <IonRow>
+                  <IonCol size="12">
+                    <IonCard className="agricultural-card">
+                      <IonCardHeader>
+                        <div className="card-header-with-update">
+                          <IonCardTitle className="agricultural-title">
+                            <IonIcon icon={leaf} className="agricultural-title-icon" />
+                            Agricultural Adjustment Data
+                          </IonCardTitle>
+                          <IonButton
+                            fill="clear"
+                            className="icon-blue update-button"
+                            onClick={handleUpdateClick}
+                          >
+                            <IonIcon icon={arrowUpCircleOutline} className="update-icon" />
+                            <span className="update-text">Update Agricultural Data</span>
+                          </IonButton>
+                        </div>
+                      </IonCardHeader>
 
-                    <IonCardContent>
-                      <div className="agricultural-section">
-                        <IonText className="agricultural-section-title">
-                          <IonIcon icon={trendingUp} className="agricultural-section-icon" />
-                          <h4>Adjustment Factors</h4>
-                        </IonText>
-                        <div className="agricultural-grid">
-                          <div className="agricultural-item">
-                            <label>Frontage</label>
-                            <IonText className="agricultural-value">
-                              {agriculturalData.frontage || 'N/A'}
-                            </IonText>
-                          </div>
-                          <div className="agricultural-item">
-                            <label>Weather Road</label>
-                            <IonText className="agricultural-value">
-                              {agriculturalData.weather_road || 'N/A'}
-                            </IonText>
-                          </div>
-                          <div className="agricultural-item">
-                            <label>Market</label>
-                            <IonText className="agricultural-value">
-                              {agriculturalData.market || 'N/A'}
-                            </IonText>
+                      <IonCardContent>
+                        <div className="agricultural-section">
+                          <IonText className="agricultural-section-title">
+                            <IonIcon icon={trendingUp} className="agricultural-section-icon" />
+                            <h4>Adjustment Factors</h4>
+                          </IonText>
+                          <div className="agricultural-grid">
+                            <div className="agricultural-item">
+                              <label>Frontage</label>
+                              <IonText className="agricultural-value">
+                                {agriculturalData.frontage || 'N/A'}
+                              </IonText>
+                            </div>
+                            <div className="agricultural-item">
+                              <label>Weather Road</label>
+                              <IonText className="agricultural-value">
+                                {agriculturalData.weather_road || 'N/A'}
+                              </IonText>
+                            </div>
+                            <div className="agricultural-item">
+                              <label>Market</label>
+                              <IonText className="agricultural-value">
+                                {agriculturalData.market || 'N/A'}
+                              </IonText>
+                            </div>
                           </div>
                         </div>
-                      </div>
 
-                      <div className="agricultural-section">
-                        <IonText className="agricultural-section-title">
-                          <IonIcon icon={calculator} className="agricultural-section-icon" />
-                          <h4>Calculations</h4>
-                        </IonText>
-                        <div className="agricultural-grid">
-                          <div className="agricultural-item">
-                            <label>Total Adjustment</label>
-                            <IonText className="agricultural-value total-adjustment">
-                              {totalAdjustment}
-                            </IonText>
-                          </div>
-                          <div className="agricultural-item">
-                            <label>Adjusted Market Value %</label>
-                            <IonText className="agricultural-value adjusted-market-value">
-                              {adjustedMarketValuePercentage}%
-                            </IonText>
+                        <div className="agricultural-section">
+                          <IonText className="agricultural-section-title">
+                            <IonIcon icon={calculator} className="agricultural-section-icon" />
+                            <h4>Calculations</h4>
+                          </IonText>
+                          <div className="agricultural-grid">
+                            <div className="agricultural-item">
+                              <label>Total Adjustment</label>
+                              <IonText className="agricultural-value total-adjustment">
+                                {totalAdjustment}
+                              </IonText>
+                            </div>
+                            <div className="agricultural-item">
+                              <label>Adjusted Market Value %</label>
+                              <IonText className="agricultural-value adjusted-market-value">
+                                {adjustedMarketValuePercentage}%
+                              </IonText>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </IonCardContent>
-                  </IonCard>
-                </IonCol>
-              </IonRow>
+                      </IonCardContent>
+                    </IonCard>
+                  </IonCol>
+                </IonRow>
+
+                {/* ADD VIEW PROPERTY ASSESSMENT BUTTON */}
+                <IonRow>
+                  <IonCol size="12">
+                    <div style={{
+                      textAlign: 'center',
+                      margin: '0.25rem 0 0.5rem 0',
+                      padding: '0 1rem'
+                    }}>
+                      <span
+                        onClick={handleOpenLandFaas}
+                        style={{
+                          color: '#3880ff',
+                          textDecoration: 'underline',
+                          cursor: 'pointer',
+                          fontSize: '14px',
+                          fontWeight: 'normal',
+                          display: 'inline-block',
+                          padding: '8px 16px',
+                          borderRadius: '4px',
+                          transition: 'background-color 0.2s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = 'rgba(56, 128, 255, 0.1)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = 'transparent';
+                        }}
+                      >
+                        View Property Assessment
+                      </span>
+                    </div>
+                  </IonCol>
+                </IonRow>
+              </>
             )}
 
             {!agriculturalData && (
@@ -333,20 +437,35 @@ const AgriculturalAdjustmentTable: React.FC = () => {
         </div>
 
         {agriculturalData && (
-          <AgricultureLandUpdateModal
-            isOpen={showUpdateModal}
-            onDismiss={() => setShowUpdateModal(false)}
-            onSuccess={(updatedData) => {
-              console.log('Agricultural data updated successfully:', updatedData);
-              setShowUpdateModal(false);
-              loadData();
-              window.dispatchEvent(new CustomEvent('agriculturalDataUpdated', {
-                detail: { formId, valueInfoId }
-              }));
-            }}
-            valueInfoId={valueInfoId || ''}
-            currentData={agriculturalData}
-          />
+          <>
+            <AgricultureLandUpdateModal
+              isOpen={showUpdateModal}
+              onDismiss={() => setShowUpdateModal(false)}
+              onSuccess={(updatedData) => {
+                console.log('Agricultural data updated successfully:', updatedData);
+                setShowUpdateModal(false);
+                loadData();
+                window.dispatchEvent(new CustomEvent('agriculturalDataUpdated', {
+                  detail: { formId, valueInfoId }
+                }));
+              }}
+              valueInfoId={valueInfoId || ''}
+              currentData={agriculturalData}
+            />
+
+            {/* CORRECTED LAND FAAS BACK MODAL WITH DYNAMIC CALCULATIONS */}
+            <LandFaasBackModal
+              isOpen={showLandFaasModal}
+              onClose={handleCloseLandFaas}
+              landData={agriculturalData}
+              formData={formData}
+              baseMarketValue={calculateBaseMarketValue()}
+              adjustedMarketValue={calculateAdjustedMarketValue()}
+              assessmentLevel={getAssessmentLevel()}
+              agriculturalData={agriculturalData}
+              subclassRates={subclassRates}
+            />
+          </>
         )}
 
         <IonToast

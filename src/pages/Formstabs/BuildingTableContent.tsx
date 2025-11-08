@@ -20,10 +20,10 @@ import BuildingAdjustmentModal from "../../components/Modals/BuildingAdjustmentM
 import BuildingAdjustmentUpdateModal from "../../components/Modals/BuildingAdjustmentUpdateModal";
 import BuildingSubcomponentModal from "../../components/Modals/BuildingSubcomponentModal";
 import BuildingUpdateModal from "../../components/Modals/BuildingUpdateModal";
-import BuildingFaasBack from "../../components/PropertyDetail/BuildingFaasBack";
 import { useBuildingTableLogic } from './BuildingTableLogic';
 import "../../CSS/BuildingResponsive.css";
 import SubmitButton from "../../components/GlobalComponent/SubmitButton";
+import BuildingFaasBackModal from "../../components/PropertyDetail/BuildingFaasBackModal";
 
 interface BuildingTableProps {
     form_id: string;
@@ -268,8 +268,6 @@ const BuildingTableContent: React.FC<BuildingTableProps> = ({
                         )}
                     </>
                 )}
-
-               // In BuildingTableContent.tsx - update the FaasBack modal section
                 <IonModal
                     isOpen={showFaasBackModal}
                     onDidDismiss={handleCloseFaasBack}
@@ -286,7 +284,9 @@ const BuildingTableContent: React.FC<BuildingTableProps> = ({
                         </IonToolbar>
                     </IonHeader>
                     <IonContent>
-                        <BuildingFaasBack
+                        <BuildingFaasBackModal
+                            isOpen={showFaasBackModal}
+                            onClose={handleCloseFaasBack}
                             buildingData={selectedBuildingForFaas}
                             formData={formData}
                             baseMarketValue={baseMarketValues.get(buildingInfoIds[0])}

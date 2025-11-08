@@ -1,32 +1,38 @@
 import React, { useState, useEffect } from "react";
 import {
-  IonPage,
-  IonContent,
+  IonModal,
   IonHeader,
   IonToolbar,
   IonTitle,
+  IonContent,
   IonButton,
-  IonIcon
+  IonIcon,
+  IonButtons
 } from "@ionic/react";
-import { documentOutline } from "ionicons/icons";
+import { documentOutline, close } from "ionicons/icons";
 import html2pdf from "html2pdf.js";
 import { getBuildingCodeByCode, getBuildingCodesByStructureCode } from '../../utils/buildingCodeLocalStorage';
 import { getBuildingSubcomponentById, BuildingSubcomponentData } from '../../utils/BuildingSubcomponentLocalStorage';
+import { getBuildingComponentById } from '../../utils/buildingComponentLocalStorage';
 import "../../CSS/BuildingFaasBack.css";
 
 const ROW_ITEMS = 10;
 const ROW_ASSESSMENT = 4;
 
-interface BuildingFaasBackProps {
+interface BuildingFaasBackModalProps {
+  isOpen: boolean;
+  onClose: () => void;
   buildingData?: any;
   formData?: any;
   baseMarketValue?: number;
   buildingAdjustments?: any[];
-  adjustedMarketValue?: number; // Add adjusted market value prop
-  assessmentLevel?: any; // Add assessment level prop
+  adjustedMarketValue?: number;
+  assessmentLevel?: any;
 }
 
-const BuildingFaasBack: React.FC<BuildingFaasBackProps> = ({ 
+const BuildingFaasBackModal: React.FC<BuildingFaasBackModalProps> = ({ 
+  isOpen,
+  onClose,
   buildingData, 
   formData, 
   baseMarketValue, 
@@ -39,6 +45,7 @@ const BuildingFaasBack: React.FC<BuildingFaasBackProps> = ({
   const [assessment, setAssessment] = useState<Record<string, string>>({});
   const [buildingCodeData, setBuildingCodeData] = useState<any>(null);
   const [subcomponentData, setSubcomponentData] = useState<BuildingSubcomponentData[]>([]);
+  const [componentData, setComponentData] = useState<Map<string, string>>(new Map());
   const [isTaxable, setIsTaxable] = useState<boolean>(false);
   const [isExempt, setIsExempt] = useState<boolean>(false);
   const [currentQuarter, setCurrentQuarter] = useState<string>("1");
@@ -48,8 +55,6 @@ const BuildingFaasBack: React.FC<BuildingFaasBackProps> = ({
   useEffect(() => {
     const now = new Date();
     const year = now.getFullYear();
-    
-    // Always set quarter to 1 as requested
     setCurrentQuarter("1");
     setCurrentYear(year.toString());
   }, []);
@@ -65,56 +70,46 @@ const BuildingFaasBack: React.FC<BuildingFaasBackProps> = ({
     }
   }, [assessmentLevel]);
 
-  // Load building code data using structureType from buildingData
+  // Load building code data
   useEffect(() => {
     const loadBuildingCodeData = async () => {
       if (buildingData?.structureType) {
-        console.log('Loading building code data for structureType:', buildingData.structureType);
-        
         const codes = await getBuildingCodesByStructureCode(buildingData.structureType);
-        console.log('Found building codes:', codes);
-        
         if (codes && codes.length > 0) {
           setBuildingCodeData(codes[0]);
-        } else {
-          console.log('No building codes found for structure type:', buildingData.structureType);
         }
       }
     };
-
     loadBuildingCodeData();
   }, [buildingData]);
 
-  // Load subcomponent data for building adjustments
+  // Load subcomponent data and component data for building adjustments
   useEffect(() => {
-    const loadSubcomponentData = async () => {
+    const loadSubcomponentAndComponentData = async () => {
       if (buildingAdjustments && buildingAdjustments.length > 0) {
         const subcomData: BuildingSubcomponentData[] = [];
+        const compData = new Map<string, string>();
         
         for (const adjustment of buildingAdjustments) {
           if (adjustment.buidlingsubcomponent) {
             const subcom = await getBuildingSubcomponentById(adjustment.buidlingsubcomponent);
             if (subcom) {
               subcomData.push(subcom);
+              
+              // Get component description
+              const component = await getBuildingComponentById(subcom.building_com_id);
+              if (component) {
+                compData.set(subcom.building_subcom_id, component.description);
+              }
             }
           }
         }
-        
         setSubcomponentData(subcomData);
+        setComponentData(compData);
       }
     };
-
-    loadSubcomponentData();
+    loadSubcomponentAndComponentData();
   }, [buildingAdjustments]);
-
-  const setApp = (rowKey: string, c: number, v: string) =>
-    setAppraisal((p) => ({ ...p, [`${rowKey}_c${c}`]: v }));
-
-  const setItem = (r: number, c: number, v: string) =>
-    setAddItems((p) => ({ ...p, [`r${r}_c${c}`]: v }));
-
-  const setAssess = (r: number, c: number, v: string) =>
-    setAssessment((p) => ({ ...p, [`r${r}_c${c}`]: v }));
 
   const generatePdf = async () => {
     const element = document.getElementById("faas-back-sheet");
@@ -124,56 +119,41 @@ const BuildingFaasBack: React.FC<BuildingFaasBackProps> = ({
       margin: [4, 6, 4, 6],
       filename: "BuildingFaasBack.pdf",
       image: { type: "jpeg", quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true },
+      html2canvas: { 
+        scale: 2, 
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+        allowTaint: true,
+        letterRendering: true
+      },
       jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
     };
 
     try {
+      // Force a small delay to ensure styles are loaded
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
       const worker = (html2pdf as any)().set(opt).from(element);
       const blob: Blob = await worker.outputPdf("blob");
       const url = URL.createObjectURL(blob);
       window.open(url, "_blank");
     } catch (err) {
-      console.error("PDF failed", err);
+      console.error("PDF generation failed", err);
       alert("PDF generation failed — check console.");
     }
   };
 
-  // Handle checkbox changes
-  const handleTaxableChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setIsTaxable(e.target.checked);
-    if (e.target.checked) {
-      setIsExempt(false);
-    }
-  };
-
-  const handleExemptChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setIsExempt(e.target.checked);
-    if (e.target.checked) {
-      setIsTaxable(false);
-    }
-  };
-
-  // Calculate number of storeys (default to 1 if not specified)
+  // Calculate number of storeys
   const numberOfStoreys = buildingData?.storey ? parseInt(buildingData.storey) : 1;
-  
-  // Get area from form data
   const areaValue = formData?.area ? parseFloat(formData.area) : 0;
-  
-  // Format base market value
-  const formattedBaseMarketValue = baseMarketValue ? `₱${baseMarketValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '₱0.00';
-  
-  // Get depreciation rate from building data
   const depreciationRate = buildingData?.depreciationRate !== null && buildingData?.depreciationRate !== undefined 
     ? buildingData.depreciationRate 
     : 0;
-  
-  // Get construction percentage from building data
   const constructionPercent = buildingData?.constructionPercent !== null && buildingData?.constructionPercent !== undefined 
     ? buildingData.constructionPercent 
     : 100;
-
-  // Get actual use from form data
   const actualUse = formData?.actualUse || buildingData?.actual_use || 'N/A';
 
   // Calculate values per storey for Table 1
@@ -211,7 +191,6 @@ const BuildingFaasBack: React.FC<BuildingFaasBackProps> = ({
       const unitValue = subcom?.rate || 0;
       const depreciation = adjustment.depreciation || '0';
       
-      // Calculate base value
       let baseValue = 0;
       if (subcom?.percent) {
         baseValue = (baseMarketValue || 0) * (unitValue / 100);
@@ -219,10 +198,7 @@ const BuildingFaasBack: React.FC<BuildingFaasBackProps> = ({
         baseValue = area * unitValue;
       }
       
-      // Apply completion percentage
       const afterCompletion = baseValue * (parseFloat(completionPercent) / 100);
-      
-      // Calculate depreciation cost and final market value
       const depreciationCost = afterCompletion * (parseFloat(depreciation) / 100);
       const marketValue = afterCompletion - depreciationCost;
 
@@ -272,19 +248,27 @@ const BuildingFaasBack: React.FC<BuildingFaasBackProps> = ({
   const storeyRows = Array.from({ length: numberOfStoreys }, (_, index) => index + 1);
 
   return (
-    <IonPage className="building-faas-back-page">
+    <IonModal
+      isOpen={isOpen}
+      onDidDismiss={onClose}
+      style={{ '--width': '95%', '--height': '95%' }}
+    >
       <IonHeader>
         <IonToolbar>
           <IonTitle>Building FAAS - BACK PAGE</IonTitle>
-          <IonButton slot="end" onClick={generatePdf}>
-            <IonIcon icon={documentOutline} /> &nbsp; Generate PDF
-          </IonButton>
+          <IonButtons slot="end">
+            <IonButton onClick={generatePdf} className="generate-pdf-btn">
+              <IonIcon icon={documentOutline} /> &nbsp; Generate PDF
+            </IonButton>
+            <IonButton onClick={onClose}>
+              <IonIcon icon={close} />
+            </IonButton>
+          </IonButtons>
         </IonToolbar>
       </IonHeader>
-
+      
       <IonContent>
         <div id="faas-back-sheet" className="sheet">
-
           {/* PROPERTY APPRAISAL - TABLE 1 */}
           <div className="section-header">PROPERTY APPRAISAL</div>
 
@@ -382,7 +366,7 @@ const BuildingFaasBack: React.FC<BuildingFaasBackProps> = ({
                       <td key={c}>
                         <input
                           value={appraisal[`empty${index}_c${c}`] || ""}
-                          onChange={(e) => setApp(`empty${index}`, c, e.target.value)}
+                          onChange={(e) => setAppraisal((p) => ({ ...p, [`empty${index}_c${c}`]: e.target.value }))}
                         />
                       </td>
                     ))}
@@ -402,7 +386,7 @@ const BuildingFaasBack: React.FC<BuildingFaasBackProps> = ({
                 <td></td>
                 <td></td>
                 <td style={{ textAlign: 'right', fontWeight: 'bold' }}>
-                  {formattedBaseMarketValue}
+                  {formatCurrency(baseMarketValue || 0)}
                 </td>
                 <td></td>
                 <td style={{ textAlign: 'right', fontWeight: 'bold' }}>
@@ -435,12 +419,12 @@ const BuildingFaasBack: React.FC<BuildingFaasBackProps> = ({
             <tbody>
               {buildingAdjustments.map((adjustment, index) => {
                 const subcom = subcomponentData.find(s => s.building_subcom_id === adjustment.buidlingsubcomponent);
+                const componentDescription = componentData.get(adjustment.buidlingsubcomponent) || "";
                 const area = adjustment.area || 0;
                 const completionPercent = adjustment.completion_percent || '0';
                 const unitValue = subcom?.rate || 0;
                 const depreciation = adjustment.depreciation || '0';
                 
-                // Calculate base value
                 let baseValue = 0;
                 if (subcom?.percent) {
                   baseValue = (baseMarketValue || 0) * (unitValue / 100);
@@ -448,10 +432,7 @@ const BuildingFaasBack: React.FC<BuildingFaasBackProps> = ({
                   baseValue = area * unitValue;
                 }
                 
-                // Apply completion percentage
                 const afterCompletion = baseValue * (parseFloat(completionPercent) / 100);
-                
-                // Calculate depreciation cost and final market value
                 const depreciationCost = afterCompletion * (parseFloat(depreciation) / 100);
                 const marketValue = afterCompletion - depreciationCost;
 
@@ -459,16 +440,16 @@ const BuildingFaasBack: React.FC<BuildingFaasBackProps> = ({
                   <tr key={index}>
                     <td>
                       <input
-                        value={addItems[`adj${index}_desc`] || subcom?.description || ""}
+                        value={addItems[`adj${index}_desc`] || componentDescription}
                         onChange={(e) => setAddItems((p) => ({ ...p, [`adj${index}_desc`]: e.target.value }))}
-                        placeholder={subcom?.description}
+                        placeholder={componentDescription}
                       />
                     </td>
                     <td>
                       <input
-                        value={addItems[`adj${index}_type`] || subcom?.building_subcom_id || ""}
+                        value={addItems[`adj${index}_type`] || subcom?.description || ""}
                         onChange={(e) => setAddItems((p) => ({ ...p, [`adj${index}_type`]: e.target.value }))}
-                        placeholder={subcom?.building_subcom_id}
+                        placeholder={subcom?.description}
                       />
                     </td>
                     <td>
@@ -531,7 +512,7 @@ const BuildingFaasBack: React.FC<BuildingFaasBackProps> = ({
                       <td key={c}>
                         <input
                           value={addItems[`emptyadj${index}_c${c}`] || ""}
-                          onChange={(e) => setItem(index + buildingAdjustments.length, c, e.target.value)}
+                          onChange={(e) => setAddItems((p) => ({ ...p, [`emptyadj${index}_c${c}`]: e.target.value }))}
                         />
                       </td>
                     ))}
@@ -649,7 +630,7 @@ const BuildingFaasBack: React.FC<BuildingFaasBackProps> = ({
                     <td key={c}>
                       <input
                         value={assessment[`empty${r}_c${c}`] || ""}
-                        onChange={(e) => setAssess(r + 1, c, e.target.value)}
+                        onChange={(e) => setAssessment((p) => ({ ...p, [`empty${r}_c${c}`]: e.target.value }))}
                       />
                     </td>
                   ))}
@@ -664,7 +645,10 @@ const BuildingFaasBack: React.FC<BuildingFaasBackProps> = ({
               <input 
                 type="checkbox" 
                 checked={isTaxable}
-                onChange={handleTaxableChange}
+                onChange={(e) => {
+                  setIsTaxable(e.target.checked);
+                  if (e.target.checked) setIsExempt(false);
+                }}
               />
             </label>
             <label>
@@ -672,7 +656,10 @@ const BuildingFaasBack: React.FC<BuildingFaasBackProps> = ({
               <input 
                 type="checkbox" 
                 checked={isExempt}
-                onChange={handleExemptChange}
+                onChange={(e) => {
+                  setIsExempt(e.target.checked);
+                  if (e.target.checked) setIsTaxable(false);
+                }}
               />
             </label>
             <div className="effectivity">
@@ -700,8 +687,8 @@ const BuildingFaasBack: React.FC<BuildingFaasBackProps> = ({
           <div className="powered">Powered by: SPIDC</div>
         </div>
       </IonContent>
-    </IonPage>
+    </IonModal>
   );
 };
 
-export default BuildingFaasBack;
+export default BuildingFaasBackModal;

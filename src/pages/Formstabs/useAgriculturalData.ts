@@ -5,10 +5,12 @@ import { AgriculturalDataLocalStorage } from '../../utils/tablestorages/Agricult
 import { getCurrentRateForSubclass } from '../../utils/subclassRateLocalStorage';
 import { getAssessmentLevelData, AssessmentLevelData } from '../../utils/assessmentLevelLocalStorage';
 import { getDistrictById } from '../../utils/districtLocalStorage';
+import { getSubclassById } from '../../utils/subclassLocalStorage';
 
 interface SubclassRateData {
   value_info_id: string;
   subclass_id: string;
+  subclass_description?: string;
   rate: number;
   baseMarketValue?: number;
   assessmentLevel?: AssessmentLevelData;
@@ -78,6 +80,16 @@ export const useAgriculturalData = (formId: string) => {
     }
   };
 
+  const calculateTotalAdjustment = () => {
+    if (!agriculturalData) return 0;
+    
+    const frontage = parseFloat(agriculturalData.frontage) || 0;
+    const weatherRoad = parseFloat(agriculturalData.weather_road) || 0;
+    const market = parseFloat(agriculturalData.market) || 0;
+    
+    return frontage + weatherRoad + market;
+  };
+
   const loadSubclassRates = async () => {
     if (!formData?.subclass || !valueInfoId) return;
     
@@ -96,11 +108,9 @@ export const useAgriculturalData = (formId: string) => {
             const area = formData.area || 0;
             const baseMarketValue = area * rate;
             
-            const totalAdjustment = calculateTotalAdjustment();
-            const adjustedMarketValuePercentage = totalAdjustment < 0 ? 
-              100 + totalAdjustment : 100 - totalAdjustment;
-            
-            const adjustedMarketValue = baseMarketValue * (adjustedMarketValuePercentage / 100);
+            // GET SUBCLASS DESCRIPTION
+            const subclassData = await getSubclassById(subclassId);
+            const subclassDescription = subclassData?.subclass || subclassId;
             
             const kindId = typeof formData.kind === 'string' ? parseInt(formData.kind) : formData.kind || 1;
             const classId = formData.classification || 'A';
@@ -111,10 +121,11 @@ export const useAgriculturalData = (formId: string) => {
             ratesData.push({
               value_info_id: valueInfoId,
               subclass_id: subclassId,
+              subclass_description: subclassDescription,
               rate: rate,
               baseMarketValue: baseMarketValue,
               assessmentLevel: assessmentLevel || undefined,
-              adjustedMarketValue: adjustedMarketValue
+              adjustedMarketValue: baseMarketValue // Will be calculated dynamically
             });
           }
         }
@@ -126,16 +137,6 @@ export const useAgriculturalData = (formId: string) => {
     } finally {
       setIsLoadingRates(false);
     }
-  };
-
-  const calculateTotalAdjustment = () => {
-    if (!agriculturalData) return 0;
-    
-    const frontage = parseFloat(agriculturalData.frontage) || 0;
-    const weatherRoad = parseFloat(agriculturalData.weather_road) || 0;
-    const market = parseFloat(agriculturalData.market) || 0;
-    
-    return frontage + weatherRoad + market;
   };
 
   const loadData = async () => {
