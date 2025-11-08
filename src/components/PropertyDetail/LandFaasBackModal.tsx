@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   IonModal,
   IonHeader,
@@ -11,11 +11,10 @@ import {
 } from "@ionic/react";
 import { documentOutline, close } from "ionicons/icons";
 import { jsPDF } from 'jspdf';
-import html2canvas from 'html2canvas';
 import { getLandAdjustmentData, LandAdjustmentData } from '../../utils/landAdjustmentLocalStorage';
 import { getSubclassById, SubclassData } from '../../utils/subclassLocalStorage';
-import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
-import { FileOpener } from '@capacitor-community/file-opener';
+import { Filesystem, Directory } from '@capacitor/filesystem';
+import { FileOpener } from '@capawesome-team/capacitor-file-opener';
 import "../../CSS/LandFaasBackModal.css";
 
 interface LandFaasBackModalProps {
@@ -56,6 +55,7 @@ const LandFaasBackModal: React.FC<LandFaasBackModalProps> = ({
     dateOfEntry: "",
     enteredBy: ""
   });
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState<boolean>(false);
 
   // Get current quarter and year
   useEffect(() => {
@@ -80,9 +80,6 @@ const LandFaasBackModal: React.FC<LandFaasBackModalProps> = ({
           const subclass = await getSubclassById(formData.subclass);
           if (subclass) {
             setSubclassData(subclass);
-            console.log('Loaded subclass data:', subclass);
-          } else {
-            console.warn('No subclass found for ID:', formData.subclass);
           }
         }
       } catch (error) {
@@ -104,100 +101,309 @@ const LandFaasBackModal: React.FC<LandFaasBackModalProps> = ({
     }
   }, [assessmentLevel]);
 
-  // File service for native PDF handling
-  const saveAndOpenPdf = async (pdfBlob: Blob, fileName: string = 'LandFaasBack.pdf') => {
+  // Inline file service for native PDF handling (identical to Building FAAS)
+  const saveAndOpenPdf = async (pdfBlob: Blob, suggestedFileName = 'LandFAAS.pdf') => {
     try {
-      // Convert the Blob to base64
-      const reader = new FileReader();
-      const dataUrl = await new Promise<string>((resolve) => {
-        reader.onload = () => resolve(reader.result as string);
+      // Convert the Blob to base64 data (data URL) and strip header
+      const base64Data = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = reject;
+        reader.onload = () => {
+          const result = reader.result as string;
+          const base64 = result.split(',')[1];
+          resolve(base64);
+        };
         reader.readAsDataURL(pdfBlob);
       });
-      const base64Data = dataUrl.split(',')[1];
 
-      // Write the file to the device's documents directory
-      const result = await Filesystem.writeFile({
-        path: `FAAS_Documents/${fileName}`,
+      // Use a timestamped filename
+      const timestamp = Date.now();
+      const finalFilename = `LandFAAS_${timestamp}.pdf`;
+
+      // Write file to Directory.Data (app-specific, no external storage permission required)
+      const writeResult = await Filesystem.writeFile({
+        path: finalFilename,
         data: base64Data,
-        directory: Directory.Documents,
-        encoding: Encoding.UTF8
+        directory: Directory.Data,
+        recursive: true
       });
-      
-      console.log('PDF saved at:', result.uri);
-      
-      // Open the file with the device's default viewer
-      await FileOpener.open({ 
-        filePath: result.uri, 
-        contentType: 'application/pdf' 
-      });
-      
+
+      // The plugin returns a uri (platform-specific)
+      const fileUri = (writeResult as any).uri || (writeResult as any).uri;
+
+      // Open the file using the FileOpener plugin - SAME AS BUILDING FAAS
+      try {
+        await FileOpener.openFile({ path: fileUri });
+      } catch (e) {
+        // fallback attempt: give FileOpener.openFile a path without uri prefix if needed
+        try {
+          await FileOpener.openFile({ path: finalFilename });
+        } catch (innerErr) {
+          console.error('FileOpener open failed:', innerErr);
+          // fallback to opening via browser if native open fails
+          const pdfUrl = URL.createObjectURL(pdfBlob);
+          const newWindow = window.open(pdfUrl, '_blank');
+          if (!newWindow) {
+            alert('Please allow popups for this site to view the PDF.');
+          }
+          setTimeout(() => URL.revokeObjectURL(pdfUrl), 60000);
+        }
+      }
+
     } catch (error) {
       console.error('Error saving/opening PDF:', error);
-      // Fallback for web or if native fails
+
+      // Web fallback: open blob URL in new tab
       const pdfUrl = URL.createObjectURL(pdfBlob);
-      window.open(pdfUrl, '_blank');
+      const newWindow = window.open(pdfUrl, '_blank');
+      if (!newWindow) {
+        alert('Please allow popups for this site to view the PDF directly in the browser.');
+      }
+      setTimeout(() => URL.revokeObjectURL(pdfUrl), 60000);
     }
   };
 
-  const generatePdf = async () => {
-    const element = document.getElementById("land-faas-back-sheet");
-    if (!element) {
-      console.error("PDF element not found");
-      return;
-    }
-
+  // Pure jsPDF generation for Land FAAS (identical structure to Building FAAS)
+  const generatePdf = useCallback(async () => {
+    if (isGeneratingPdf) return;
+    
+    setIsGeneratingPdf(true);
+    
     try {
-      // Add a small delay to ensure DOM is ready
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Get all the data from your component
+      const actualUse = formData?.actualUse || landData?.actual_use || 'N/A';
+      const marketValue = adjustedMarketValue || baseMarketValue || 0;
+      const { totalAdjustment: agriculturalTotalAdjustment, adjustments: agriculturalAdjustments } = calculateAgriculturalAdjustments();
+      const { totalBaseValue, totalAdjustedValue, totalAssessedValue } = calculateSubclassTotals();
 
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: '#ffffff',
-        logging: false,
-        allowTaint: false,
-        width: element.scrollWidth,
-        height: element.scrollHeight,
-        onclone: function (clonedDoc) {
-          // Ensure all inputs show their values in the cloned document
-          const inputs = clonedDoc.querySelectorAll('input');
-          inputs.forEach(input => {
-            // Make sure input values are visible in the PDF
-            input.style.backgroundColor = 'transparent';
-            input.style.border = 'none';
-          });
-        }
-      });
+      // Calculate assessment value
+      const assessmentValue = totalAssessedValue > 0 ? totalAssessedValue :
+        (assessmentLevel ? marketValue * (parseFloat(assessmentLevel.rate_percent?.replace('%', '') || '0') / 100) : 0);
 
-      const imgData = canvas.toDataURL('image/jpeg', 0.98);
+      // Create PDF - SAME AS BUILDING FAAS
       const pdf = new jsPDF('p', 'mm', 'a4');
-      const imgWidth = 210; // A4 width in mm
-      const pageHeight = 295; // A4 height in mm
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      
+      // Add title
+      pdf.setFontSize(16);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Land FAAS - BACK PAGE', 105, 20, { align: 'center' });
 
-      let heightLeft = imgHeight;
-      let position = 0;
+      let yPosition = 40;
 
-      // Add first page
-      pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
+      // SUBCLASS BREAKDOWN SECTION
+      if (subclassRates && subclassRates.length > 0) {
+        pdf.setFontSize(12);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('SUBCLASS BREAKDOWN', 20, yPosition);
+        yPosition += 10;
 
-      // Add additional pages if content is longer than one page
-      while (heightLeft >= 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
+        // Table headers
+        pdf.setFontSize(8);
+        pdf.setFont('helvetica', 'bold');
+        const headers = ['Subclass Description', 'Rate (₱/sqm)', 'Area (sqm)', 'Base Market Value (₱)', 'Adjusted Market Value (₱)'];
+        
+        let xPosition = 20;
+        headers.forEach((header, index) => {
+          pdf.text(header, xPosition, yPosition);
+          xPosition += index === 0 ? 40 : 30;
+        });
+        yPosition += 5;
+
+        // Subclass rows
+        pdf.setFont('helvetica', 'normal');
+        subclassRates.forEach((rate, index) => {
+          const area = formData?.area || 0;
+          const baseMarketValue = parseFloat(rate.base_market_value) || 0;
+          const adjustedMarketValue = parseFloat(rate.adjustment_market_value) || 0;
+
+          const rowData = [
+            subclassData?.subclass || rate.subclass_description || rate.subclass_id || 'N/A',
+            formatRate(rate.rate),
+            area.toLocaleString(),
+            `₱${baseMarketValue.toLocaleString()}`,
+            `₱${adjustedMarketValue.toLocaleString()}`
+          ];
+
+          xPosition = 20;
+          rowData.forEach((data, index) => {
+            const text = (typeof data === 'string' ? data : String(data)).substring(0, 15);
+            pdf.text(text, xPosition, yPosition);
+            xPosition += index === 0 ? 40 : 30;
+          });
+          yPosition += 6;
+
+          // New page if close to bottom - SAME AS BUILDING FAAS
+          if (yPosition > 270) {
+            pdf.addPage();
+            yPosition = 20;
+          }
+        });
+
+        // Subclass totals
+        yPosition += 5;
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('Total', 20, yPosition);
+        pdf.text(`₱${totalBaseValue.toLocaleString()}`, 20 + 40 + 30 + 30, yPosition, { align: 'right' });
+        pdf.text(`₱${totalAdjustedValue.toLocaleString()}`, 20 + 40 + 30 + 30 + 30, yPosition, { align: 'right' });
+
+        yPosition += 20;
       }
 
-      // Use Capacitor for native or fallback to web
-      const pdfBlob = pdf.output('blob');
+      // VALUE ADJUSTMENT SECTION
+      pdf.setFontSize(12);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('VALUE ADJUSTMENT', 20, yPosition);
+      yPosition += 10;
+
+      // Table headers
+      pdf.setFontSize(8);
+      pdf.setFont('helvetica', 'bold');
+      const adjustmentHeaders = ['Base Market Value (₱)', 'Adjustment Factor', 'Adjustment Percent', 'Value Adjustment (₱)', 'Market Value (₱)'];
       
-      // Check if we're in a native context
-      if ((window as any).Capacitor?.isNativePlatform()) {
-        await saveAndOpenPdf(pdfBlob, 'LandFaasBack.pdf');
+      let xPosition = 20;
+      adjustmentHeaders.forEach((header, index) => {
+        pdf.text(header, xPosition, yPosition);
+        xPosition += 38;
+      });
+      yPosition += 5;
+
+      // Agricultural Adjustments
+      pdf.setFont('helvetica', 'normal');
+      if (agriculturalAdjustments && agriculturalAdjustments.length > 0) {
+        agriculturalAdjustments.forEach((adj, index) => {
+          const rowData = [
+            `₱${(totalBaseValue || baseMarketValue || 0).toLocaleString()}`,
+            adj.description || 'N/A',
+            `${adj.value}%`,
+            `₱${((totalBaseValue || baseMarketValue || 0) * (adj.value / 100)).toLocaleString()}`,
+            `₱${(totalAdjustedValue || marketValue).toLocaleString()}`
+          ];
+
+          xPosition = 20;
+          rowData.forEach((data, index) => {
+            const text = (typeof data === 'string' ? data : String(data)).substring(0, 12);
+            pdf.text(text, xPosition, yPosition);
+            xPosition += 38;
+          });
+          yPosition += 6;
+
+          if (yPosition > 270) {
+            pdf.addPage();
+            yPosition = 20;
+          }
+        });
+      }
+
+      // Non-Agricultural Adjustments
+      if (landAdjustments && landAdjustments.length > 0) {
+        landAdjustments.forEach((adj, index) => {
+          const rowData = [
+            `₱${(totalBaseValue || baseMarketValue || 0).toLocaleString()}`,
+            adj.adjustment_type || 'N/A',
+            formatAdjustmentFactor(adj.adjustment_factor),
+            `₱${(parseFloat(adj.value_adjustment) || 0).toLocaleString()}`,
+            `₱${(totalAdjustedValue || marketValue).toLocaleString()}`
+          ];
+
+          xPosition = 20;
+          rowData.forEach((data, index) => {
+            const text = (typeof data === 'string' ? data : String(data)).substring(0, 12);
+            pdf.text(text, xPosition, yPosition);
+            xPosition += 38;
+          });
+          yPosition += 6;
+
+          if (yPosition > 270) {
+            pdf.addPage();
+            yPosition = 20;
+          }
+        });
+      }
+
+      // Adjustment totals
+      yPosition += 5;
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(`₱${(totalBaseValue || baseMarketValue || 0).toLocaleString()}`, 20, yPosition, { align: 'right' });
+      pdf.text('Total', 20 + 38, yPosition);
+      pdf.text(`${agriculturalTotalAdjustment}%`, 20 + 38 + 38, yPosition, { align: 'center' });
+      pdf.text(`₱${((totalBaseValue || baseMarketValue || 0) * (agriculturalTotalAdjustment / 100)).toLocaleString()}`, 20 + 38 + 38 + 38, yPosition, { align: 'right' });
+      pdf.text(`₱${(totalAdjustedValue || marketValue).toLocaleString()}`, 20 + 38 + 38 + 38 + 38, yPosition, { align: 'right' });
+
+      yPosition += 20;
+
+      // PROPERTY ASSESSMENT SECTION
+      pdf.setFontSize(12);
+      pdf.text('PROPERTY ASSESSMENT', 20, yPosition);
+      yPosition += 10;
+
+      // Assessment table
+      pdf.setFontSize(8);
+      const assessmentHeaders = ['Actual Use', 'Adjusted Market Value (₱)', 'Assessment Level', 'Assessed Value (₱)'];
+      
+      xPosition = 20;
+      assessmentHeaders.forEach((header, index) => {
+        pdf.text(header, xPosition, yPosition);
+        xPosition += 45;
+      });
+      yPosition += 5;
+
+      // Assessment data
+      pdf.setFont('helvetica', 'normal');
+      const assessmentData = [
+        actualUse,
+        `₱${(totalAdjustedValue || marketValue).toLocaleString()}`,
+        assessmentLevel?.rate_percent || '0%',
+        `₱${assessmentValue.toLocaleString()}`
+      ];
+
+      xPosition = 20;
+      assessmentData.forEach((data, index) => {
+        pdf.text(String(data), xPosition, yPosition);
+        xPosition += 45;
+      });
+
+      yPosition += 20;
+
+      // TAXABLE/EXEMPT SECTION
+      pdf.setFontSize(9);
+      pdf.text(`Taxable: ${isTaxable ? '☒' : '☐'}`, 20, yPosition);
+      pdf.text(`Exempt: ${isExempt ? '☒' : '☐'}`, 60, yPosition);
+      pdf.text(`Effectivity of Assessment: ${currentQuarter} Qtr. ${currentYear} Yr.`, 100, yPosition);
+
+      yPosition += 15;
+
+      // SIGNATURE SECTION
+      pdf.text('Approved by:', 20, yPosition);
+      yPosition += 15;
+
+      pdf.line(20, yPosition, 100, yPosition);
+      yPosition += 8;
+
+      pdf.setFontSize(7);
+      pdf.text('Municipal Assessor', 60, yPosition, { align: 'center' });
+
+      yPosition += 15;
+
+      // MEMORANDA
+      pdf.setFontSize(8);
+      pdf.text('MEMORANDA:', 20, yPosition);
+      yPosition += 5;
+      pdf.text('Date of Entry in the Record of Assessment ______ By: ____________', 20, yPosition);
+
+      // POWERED BY
+      yPosition += 10;
+      pdf.setFontSize(6);
+      pdf.text('Powered by: SPIDC', 190, yPosition, { align: 'right' });
+
+      // Convert to Blob for native handling - SAME AS BUILDING FAAS
+      const pdfBlob = pdf.output('blob');
+
+      // If running in native Capacitor context, use filesystem + opener - SAME AS BUILDING FAAS
+      const isNative = (window as any).Capacitor && (window as any).Capacitor.isNativePlatform && (window as any).Capacitor.isNativePlatform();
+      if (isNative) {
+        await saveAndOpenPdf(pdfBlob);
       } else {
-        // Web browser fallback
+        // Web browser fallback - SAME AS BUILDING FAAS
         const pdfUrl = URL.createObjectURL(pdfBlob);
         const newWindow = window.open(pdfUrl, '_blank');
         
@@ -208,12 +414,18 @@ const LandFaasBackModal: React.FC<LandFaasBackModalProps> = ({
         // Clean up URL after some time
         setTimeout(() => URL.revokeObjectURL(pdfUrl), 60000);
       }
-
-    } catch (err) {
-      console.error("PDF generation failed", err);
-      alert("PDF generation failed. Please try again.");
+      
+    } catch (error) {
+      console.error("PDF generation failed", error);
+      alert("PDF generation failed — check console.");
+    } finally {
+      setIsGeneratingPdf(false);
     }
-  };
+  }, [
+    isGeneratingPdf, landData, formData, baseMarketValue, landAdjustments, 
+    adjustedMarketValue, assessmentLevel, agriculturalData, subclassRates,
+    subclassData, isTaxable, isExempt, currentQuarter, currentYear
+  ]);
 
   // Calculate agricultural adjustments
   const calculateAgriculturalAdjustments = () => {
@@ -314,9 +526,13 @@ const LandFaasBackModal: React.FC<LandFaasBackModalProps> = ({
         <IonToolbar>
           <IonTitle>Land FAAS - BACK PAGE</IonTitle>
           <IonButtons slot="end">
-            <IonButton onClick={generatePdf} className="generate-pdf-btn">
+            <IonButton 
+              onClick={generatePdf} 
+              className="generate-pdf-btn"
+              disabled={isGeneratingPdf}
+            >
               <IonIcon icon={documentOutline} slot="start" />
-              Generate PDF
+              {isGeneratingPdf ? 'Generating...' : 'Generate PDF'}
             </IonButton>
             <IonButton onClick={onClose}>
               <IonIcon icon={close} />

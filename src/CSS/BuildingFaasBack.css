@@ -99,7 +99,7 @@
 
 .subtotal-row td {
   font-weight: bold;
-  background-color: #eee;
+  background-color: #f0f0f0; /* Changed to light gray instead of #eee */
   font-size: 9px;
 }
 
@@ -152,19 +152,19 @@
 .table th {
   font-size: 9px;
   font-weight: bold;
-  background-color: #f5f5f5;
+  background-color: #f5f5f5; /* Light gray instead of colored background */
   padding: 3px 2px;
   text-align: center;
 }
 
-/* Generate PDF Button Styling - BLUE BUTTON */
+/* Generate PDF Button Styling - BLACK & WHITE VERSION */
 .generate-pdf-btn {
-  --background: #2c5aa0 !important; /* Blue background */
-  --background-hover: #1e3f7a !important; /* Darker blue on hover */
-  --background-activated: #1e3f7a !important;
-  --background-focused: #1e3f7a !important;
+  --background: #000000 !important; /* Black background */
+  --background-hover: #333333 !important; /* Dark gray on hover */
+  --background-activated: #333333 !important;
+  --background-focused: #333333 !important;
   --color: white !important; /* White text */
-  --border-color: #1e3f7a !important;
+  --border-color: #000000 !important;
   --border-radius: 8px !important;
   --padding-start: 12px !important;
   --padding-end: 12px !important;
@@ -172,12 +172,12 @@
 }
 
 .generate-pdf-btn:hover {
-  --background: #1e3f7a !important;
+  --background: #333333 !important;
   transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(44, 90, 160, 0.3);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }
 
 .generate-pdf-btn:active {
-  --background: #16325c !important;
+  --background: #666666 !important;
   transform: translateY(0);
 }
