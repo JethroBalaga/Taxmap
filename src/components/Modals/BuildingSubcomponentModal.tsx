@@ -27,7 +27,7 @@ interface BuildingSubcomponentModalProps {
     area: number;
     completionPercent: string;
     depreciation: string;
-    baseMarketValue?: number; // Add base market value prop
+    baseMarketValue?: number;
 }
 
 const BuildingSubcomponentModal: React.FC<BuildingSubcomponentModalProps> = ({
@@ -37,16 +37,14 @@ const BuildingSubcomponentModal: React.FC<BuildingSubcomponentModalProps> = ({
     area,
     completionPercent,
     depreciation,
-    baseMarketValue = 0 // Default to 0 if not provided
+    baseMarketValue = 0
 }) => {
-    // Convert string values to numbers, using a robust check for validity
     const completionPercentValue = parseFloat(completionPercent);
     const validCompletionPercent = !isNaN(completionPercentValue) ? completionPercentValue : 0;
 
     const depreciationAsNumber = parseFloat(depreciation);
     const validDepreciation = !isNaN(depreciationAsNumber) ? depreciationAsNumber : 0;
 
-    // Calculate values based on percent boolean
     let marketValue = 0;
     let calculationDetails = '';
     let rateDisplay = 'N/A';
@@ -54,16 +52,15 @@ const BuildingSubcomponentModal: React.FC<BuildingSubcomponentModalProps> = ({
 
     if (subcomponentData && typeof subcomponentData.rate === 'number') {
         if (subcomponentData.percent) {
-            // Percent mode: rate is percentage of base market value
+            // Percent mode: rate is percentage of base market value ONLY
             const percentageRate = subcomponentData.rate / 100;
-            const newRateValue = baseMarketValue * percentageRate;
-            marketValue = newRateValue * area;
+            marketValue = baseMarketValue * percentageRate;
             
             rateDisplay = `${subcomponentData.rate}%`;
             rateType = 'percentage';
-            calculationDetails = `Base Market Value × Rate % × Area = ₱${baseMarketValue.toLocaleString()} × ${subcomponentData.rate}% × ${area.toLocaleString()}`;
+            calculationDetails = `Base Market Value × Rate % = ₱${baseMarketValue.toLocaleString()} × ${subcomponentData.rate}%`;
         } else {
-            // Fixed rate mode: original calculation
+            // Fixed rate mode: area × rate
             marketValue = area * subcomponentData.rate;
             
             rateDisplay = `₱${subcomponentData.rate.toLocaleString(undefined, {
@@ -75,13 +72,8 @@ const BuildingSubcomponentModal: React.FC<BuildingSubcomponentModalProps> = ({
         }
     }
 
-    // Calculate value after applying completion percent
     const valueAfterCompletion = marketValue * (validCompletionPercent / 100);
-    
-    // Calculate the depreciation amount based on the value after completion
     const depreciationAmount = valueAfterCompletion * (validDepreciation / 100);
-
-    // Calculate final adjusted market value: value after completion - depreciation amount
     const finalAdjustedMarketValue = valueAfterCompletion - depreciationAmount;
 
     const formattedMarketValue = `₱${marketValue.toLocaleString(undefined, {
@@ -129,7 +121,6 @@ const BuildingSubcomponentModal: React.FC<BuildingSubcomponentModalProps> = ({
                     <IonCard className="form-section">
                         <IonCardContent>
                             <IonGrid className="custom-grid">
-                                {/* Rate Type Indicator */}
                                 <IonRow>
                                     <IonCol size="12" className="custom-col">
                                         <div style={{ textAlign: 'center', marginBottom: '16px' }}>
@@ -158,7 +149,6 @@ const BuildingSubcomponentModal: React.FC<BuildingSubcomponentModalProps> = ({
                                     </IonCol>
                                 </IonRow>
 
-                                {/* Show Base Market Value when in percentage mode */}
                                 {rateType === 'percentage' && baseMarketValue > 0 && (
                                     <IonRow>
                                         <IonCol size="12" className="custom-col">

@@ -9,7 +9,8 @@ import {
     IonTextarea,
     IonText,
     IonSelect,
-    IonSelectOption
+    IonSelectOption,
+    IonBadge
 } from '@ionic/react';
 import { BuildingComponentData } from '../../utils/buildingComponentLocalStorage';
 import { BuildingSubcomponentData } from '../../utils/BuildingSubcomponentLocalStorage';
@@ -31,7 +32,9 @@ interface BuildingAdjustmentFormProps {
     isLoadingComponents: boolean;
     isLoadingSubcomponents: boolean;
     selectedSubcomponentRate: number | null;
+    selectedSubcomponentPercent: boolean | null;
     valueInfoId: string;
+    baseMarketValue?: number;
 }
 
 const BuildingAdjustmentForm: React.FC<BuildingAdjustmentFormProps> = ({
@@ -44,8 +47,24 @@ const BuildingAdjustmentForm: React.FC<BuildingAdjustmentFormProps> = ({
     isLoadingComponents,
     isLoadingSubcomponents,
     selectedSubcomponentRate,
-    valueInfoId
+    selectedSubcomponentPercent,
+    valueInfoId,
+    baseMarketValue = 0
 }) => {
+    const calculateEffectiveRate = () => {
+        if (selectedSubcomponentRate === null) return null;
+        
+        if (selectedSubcomponentPercent) {
+            // For percentage rates, show the calculated effective rate
+            return baseMarketValue * (selectedSubcomponentRate / 100);
+        } else {
+            // For fixed rates, show the rate as is
+            return selectedSubcomponentRate;
+        }
+    };
+
+    const effectiveRate = calculateEffectiveRate();
+
     return (
         <IonGrid className="custom-grid">
             <IonRow>
@@ -117,9 +136,28 @@ const BuildingAdjustmentForm: React.FC<BuildingAdjustmentFormProps> = ({
                     </IonItem>
                     {selectedSubcomponentRate !== null && (
                         <div className="rate-display">
-                            <IonText>
-                                Rate: <span className="rate-value">₱{selectedSubcomponentRate.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                            </IonText>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                                <IonBadge 
+                                    color={selectedSubcomponentPercent ? 'primary' : 'success'}
+                                    style={{ fontSize: '12px' }}
+                                >
+                                    {selectedSubcomponentPercent ? 'Percentage Rate' : 'Fixed Rate'}
+                                </IonBadge>
+                                <IonText>
+                                    Base Rate: <span className="rate-value">
+                                        {selectedSubcomponentPercent ? 
+                                            `${selectedSubcomponentRate}%` : 
+                                            `₱${selectedSubcomponentRate.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                                        }
+                                    </span>
+                                </IonText>
+                            </div>
+                            {selectedSubcomponentPercent && baseMarketValue > 0 && (
+                                <IonText color="medium" style={{ fontSize: '0.8rem' }}>
+                                    Effective Rate: ₱{effectiveRate?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} 
+                                    (Base: ₱{baseMarketValue.toLocaleString()} × {selectedSubcomponentRate}%)
+                                </IonText>
+                            )}
                         </div>
                     )}
                 </IonCol>

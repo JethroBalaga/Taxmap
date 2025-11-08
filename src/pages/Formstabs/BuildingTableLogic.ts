@@ -57,7 +57,8 @@ export const useBuildingTableLogic = (
     const [selectedAdjustmentArea, setSelectedAdjustmentArea] = useState<number>(0);
     const [selectedAdjustmentCompletion, setSelectedAdjustmentCompletion] = useState<string>('');
     const [selectedAdjustmentDepreciation, setSelectedAdjustmentDepreciation] = useState<string>('');
-    const [selectedBaseMarketValue, setSelectedBaseMarketValue] = useState<number>(0); // New state for base market value
+    const [selectedBaseMarketValue, setSelectedBaseMarketValue] = useState<number>(0);
+    const [selectedStorey, setSelectedStorey] = useState<number>(1);
     const [showUpdateModal, setShowUpdateModal] = useState(false);
     const [selectedBuildingId, setSelectedBuildingId] = useState<string>('');
     const [selectedBuildingData, setSelectedBuildingData] = useState<any>(null);
@@ -138,9 +139,11 @@ export const useBuildingTableLogic = (
         }
     }, []);
 
-    // Market Values
-    const calculateMarketValues = useCallback((buildingCodeRate: number, depreciationRate: number | null, area: number, constructionPercent: number | null) => {
-        const baseMarketValue = buildingCodeRate * area;
+    // Market Values - UPDATED with storey multiplication for building base values
+    const calculateMarketValues = useCallback((buildingCodeRate: number, depreciationRate: number | null, area: number, constructionPercent: number | null, storey: number = 1) => {
+        // Multiply base area by storey for building base calculations
+        const totalArea = area * storey;
+        const baseMarketValue = buildingCodeRate * totalArea;
         let adjustedMarketValue = baseMarketValue;
 
         if (constructionPercent != null) adjustedMarketValue *= (constructionPercent / 100);
@@ -167,7 +170,7 @@ export const useBuildingTableLogic = (
         }
     }, [kindId, classification]);
 
-    // Adjustments - UPDATED to handle percent boolean
+    // Adjustments - UPDATED to use correct base values
     const calculateAllAdjustments = useCallback(async () => {
         if (!isMountedRef.current) return;
         
@@ -179,27 +182,30 @@ export const useBuildingTableLogic = (
             const area = adj.area || 0;
             const completionPercent = parseFloat(adj.completion_percent) || 0;
             const depreciation = parseFloat(adj.depreciation) || 0;
-            let rate = 0;
+            let adjustmentValue = 0;
 
             if (adj.buidlingsubcomponent) {
                 const subcomponent = await getBuildingSubcomponentById(adj.buidlingsubcomponent);
                 if (subcomponent) {
-                    // Get base market value for this building
+                    // Get base market value (which already includes storey multiplication)
                     const baseMarketValue = baseMarketValues.get(buildingId) || 0;
                     
                     if (subcomponent.percent) {
-                        // Percentage mode: rate is percentage of base market value
+                        // Percentage mode: base_market_value × rate%
+                        // baseMarketValue already includes storey multiplication from building base calculation
                         const percentageRate = subcomponent.rate / 100;
-                        rate = baseMarketValue * percentageRate;
+                        adjustmentValue = baseMarketValue * percentageRate;
                     } else {
-                        // Fixed rate mode: use rate as is
-                        rate = subcomponent.rate;
+                        // Fixed rate mode: adjustment_area × rate
+                        // Adjustment area is NOT multiplied by storey (only building base area is)
+                        adjustmentValue = area * subcomponent.rate;
                     }
                 }
             }
 
-            const baseValue = area * rate;
-            const completedValue = baseValue * (completionPercent / 100);
+            // Apply completion percentage
+            const completedValue = adjustmentValue * (completionPercent / 100);
+            // Apply depreciation
             const adjustedValue = completedValue * (1 - (depreciation / 100));
 
             const current = map.get(buildingId) || 0;
@@ -211,7 +217,7 @@ export const useBuildingTableLogic = (
         }
     }, [buildingAdjustments, buildingInfoIds, baseMarketValues]);
 
-    // Load Data Functions
+    // Load Data Functions - UPDATED to pass storey to base calculations
     const loadBuildingData = useCallback(async () => {
         if (!isMountedRef.current || !form_id) return;
         
@@ -238,7 +244,15 @@ export const useBuildingTableLogic = (
                     const codeData = await getBuildingCodeByCode(data.buildingCode);
                     if (codeData) {
                         ratesMap.set(id, codeData.rate);
-                        const { base, adjusted } = calculateMarketValues(codeData.rate, data.depreciationRate, area, data.constructionPercent);
+                        // Get storey from building data, default to 1
+                        const storey = data.storey || 1;
+                        const { base, adjusted } = calculateMarketValues(
+                            codeData.rate, 
+                            data.depreciationRate, 
+                            area, 
+                            data.constructionPercent,
+                            storey // Pass storey to base calculation
+                        );
                         baseMap.set(id, base);
                         adjustedMap.set(id, adjusted);
                         const level = await getAssessmentLevelForBuilding(adjusted);
@@ -277,11 +291,11 @@ export const useBuildingTableLogic = (
         }
     }, [form_id]);
 
-    // SINGLE data loading effect - FIXED
+    // SINGLE data loading effect
     useEffect(() => {
         if (!form_id) return;
 
-        console.log('🔄 Loading data for form:', form_id);
+        console.log('Loading data for form:', form_id);
         
         const loadAllData = async () => {
             if (!isMountedRef.current) return;
@@ -304,7 +318,7 @@ export const useBuildingTableLogic = (
         };
 
         loadAllData();
-    }, [form_id]); // ONLY form_id as dependency
+    }, [form_id]);
 
     // Calculate adjustments when relevant data changes
     useEffect(() => {
@@ -313,7 +327,7 @@ export const useBuildingTableLogic = (
         }
     }, [buildingAdjustments, buildingInfoIds, isInitialLoad, calculateAllAdjustments]);
 
-    // Event listeners - ONLY for form uploaded
+    // Event listeners for form uploaded
     useEffect(() => {
         const handleFormUploaded = (event: CustomEvent) => {
             if (event.detail && event.detail.formId === form_id && isMountedRef.current) {
@@ -352,7 +366,6 @@ export const useBuildingTableLogic = (
         }
     };
 
-    // UPDATED: handleSubcomponentRowClick now accepts baseMarketValue
     const handleSubcomponentRowClick = async (rowData: BuildingAdjustmentData, baseMarketValue: number = 0) => {
         try {
             const subcomponent = await getBuildingSubcomponentById(rowData.buidlingsubcomponent);
@@ -360,11 +373,15 @@ export const useBuildingTableLogic = (
                 showToastMessage(`No subcomponent data found for ID: ${rowData.buidlingsubcomponent}`, 'warning');
                 return;
             }
+            const buildingData = buildingDataList.get(rowData.value_info_id);
+            const storey = buildingData?.storey || 1;
+            
             setSelectedSubcomponentData(subcomponent);
             setSelectedAdjustmentArea(rowData.area);
             setSelectedAdjustmentCompletion(rowData.completion_percent);
             setSelectedAdjustmentDepreciation(rowData.depreciation);
-            setSelectedBaseMarketValue(baseMarketValue); // Store base market value
+            setSelectedBaseMarketValue(baseMarketValue);
+            setSelectedStorey(storey);
             setShowSubcomponentModal(true);
         } catch (error) {
             console.error(error);
@@ -401,7 +418,7 @@ export const useBuildingTableLogic = (
         setShowToast(true);
     };
 
-    // Submit Form + Upload - FIXED to handle declarant as string
+    // Submit Form + Upload
     const submitForm = async () => {
         if (!isMountedRef.current) return;
         
@@ -452,10 +469,9 @@ export const useBuildingTableLogic = (
                 showToastMessage('Form submitted but could not retrieve photo', 'warning');
             }
 
-            // FIXED: Insert form with correct field mapping
             const databaseFormId = await supabaseApi.insertForm({
-                declarant: formData.declarant, // CHANGED: from declarant_name to declarant
-                kind_id: typeof formData.kind === 'string' ? parseInt(formData.kind) : formData.kind, // Handle both string and number
+                declarant: formData.declarant,
+                kind_id: typeof formData.kind === 'string' ? parseInt(formData.kind) : formData.kind,
                 class_id: formData.classification,
                 area: formData.area.toString(),
                 district_id: formData.district,
@@ -544,7 +560,8 @@ export const useBuildingTableLogic = (
         selectedAdjustmentArea,
         selectedAdjustmentCompletion,
         selectedAdjustmentDepreciation,
-        selectedBaseMarketValue, // Return new state
+        selectedBaseMarketValue,
+        selectedStorey,
         showUpdateModal,
         selectedBuildingId,
         selectedBuildingData,
@@ -575,7 +592,8 @@ export const useBuildingTableLogic = (
         setSelectedAdjustmentArea,
         setSelectedAdjustmentCompletion,
         setSelectedAdjustmentDepreciation,
-        setSelectedBaseMarketValue, // Return setter
+        setSelectedBaseMarketValue,
+        setSelectedStorey,
         setShowUpdateModal,
         setSelectedBuildingId,
         setSelectedBuildingData,

@@ -8,13 +8,7 @@ import {
     IonButton,
     IonIcon,
     IonButtons,
-    IonAlert,
-    IonGrid,
-    IonRow,
-    IonCol,
-    IonItem,
-    IonLabel,
-    IonText
+    IonAlert
 } from '@ionic/react';
 import { close } from 'ionicons/icons';
 import { BuildingAdjustmentLocalStorage, BuildingAdjustmentData } from '../../utils/tablestorages/BuildingAdjustmentLocalStorage';
@@ -30,6 +24,7 @@ interface BuildingAdjustmentUpdateModalProps {
     valueInfoId: string;
     existingData: BuildingAdjustmentData;
     onSaveSuccess?: () => void;
+    baseMarketValue?: number;
 }
 
 const BuildingAdjustmentUpdateModal: React.FC<BuildingAdjustmentUpdateModalProps> = ({
@@ -37,7 +32,8 @@ const BuildingAdjustmentUpdateModal: React.FC<BuildingAdjustmentUpdateModalProps
     onClose,
     valueInfoId,
     existingData,
-    onSaveSuccess
+    onSaveSuccess,
+    baseMarketValue = 0
 }) => {
     const [formData, setFormData] = useState({
         Maincomponent: existingData.Maincomponent || '',
@@ -55,6 +51,7 @@ const BuildingAdjustmentUpdateModal: React.FC<BuildingAdjustmentUpdateModalProps
     const [isLoadingComponents, setIsLoadingComponents] = useState(false);
     const [isLoadingSubcomponents, setIsLoadingSubcomponents] = useState(false);
     const [selectedSubcomponentRate, setSelectedSubcomponentRate] = useState<number | null>(null);
+    const [selectedSubcomponentPercent, setSelectedSubcomponentPercent] = useState<boolean | null>(null);
     const [marketValue, setMarketValue] = useState<number | null>(null);
     const [adjustedValue, setAdjustedValue] = useState<number | null>(null);
     const [isSaveEnabled, setIsSaveEnabled] = useState(false);
@@ -82,7 +79,7 @@ const BuildingAdjustmentUpdateModal: React.FC<BuildingAdjustmentUpdateModalProps
 
     useEffect(() => {
         calculateValues();
-    }, [selectedSubcomponentRate, formData.area, formData.completion_percent, formData.depreciation]);
+    }, [selectedSubcomponentRate, selectedSubcomponentPercent, formData.area, formData.completion_percent, formData.depreciation, baseMarketValue]);
 
     const loadExistingData = async (data: BuildingAdjustmentData) => {
         setFormData({
@@ -106,8 +103,15 @@ const BuildingAdjustmentUpdateModal: React.FC<BuildingAdjustmentUpdateModalProps
         let calculatedMarketValue: number | null = null;
         let calculatedAdjustedValue: number | null = null;
 
-        if (selectedSubcomponentRate !== null && areaValue > 0) {
-            calculatedMarketValue = selectedSubcomponentRate * areaValue;
+        if (selectedSubcomponentRate !== null) {
+            if (selectedSubcomponentPercent) {
+                // Percentage mode: base_market_value × rate%
+                calculatedMarketValue = baseMarketValue * (selectedSubcomponentRate / 100);
+            } else {
+                // Fixed rate mode: area × rate
+                calculatedMarketValue = selectedSubcomponentRate * areaValue;
+            }
+            
             if (completionDecimal >= 0) {
                 calculatedMarketValue *= completionDecimal;
             }
@@ -154,6 +158,7 @@ const BuildingAdjustmentUpdateModal: React.FC<BuildingAdjustmentUpdateModalProps
     const findAndDisplayRate = (subcomponentId: string) => {
         const subcomponent = buildingSubcomponents.find(sub => sub.building_subcom_id === subcomponentId);
         setSelectedSubcomponentRate(subcomponent ? subcomponent.rate : null);
+        setSelectedSubcomponentPercent(subcomponent ? subcomponent.percent : null);
     };
 
     const handleFormChange = (field: keyof typeof formData, value: string) => {
@@ -168,6 +173,7 @@ const BuildingAdjustmentUpdateModal: React.FC<BuildingAdjustmentUpdateModalProps
             description: ''
         }));
         setSelectedSubcomponentRate(null);
+        setSelectedSubcomponentPercent(null);
         setMarketValue(null);
         setAdjustedValue(null);
         if (value) {
@@ -259,15 +265,19 @@ const BuildingAdjustmentUpdateModal: React.FC<BuildingAdjustmentUpdateModalProps
                         isLoadingComponents={isLoadingComponents}
                         isLoadingSubcomponents={isLoadingSubcomponents}
                         selectedSubcomponentRate={selectedSubcomponentRate}
+                        selectedSubcomponentPercent={selectedSubcomponentPercent}
                         valueInfoId={valueInfoId}
                         isEditing={true}
                         adjustmentId={existingData.bldg_adjustment_id}
+                        baseMarketValue={baseMarketValue}
                     />
                     <BuildingAdjustmentCalculations
                         marketValue={marketValue}
                         adjustedValue={adjustedValue}
                         selectedSubcomponentRate={selectedSubcomponentRate}
+                        selectedSubcomponentPercent={selectedSubcomponentPercent}
                         formData={formData}
+                        baseMarketValue={baseMarketValue}
                     />
                     <div className="next-btn-container">
                         <IonButton

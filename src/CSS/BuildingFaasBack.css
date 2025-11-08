@@ -1,0 +1,164 @@
+.building-faas-back-page {
+  --padding-start: 0;
+  --padding-end: 0;
+}
+
+.sheet {
+  width: 100%;
+  background: white;
+  padding: 6mm;
+  font-family: Arial, sans-serif;
+  font-size: 10px; /* Reduced from 12px */
+  line-height: 1.2;
+}
+
+.section-header {
+  font-size: 10px; /* Reduced from 12px */
+  font-weight: bold;
+  margin-top: 6px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 4px;
+  table-layout: fixed; /* Added to control column widths */
+}
+
+.table th,
+.table td {
+  border: 1px solid #000;
+  padding: 1px 2px; /* Reduced padding */
+  font-size: 9px; /* Smaller font for table content */
+  line-height: 1.1;
+  height: 18px; /* Fixed height */
+  overflow: hidden;
+  word-wrap: break-word;
+}
+
+/* Set specific column widths for better PDF layout */
+.appraisal-table th:nth-child(1),
+.appraisal-table td:nth-child(1) { width: 15%; } /* Description */
+.appraisal-table th:nth-child(2),
+.appraisal-table td:nth-child(2) { width: 10%; } /* Type */
+.appraisal-table th:nth-child(3),
+.appraisal-table td:nth-child(3) { width: 8%; }  /* Area */
+.appraisal-table th:nth-child(4),
+.appraisal-table td:nth-child(4) { width: 10%; } /* Unit Value */
+.appraisal-table th:nth-child(5),
+.appraisal-table td:nth-child(5) { width: 8%; }  /* % Completion */
+.appraisal-table th:nth-child(6),
+.appraisal-table td:nth-child(6) { width: 12%; } /* Base Market Value */
+.appraisal-table th:nth-child(7),
+.appraisal-table td:nth-child(7) { width: 6%; }  /* % Depn */
+.appraisal-table th:nth-child(8),
+.appraisal-table td:nth-child(8) { width: 12%; } /* Depreciation Cost */
+.appraisal-table th:nth-child(9),
+.appraisal-table td:nth-child(9) { width: 12%; } /* Market Value */
+
+/* Apply same widths to items table */
+.items-table th:nth-child(1),
+.items-table td:nth-child(1) { width: 15%; }
+.items-table th:nth-child(2),
+.items-table td:nth-child(2) { width: 10%; }
+.items-table th:nth-child(3),
+.items-table td:nth-child(3) { width: 8%; }
+.items-table th:nth-child(4),
+.items-table td:nth-child(4) { width: 10%; }
+.items-table th:nth-child(5),
+.items-table td:nth-child(5) { width: 8%; }
+.items-table th:nth-child(6),
+.items-table td:nth-child(6) { width: 12%; }
+.items-table th:nth-child(7),
+.items-table td:nth-child(7) { width: 6%; }
+.items-table th:nth-child(8),
+.items-table td:nth-child(8) { width: 12%; }
+.items-table th:nth-child(9),
+.items-table td:nth-child(9) { width: 12%; }
+
+/* Assessment table column widths */
+.assessment-table th:nth-child(1),
+.assessment-table td:nth-child(1) { width: 25%; } /* Actual Use */
+.assessment-table th:nth-child(2),
+.assessment-table td:nth-child(2) { width: 25%; } /* Adjusted Market Value */
+.assessment-table th:nth-child(3),
+.assessment-table td:nth-child(3) { width: 25%; } /* Assessment Level */
+.assessment-table th:nth-child(4),
+.assessment-table td:nth-child(4) { width: 25%; } /* Assessment Value */
+
+.table input {
+  width: 100%;
+  border: none;
+  outline: none;
+  font-size: 9px; /* Smaller font for inputs */
+  padding: 0 1px;
+  line-height: 1.1;
+  height: 16px;
+  box-sizing: border-box;
+}
+
+.subtotal-row td {
+  font-weight: bold;
+  background-color: #eee;
+  font-size: 9px;
+}
+
+.tax-row {
+  margin-top: 10px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font-size: 10px;
+}
+
+.signature-container {
+  margin-top: 20px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+}
+
+.sig-line {
+  border-bottom: 1px solid #000;
+  width: 150px; /* Reduced width */
+  height: 16px; /* Reduced height */
+}
+
+.prov {
+  font-size: 9px; /* Reduced from 11px */
+  text-align: center;
+}
+
+.memoranda {
+  margin-top: 20px;
+  font-size: 9px; /* Reduced from 11px */
+  line-height: 1.2;
+}
+
+.powered {
+  margin-top: 5px;
+  font-size: 8px; /* Reduced from 10px */
+  text-align: right;
+}
+
+/* Combined totals table specific styling */
+.combined-totals-table td {
+  font-size: 9px;
+  padding: 3px 2px;
+  text-align: center;
+}
+
+/* Ensure text doesn't overflow in currency cells */
+.table td:contains('₱') {
+  font-size: 8px;
+  letter-spacing: -0.5px;
+}
+
+/* Make sure table headers are readable but compact */
+.table th {
+  font-size: 9px;
+  font-weight: bold;
+  background-color: #f5f5f5;
+  padding: 3px 2px;
+  text-align: center;
+}

@@ -25,6 +25,7 @@ interface BuildingAdjustmentModalProps {
     existingData?: BuildingAdjustmentData | null;
     onSaveSuccess?: () => void;
     initialArea?: number;
+    baseMarketValue?: number;
 }
 
 const BuildingAdjustmentModal: React.FC<BuildingAdjustmentModalProps> = ({
@@ -33,14 +34,15 @@ const BuildingAdjustmentModal: React.FC<BuildingAdjustmentModalProps> = ({
     valueInfoId,
     existingData,
     onSaveSuccess,
-    initialArea = 0
+    initialArea = 0,
+    baseMarketValue = 0
 }) => {
     const [formData, setFormData] = useState({
         Maincomponent: '',
         buidlingsubcomponent: '',
         description: '',
         completion_percent: '',
-        depreciation: '', // Corrected spelling here
+        depreciation: '',
         area: initialArea.toString()
     });
 
@@ -51,6 +53,7 @@ const BuildingAdjustmentModal: React.FC<BuildingAdjustmentModalProps> = ({
     const [isLoadingComponents, setIsLoadingComponents] = useState(false);
     const [isLoadingSubcomponents, setIsLoadingSubcomponents] = useState(false);
     const [selectedSubcomponentRate, setSelectedSubcomponentRate] = useState<number | null>(null);
+    const [selectedSubcomponentPercent, setSelectedSubcomponentPercent] = useState<boolean | null>(null);
     const [marketValue, setMarketValue] = useState<number | null>(null);
     const [adjustedValue, setAdjustedValue] = useState<number | null>(null);
     const [isSaveEnabled, setIsSaveEnabled] = useState(false);
@@ -58,17 +61,15 @@ const BuildingAdjustmentModal: React.FC<BuildingAdjustmentModalProps> = ({
     useEffect(() => {
         if (isOpen) {
             loadBuildingComponents();
-            // If editing, load all data including descriptions
             if (existingData) {
                 loadExistingData(existingData);
             } else {
-                // Reset form for new entry
                 setFormData({
                     Maincomponent: '',
                     buidlingsubcomponent: '',
                     description: '',
                     completion_percent: '',
-                    depreciation: '', // Corrected spelling here
+                    depreciation: '',
                     area: initialArea.toString()
                 });
             }
@@ -91,7 +92,7 @@ const BuildingAdjustmentModal: React.FC<BuildingAdjustmentModalProps> = ({
 
     useEffect(() => {
         calculateValues();
-    }, [selectedSubcomponentRate, formData.area, formData.completion_percent, formData.depreciation]); // Corrected spelling here
+    }, [selectedSubcomponentRate, selectedSubcomponentPercent, formData.area, formData.completion_percent, formData.depreciation, baseMarketValue]);
 
     const loadExistingData = async (data: BuildingAdjustmentData) => {
         setFormData({
@@ -110,13 +111,20 @@ const BuildingAdjustmentModal: React.FC<BuildingAdjustmentModalProps> = ({
     const calculateValues = () => {
         const areaValue = parseFloat(formData.area) || 0;
         const completionDecimal = parseFloat(formData.completion_percent) / 100;
-        const depreciationDecimal = parseFloat(formData.depreciation) / 100; // Corrected spelling here
+        const depreciationDecimal = parseFloat(formData.depreciation) / 100;
 
         let calculatedMarketValue: number | null = null;
         let calculatedAdjustedValue: number | null = null;
 
-        if (selectedSubcomponentRate !== null && areaValue > 0) {
-            calculatedMarketValue = selectedSubcomponentRate * areaValue;
+        if (selectedSubcomponentRate !== null) {
+            if (selectedSubcomponentPercent) {
+                // Percentage mode: base_market_value × rate%
+                calculatedMarketValue = baseMarketValue * (selectedSubcomponentRate / 100);
+            } else {
+                // Fixed rate mode: area × rate
+                calculatedMarketValue = selectedSubcomponentRate * areaValue;
+            }
+            
             if (completionDecimal >= 0) {
                 calculatedMarketValue *= completionDecimal;
             }
@@ -163,6 +171,7 @@ const BuildingAdjustmentModal: React.FC<BuildingAdjustmentModalProps> = ({
     const findAndDisplayRate = (subcomponentId: string) => {
         const subcomponent = buildingSubcomponents.find(sub => sub.building_subcom_id === subcomponentId);
         setSelectedSubcomponentRate(subcomponent ? subcomponent.rate : null);
+        setSelectedSubcomponentPercent(subcomponent ? subcomponent.percent : null);
     };
 
     const handleFormChange = (field: keyof typeof formData, value: string) => {
@@ -173,10 +182,11 @@ const BuildingAdjustmentModal: React.FC<BuildingAdjustmentModalProps> = ({
         setFormData(prev => ({
             ...prev,
             Maincomponent: value,
-            buidlingsubcomponent: '', // Reset subcomponent
-            description: '' // Reset description
+            buidlingsubcomponent: '',
+            description: ''
         }));
         setSelectedSubcomponentRate(null);
+        setSelectedSubcomponentPercent(null);
         setMarketValue(null);
         setAdjustedValue(null);
         if (value) {
@@ -187,7 +197,6 @@ const BuildingAdjustmentModal: React.FC<BuildingAdjustmentModalProps> = ({
     };
 
     const handleSubcomponentChange = async (value: string) => {
-        // Fetch the main and subcomponent descriptions
         const mainCom = await getBuildingComponentById(formData.Maincomponent);
         const subCom = await getBuildingSubcomponentById(value);
         let combinedDescription = '';
@@ -199,7 +208,7 @@ const BuildingAdjustmentModal: React.FC<BuildingAdjustmentModalProps> = ({
         setFormData(prev => ({
             ...prev,
             buidlingsubcomponent: value,
-            description: combinedDescription // Set the auto-filled description
+            description: combinedDescription
         }));
         findAndDisplayRate(value);
     };
@@ -218,7 +227,7 @@ const BuildingAdjustmentModal: React.FC<BuildingAdjustmentModalProps> = ({
                 buidlingsubcomponent: formData.buidlingsubcomponent,
                 description: formData.description,
                 completion_percent: formData.completion_percent,
-                depreciation: formData.depreciation, // Corrected spelling here
+                depreciation: formData.depreciation,
                 area: parseFloat(formData.area),
                 value_info_id: valueInfoId,
             };
@@ -246,10 +255,11 @@ const BuildingAdjustmentModal: React.FC<BuildingAdjustmentModalProps> = ({
             buidlingsubcomponent: '',
             description: '',
             completion_percent: '',
-            depreciation: '', // Corrected spelling here
+            depreciation: '',
             area: initialArea.toString()
         });
         setSelectedSubcomponentRate(null);
+        setSelectedSubcomponentPercent(null);
         setMarketValue(null);
         setAdjustedValue(null);
         onClose();
@@ -281,13 +291,17 @@ const BuildingAdjustmentModal: React.FC<BuildingAdjustmentModalProps> = ({
                         isLoadingComponents={isLoadingComponents}
                         isLoadingSubcomponents={isLoadingSubcomponents}
                         selectedSubcomponentRate={selectedSubcomponentRate}
+                        selectedSubcomponentPercent={selectedSubcomponentPercent}
                         valueInfoId={valueInfoId}
+                        baseMarketValue={baseMarketValue}
                     />
                     <BuildingAdjustmentCalculations
                         marketValue={marketValue}
                         adjustedValue={adjustedValue}
                         selectedSubcomponentRate={selectedSubcomponentRate}
+                        selectedSubcomponentPercent={selectedSubcomponentPercent}
                         formData={formData}
+                        baseMarketValue={baseMarketValue}
                     />
                     <div className="next-btn-container">
                         <IonButton

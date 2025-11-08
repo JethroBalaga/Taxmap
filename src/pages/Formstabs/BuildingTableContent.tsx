@@ -10,15 +10,17 @@ import {
     IonToast,
     IonTitle,
     IonSpinner,
-    IonAlert
+    IonAlert,
+    IonModal
 } from "@ionic/react";
-import { arrowBack } from "ionicons/icons";
+import { arrowBack, close } from "ionicons/icons";
 import BuildingList from './BuildingList';
 import BuildingAdjustmentsTable from './BuildingAdjustmentsTable';
 import BuildingAdjustmentModal from "../../components/Modals/BuildingAdjustmentModal";
 import BuildingAdjustmentUpdateModal from "../../components/Modals/BuildingAdjustmentUpdateModal";
 import BuildingSubcomponentModal from "../../components/Modals/BuildingSubcomponentModal";
 import BuildingUpdateModal from "../../components/Modals/BuildingUpdateModal";
+import BuildingFaasBack from "../../components/PropertyDetail/BuildingFaasBack";
 import { useBuildingTableLogic } from './BuildingTableLogic';
 import "../../CSS/BuildingResponsive.css";
 import SubmitButton from "../../components/GlobalComponent/SubmitButton";
@@ -71,7 +73,7 @@ const BuildingTableContent: React.FC<BuildingTableProps> = ({
         selectedAdjustmentArea,
         selectedAdjustmentCompletion,
         selectedAdjustmentDepreciation,
-        selectedBaseMarketValue, // Get the selected base market value
+        selectedBaseMarketValue,
         showUpdateModal,
         selectedBuildingId,
         selectedBuildingData,
@@ -100,12 +102,17 @@ const BuildingTableContent: React.FC<BuildingTableProps> = ({
         setShowToast
     } = useBuildingTableLogic(form_id, kind, classification, area, declarant, actual_use, district, subclass);
 
+    // State for showing the FaasBack modal
+    const [showFaasBackModal, setShowFaasBackModal] = React.useState(false);
+    const [selectedBuildingForFaas, setSelectedBuildingForFaas] = React.useState<any>(null);
+
     console.log('BuildingTableContent rendering with:', {
         form_id,
         buildingInfoIds: buildingInfoIds.length,
         buildingAdjustments: buildingAdjustments.length,
         loading,
-        formData: formData?.id
+        formData: formData?.id,
+        buildingDataList: Array.from(buildingDataList.entries()) // Debug: log building data
     });
 
     // Function to refresh all data
@@ -151,6 +158,26 @@ const BuildingTableContent: React.FC<BuildingTableProps> = ({
         setSelectedAdjustmentForUpdate(null);
         showToastMessage('Building adjustment updated successfully!', 'success');
     }, [refreshAllData, setShowUpdateAdjustmentModal, setSelectedAdjustmentForUpdate, showToastMessage]);
+
+    // Handle opening FaasBack modal
+    const handleOpenFaasBack = () => {
+        // Get the first building's data for FaasBack
+        if (buildingInfoIds.length > 0) {
+            const firstBuildingId = buildingInfoIds[0];
+            const buildingData = buildingDataList.get(firstBuildingId);
+            console.log('Opening FaasBack with building data:', buildingData); // Debug log
+            setSelectedBuildingForFaas(buildingData);
+            setShowFaasBackModal(true);
+        } else {
+            showToastMessage('No building data available', 'warning');
+        }
+    };
+
+    // Handle closing FaasBack modal
+    const handleCloseFaasBack = () => {
+        setShowFaasBackModal(false);
+        setSelectedBuildingForFaas(null);
+    };
 
     return (
         <IonPage>
@@ -208,20 +235,68 @@ const BuildingTableContent: React.FC<BuildingTableProps> = ({
                         <BuildingAdjustmentsTable
                             buildingAdjustments={buildingAdjustments}
                             buildingInfoIds={buildingInfoIds}
-                            baseMarketValues={baseMarketValues} // Pass base market values
+                            baseMarketValues={baseMarketValues}
                             onAdjustmentCreate={handleCreateAdjustment}
                             onAdjustmentUpdate={handleAdjustmentUpdate}
                             onAdjustmentsUpdate={refreshAllData}
                             showToastMessage={showToastMessage}
                             onSubcomponentClick={(rowData, baseMarketValue) => {
-                                // Pass base market value to the modal
                                 handleSubcomponentRowClick(rowData, baseMarketValue);
                             }}
                         />
+
+                        {/* View Property Assessment - Simple Text Link */}
+                        {!loading && buildingInfoIds.length > 0 && (
+                            <div style={{
+                                textAlign: 'center',
+                                margin: '1.5rem 0',
+                                padding: '0 1rem'
+                            }}>
+                                <span
+                                    onClick={handleOpenFaasBack}
+                                    style={{
+                                        color: '#3880ff',
+                                        textDecoration: 'underline',
+                                        cursor: 'pointer',
+                                        fontSize: '14px',
+                                        fontWeight: 'normal'
+                                    }}
+                                >
+                                    View Property Assessment
+                                </span>
+                            </div>
+                        )}
                     </>
                 )}
 
-                {/* Building Adjustment Modal */}
+               // In BuildingTableContent.tsx - update the FaasBack modal section
+                <IonModal
+                    isOpen={showFaasBackModal}
+                    onDidDismiss={handleCloseFaasBack}
+                    style={{ '--width': '95%', '--height': '95%' }}
+                >
+                    <IonHeader>
+                        <IonToolbar>
+                            <IonTitle>Property Assessment</IonTitle>
+                            <IonButtons slot="end">
+                                <IonButton onClick={handleCloseFaasBack}>
+                                    <IonIcon icon={close} />
+                                </IonButton>
+                            </IonButtons>
+                        </IonToolbar>
+                    </IonHeader>
+                    <IonContent>
+                        <BuildingFaasBack
+                            buildingData={selectedBuildingForFaas}
+                            formData={formData}
+                            baseMarketValue={baseMarketValues.get(buildingInfoIds[0])}
+                            buildingAdjustments={buildingAdjustments}
+                            adjustedMarketValue={adjustedMarketValues.get(buildingInfoIds[0])}
+                            assessmentLevel={assessmentLevels.get(buildingInfoIds[0])}
+                        />
+                    </IonContent>
+                </IonModal>
+                {/* Building Adjustment Modal - UPDATED with baseMarketValue */}
                 {showAdjustmentModal && selectedValueInfoId && (
                     <BuildingAdjustmentModal
                         isOpen={showAdjustmentModal}
@@ -230,10 +305,11 @@ const BuildingTableContent: React.FC<BuildingTableProps> = ({
                         existingData={existingAdjustmentData}
                         initialArea={area}
                         onSaveSuccess={handleAdjustmentSaveSuccess}
+                        baseMarketValue={baseMarketValues.get(selectedValueInfoId) || 0}
                     />
                 )}
 
-                {/* Building Adjustment Update Modal */}
+                {/* Building Adjustment Update Modal - UPDATED with baseMarketValue */}
                 {showUpdateAdjustmentModal && selectedAdjustmentForUpdate && (
                     <BuildingAdjustmentUpdateModal
                         isOpen={showUpdateAdjustmentModal}
@@ -241,10 +317,11 @@ const BuildingTableContent: React.FC<BuildingTableProps> = ({
                         valueInfoId={selectedAdjustmentForUpdate.value_info_id}
                         existingData={selectedAdjustmentForUpdate}
                         onSaveSuccess={handleUpdateAdjustmentSaveSuccess}
+                        baseMarketValue={baseMarketValues.get(selectedAdjustmentForUpdate.value_info_id) || 0}
                     />
                 )}
 
-                {/* Building Subcomponent Modal - UPDATED with baseMarketValue */}
+                {/* Building Subcomponent Modal */}
                 <BuildingSubcomponentModal
                     isOpen={showSubcomponentModal}
                     onClose={() => setShowSubcomponentModal(false)}
@@ -252,7 +329,7 @@ const BuildingTableContent: React.FC<BuildingTableProps> = ({
                     area={selectedAdjustmentArea}
                     completionPercent={selectedAdjustmentCompletion}
                     depreciation={selectedAdjustmentDepreciation}
-                    baseMarketValue={selectedBaseMarketValue} // Pass the base market value
+                    baseMarketValue={selectedBaseMarketValue}
                 />
 
                 {/* Building Update Modal */}
