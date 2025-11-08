@@ -12,6 +12,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@capacitor-community/file-opener": "^7.0.1",
     "@capacitor/android": "^7.4.2",
     "@capacitor/camera": "^7.0.1",
     "@capacitor/cli": "^7.4.2",
@@ -26,6 +27,7 @@
     "@types/localforage": "^0.0.33",
     "@types/react-router": "^5.1.20",
     "@types/react-router-dom": "^5.3.3",
+    "html2canvas": "^1.4.1",
     "ionicons": "^7.4.0",
     "jspdf": "^3.0.3",
     "leaflet": "^1.9.4",

@@ -65,6 +65,51 @@ const MachineFaasBackModal: React.FC<MachineFaasBackModalProps> = ({
     }
   }, [assessmentLevel]);
 
+  // File service for native PDF handling
+  const saveAndOpenPdf = async (pdfBlob: Blob, fileName: string = 'MachineFAAS.pdf') => {
+    try {
+      // Convert the Blob to base64
+      const reader = new FileReader();
+      const dataUrl = await new Promise<string>((resolve) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.readAsDataURL(pdfBlob);
+      });
+      const base64Data = dataUrl.split(',')[1];
+
+      // Generate filename with timestamp
+      const timestamp = new Date().getTime();
+      const finalFilename = `MachineFAAS_${timestamp}.pdf`;
+
+      // Write the file to the device's documents directory
+      const result = await Filesystem.writeFile({
+        path: finalFilename,
+        data: base64Data,
+        directory: Directory.Documents,
+        encoding: Encoding.UTF8
+      });
+      
+      console.log('PDF saved at:', result.uri);
+      
+      // Open the file with the device's default viewer
+      await FileOpener.openFile({
+        path: result.uri
+      });
+      
+    } catch (error) {
+      console.error('Error saving/opening PDF:', error);
+      // Fallback for web or if native fails
+      const pdfUrl = URL.createObjectURL(pdfBlob);
+      const newWindow = window.open(pdfUrl, '_blank');
+      
+      if (!newWindow) {
+        alert('Please allow popups for this site to view the PDF directly in the browser.');
+      }
+      
+      // Clean up URL after some time
+      setTimeout(() => URL.revokeObjectURL(pdfUrl), 60000);
+    }
+  };
+
   // Pure jsPDF generation - keeps your original data structure
   const generatePdf = useCallback(async () => {
     if (isGeneratingPdf) return;
@@ -149,28 +194,24 @@ const MachineFaasBackModal: React.FC<MachineFaasBackModalProps> = ({
         yPosition += 6;
       });
 
-      // Convert to Base64
-      const pdfBase64 = pdf.output('datauristring');
-      const base64Data = pdfBase64.split(',')[1];
+      // Convert to Blob for native handling
+      const pdfBlob = pdf.output('blob');
       
-      // Generate filename with timestamp
-      const timestamp = new Date().getTime();
-      const filename = `MachineFAAS_${timestamp}.pdf`;
-      
-      // Save to filesystem
-      const result = await Filesystem.writeFile({
-        path: filename,
-        data: base64Data,
-        directory: Directory.Documents,
-        encoding: Encoding.UTF8
-      });
-      
-      console.log('PDF saved at:', result.uri);
-      
-      // Open the PDF file
-      await FileOpener.openFile({
-        path: result.uri
-      });
+      // Check if we're in a native context
+      if ((window as any).Capacitor?.isNativePlatform()) {
+        await saveAndOpenPdf(pdfBlob, 'MachineFAAS.pdf');
+      } else {
+        // Web browser fallback
+        const pdfUrl = URL.createObjectURL(pdfBlob);
+        const newWindow = window.open(pdfUrl, '_blank');
+        
+        if (!newWindow) {
+          alert('Please allow popups for this site to view the PDF directly in the browser.');
+        }
+        
+        // Clean up URL after some time
+        setTimeout(() => URL.revokeObjectURL(pdfUrl), 60000);
+      }
       
     } catch (error) {
       console.error("PDF generation failed", error);
@@ -219,8 +260,14 @@ const MachineFaasBackModal: React.FC<MachineFaasBackModalProps> = ({
         <IonToolbar>
           <IonTitle>Machinery FAAS - BACK PAGE</IonTitle>
           <IonButtons slot="end">
-            <IonButton onClick={generatePdf} className="generate-pdf-btn">
-              <IonIcon icon={documentOutline} /> &nbsp; Generate PDF
+            <IonButton 
+              onClick={generatePdf} 
+              className="generate-pdf-btn"
+              disabled={isGeneratingPdf}
+            >
+              <IonIcon icon={documentOutline} /> 
+              &nbsp; 
+              {isGeneratingPdf ? 'Generating...' : 'Generate PDF'}
             </IonButton>
             <IonButton onClick={onClose}>
               <IonIcon icon={close} />
