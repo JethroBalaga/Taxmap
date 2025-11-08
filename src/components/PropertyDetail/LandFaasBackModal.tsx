@@ -206,7 +206,7 @@ const LandFaasBackModal: React.FC<LandFaasBackModalProps> = ({
 
   const actualUse = formData?.actualUse || landData?.actual_use || 'N/A';
   const marketValue = adjustedMarketValue || baseMarketValue || 0;
-  const { totalAdjustment, adjustments: agriculturalAdjustments } = calculateAgriculturalAdjustments();
+  const { totalAdjustment: agriculturalTotalAdjustment, adjustments: agriculturalAdjustments } = calculateAgriculturalAdjustments();
   const { totalBaseValue, totalAdjustedValue, totalAssessedValue } = calculateSubclassTotals();
 
   // Calculate assessment value
@@ -215,7 +215,7 @@ const LandFaasBackModal: React.FC<LandFaasBackModalProps> = ({
 
   // Calculate total rows needed for VALUE ADJUSTMENT section
   const totalAdjustmentRows = Math.max(
-    (landAdjustments?.length || 0),
+    (landAdjustments?.length || 0) + (agriculturalAdjustments?.length || 0),
     5 // Minimum 5 rows
   );
 
@@ -327,7 +327,7 @@ const LandFaasBackModal: React.FC<LandFaasBackModalProps> = ({
             </>
           )}
 
-          {/* VALUE ADJUSTMENT - UPDATED TO 5 ROWS MINIMUM WITH PERCENT FIX */}
+          {/* VALUE ADJUSTMENT - INCLUDES BOTH AGRICULTURAL AND NON-AGRICULTURAL ADJUSTMENTS */}
           <div className="section-header">VALUE ADJUSTMENT</div>
           <table className="table adjustment-table">
             <thead>
@@ -340,50 +340,94 @@ const LandFaasBackModal: React.FC<LandFaasBackModalProps> = ({
               </tr>
             </thead>
             <tbody>
-              {/* Non-Agricultural Adjustments */}
-              {landAdjustments && landAdjustments.map((adj, index) => (
-                <tr key={index}>
+              {/* Agricultural Adjustments */}
+              {agriculturalAdjustments && agriculturalAdjustments.map((adj, index) => (
+                <tr key={`agri-${index}`}>
                   <td>
                     <input
-                      value={adjustment[`base_value_${index}`] || formatCurrency(totalBaseValue || baseMarketValue || 0)}
-                      onChange={(e) => setAdjustment((p) => ({ ...p, [`base_value_${index}`]: e.target.value }))}
+                      value={adjustment[`agri_base_value_${index}`] || formatCurrency(totalBaseValue || baseMarketValue || 0)}
+                      onChange={(e) => setAdjustment((p) => ({ ...p, [`agri_base_value_${index}`]: e.target.value }))}
                       placeholder={formatCurrency(totalBaseValue || baseMarketValue || 0)}
                     />
                   </td>
                   <td>
                     <input
-                      value={adjustment[`factor_${index}`] || adj.adjustment_type || 'N/A'}
-                      onChange={(e) => setAdjustment((p) => ({ ...p, [`factor_${index}`]: e.target.value }))}
-                      placeholder={adj.adjustment_type || 'N/A'}
+                      value={adjustment[`agri_factor_${index}`] || adj.description || 'N/A'}
+                      onChange={(e) => setAdjustment((p) => ({ ...p, [`agri_factor_${index}`]: e.target.value }))}
+                      placeholder={adj.description || 'N/A'}
                     />
                   </td>
                   <td>
                     <input
-                      value={adjustment[`percent_${index}`] || formatAdjustmentFactor(adj.adjustment_factor)}
-                      onChange={(e) => setAdjustment((p) => ({ ...p, [`percent_${index}`]: e.target.value }))}
-                      placeholder={formatAdjustmentFactor(adj.adjustment_factor)}
+                      value={adjustment[`agri_percent_${index}`] || `${adj.value}%`}
+                      onChange={(e) => setAdjustment((p) => ({ ...p, [`agri_percent_${index}`]: e.target.value }))}
+                      placeholder={`${adj.value}%`}
                     />
                   </td>
                   <td>
                     <input
-                      value={adjustment[`value_adj_${index}`] || formatCurrency(parseFloat(adj.value_adjustment) || 0)}
-                      onChange={(e) => setAdjustment((p) => ({ ...p, [`value_adj_${index}`]: e.target.value }))}
-                      placeholder={formatCurrency(parseFloat(adj.value_adjustment) || 0)}
+                      value={adjustment[`agri_value_adj_${index}`] || formatCurrency((totalBaseValue || baseMarketValue || 0) * (adj.value / 100))}
+                      onChange={(e) => setAdjustment((p) => ({ ...p, [`agri_value_adj_${index}`]: e.target.value }))}
+                      placeholder={formatCurrency((totalBaseValue || baseMarketValue || 0) * (adj.value / 100))}
                     />
                   </td>
                   <td>
                     <input
-                      value={adjustment[`market_${index}`] || formatCurrency(totalAdjustedValue || marketValue)}
-                      onChange={(e) => setAdjustment((p) => ({ ...p, [`market_${index}`]: e.target.value }))}
+                      value={adjustment[`agri_market_${index}`] || formatCurrency(totalAdjustedValue || marketValue)}
+                      onChange={(e) => setAdjustment((p) => ({ ...p, [`agri_market_${index}`]: e.target.value }))}
                       placeholder={formatCurrency(totalAdjustedValue || marketValue)}
                     />
                   </td>
                 </tr>
               ))}
+
+              {/* Non-Agricultural Adjustments */}
+              {landAdjustments && landAdjustments.map((adj, index) => {
+                const adjustedIndex = index + (agriculturalAdjustments?.length || 0);
+                return (
+                  <tr key={`nonagri-${index}`}>
+                    <td>
+                      <input
+                        value={adjustment[`base_value_${adjustedIndex}`] || formatCurrency(totalBaseValue || baseMarketValue || 0)}
+                        onChange={(e) => setAdjustment((p) => ({ ...p, [`base_value_${adjustedIndex}`]: e.target.value }))}
+                        placeholder={formatCurrency(totalBaseValue || baseMarketValue || 0)}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        value={adjustment[`factor_${adjustedIndex}`] || adj.adjustment_type || 'N/A'}
+                        onChange={(e) => setAdjustment((p) => ({ ...p, [`factor_${adjustedIndex}`]: e.target.value }))}
+                        placeholder={adj.adjustment_type || 'N/A'}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        value={adjustment[`percent_${adjustedIndex}`] || formatAdjustmentFactor(adj.adjustment_factor)}
+                        onChange={(e) => setAdjustment((p) => ({ ...p, [`percent_${adjustedIndex}`]: e.target.value }))}
+                        placeholder={formatAdjustmentFactor(adj.adjustment_factor)}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        value={adjustment[`value_adj_${adjustedIndex}`] || formatCurrency(parseFloat(adj.value_adjustment) || 0)}
+                        onChange={(e) => setAdjustment((p) => ({ ...p, [`value_adj_${adjustedIndex}`]: e.target.value }))}
+                        placeholder={formatCurrency(parseFloat(adj.value_adjustment) || 0)}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        value={adjustment[`market_${adjustedIndex}`] || formatCurrency(totalAdjustedValue || marketValue)}
+                        onChange={(e) => setAdjustment((p) => ({ ...p, [`market_${adjustedIndex}`]: e.target.value }))}
+                        placeholder={formatCurrency(totalAdjustedValue || marketValue)}
+                      />
+                    </td>
+                  </tr>
+                );
+              })}
               
               {/* Empty rows to ensure minimum 5 rows total */}
-              {Array.from({ length: Math.max(0, totalAdjustmentRows - (landAdjustments?.length || 0)) }).map((_, index) => {
-                const emptyIndex = index + (landAdjustments?.length || 0);
+              {Array.from({ length: Math.max(0, totalAdjustmentRows - ((landAdjustments?.length || 0) + (agriculturalAdjustments?.length || 0))) }).map((_, index) => {
+                const emptyIndex = index + (landAdjustments?.length || 0) + (agriculturalAdjustments?.length || 0);
                 return (
                   <tr key={`empty-${emptyIndex}`}>
                     <td>
@@ -439,17 +483,17 @@ const LandFaasBackModal: React.FC<LandFaasBackModalProps> = ({
                 </td>
                 <td style={{ textAlign: 'center', fontWeight: 'bold' }}>
                   <input
-                    value={adjustment[`total_adjustment_percent`] || `${totalAdjustment}%`}
+                    value={adjustment[`total_adjustment_percent`] || `${agriculturalTotalAdjustment}%`}
                     onChange={(e) => setAdjustment((p) => ({ ...p, total_adjustment_percent: e.target.value }))}
-                    placeholder={`${totalAdjustment}%`}
+                    placeholder={`${agriculturalTotalAdjustment}%`}
                     style={{ textAlign: 'center', fontWeight: 'bold', border: 'none', background: 'transparent' }}
                   />
                 </td>
                 <td style={{ textAlign: 'right', fontWeight: 'bold' }}>
                   <input
-                    value={adjustment[`total_value_adjustment`] || formatCurrency((totalBaseValue || baseMarketValue || 0) * (totalAdjustment / 100))}
+                    value={adjustment[`total_value_adjustment`] || formatCurrency((totalBaseValue || baseMarketValue || 0) * (agriculturalTotalAdjustment / 100))}
                     onChange={(e) => setAdjustment((p) => ({ ...p, total_value_adjustment: e.target.value }))}
-                    placeholder={formatCurrency((totalBaseValue || baseMarketValue || 0) * (totalAdjustment / 100))}
+                    placeholder={formatCurrency((totalBaseValue || baseMarketValue || 0) * (agriculturalTotalAdjustment / 100))}
                     style={{ textAlign: 'right', fontWeight: 'bold', border: 'none', background: 'transparent' }}
                   />
                 </td>
