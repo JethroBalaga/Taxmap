@@ -10,7 +10,8 @@ import {
   IonButtons
 } from "@ionic/react";
 import { documentOutline, close } from "ionicons/icons";
-import html2pdf from "html2pdf.js";
+import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
 import { getLandAdjustmentData, LandAdjustmentData } from '../../utils/landAdjustmentLocalStorage';
 import { getSubclassById, SubclassData } from '../../utils/subclassLocalStorage';
 import "../../CSS/LandFaasBackModal.css";
@@ -28,7 +29,7 @@ interface LandFaasBackModalProps {
   subclassRates?: any[];
 }
 
-const LandFaasBackModal: React.FC<LandFaasBackModalProps> = ({ 
+const LandFaasBackModal: React.FC<LandFaasBackModalProps> = ({
   isOpen,
   onClose,
   landData,
@@ -86,7 +87,7 @@ const LandFaasBackModal: React.FC<LandFaasBackModalProps> = ({
         console.error('Error loading data:', error);
       }
     };
-    
+
     loadData();
   }, [formData?.subclass]);
 
@@ -103,36 +104,76 @@ const LandFaasBackModal: React.FC<LandFaasBackModalProps> = ({
 
   const generatePdf = async () => {
     const element = document.getElementById("land-faas-back-sheet");
-    if (!element) return;
+    if (!element) {
+      console.error("PDF element not found");
+      return;
+    }
 
-    const opt: any = {
-      margin: [4, 6, 4, 6],
-      filename: "LandFaasBack.pdf",
-      image: { type: "jpeg", quality: 0.98 },
-      html2canvas: { 
-        scale: 2, 
+    try {
+      // Add a small delay to ensure DOM is ready
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      const canvas = await html2canvas(element, {
+        scale: 2,
         useCORS: true,
         backgroundColor: '#ffffff',
         logging: false,
-        allowTaint: true,
-        letterRendering: true
-      },
-      jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-    };
+        allowTaint: false,
+        width: element.scrollWidth,
+        height: element.scrollHeight,
+        onclone: function (clonedDoc) {
+          // Ensure all inputs show their values in the cloned document
+          const inputs = clonedDoc.querySelectorAll('input');
+          inputs.forEach(input => {
+            // Make sure input values are visible in the PDF
+            input.style.backgroundColor = 'transparent';
+            input.style.border = 'none';
+          });
+        }
+      });
 
-    try {
-      await new Promise(resolve => setTimeout(resolve, 100));
-      const worker = (html2pdf as any)().set(opt).from(element);
-      const blob: Blob = await worker.outputPdf("blob");
-      const url = URL.createObjectURL(blob);
-      window.open(url, "_blank");
+      const imgData = canvas.toDataURL('image/jpeg', 0.98);
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const imgWidth = 210; // A4 width in mm
+      const pageHeight = 295; // A4 height in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      // Add first page
+      pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      // Add additional pages if content is longer than one page
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      // For Android devices
+      if ((window as any).cordova || (window as any).Capacitor?.isNativePlatform()) {
+        // For Android - open in system viewer
+        const pdfBlob = pdf.output('blob');
+        const pdfUrl = URL.createObjectURL(pdfBlob);
+
+        // Try to open in a new window/system viewer
+        const newWindow = window.open(pdfUrl, '_blank');
+        if (!newWindow) {
+          // Fallback: trigger download
+          pdf.save('LandFaasBack.pdf');
+        }
+      } else {
+        // For web browsers - direct download
+        pdf.save('LandFaasBack.pdf');
+      }
     } catch (err) {
       console.error("PDF generation failed", err);
-      alert("PDF generation failed — check console.");
+      alert("PDF generation failed. Please try again.");
     }
   };
-
   // Calculate agricultural adjustments
   const calculateAgriculturalAdjustments = () => {
     if (!agriculturalData) return { totalAdjustment: 0, adjustments: [] };
@@ -140,9 +181,9 @@ const LandFaasBackModal: React.FC<LandFaasBackModalProps> = ({
     const frontage = parseFloat(agriculturalData.frontage) || 0;
     const weatherRoad = parseFloat(agriculturalData.weather_road) || 0;
     const market = parseFloat(agriculturalData.market) || 0;
-    
+
     const totalAdjustment = frontage + weatherRoad + market;
-    
+
     const adjustments = [
       { description: "Frontage", value: frontage },
       { description: "Weather Road", value: weatherRoad },
@@ -161,7 +202,7 @@ const LandFaasBackModal: React.FC<LandFaasBackModalProps> = ({
     subclassRates.forEach(rate => {
       totalBaseValue += parseFloat(rate.base_market_value) || 0;
       totalAdjustedValue += parseFloat(rate.adjustment_market_value) || 0;
-      
+
       const ratePercent = rate.assessment_level || '0';
       const assessmentRate = parseFloat(ratePercent.replace('%', '')) / 100;
       const assessedValue = (parseFloat(rate.adjustment_market_value) || 0) * assessmentRate;
@@ -172,12 +213,15 @@ const LandFaasBackModal: React.FC<LandFaasBackModalProps> = ({
   };
 
   // Format currency values
-  const formatCurrency = (value: number) => `₱${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const formatCurrency = (value: number) => {
+    if (isNaN(value)) return '₱0.00';
+    return `₱${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  };
 
   // Safe number formatting for rates
   const formatRate = (rate: any) => {
     if (!rate) return '0.0000';
-    
+
     try {
       const numRate = typeof rate === 'string' ? parseFloat(rate) : rate;
       if (isNaN(numRate)) return '0.0000';
@@ -187,10 +231,10 @@ const LandFaasBackModal: React.FC<LandFaasBackModalProps> = ({
     }
   };
 
-  // FIX: Function to properly format adjustment factor without double percent signs
+  // Function to properly format adjustment factor without double percent signs
   const formatAdjustmentFactor = (factor: any) => {
     if (!factor) return '0%';
-    
+
     try {
       const factorStr = String(factor);
       // If it already ends with %, return as is
@@ -210,8 +254,8 @@ const LandFaasBackModal: React.FC<LandFaasBackModalProps> = ({
   const { totalBaseValue, totalAdjustedValue, totalAssessedValue } = calculateSubclassTotals();
 
   // Calculate assessment value
-  const assessmentValue = totalAssessedValue > 0 ? totalAssessedValue : 
-    (assessmentLevel ? marketValue * (parseFloat(assessmentLevel.rate_percent.replace('%', '')) / 100) : 0);
+  const assessmentValue = totalAssessedValue > 0 ? totalAssessedValue :
+    (assessmentLevel ? marketValue * (parseFloat(assessmentLevel.rate_percent?.replace('%', '') || '0') / 100) : 0);
 
   // Calculate total rows needed for VALUE ADJUSTMENT section
   const totalAdjustmentRows = Math.max(
@@ -230,7 +274,8 @@ const LandFaasBackModal: React.FC<LandFaasBackModalProps> = ({
           <IonTitle>Land FAAS - BACK PAGE</IonTitle>
           <IonButtons slot="end">
             <IonButton onClick={generatePdf} className="generate-pdf-btn">
-              <IonIcon icon={documentOutline} /> &nbsp; Generate PDF
+              <IonIcon icon={documentOutline} slot="start" />
+              Generate PDF
             </IonButton>
             <IonButton onClick={onClose}>
               <IonIcon icon={close} />
@@ -238,7 +283,7 @@ const LandFaasBackModal: React.FC<LandFaasBackModalProps> = ({
           </IonButtons>
         </IonToolbar>
       </IonHeader>
-      
+
       <IonContent>
         <div id="land-faas-back-sheet" className="sheet">
           {/* SUBCLASS BREAKDOWN */}
@@ -260,7 +305,7 @@ const LandFaasBackModal: React.FC<LandFaasBackModalProps> = ({
                     const area = formData?.area || 0;
                     const baseMarketValue = parseFloat(rate.base_market_value) || 0;
                     const adjustedMarketValue = parseFloat(rate.adjustment_market_value) || 0;
-                    
+
                     return (
                       <tr key={index}>
                         <td>
@@ -424,51 +469,51 @@ const LandFaasBackModal: React.FC<LandFaasBackModalProps> = ({
                   </tr>
                 );
               })}
-              
+
               {/* Empty rows to ensure minimum 5 rows total */}
               {Array.from({ length: Math.max(0, totalAdjustmentRows - ((landAdjustments?.length || 0) + (agriculturalAdjustments?.length || 0))) }).map((_, index) => {
                 const emptyIndex = index + (landAdjustments?.length || 0) + (agriculturalAdjustments?.length || 0);
                 return (
                   <tr key={`empty-${emptyIndex}`}>
                     <td>
-                      <input 
-                        value={adjustment[`empty_base_${emptyIndex}`] || ""} 
-                        onChange={(e) => setAdjustment((p) => ({ ...p, [`empty_base_${emptyIndex}`]: e.target.value }))} 
+                      <input
+                        value={adjustment[`empty_base_${emptyIndex}`] || ""}
+                        onChange={(e) => setAdjustment((p) => ({ ...p, [`empty_base_${emptyIndex}`]: e.target.value }))}
                         placeholder="Enter base value"
                       />
                     </td>
                     <td>
-                      <input 
-                        value={adjustment[`empty_factor_${emptyIndex}`] || ""} 
-                        onChange={(e) => setAdjustment((p) => ({ ...p, [`empty_factor_${emptyIndex}`]: e.target.value }))} 
+                      <input
+                        value={adjustment[`empty_factor_${emptyIndex}`] || ""}
+                        onChange={(e) => setAdjustment((p) => ({ ...p, [`empty_factor_${emptyIndex}`]: e.target.value }))}
                         placeholder="Enter factor"
                       />
                     </td>
                     <td>
-                      <input 
-                        value={adjustment[`empty_percent_${emptyIndex}`] || ""} 
-                        onChange={(e) => setAdjustment((p) => ({ ...p, [`empty_percent_${emptyIndex}`]: e.target.value }))} 
+                      <input
+                        value={adjustment[`empty_percent_${emptyIndex}`] || ""}
+                        onChange={(e) => setAdjustment((p) => ({ ...p, [`empty_percent_${emptyIndex}`]: e.target.value }))}
                         placeholder="Enter percent"
                       />
                     </td>
                     <td>
-                      <input 
-                        value={adjustment[`empty_value_${emptyIndex}`] || ""} 
-                        onChange={(e) => setAdjustment((p) => ({ ...p, [`empty_value_${emptyIndex}`]: e.target.value }))} 
+                      <input
+                        value={adjustment[`empty_value_${emptyIndex}`] || ""}
+                        onChange={(e) => setAdjustment((p) => ({ ...p, [`empty_value_${emptyIndex}`]: e.target.value }))}
                         placeholder="Enter value adjustment"
                       />
                     </td>
                     <td>
-                      <input 
-                        value={adjustment[`empty_market_${emptyIndex}`] || ""} 
-                        onChange={(e) => setAdjustment((p) => ({ ...p, [`empty_market_${emptyIndex}`]: e.target.value }))} 
+                      <input
+                        value={adjustment[`empty_market_${emptyIndex}`] || ""}
+                        onChange={(e) => setAdjustment((p) => ({ ...p, [`empty_market_${emptyIndex}`]: e.target.value }))}
                         placeholder="Enter market value"
                       />
                     </td>
                   </tr>
                 );
               })}
-              
+
               <tr className="subtotal-row">
                 <td style={{ textAlign: 'right', fontWeight: 'bold' }}>
                   <input
@@ -578,9 +623,9 @@ const LandFaasBackModal: React.FC<LandFaasBackModalProps> = ({
 
           <div className="tax-row">
             <label>
-              Taxable 
-              <input 
-                type="checkbox" 
+              Taxable
+              <input
+                type="checkbox"
                 checked={isTaxable}
                 onChange={(e) => {
                   setIsTaxable(e.target.checked);
@@ -589,9 +634,9 @@ const LandFaasBackModal: React.FC<LandFaasBackModalProps> = ({
               />
             </label>
             <label>
-              Exempt 
-              <input 
-                type="checkbox" 
+              Exempt
+              <input
+                type="checkbox"
                 checked={isExempt}
                 onChange={(e) => {
                   setIsExempt(e.target.checked);
@@ -600,7 +645,7 @@ const LandFaasBackModal: React.FC<LandFaasBackModalProps> = ({
               />
             </label>
             <div className="effectivity">
-              Effectivity of Assessment: 
+              Effectivity of Assessment:
               <input
                 value={assessment[`current_quarter`] || currentQuarter}
                 onChange={(e) => setAssessment((p) => ({ ...p, current_quarter: e.target.value }))}
@@ -653,14 +698,14 @@ const LandFaasBackModal: React.FC<LandFaasBackModalProps> = ({
           {/* MEMORANDA */}
           <div className="memoranda">
             MEMORANDA:<br />
-            Date of Entry in the Record of Assessment 
+            Date of Entry in the Record of Assessment
             <input
               value={memoranda.dateOfEntry}
               onChange={(e) => setMemoranda((p) => ({ ...p, dateOfEntry: e.target.value }))}
               placeholder="______"
               style={{ width: '80px', margin: '0 5px', textAlign: 'center' }}
             />
-            By: 
+            By:
             <input
               value={memoranda.enteredBy}
               onChange={(e) => setMemoranda((p) => ({ ...p, enteredBy: e.target.value }))}
@@ -771,7 +816,7 @@ const LandFaasBackModal: React.FC<LandFaasBackModalProps> = ({
           </table>
 
           <div className="powered">
-            Powered by: 
+            Powered by:
             <input
               value={assessment[`powered_by`] || "SPIDC"}
               onChange={(e) => setAssessment((p) => ({ ...p, powered_by: e.target.value }))}

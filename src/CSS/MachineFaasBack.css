@@ -10,12 +10,19 @@
   font-family: Arial, sans-serif;
   font-size: 10px;
   line-height: 1.2;
+  -webkit-print-color-adjust: exact !important;
+  print-color-adjust: exact !important;
+  color-adjust: exact !important;
 }
 
 .section-header {
   font-size: 10px;
   font-weight: bold;
   margin-top: 6px;
+  background-color: #f0f0f0;
+  padding: 4px;
+  text-align: center;
+  border: 1px solid #000;
 }
 
 .table {
@@ -23,6 +30,7 @@
   border-collapse: collapse;
   margin-top: 4px;
   table-layout: fixed;
+  border: 1px solid #000;
 }
 
 .table th,
@@ -34,35 +42,36 @@
   height: 18px;
   overflow: hidden;
   word-wrap: break-word;
+  box-sizing: border-box;
 }
 
 /* Set specific column widths for better PDF layout */
 .appraisal-table th:nth-child(1),
-.appraisal-table td:nth-child(1) { width: 20%; } /* Description */
+.appraisal-table td:nth-child(1) { width: 20%; }
 .appraisal-table th:nth-child(2),
-.appraisal-table td:nth-child(2) { width: 12%; } /* Type */
+.appraisal-table td:nth-child(2) { width: 12%; }
 .appraisal-table th:nth-child(3),
-.appraisal-table td:nth-child(3) { width: 8%; }  /* Units */
+.appraisal-table td:nth-child(3) { width: 8%; }
 .appraisal-table th:nth-child(4),
-.appraisal-table td:nth-child(4) { width: 12%; } /* Unit Value */
+.appraisal-table td:nth-child(4) { width: 12%; }
 .appraisal-table th:nth-child(5),
-.appraisal-table td:nth-child(5) { width: 14%; } /* Base Market Value */
+.appraisal-table td:nth-child(5) { width: 14%; }
 .appraisal-table th:nth-child(6),
-.appraisal-table td:nth-child(6) { width: 8%; }  /* % Depn */
+.appraisal-table td:nth-child(6) { width: 8%; }
 .appraisal-table th:nth-child(7),
-.appraisal-table td:nth-child(7) { width: 14%; } /* Depreciation Cost */
+.appraisal-table td:nth-child(7) { width: 14%; }
 .appraisal-table th:nth-child(8),
-.appraisal-table td:nth-child(8) { width: 12%; } /* Market Value */
+.appraisal-table td:nth-child(8) { width: 12%; }
 
 /* Assessment table column widths */
 .assessment-table th:nth-child(1),
-.assessment-table td:nth-child(1) { width: 25%; } /* Actual Use */
+.assessment-table td:nth-child(1) { width: 25%; }
 .assessment-table th:nth-child(2),
-.assessment-table td:nth-child(2) { width: 25%; } /* Adjusted Market Value */
+.assessment-table td:nth-child(2) { width: 25%; }
 .assessment-table th:nth-child(3),
-.assessment-table td:nth-child(3) { width: 25%; } /* Assessment Level */
+.assessment-table td:nth-child(3) { width: 25%; }
 .assessment-table th:nth-child(4),
-.assessment-table td:nth-child(4) { width: 25%; } /* Assessment Value */
+.assessment-table td:nth-child(4) { width: 25%; }
 
 .table input {
   width: 100%;
@@ -73,11 +82,19 @@
   line-height: 1.1;
   height: 16px;
   box-sizing: border-box;
+  background-color: transparent;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+
+.table input:focus {
+  background-color: #f0f8ff;
 }
 
 .subtotal-row td {
   font-weight: bold;
-  background-color: #eee;
+  background-color: #e6f3ff;
   font-size: 9px;
 }
 
@@ -87,6 +104,20 @@
   gap: 10px;
   align-items: center;
   font-size: 10px;
+  flex-wrap: wrap;
+}
+
+.tax-row label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: bold;
+}
+
+.tax-row input[type="checkbox"] {
+  width: 12px;
+  height: 12px;
+  accent-color: #2c5aa0;
 }
 
 .signature-container {
@@ -100,23 +131,29 @@
   border-bottom: 1px solid #000;
   width: 150px;
   height: 16px;
+  margin-top: 5px;
 }
 
 .prov {
   font-size: 9px;
   text-align: center;
+  margin-top: 3px;
 }
 
 .memoranda {
   margin-top: 20px;
   font-size: 9px;
   line-height: 1.2;
+  border-top: 1px solid #000;
+  padding-top: 5px;
 }
 
 .powered {
   margin-top: 5px;
   font-size: 8px;
   text-align: right;
+  font-weight: bold;
+  color: #2c5aa0;
 }
 
 /* Combined totals table specific styling */
@@ -137,11 +174,11 @@
 
 /* Generate PDF Button Styling - BLUE BUTTON */
 .generate-pdf-btn {
-  --background: #2c5aa0 !important; /* Blue background */
-  --background-hover: #1e3f7a !important; /* Darker blue on hover */
+  --background: #2c5aa0 !important;
+  --background-hover: #1e3f7a !important;
   --background-activated: #1e3f7a !important;
   --background-focused: #1e3f7a !important;
-  --color: white !important; /* White text */
+  --color: white !important;
   --border-color: #1e3f7a !important;
   --border-radius: 8px !important;
   --padding-start: 12px !important;
@@ -158,4 +195,50 @@
 .generate-pdf-btn:active {
   --background: #16325c !important;
   transform: translateY(0);
+}
+
+/* Android-specific optimizations */
+@media screen and (max-width: 768px) {
+  .sheet {
+    padding: 4mm;
+    font-size: 9px;
+  }
+  
+  .table th,
+  .table td {
+    font-size: 8px;
+    padding: 1px;
+  }
+  
+  .table input {
+    font-size: 8px;
+  }
+  
+  .tax-row {
+    font-size: 9px;
+  }
+  
+  .signature-container {
+    flex-direction: column;
+    gap: 15px;
+    align-items: center;
+  }
+}
+
+/* Print styles for PDF generation */
+@media print {
+  .sheet {
+    padding: 0;
+    margin: 0;
+    width: 100% !important;
+  }
+  
+  .table input {
+    border: none !important;
+    background: transparent !important;
+  }
+  
+  .subtotal-row td {
+    background-color: #e6f3ff !important;
+  }
 }

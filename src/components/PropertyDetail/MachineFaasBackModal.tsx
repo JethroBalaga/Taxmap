@@ -10,7 +10,8 @@ import {
   IonButtons
 } from "@ionic/react";
 import { documentOutline, close } from "ionicons/icons";
-import html2pdf from "html2pdf.js";
+import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
 import "../../CSS/MachineFaasBack.css";
 
 const ROW_ITEMS = 10;
@@ -62,37 +63,76 @@ const MachineFaasBackModal: React.FC<MachineFaasBackModalProps> = ({
     }
   }, [assessmentLevel]);
 
+  // Android-compatible PDF generation
   const generatePdf = async () => {
     const element = document.getElementById("machine-faas-back-sheet");
-    if (!element) return;
+    if (!element) {
+      console.error("PDF element not found");
+      return;
+    }
 
-    const opt: any = {
-      margin: [4, 6, 4, 6],
-      filename: "MachineFaasBack.pdf",
-      image: { type: "jpeg", quality: 0.98 },
-      html2canvas: { 
-        scale: 2, 
+    try {
+      // Add a small delay to ensure DOM is ready
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      const canvas = await html2canvas(element, {
+        scale: 2,
         useCORS: true,
         backgroundColor: '#ffffff',
         logging: false,
-        allowTaint: true,
-        letterRendering: true
-      },
-      jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-    };
+        allowTaint: false,
+        width: element.scrollWidth,
+        height: element.scrollHeight,
+        onclone: function(clonedDoc) {
+          // Ensure all inputs show their values in the cloned document
+          const inputs = clonedDoc.querySelectorAll('input');
+          inputs.forEach(input => {
+            input.style.backgroundColor = 'transparent';
+            input.style.border = 'none';
+          });
+        }
+      });
 
-    try {
-      // Force a small delay to ensure styles are loaded
-      await new Promise(resolve => setTimeout(resolve, 100));
+      const imgData = canvas.toDataURL('image/jpeg', 0.98);
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const imgWidth = 210; // A4 width in mm
+      const pageHeight = 295; // A4 height in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
       
-      const worker = (html2pdf as any)().set(opt).from(element);
-      const blob: Blob = await worker.outputPdf("blob");
-      const url = URL.createObjectURL(blob);
-      window.open(url, "_blank");
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      // Add first page
+      pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      // Add additional pages if content is longer than one page
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      // For Android devices
+      if ((window as any).cordova || (window as any).Capacitor?.isNativePlatform()) {
+        // For Android - open in system viewer
+        const pdfBlob = pdf.output('blob');
+        const pdfUrl = URL.createObjectURL(pdfBlob);
+        
+        // Try to open in a new window/system viewer
+        const newWindow = window.open(pdfUrl, '_blank');
+        if (!newWindow) {
+          // Fallback: trigger download
+          pdf.save('MachineFaasBack.pdf');
+        }
+      } else {
+        // For web browsers - direct download
+        pdf.save('MachineFaasBack.pdf');
+      }
     } catch (err) {
       console.error("PDF generation failed", err);
-      alert("PDF generation failed — check console.");
+      alert("PDF generation failed. Please try again.");
     }
   };
 
@@ -100,7 +140,10 @@ const MachineFaasBackModal: React.FC<MachineFaasBackModalProps> = ({
   const machineDescription = machineData?.machineDescription || machineData?.selectedEquipment || 'N/A';
   
   // Format currency values
-  const formatCurrency = (value: number) => `₱${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const formatCurrency = (value: number) => {
+    if (isNaN(value)) return '₱0.00';
+    return `₱${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  };
 
   // Calculate values from machine data
   const totalBaseValue = baseMarketValue || 0;
@@ -141,7 +184,8 @@ const MachineFaasBackModal: React.FC<MachineFaasBackModalProps> = ({
           <IonTitle>Machinery FAAS - BACK PAGE</IonTitle>
           <IonButtons slot="end">
             <IonButton onClick={generatePdf} className="generate-pdf-btn">
-              <IonIcon icon={documentOutline} /> &nbsp; Generate PDF
+              <IonIcon icon={documentOutline} slot="start" />
+              Generate PDF
             </IonButton>
             <IonButton onClick={onClose}>
               <IonIcon icon={close} />

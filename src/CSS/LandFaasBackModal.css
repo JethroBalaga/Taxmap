@@ -1,3 +1,4 @@
+/* LandFaasBackModal.css */
 .sheet {
   width: 100%;
   background: white;
@@ -5,14 +6,15 @@
   font-family: Arial, sans-serif;
   font-size: 10px;
   line-height: 1.2;
+  box-sizing: border-box;
 }
 
 .section-header {
   font-size: 10px;
   font-weight: bold;
   margin-top: 6px;
-  color: #000000; /* Changed to black */
-  background-color: transparent; /* Remove background color */
+  color: #000000;
+  background-color: transparent;
   padding: 3px 5px;
   border: 1px solid #1e3f7a;
   text-align: center;
@@ -36,6 +38,7 @@
   overflow: hidden;
   word-wrap: break-word;
   color: #000;
+  box-sizing: border-box;
 }
 
 /* Column widths for adjustment table */
@@ -64,6 +67,18 @@
 .superseded-table td:nth-child(odd) { width: 25%; }
 .superseded-table td:nth-child(even) { width: 25%; }
 
+/* Subclass Table Styles */
+.subclass-table th:nth-child(1),
+.subclass-table td:nth-child(1) { width: 25%; }
+.subclass-table th:nth-child(2),
+.subclass-table td:nth-child(2) { width: 15%; }
+.subclass-table th:nth-child(3),
+.subclass-table td:nth-child(3) { width: 15%; }
+.subclass-table th:nth-child(4),
+.subclass-table td:nth-child(4) { width: 22.5%; }
+.subclass-table th:nth-child(5),
+.subclass-table td:nth-child(5) { width: 22.5%; }
+
 .table input {
   width: 100%;
   border: none;
@@ -75,11 +90,18 @@
   box-sizing: border-box;
   background-color: transparent;
   color: #000;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+
+.table input:focus {
+  background-color: #f0f8ff;
 }
 
 .subtotal-row td {
   font-weight: bold;
-  background-color: transparent; /* Remove blue background */
+  background-color: transparent;
   font-size: 9px;
   color: #000;
 }
@@ -91,6 +113,7 @@
   align-items: center;
   font-size: 10px;
   color: #000;
+  flex-wrap: wrap;
 }
 
 .tax-row label {
@@ -150,7 +173,7 @@
 .table th {
   font-size: 9px;
   font-weight: bold;
-  background-color: transparent; /* Remove skyblue background */
+  background-color: transparent;
   padding: 3px 2px;
   text-align: center;
   color: #000;
@@ -180,14 +203,38 @@
   --background: #16325c !important;
   transform: translateY(0);
 }
-/* Subclass Table Styles */
-.subclass-table th:nth-child(1),
-.subclass-table td:nth-child(1) { width: 25%; }
-.subclass-table th:nth-child(2),
-.subclass-table td:nth-child(2) { width: 15%; }
-.subclass-table th:nth-child(3),
-.subclass-table td:nth-child(3) { width: 15%; }
-.subclass-table th:nth-child(4),
-.subclass-table td:nth-child(4) { width: 22.5%; }
-.subclass-table th:nth-child(5),
-.subclass-table td:nth-child(5) { width: 22.5%; }
+
+/* Android-specific optimizations */
+@media screen and (max-width: 768px) {
+  .sheet {
+    padding: 4mm;
+    font-size: 9px;
+  }
+  
+  .table th,
+  .table td {
+    font-size: 8px;
+    padding: 1px;
+  }
+  
+  .table input {
+    font-size: 8px;
+  }
+  
+  .tax-row {
+    font-size: 9px;
+  }
+}
+
+/* Print styles for PDF generation */
+@media print {
+  .sheet {
+    padding: 0;
+    margin: 0;
+  }
+  
+  .table input {
+    border: none !important;
+    background: transparent !important;
+  }
+}
