@@ -1,4 +1,3 @@
-/* LandFaasBackModal.css */
 .sheet {
   width: 100%;
   background: white;
@@ -6,7 +5,6 @@
   font-family: Arial, sans-serif;
   font-size: 10px;
   line-height: 1.2;
-  box-sizing: border-box;
 }
 
 .section-header {
@@ -38,10 +36,9 @@
   overflow: hidden;
   word-wrap: break-word;
   color: #000;
-  box-sizing: border-box;
 }
 
-/* Column widths for adjustment table */
+/* Your original column widths and styles */
 .adjustment-table th:nth-child(1),
 .adjustment-table td:nth-child(1) { width: 20%; }
 .adjustment-table th:nth-child(2),
@@ -53,7 +50,6 @@
 .adjustment-table th:nth-child(5),
 .adjustment-table td:nth-child(5) { width: 20%; }
 
-/* Column widths for assessment table */
 .assessment-table th:nth-child(1),
 .assessment-table td:nth-child(1) { width: 25%; }
 .assessment-table th:nth-child(2),
@@ -63,11 +59,9 @@
 .assessment-table th:nth-child(4),
 .assessment-table td:nth-child(4) { width: 25%; }
 
-/* Column widths for superseded table */
 .superseded-table td:nth-child(odd) { width: 25%; }
 .superseded-table td:nth-child(even) { width: 25%; }
 
-/* Subclass Table Styles */
 .subclass-table th:nth-child(1),
 .subclass-table td:nth-child(1) { width: 25%; }
 .subclass-table th:nth-child(2),
@@ -90,20 +84,12 @@
   box-sizing: border-box;
   background-color: transparent;
   color: #000;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  appearance: none;
-}
-
-.table input:focus {
-  background-color: #f0f8ff;
 }
 
 .subtotal-row td {
   font-weight: bold;
   background-color: transparent;
   font-size: 9px;
-  color: #000;
 }
 
 .tax-row {
@@ -113,7 +99,6 @@
   align-items: center;
   font-size: 10px;
   color: #000;
-  flex-wrap: wrap;
 }
 
 .tax-row label {
@@ -169,7 +154,6 @@
   font-weight: bold;
 }
 
-/* Make sure table headers are readable but compact */
 .table th {
   font-size: 9px;
   font-weight: bold;
@@ -179,7 +163,6 @@
   color: #000;
 }
 
-/* Generate PDF Button Styling - BLUE BUTTON */
 .generate-pdf-btn {
   --background: #2c5aa0 !important;
   --background-hover: #1e3f7a !important;
@@ -202,39 +185,4 @@
 .generate-pdf-btn:active {
   --background: #16325c !important;
   transform: translateY(0);
-}
-
-/* Android-specific optimizations */
-@media screen and (max-width: 768px) {
-  .sheet {
-    padding: 4mm;
-    font-size: 9px;
-  }
-  
-  .table th,
-  .table td {
-    font-size: 8px;
-    padding: 1px;
-  }
-  
-  .table input {
-    font-size: 8px;
-  }
-  
-  .tax-row {
-    font-size: 9px;
-  }
-}
-
-/* Print styles for PDF generation */
-@media print {
-  .sheet {
-    padding: 0;
-    margin: 0;
-  }
-  
-  .table input {
-    border: none !important;
-    background: transparent !important;
-  }
 }
