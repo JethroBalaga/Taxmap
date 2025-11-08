@@ -12,6 +12,7 @@ import {
 import { documentOutline, close } from "ionicons/icons";
 import html2pdf from "html2pdf.js";
 import { getLandAdjustmentData, LandAdjustmentData } from '../../utils/landAdjustmentLocalStorage';
+import { getSubclassById, SubclassData } from '../../utils/subclassLocalStorage';
 import "../../CSS/LandFaasBackModal.css";
 
 interface LandFaasBackModalProps {
@@ -32,9 +33,9 @@ const LandFaasBackModal: React.FC<LandFaasBackModalProps> = ({
   onClose,
   landData,
   formData,
-  baseMarketValue,
+  baseMarketValue = 0,
   landAdjustments = [],
-  adjustedMarketValue,
+  adjustedMarketValue = 0,
   assessmentLevel,
   agriculturalData,
   subclassRates = []
@@ -43,6 +44,7 @@ const LandFaasBackModal: React.FC<LandFaasBackModalProps> = ({
   const [assessment, setAssessment] = useState<Record<string, string>>({});
   const [superseded, setSuperseded] = useState<Record<string, string>>({});
   const [landAdjustmentData, setLandAdjustmentData] = useState<LandAdjustmentData[]>([]);
+  const [subclassData, setSubclassData] = useState<SubclassData | null>(null);
   const [isTaxable, setIsTaxable] = useState<boolean>(false);
   const [isExempt, setIsExempt] = useState<boolean>(false);
   const [currentQuarter, setCurrentQuarter] = useState<string>("1");
@@ -52,7 +54,7 @@ const LandFaasBackModal: React.FC<LandFaasBackModalProps> = ({
     enteredBy: ""
   });
 
-  // Get current quarter and year - ALWAYS SET QUARTER TO 1
+  // Get current quarter and year
   useEffect(() => {
     const now = new Date();
     const year = now.getFullYear();
@@ -60,16 +62,33 @@ const LandFaasBackModal: React.FC<LandFaasBackModalProps> = ({
     setCurrentYear(year.toString());
   }, []);
 
-  // Load land adjustment data
+  // Load land adjustment data AND subclass data
   useEffect(() => {
-    const loadLandAdjustmentData = async () => {
-      const data = await getLandAdjustmentData();
-      if (data) {
-        setLandAdjustmentData(data);
+    const loadData = async () => {
+      try {
+        // Load land adjustments
+        const adjustments = await getLandAdjustmentData();
+        if (adjustments) {
+          setLandAdjustmentData(adjustments);
+        }
+
+        // Load subclass data using the subclass ID from formData
+        if (formData?.subclass) {
+          const subclass = await getSubclassById(formData.subclass);
+          if (subclass) {
+            setSubclassData(subclass);
+            console.log('Loaded subclass data:', subclass);
+          } else {
+            console.warn('No subclass found for ID:', formData.subclass);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading data:', error);
       }
     };
-    loadLandAdjustmentData();
-  }, []);
+    
+    loadData();
+  }, [formData?.subclass]);
 
   // Set taxable checkbox based on assessment level
   useEffect(() => {
@@ -140,12 +159,12 @@ const LandFaasBackModal: React.FC<LandFaasBackModalProps> = ({
     let totalAssessedValue = 0;
 
     subclassRates.forEach(rate => {
-      totalBaseValue += rate.baseMarketValue || 0;
-      totalAdjustedValue += rate.adjustedMarketValue || 0;
+      totalBaseValue += parseFloat(rate.base_market_value) || 0;
+      totalAdjustedValue += parseFloat(rate.adjustment_market_value) || 0;
       
-      const ratePercent = rate.assessmentLevel?.rate_percent || '0';
+      const ratePercent = rate.assessment_level || '0';
       const assessmentRate = parseFloat(ratePercent.replace('%', '')) / 100;
-      const assessedValue = rate.adjustedMarketValue ? rate.adjustedMarketValue * assessmentRate : 0;
+      const assessedValue = (parseFloat(rate.adjustment_market_value) || 0) * assessmentRate;
       totalAssessedValue += assessedValue;
     });
 
@@ -155,6 +174,36 @@ const LandFaasBackModal: React.FC<LandFaasBackModalProps> = ({
   // Format currency values
   const formatCurrency = (value: number) => `₱${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
+  // Safe number formatting for rates
+  const formatRate = (rate: any) => {
+    if (!rate) return '0.0000';
+    
+    try {
+      const numRate = typeof rate === 'string' ? parseFloat(rate) : rate;
+      if (isNaN(numRate)) return '0.0000';
+      return numRate.toFixed(4);
+    } catch (error) {
+      return '0.0000';
+    }
+  };
+
+  // FIX: Function to properly format adjustment factor without double percent signs
+  const formatAdjustmentFactor = (factor: any) => {
+    if (!factor) return '0%';
+    
+    try {
+      const factorStr = String(factor);
+      // If it already ends with %, return as is
+      if (factorStr.endsWith('%')) {
+        return factorStr;
+      }
+      // Otherwise, add % sign
+      return `${factorStr}%`;
+    } catch (error) {
+      return '0%';
+    }
+  };
+
   const actualUse = formData?.actualUse || landData?.actual_use || 'N/A';
   const marketValue = adjustedMarketValue || baseMarketValue || 0;
   const { totalAdjustment, adjustments: agriculturalAdjustments } = calculateAgriculturalAdjustments();
@@ -163,6 +212,12 @@ const LandFaasBackModal: React.FC<LandFaasBackModalProps> = ({
   // Calculate assessment value
   const assessmentValue = totalAssessedValue > 0 ? totalAssessedValue : 
     (assessmentLevel ? marketValue * (parseFloat(assessmentLevel.rate_percent.replace('%', '')) / 100) : 0);
+
+  // Calculate total rows needed for VALUE ADJUSTMENT section
+  const totalAdjustmentRows = Math.max(
+    (landAdjustments?.length || 0),
+    5 // Minimum 5 rows
+  );
 
   return (
     <IonModal
@@ -203,20 +258,23 @@ const LandFaasBackModal: React.FC<LandFaasBackModalProps> = ({
                 <tbody>
                   {subclassRates.map((rate, index) => {
                     const area = formData?.area || 0;
+                    const baseMarketValue = parseFloat(rate.base_market_value) || 0;
+                    const adjustedMarketValue = parseFloat(rate.adjustment_market_value) || 0;
+                    
                     return (
                       <tr key={index}>
                         <td>
                           <input
-                            value={adjustment[`subclass_desc_${index}`] || rate.subclass_description || rate.subclass_id}
+                            value={adjustment[`subclass_desc_${index}`] || subclassData?.subclass || rate.subclass_description || rate.subclass_id || 'N/A'}
                             onChange={(e) => setAdjustment((p) => ({ ...p, [`subclass_desc_${index}`]: e.target.value }))}
-                            placeholder={rate.subclass_description || rate.subclass_id}
+                            placeholder={subclassData?.subclass || rate.subclass_description || rate.subclass_id || 'N/A'}
                           />
                         </td>
                         <td>
                           <input
-                            value={adjustment[`subclass_rate_${index}`] || rate.rate?.toFixed(4) || '0.0000'}
+                            value={adjustment[`subclass_rate_${index}`] || formatRate(rate.rate)}
                             onChange={(e) => setAdjustment((p) => ({ ...p, [`subclass_rate_${index}`]: e.target.value }))}
-                            placeholder={rate.rate?.toFixed(4) || '0.0000'}
+                            placeholder={formatRate(rate.rate)}
                           />
                         </td>
                         <td>
@@ -228,16 +286,16 @@ const LandFaasBackModal: React.FC<LandFaasBackModalProps> = ({
                         </td>
                         <td>
                           <input
-                            value={adjustment[`subclass_base_${index}`] || formatCurrency(rate.baseMarketValue || 0)}
+                            value={adjustment[`subclass_base_${index}`] || formatCurrency(baseMarketValue)}
                             onChange={(e) => setAdjustment((p) => ({ ...p, [`subclass_base_${index}`]: e.target.value }))}
-                            placeholder={formatCurrency(rate.baseMarketValue || 0)}
+                            placeholder={formatCurrency(baseMarketValue)}
                           />
                         </td>
                         <td>
                           <input
-                            value={adjustment[`subclass_adjusted_${index}`] || formatCurrency(rate.adjustedMarketValue || 0)}
+                            value={adjustment[`subclass_adjusted_${index}`] || formatCurrency(adjustedMarketValue)}
                             onChange={(e) => setAdjustment((p) => ({ ...p, [`subclass_adjusted_${index}`]: e.target.value }))}
-                            placeholder={formatCurrency(rate.adjustedMarketValue || 0)}
+                            placeholder={formatCurrency(adjustedMarketValue)}
                           />
                         </td>
                       </tr>
@@ -269,7 +327,7 @@ const LandFaasBackModal: React.FC<LandFaasBackModalProps> = ({
             </>
           )}
 
-          {/* VALUE ADJUSTMENT */}
+          {/* VALUE ADJUSTMENT - UPDATED TO 5 ROWS MINIMUM WITH PERCENT FIX */}
           <div className="section-header">VALUE ADJUSTMENT</div>
           <table className="table adjustment-table">
             <thead>
@@ -282,8 +340,8 @@ const LandFaasBackModal: React.FC<LandFaasBackModalProps> = ({
               </tr>
             </thead>
             <tbody>
-              {/* Agricultural Adjustments */}
-              {agriculturalAdjustments.map((adj, index) => (
+              {/* Non-Agricultural Adjustments */}
+              {landAdjustments && landAdjustments.map((adj, index) => (
                 <tr key={index}>
                   <td>
                     <input
@@ -294,23 +352,23 @@ const LandFaasBackModal: React.FC<LandFaasBackModalProps> = ({
                   </td>
                   <td>
                     <input
-                      value={adjustment[`factor_${index}`] || adj.description}
+                      value={adjustment[`factor_${index}`] || adj.adjustment_type || 'N/A'}
                       onChange={(e) => setAdjustment((p) => ({ ...p, [`factor_${index}`]: e.target.value }))}
-                      placeholder={adj.description}
+                      placeholder={adj.adjustment_type || 'N/A'}
                     />
                   </td>
                   <td>
                     <input
-                      value={adjustment[`percent_${index}`] || `${adj.value}%`}
+                      value={adjustment[`percent_${index}`] || formatAdjustmentFactor(adj.adjustment_factor)}
                       onChange={(e) => setAdjustment((p) => ({ ...p, [`percent_${index}`]: e.target.value }))}
-                      placeholder={`${adj.value}%`}
+                      placeholder={formatAdjustmentFactor(adj.adjustment_factor)}
                     />
                   </td>
                   <td>
                     <input
-                      value={adjustment[`value_adj_${index}`] || formatCurrency((totalBaseValue || baseMarketValue || 0) * (adj.value / 100))}
+                      value={adjustment[`value_adj_${index}`] || formatCurrency(parseFloat(adj.value_adjustment) || 0)}
                       onChange={(e) => setAdjustment((p) => ({ ...p, [`value_adj_${index}`]: e.target.value }))}
-                      placeholder={formatCurrency((totalBaseValue || baseMarketValue || 0) * (adj.value / 100))}
+                      placeholder={formatCurrency(parseFloat(adj.value_adjustment) || 0)}
                     />
                   </td>
                   <td>
@@ -323,48 +381,49 @@ const LandFaasBackModal: React.FC<LandFaasBackModalProps> = ({
                 </tr>
               ))}
               
-              {/* Empty rows if needed */}
-              {agriculturalAdjustments.length < 3 && 
-                Array.from({ length: 3 - agriculturalAdjustments.length }).map((_, index) => (
-                  <tr key={`empty-${index}`}>
+              {/* Empty rows to ensure minimum 5 rows total */}
+              {Array.from({ length: Math.max(0, totalAdjustmentRows - (landAdjustments?.length || 0)) }).map((_, index) => {
+                const emptyIndex = index + (landAdjustments?.length || 0);
+                return (
+                  <tr key={`empty-${emptyIndex}`}>
                     <td>
                       <input 
-                        value={adjustment[`empty_base_${index}`] || ""} 
-                        onChange={(e) => setAdjustment((p) => ({ ...p, [`empty_base_${index}`]: e.target.value }))} 
+                        value={adjustment[`empty_base_${emptyIndex}`] || ""} 
+                        onChange={(e) => setAdjustment((p) => ({ ...p, [`empty_base_${emptyIndex}`]: e.target.value }))} 
                         placeholder="Enter base value"
                       />
                     </td>
                     <td>
                       <input 
-                        value={adjustment[`empty_factor_${index}`] || ""} 
-                        onChange={(e) => setAdjustment((p) => ({ ...p, [`empty_factor_${index}`]: e.target.value }))} 
+                        value={adjustment[`empty_factor_${emptyIndex}`] || ""} 
+                        onChange={(e) => setAdjustment((p) => ({ ...p, [`empty_factor_${emptyIndex}`]: e.target.value }))} 
                         placeholder="Enter factor"
                       />
                     </td>
                     <td>
                       <input 
-                        value={adjustment[`empty_percent_${index}`] || ""} 
-                        onChange={(e) => setAdjustment((p) => ({ ...p, [`empty_percent_${index}`]: e.target.value }))} 
+                        value={adjustment[`empty_percent_${emptyIndex}`] || ""} 
+                        onChange={(e) => setAdjustment((p) => ({ ...p, [`empty_percent_${emptyIndex}`]: e.target.value }))} 
                         placeholder="Enter percent"
                       />
                     </td>
                     <td>
                       <input 
-                        value={adjustment[`empty_value_${index}`] || ""} 
-                        onChange={(e) => setAdjustment((p) => ({ ...p, [`empty_value_${index}`]: e.target.value }))} 
+                        value={adjustment[`empty_value_${emptyIndex}`] || ""} 
+                        onChange={(e) => setAdjustment((p) => ({ ...p, [`empty_value_${emptyIndex}`]: e.target.value }))} 
                         placeholder="Enter value adjustment"
                       />
                     </td>
                     <td>
                       <input 
-                        value={adjustment[`empty_market_${index}`] || ""} 
-                        onChange={(e) => setAdjustment((p) => ({ ...p, [`empty_market_${index}`]: e.target.value }))} 
+                        value={adjustment[`empty_market_${emptyIndex}`] || ""} 
+                        onChange={(e) => setAdjustment((p) => ({ ...p, [`empty_market_${emptyIndex}`]: e.target.value }))} 
                         placeholder="Enter market value"
                       />
                     </td>
                   </tr>
-                ))
-              }
+                );
+              })}
               
               <tr className="subtotal-row">
                 <td style={{ textAlign: 'right', fontWeight: 'bold' }}>

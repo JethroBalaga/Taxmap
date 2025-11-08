@@ -120,7 +120,7 @@ export const useNonAgriLand = (formId: string | undefined) => {
         setShowToast(true);
     };
 
-    // FIXED: Enhanced form data loading with detailed debugging
+    // Enhanced form data loading with detailed debugging
     const loadFormData = async () => {
         if (formId) {
             setIsLoading(true);
@@ -130,7 +130,7 @@ export const useNonAgriLand = (formId: string | undefined) => {
                 // ALWAYS load from localStorage to get the latest data
                 const storedFormData = await FormDataLocalStorage.getFormData(formId);
                 
-                // FIXED: Added detailed debug logging
+                // Added detailed debug logging
                 console.log('🔍 NON-AGRI - Loaded form data:', {
                     id: storedFormData?.id,
                     declarant: storedFormData?.declarant,
@@ -147,7 +147,7 @@ export const useNonAgriLand = (formId: string | undefined) => {
                 
                 setFormData(storedFormData);
 
-                // Check if form was uploaded - NEW CHECK
+                // Check if form was uploaded
                 if (storedFormData?.uploaded) {
                     setIsFormUploaded(true);
                 } else {
@@ -161,7 +161,7 @@ export const useNonAgriLand = (formId: string | undefined) => {
                     return; // Exit early if no form data
                 }
 
-                // FIXED: Check if declarant field exists and log warning if missing
+                // Check if declarant field exists and log warning if missing
                 if (!storedFormData.declarant) {
                     console.warn('⚠️ NON-AGRI - DECLARANT FIELD MISSING in form data:', {
                         formId: storedFormData.id,
@@ -363,6 +363,11 @@ export const useNonAgriLand = (formId: string | undefined) => {
         return strippingInfo;
     }, [strippingInfo]);
 
+    // ADD THIS HANDLER - it will be overridden by the component
+    const handleOpenLandFaas = () => {
+        // This will be implemented in the component
+    };
+
     return {
         // State
         formData,
@@ -405,6 +410,9 @@ export const useNonAgriLand = (formId: string | undefined) => {
         showConfirmation: submission.showConfirmation,
         submitForm: submission.submitForm,
         handleConfirmationDismiss: submission.handleConfirmationDismiss,
+
+        // ADD THE HANDLER FOR LAND FAAS MODAL
+        handleOpenLandFaas,
 
         // Handlers
         handleBack,

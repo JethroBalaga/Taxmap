@@ -1,4 +1,3 @@
-// src/pages/NonAgriLandUI.tsx
 import React from "react";
 import {
     IonCard,
@@ -45,11 +44,14 @@ interface NonAgriLandUIProps {
     setShowReverseDeleteWarning: (show: boolean) => void;
     reverseDeleteWarningMessage: string;
     submitDisabledInfo: { disabled: boolean; reason: string };
-    isFormUploaded: boolean; // NEW PROP
+    isFormUploaded: boolean;
     
     // New state for info modal
     showInfoModal: boolean;
     setShowInfoModal: (show: boolean) => void;
+    
+    // New handler for Land Faas modal
+    handleOpenLandFaas: () => void;
     
     // Handlers
     onSubmit: () => void;
@@ -67,11 +69,11 @@ interface NonAgriLandUIProps {
     setAdjustmentToDelete: (adjustment: any) => void;
 }
 
-// Grid data configuration array - FIXED: Changed declarantId to declarant
+// Grid data configuration array
 const getGridData = (formData: any) => [
     [
         { label: "District:", value: formData?.district || 'N/A' },
-        { label: "Declarant:", value: formData?.declarant || 'N/A' }, // FIXED: declarantId → declarant
+        { label: "Declarant:", value: formData?.declarant || 'N/A' },
         { label: "Kind:", value: formData?.kind || 'N/A' },
         { label: "Classification:", value: formData?.classification || 'N/A' }
     ],
@@ -95,12 +97,11 @@ const getIconComponent = (iconName: string) => {
     }
 };
 
-// Get icon label based on whether adjustment already exists - SIMPLIFIED
+// Get icon label based on whether adjustment already exists
 const getIconLabel = (adjustmentType: string, currentAdjustments: any[], getStrippingInfoProp: any) => {
     if (adjustmentType === 'Stripping') {
         const { nextNumber } = getStrippingInfoProp();
         
-        // ALWAYS show "Add Xth Strip" regardless of existing adjustments
         switch (nextNumber) {
             case 1: return "Add 1st Strip";
             case 2: return "Add 2nd Strip";
@@ -110,7 +111,6 @@ const getIconLabel = (adjustmentType: string, currentAdjustments: any[], getStri
         }
     }
     
-    // For other adjustment types, keep the original logic
     const hasExistingAdjustment = currentAdjustments.some(
         adj => adj.adjustment_type === adjustmentType
     );
@@ -160,11 +160,14 @@ export const NonAgriLandUI: React.FC<NonAgriLandUIProps> = ({
     setShowReverseDeleteWarning,
     reverseDeleteWarningMessage,
     submitDisabledInfo,
-    isFormUploaded, // NEW PROP
+    isFormUploaded,
     
     // New props for info modal
     showInfoModal,
     setShowInfoModal,
+    
+    // New handler for Land Faas modal
+    handleOpenLandFaas,
     
     // Handlers
     onSubmit,
@@ -212,7 +215,7 @@ export const NonAgriLandUI: React.FC<NonAgriLandUIProps> = ({
                 </IonCardContent>
             </IonCard>
 
-            {/* Rate Information Table with Base Market Value, Adjustment Market Value, Assessment Level, and Assessed Value */}
+            {/* Rate Information Table */}
             <IonCard>
                 <IonCardContent>
                     {isLoadingRates ? (
@@ -231,7 +234,7 @@ export const NonAgriLandUI: React.FC<NonAgriLandUIProps> = ({
                 </IonCardContent>
             </IonCard>
 
-            {/* Icons Section - Updated to include information icon */}
+            {/* Icons Section */}
             <div style={{
                 display: 'flex',
                 justifyContent: 'center',
@@ -287,7 +290,7 @@ export const NonAgriLandUI: React.FC<NonAgriLandUIProps> = ({
                     );
                 })}
 
-                {/* Information Icon - Always visible but only enabled when a row is selected */}
+                {/* Information Icon */}
                 <div style={{ textAlign: 'center' }}>
                     <IonIcon
                         icon={getIconComponent(infoIcon.icon)}
@@ -311,7 +314,7 @@ export const NonAgriLandUI: React.FC<NonAgriLandUIProps> = ({
                 </div>
             </div>
 
-            {/* Remaining Area Display - MOVED BELOW ICONS */}
+            {/* Remaining Area Display */}
             {currentCount > 0 && (
                 <IonCard>
                     <IonCardContent>
@@ -338,7 +341,7 @@ export const NonAgriLandUI: React.FC<NonAgriLandUIProps> = ({
                 </IonCard>
             )}
 
-            {/* Adjustments Table using DynamicTable Component */}
+            {/* Adjustments Table */}
             <IonCard>
                 <IonCardContent>
                     {isLoadingAdjustments ? (

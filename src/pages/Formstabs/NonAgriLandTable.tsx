@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
     IonPage,
     IonHeader,
@@ -11,18 +11,25 @@ import {
     IonTitle,
     IonSpinner,
     IonText,
-    IonAlert
+    IonAlert,
+    IonRow,
+    IonCol,
+    IonGrid
 } from "@ionic/react";
 import { arrowBack } from "ionicons/icons";
 import { useHistory, useParams } from 'react-router-dom';
 import { useNonAgriLand } from './useNonAgriLand';
 import { NonAgriLandUI } from './NonAgriLandUI';
 import SubmitButton from '../../components/GlobalComponent/SubmitButton';
+import LandFaasBackModal from '../../components/PropertyDetail/LandFaasBackModal';
 import "../../CSS/Forms.css";
 
 const NonAgriLandTable: React.FC = () => {
     const { formId } = useParams<{ formId: string }>();
     const history = useHistory();
+
+    // State for Land Faas Modal
+    const [showLandFaasModal, setShowLandFaasModal] = useState(false);
 
     const {
         // State
@@ -84,6 +91,58 @@ const NonAgriLandTable: React.FC = () => {
         setAdjustmentToDelete
     } = useNonAgriLand(formId);
 
+    // Handlers for Land Faas Modal
+    const handleOpenLandFaas = () => {
+        setShowLandFaasModal(true);
+    };
+
+    const handleCloseLandFaas = () => {
+        setShowLandFaasModal(false);
+    };
+
+    // Calculation functions for modal data
+    const calculateBaseMarketValue = () => {
+        if (!subclassRates || subclassRates.length === 0) return 0;
+        
+        return subclassRates.reduce((total, rate) => {
+            const baseValue = parseFloat(rate.base_market_value) || 0;
+            return total + baseValue;
+        }, 0);
+    };
+
+    const calculateAdjustedMarketValue = () => {
+        if (!subclassRates || subclassRates.length === 0) return 0;
+        
+        return subclassRates.reduce((total, rate) => {
+            const adjustedValue = parseFloat(rate.adjustment_market_value) || 0;
+            return total + adjustedValue;
+        }, 0);
+    };
+
+    const getAssessmentLevel = () => {
+        if (!subclassRates || subclassRates.length === 0) return null;
+        
+        const firstRate = subclassRates[0];
+        if (firstRate && firstRate.assessment_level) {
+            return {
+                rate_percent: firstRate.assessment_level
+            };
+        }
+        return null;
+    };
+
+    const calculateAssessedValue = () => {
+        const adjustedMarketValue = calculateAdjustedMarketValue();
+        const assessmentLevel = getAssessmentLevel();
+        
+        if (!assessmentLevel || !assessmentLevel.rate_percent) return 0;
+        
+        const ratePercent = parseFloat(assessmentLevel.rate_percent.replace('%', '')) || 0;
+        const assessmentRate = ratePercent / 100;
+        
+        return adjustedMarketValue * assessmentRate;
+    };
+
     if (isLoading) {
         return (
             <IonPage>
@@ -143,7 +202,6 @@ const NonAgriLandTable: React.FC = () => {
                     </IonButtons>
                     <IonTitle>Non-Agricultural Land - Form {formData.id}</IonTitle>
                     
-                    {/* Submit Button on the right side - UPDATED */}
                     <IonButtons slot="end">
                         <SubmitButton
                             label={isFormUploaded ? "Form Already Submitted" : "Submit Form"}
@@ -187,6 +245,7 @@ const NonAgriLandTable: React.FC = () => {
                     reverseDeleteWarningMessage={reverseDeleteWarningMessage}
                     submitDisabledInfo={submitDisabledInfo}
                     isFormUploaded={isFormUploaded}
+                    handleOpenLandFaas={handleOpenLandFaas}
                     
                     // Handlers
                     onSubmit={onSubmit}
@@ -202,6 +261,40 @@ const NonAgriLandTable: React.FC = () => {
                     setAdditionalFactor={setAdditionalFactor}
                     setShowDeleteAlert={setShowDeleteAlert}
                     setAdjustmentToDelete={setAdjustmentToDelete}
+                />
+
+                {/* View Property Assessment - SIMPLE TEXT LINK (Like Building Table) */}
+                {!isLoading && formData && (
+                    <div style={{
+                        textAlign: 'center',
+                        margin: '1.5rem 0',
+                        padding: '0 1rem'
+                    }}>
+                        <span
+                            onClick={handleOpenLandFaas}
+                            style={{
+                                color: '#3880ff',
+                                textDecoration: 'underline',
+                                cursor: 'pointer',
+                                fontSize: '14px',
+                                fontWeight: 'normal'
+                            }}
+                        >
+                            View Property Assessment
+                        </span>
+                    </div>
+                )}
+
+                {/* Land Faas Back Modal */}
+                <LandFaasBackModal
+                    isOpen={showLandFaasModal}
+                    onClose={handleCloseLandFaas}
+                    formData={formData}
+                    baseMarketValue={calculateBaseMarketValue()}
+                    adjustedMarketValue={calculateAdjustedMarketValue()}
+                    assessmentLevel={getAssessmentLevel()}
+                    subclassRates={subclassRates}
+                    landAdjustments={currentAdjustments}
                 />
 
                 <IonToast
