@@ -120,13 +120,12 @@ const BuildingFaasBackModal: React.FC<BuildingFaasBackModalProps> = ({
       const isNative = (window as any).Capacitor?.isNativePlatform();
       
       if (isNative) {
-        // NATIVE: Convert to base64 and save to filesystem
+        // NATIVE MOBILE: Use Filesystem and FileOpener
         const base64Data = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
           reader.onerror = reject;
           reader.onload = () => {
             const result = reader.result as string;
-            // Extract base64 data without the data URL prefix
             const base64 = result.split(',')[1];
             resolve(base64);
           };
@@ -153,40 +152,41 @@ const BuildingFaasBackModal: React.FC<BuildingFaasBackModalProps> = ({
           });
         } catch (openError) {
           console.error('Error opening file:', openError);
-          // Fallback: try with just the filename
-          try {
-            await FileOpener.openFile({ 
-              path: fileName 
-            });
-          } catch (fallbackError) {
-            console.error('Fallback open also failed:', fallbackError);
-            throw new Error('Cannot open PDF file');
-          }
+          // Show success message even if we can't auto-open
+          alert(`PDF saved successfully to: ${result.uri}\nYou can find it in your Documents folder.`);
         }
       } else {
-        // WEB: Use blob URL and open in new tab
+        // WEB: Use download approach instead of window.open
         const pdfUrl = URL.createObjectURL(pdfBlob);
-        const newWindow = window.open(pdfUrl, '_blank');
         
-        if (!newWindow) {
-          alert('Please allow popups for this site to view the PDF directly in the browser.');
-        }
+        // Create download link
+        const downloadLink = document.createElement('a');
+        downloadLink.href = pdfUrl;
+        downloadLink.download = `BuildingFAAS_${new Date().getTime()}.pdf`;
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
         
-        // Clean up URL after some time
-        setTimeout(() => URL.revokeObjectURL(pdfUrl), 60000);
+        // Clean up URL
+        setTimeout(() => URL.revokeObjectURL(pdfUrl), 1000);
       }
     } catch (error) {
       console.error('Error in saveAndOpenPdf:', error);
       
       // Ultimate fallback for both platforms
-      const pdfUrl = URL.createObjectURL(pdfBlob);
-      const newWindow = window.open(pdfUrl, '_blank');
+      alert('PDF generated successfully. If download did not start automatically, please check your downloads folder.');
       
-      if (!newWindow) {
-        alert('Please allow popups for this site to view the PDF.');
+      // Fallback download for web
+      if (!(window as any).Capacitor?.isNativePlatform()) {
+        const pdfUrl = URL.createObjectURL(pdfBlob);
+        const downloadLink = document.createElement('a');
+        downloadLink.href = pdfUrl;
+        downloadLink.download = `BuildingFAAS_${new Date().getTime()}.pdf`;
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+        setTimeout(() => URL.revokeObjectURL(pdfUrl), 1000);
       }
-      
-      setTimeout(() => URL.revokeObjectURL(pdfUrl), 60000);
     }
   };
 
@@ -224,55 +224,53 @@ const BuildingFaasBackModal: React.FC<BuildingFaasBackModalProps> = ({
       // Create PDF
       const pdf = new jsPDF('p', 'mm', 'a4');
       
-      // Add title
-      pdf.setFontSize(16);
-      pdf.setFont('helvetica', 'bold');
-      pdf.text('Building FAAS - BACK PAGE', 105, 20, { align: 'center' });
-
-      let yPosition = 40;
+      let yPosition = 20;
 
       // PROPERTY APPRAISAL SECTION
-      pdf.setFontSize(12);
+      pdf.setFontSize(10);
       pdf.setFont('helvetica', 'bold');
       pdf.text('PROPERTY APPRAISAL', 20, yPosition);
-      yPosition += 10;
+      yPosition += 8;
 
-      // Table headers
-      pdf.setFontSize(8);
+      // Table headers - Smaller fonts to prevent cramping
+      pdf.setFontSize(6);
       pdf.setFont('helvetica', 'bold');
-      const headers = ['Description', 'Type', 'Area (sq.m.)', 'Unit Value', '% Completion (BUCC)', 'Base Market Value (₱)', '% Depn.', 'Depreciation Cost (₱)', 'Market Value (₱)'];
+      const headers = ['Desc', 'Type', 'Area', 'Unit Val', '% Compl', 'Base Mkt Val', '% Depn', 'Depn Cost', 'Mkt Val'];
       
-      let xPosition = 20;
+      let xPosition = 10;
+      const columnWidths = [25, 15, 12, 15, 12, 20, 10, 18, 18];
       headers.forEach((header, index) => {
         pdf.text(header, xPosition, yPosition);
-        xPosition += index === 0 ? 25 : 20;
+        xPosition += columnWidths[index];
       });
       yPosition += 5;
 
       // Storey rows
       pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(6);
       for (let storey = 1; storey <= numberOfStoreys; storey++) {
         const areaPerStorey = areaValue > 0 ? (areaValue / numberOfStoreys).toFixed(2) : '0';
         
         const rowData = [
-          `${buildingCodeData?.description || buildingData?.structureType} - Storey ${storey}`,
-          buildingData?.structureType || 'N/A',
+          `${(buildingCodeData?.description || buildingData?.structureType || '').substring(0, 20)} - Storey ${storey}`,
+          (buildingData?.structureType || 'N/A').substring(0, 8),
           areaPerStorey,
-          buildingCodeData?.rate ? `₱${buildingCodeData.rate.toLocaleString()}` : "N/A",
+          buildingCodeData?.rate ? buildingCodeData.rate.toLocaleString() : "N/A",
           constructionPercent.toString(),
-          `₱${storeyBaseValue.toLocaleString()}`,
+          Math.round(storeyBaseValue).toLocaleString(),
           depreciationRate.toString(),
-          `₱${depreciationCost.toLocaleString()}`,
-          `₱${marketValue.toLocaleString()}`
+          Math.round(depreciationCost).toLocaleString(),
+          Math.round(marketValue).toLocaleString()
         ];
 
-        xPosition = 20;
+        xPosition = 10;
         rowData.forEach((data, index) => {
-          const text = (typeof data === 'string' ? data : String(data)).substring(0, 12);
+          const maxLength = [20, 8, 6, 10, 5, 12, 4, 12, 12][index];
+          const text = (typeof data === 'string' ? data : String(data)).substring(0, maxLength);
           pdf.text(text, xPosition, yPosition);
-          xPosition += index === 0 ? 25 : 20;
+          xPosition += columnWidths[index];
         });
-        yPosition += 6;
+        yPosition += 5;
 
         if (yPosition > 270) {
           pdf.addPage();
@@ -280,31 +278,31 @@ const BuildingFaasBackModal: React.FC<BuildingFaasBackModalProps> = ({
         }
       }
 
-      // Subtotal
-      yPosition += 5;
+      // Subtotal - Use plain numbers without special characters
+      yPosition += 4;
       pdf.setFont('helvetica', 'bold');
-      pdf.text('Sub-total', 20, yPosition);
-      pdf.text(`${areaValue.toFixed(2)} sq ft`, 20 + 25 + 20, yPosition, { align: 'right' });
-      pdf.text(`₱${baseMarketValue?.toLocaleString() || '0'}`, 20 + 25 + 20 + 20 + 20 + 20, yPosition, { align: 'right' });
-      pdf.text(`₱${totalDepreciationCost.toLocaleString()}`, 20 + 25 + 20 + 20 + 20 + 20 + 20 + 20, yPosition, { align: 'right' });
-      pdf.text(`₱${totalMarketValue.toLocaleString()}`, 180, yPosition, { align: 'right' });
+      pdf.text('Sub-total', 10, yPosition);
+      pdf.text(`${areaValue.toFixed(2)} sq ft`, 10 + 25 + 15, yPosition);
+      pdf.text(Math.round(baseMarketValue || 0).toLocaleString(), 10 + 25 + 15 + 12 + 15 + 12, yPosition);
+      pdf.text(Math.round(totalDepreciationCost).toLocaleString(), 10 + 25 + 15 + 12 + 15 + 12 + 20 + 10, yPosition);
+      pdf.text(Math.round(totalMarketValue).toLocaleString(), 10 + 25 + 15 + 12 + 15 + 12 + 20 + 10 + 18, yPosition);
 
-      yPosition += 20;
+      yPosition += 15;
 
       // ADDITIONAL ITEMS SECTION
       if (buildingAdjustments && buildingAdjustments.length > 0) {
-        pdf.setFontSize(12);
+        pdf.setFontSize(10);
         pdf.setFont('helvetica', 'bold');
         pdf.text('ADDITIONAL ITEMS:', 20, yPosition);
-        yPosition += 10;
+        yPosition += 8;
 
         // Table headers
-        pdf.setFontSize(8);
+        pdf.setFontSize(6);
         pdf.setFont('helvetica', 'bold');
-        xPosition = 20;
+        xPosition = 10;
         headers.forEach((header, index) => {
           pdf.text(header, xPosition, yPosition);
-          xPosition += index === 0 ? 25 : 20;
+          xPosition += columnWidths[index];
         });
         yPosition += 5;
 
@@ -330,24 +328,25 @@ const BuildingFaasBackModal: React.FC<BuildingFaasBackModalProps> = ({
           const itemMarketValue = afterCompletion - depreciationCost;
 
           const rowData = [
-            componentDescription,
-            subcom?.description || "",
+            componentDescription.substring(0, 20),
+            (subcom?.description || "").substring(0, 8),
             area.toString(),
             unitValue.toString(),
             completionPercent,
-            `₱${baseValue.toLocaleString()}`,
+            Math.round(baseValue).toLocaleString(),
             depreciation,
-            `₱${depreciationCost.toLocaleString()}`,
-            `₱${itemMarketValue.toLocaleString()}`
+            Math.round(depreciationCost).toLocaleString(),
+            Math.round(itemMarketValue).toLocaleString()
           ];
 
-          xPosition = 20;
+          xPosition = 10;
           rowData.forEach((data, index) => {
-            const text = (typeof data === 'string' ? data : String(data)).substring(0, 10);
+            const maxLength = [20, 8, 6, 10, 5, 12, 4, 12, 12][index];
+            const text = (typeof data === 'string' ? data : String(data)).substring(0, maxLength);
             pdf.text(text, xPosition, yPosition);
-            xPosition += index === 0 ? 25 : 20;
+            xPosition += columnWidths[index];
           });
-          yPosition += 6;
+          yPosition += 5;
 
           if (yPosition > 270) {
             pdf.addPage();
@@ -356,103 +355,103 @@ const BuildingFaasBackModal: React.FC<BuildingFaasBackModalProps> = ({
         });
 
         // Additional items subtotal
-        yPosition += 5;
+        yPosition += 4;
         pdf.setFont('helvetica', 'bold');
-        pdf.text('Sub-total', 20, yPosition);
-        pdf.text(`${additionalItemsTotals.totalArea.toFixed(2)} sq ft`, 20 + 25 + 20, yPosition, { align: 'right' });
-        pdf.text(`₱${additionalItemsTotals.totalBaseValue.toLocaleString()}`, 20 + 25 + 20 + 20 + 20 + 20, yPosition, { align: 'right' });
-        pdf.text(`₱${additionalItemsTotals.totalDepreciationCost.toLocaleString()}`, 20 + 25 + 20 + 20 + 20 + 20 + 20 + 20, yPosition, { align: 'right' });
-        pdf.text(`₱${additionalItemsTotals.totalMarketValue.toLocaleString()}`, 180, yPosition, { align: 'right' });
+        pdf.text('Sub-total', 10, yPosition);
+        pdf.text(`${additionalItemsTotals.totalArea.toFixed(2)} sq ft`, 10 + 25 + 15, yPosition);
+        pdf.text(Math.round(additionalItemsTotals.totalBaseValue).toLocaleString(), 10 + 25 + 15 + 12 + 15 + 12, yPosition);
+        pdf.text(Math.round(additionalItemsTotals.totalDepreciationCost).toLocaleString(), 10 + 25 + 15 + 12 + 15 + 12 + 20 + 10, yPosition);
+        pdf.text(Math.round(additionalItemsTotals.totalMarketValue).toLocaleString(), 10 + 25 + 15 + 12 + 15 + 12 + 20 + 10 + 18, yPosition);
 
-        yPosition += 20;
+        yPosition += 15;
       }
 
-      // COMBINED TOTALS SECTION
-      pdf.setFontSize(12);
+      // COMBINED TOTALS SECTION - Smaller fonts to prevent cramping
+      pdf.setFontSize(9);
       pdf.setFont('helvetica', 'bold');
       pdf.text('COMBINED TOTALS', 20, yPosition);
-      yPosition += 15;
-
-      pdf.setFontSize(9);
-      pdf.text('TOTAL AREA', 20, yPosition);
-      pdf.text(`${areaValue.toFixed(2)} sq ft`, 60, yPosition);
-      
-      pdf.text('TOTAL BASE MARKET VALUE', 80, yPosition);
-      pdf.text(`₱${baseMarketValue?.toLocaleString() || '0'}`, 140, yPosition);
-      
-      pdf.text('TOTAL DEPRECIATION', 160, yPosition);
-      pdf.text(`₱${totalDepreciationCost.toLocaleString()}`, 190, yPosition, { align: 'right' });
-      yPosition += 8;
-
-      pdf.text('GRAND TOTAL', 160, yPosition);
-      pdf.text(`₱${combinedTotalMarketValue.toLocaleString()}`, 190, yPosition, { align: 'right' });
-
-      yPosition += 20;
-
-      // PROPERTY ASSESSMENT SECTION
-      pdf.setFontSize(12);
-      pdf.text('PROPERTY ASSESSMENT', 20, yPosition);
       yPosition += 10;
 
+      pdf.setFontSize(6);
+      pdf.text('TOTAL AREA', 20, yPosition);
+      pdf.text(`${combinedTotalArea.toFixed(2)} sq ft`, 45, yPosition);
+      
+      pdf.text('TOTAL BASE MARKET VALUE', 80, yPosition);
+      pdf.text(Math.round(combinedTotalBaseValue).toLocaleString(), 135, yPosition);
+      
+      pdf.text('TOTAL DEP', 160, yPosition); // Changed from 'TOTAL DEPRECIATION'
+      pdf.text(Math.round(combinedTotalDepreciationCost).toLocaleString(), 190, yPosition, { align: 'right' });
+      yPosition += 4;
+
+      pdf.text('GRAND TOTAL', 160, yPosition);
+      pdf.text(Math.round(combinedTotalMarketValue).toLocaleString(), 190, yPosition, { align: 'right' });
+
+      yPosition += 12;
+
+      // PROPERTY ASSESSMENT SECTION
+      pdf.setFontSize(10);
+      pdf.text('PROPERTY ASSESSMENT', 20, yPosition);
+      yPosition += 8;
+
       // Assessment table
-      pdf.setFontSize(8);
-      const assessmentHeaders = ['Actual Use', 'Adjusted Market Value', 'Assessment Level (%)', 'Assessment Value'];
+      pdf.setFontSize(7);
+      const assessmentHeaders = ['Actual Use', 'Adj Mkt Val', 'Assess Level %', 'Assess Value'];
       
       xPosition = 20;
       assessmentHeaders.forEach((header, index) => {
         pdf.text(header, xPosition, yPosition);
-        xPosition += 45;
+        xPosition += 42;
       });
       yPosition += 5;
 
-      // Assessment data
+      // Assessment data - Use plain numbers
       pdf.setFont('helvetica', 'normal');
       const assessmentData = [
-        actualUse,
-        `₱${combinedTotalMarketValue.toLocaleString()}`,
+        actualUse.substring(0, 15),
+        Math.round(combinedTotalMarketValue).toLocaleString(),
         assessmentLevel?.rate_percent || '0%',
-        `₱${assessmentValue.toLocaleString()}`
+        Math.round(assessmentValue).toLocaleString()
       ];
 
       xPosition = 20;
       assessmentData.forEach((data, index) => {
         pdf.text(String(data), xPosition, yPosition);
-        xPosition += 45;
+        xPosition += 42;
       });
 
-      yPosition += 20;
-
-      // TAXABLE/EXEMPT SECTION
-      pdf.setFontSize(9);
-      pdf.text(`Taxable: ${isTaxable ? '☒' : '☐'}`, 20, yPosition);
-      pdf.text(`Exempt: ${isExempt ? '☒' : '☐'}`, 60, yPosition);
-      pdf.text(`Effectivity of Assessment: ${currentQuarter} Qtr. ${currentYear} Yr.`, 100, yPosition);
-
       yPosition += 15;
+
+      // TAXABLE/EXEMPT SECTION - Fix special characters
+      pdf.setFontSize(8);
+      pdf.text(`Taxable: ${isTaxable ? '[X]' : '[ ]'}`, 20, yPosition);
+      pdf.text(`Exempt: ${isExempt ? '[X]' : '[ ]'}`, 60, yPosition);
+      pdf.text(`Effectivity: ${currentQuarter} Qtr. ${currentYear} Yr.`, 100, yPosition);
+
+      yPosition += 12;
 
       // SIGNATURE SECTION
       pdf.text('Appraised by:', 20, yPosition);
       pdf.text('Approved by:', 130, yPosition);
-      yPosition += 15;
+      yPosition += 12;
 
       pdf.line(20, yPosition, 100, yPosition);
       pdf.line(130, yPosition, 190, yPosition);
-      yPosition += 8;
+      yPosition += 6;
 
-      pdf.setFontSize(7);
+      pdf.setFontSize(6);
       pdf.text('Acting Provincial Assessor', 160, yPosition, { align: 'center' });
 
-      yPosition += 15;
+      yPosition += 12;
 
       // MEMORANDA
-      pdf.setFontSize(8);
+      pdf.setFontSize(7);
       pdf.text('MEMORANDA:', 20, yPosition);
-      yPosition += 5;
+      yPosition += 4;
       pdf.text('Date of Entry in the Record of Assessment ______ By: ____________', 20, yPosition);
 
       // POWERED BY
-      yPosition += 10;
-      pdf.setFontSize(6);
+      yPosition += 8;
+      pdf.setFontSize(5);
       pdf.text('Powered by: SPIDC', 190, yPosition, { align: 'right' });
 
       // Convert to Blob for universal handling

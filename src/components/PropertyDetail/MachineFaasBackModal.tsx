@@ -11,7 +11,7 @@ import {
 } from "@ionic/react";
 import { documentOutline, close } from "ionicons/icons";
 import { jsPDF } from 'jspdf';
-import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
+import { Filesystem, Directory } from '@capacitor/filesystem';
 import { FileOpener } from '@capawesome-team/capacitor-file-opener';
 import "../../CSS/MachineFaasBack.css";
 
@@ -65,52 +65,84 @@ const MachineFaasBackModal: React.FC<MachineFaasBackModalProps> = ({
     }
   }, [assessmentLevel]);
 
-  // File service for native PDF handling
-  const saveAndOpenPdf = async (pdfBlob: Blob, fileName: string = 'MachineFAAS.pdf') => {
+  // Universal PDF handling for both native and web - FIXED VERSION
+  const saveAndOpenPdf = async (pdfBlob: Blob) => {
     try {
-      // Convert the Blob to base64
-      const reader = new FileReader();
-      const dataUrl = await new Promise<string>((resolve) => {
-        reader.onload = () => resolve(reader.result as string);
-        reader.readAsDataURL(pdfBlob);
-      });
-      const base64Data = dataUrl.split(',')[1];
+      // Check if we're in a native Capacitor environment
+      const isNative = (window as any).Capacitor?.isNativePlatform();
+      
+      if (isNative) {
+        // NATIVE MOBILE: Use Filesystem and FileOpener
+        const base64Data = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onerror = reject;
+          reader.onload = () => {
+            const result = reader.result as string;
+            const base64 = result.split(',')[1];
+            resolve(base64);
+          };
+          reader.readAsDataURL(pdfBlob);
+        });
 
-      // Generate filename with timestamp
-      const timestamp = new Date().getTime();
-      const finalFilename = `MachineFAAS_${timestamp}.pdf`;
+        const timestamp = new Date().getTime();
+        const fileName = `MachineFAAS_${timestamp}.pdf`;
 
-      // Write the file to the device's documents directory
-      const result = await Filesystem.writeFile({
-        path: finalFilename,
-        data: base64Data,
-        directory: Directory.Documents,
-        encoding: Encoding.UTF8
-      });
-      
-      console.log('PDF saved at:', result.uri);
-      
-      // Open the file with the device's default viewer
-      await FileOpener.openFile({
-        path: result.uri
-      });
-      
-    } catch (error) {
-      console.error('Error saving/opening PDF:', error);
-      // Fallback for web or if native fails
-      const pdfUrl = URL.createObjectURL(pdfBlob);
-      const newWindow = window.open(pdfUrl, '_blank');
-      
-      if (!newWindow) {
-        alert('Please allow popups for this site to view the PDF directly in the browser.');
+        // Write file to documents directory
+        const result = await Filesystem.writeFile({
+          path: fileName,
+          data: base64Data,
+          directory: Directory.Documents,
+          recursive: true
+        });
+
+        console.log('PDF saved to:', result.uri);
+
+        // Open the file using FileOpener
+        try {
+          await FileOpener.openFile({ 
+            path: result.uri
+          });
+        } catch (openError) {
+          console.error('Error opening file:', openError);
+          // Show success message even if we can't auto-open
+          alert(`PDF saved successfully to: ${result.uri}\nYou can find it in your Documents folder.`);
+        }
+      } else {
+        // WEB: Use download approach instead of window.open
+        const pdfUrl = URL.createObjectURL(pdfBlob);
+        
+        // Create download link
+        const downloadLink = document.createElement('a');
+        downloadLink.href = pdfUrl;
+        downloadLink.download = `MachineFAAS_${new Date().getTime()}.pdf`;
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+        
+        // Clean up URL
+        setTimeout(() => URL.revokeObjectURL(pdfUrl), 1000);
       }
+    } catch (error) {
+      console.error('Error in saveAndOpenPdf:', error);
       
-      // Clean up URL after some time
-      setTimeout(() => URL.revokeObjectURL(pdfUrl), 60000);
+      // Ultimate fallback for both platforms
+      alert('PDF generated successfully. If download did not start automatically, please check your downloads folder.');
+      
+      // Fallback download for web
+      if (!(window as any).Capacitor?.isNativePlatform()) {
+        const pdfUrl = URL.createObjectURL(pdfBlob);
+        const downloadLink = document.createElement('a');
+        downloadLink.href = pdfUrl;
+        downloadLink.download = `MachineFAAS_${new Date().getTime()}.pdf`;
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+        setTimeout(() => URL.revokeObjectURL(pdfUrl), 1000);
+      }
     }
   };
 
-  // Pure jsPDF generation - keeps your original data structure
+  // Pure jsPDF generation - FIXED VERSION
   const generatePdf = useCallback(async () => {
     if (isGeneratingPdf) return;
     
@@ -129,89 +161,175 @@ const MachineFaasBackModal: React.FC<MachineFaasBackModalProps> = ({
       // Create PDF
       const pdf = new jsPDF('p', 'mm', 'a4');
       
-      // Add title
-      pdf.setFontSize(16);
-      pdf.setFont('helvetica', 'bold');
-      pdf.text('Machinery FAAS - BACK PAGE', 105, 20, { align: 'center' });
+      let yPosition = 20;
 
       // PROPERTY APPRAISAL SECTION
-      pdf.setFontSize(12);
-      pdf.text('PROPERTY APPRAISAL', 20, 40);
-
-      // Table data - using your original component data
-      const tableData = [
-        ['Description', 'Type', 'Units', 'Unit Value', 'Base Market Value (₱)', '% Depn.', 'Depreciation Cost (₱)', 'Market Value (₱)'],
-        [
-          machineDescription,
-          'Machinery',
-          machineData?.numberOfUnits || '1',
-          `₱${totalBaseValue.toLocaleString()}`,
-          `₱${totalBaseValue.toLocaleString()}`,
-          `${depreciationRate}%`,
-          `₱${depreciationCost.toLocaleString()}`,
-          `₱${marketValue.toLocaleString()}`
-        ]
-      ];
-
-      // Add table to PDF (you can customize this further)
-      let yPosition = 50;
-      tableData.forEach((row, rowIndex) => {
-        let xPosition = 20;
-        row.forEach((cell, cellIndex) => {
-          pdf.setFontSize(8);
-          pdf.setFont(rowIndex === 0 ? 'helvetica' : 'helvetica', rowIndex === 0 ? 'bold' : 'normal');
-          pdf.text(cell.substring(0, 15), xPosition, yPosition);
-          xPosition += cellIndex === 0 ? 30 : 25;
-        });
-        yPosition += 6;
-      });
-
-      // Add more sections as needed...
-      yPosition += 20;
-      pdf.setFontSize(12);
+      pdf.setFontSize(10);
       pdf.setFont('helvetica', 'bold');
-      pdf.text('PROPERTY ASSESSMENT', 20, yPosition);
+      pdf.text('PROPERTY APPRAISAL', 20, yPosition);
+      yPosition += 8;
 
-      const assessmentData = [
-        ['Actual Use', 'Adjusted Market Value', 'Assessment Level (%)', 'Assessment Value'],
-        [
-          actualUse,
-          `₱${marketValue.toLocaleString()}`,
-          assessmentLevel || '0%',
-          `₱${assessmentValue.toLocaleString()}`
-        ]
+      // Table headers - Smaller fonts to prevent cramping
+      pdf.setFontSize(6);
+      pdf.setFont('helvetica', 'bold');
+      const headers = ['Desc', 'Type', 'Units', 'Unit Val', 'Base Mkt Val', '% Depn', 'Depn Cost', 'Mkt Val'];
+      
+      let xPosition = 10;
+      const columnWidths = [30, 20, 15, 20, 25, 15, 25, 25];
+      headers.forEach((header, index) => {
+        pdf.text(header, xPosition, yPosition);
+        xPosition += columnWidths[index];
+      });
+      yPosition += 5;
+
+      // Machine row
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(6);
+      
+      const rowData = [
+        machineDescription.substring(0, 25),
+        'Machinery',
+        machineData?.numberOfUnits || '1',
+        Math.round(totalBaseValue).toLocaleString(),
+        Math.round(totalBaseValue).toLocaleString(),
+        depreciationRate.toString(),
+        Math.round(depreciationCost).toLocaleString(),
+        Math.round(marketValue).toLocaleString()
       ];
 
-      yPosition += 10;
-      assessmentData.forEach((row, rowIndex) => {
-        let xPosition = 20;
-        row.forEach((cell, cellIndex) => {
-          pdf.setFontSize(8);
-          pdf.setFont(rowIndex === 0 ? 'helvetica' : 'helvetica', rowIndex === 0 ? 'bold' : 'normal');
-          pdf.text(cell.substring(0, 20), xPosition, yPosition);
-          xPosition += 45;
+      xPosition = 10;
+      rowData.forEach((data, index) => {
+        const maxLength = [25, 10, 5, 10, 12, 4, 12, 12][index];
+        const text = (typeof data === 'string' ? data : String(data)).substring(0, maxLength);
+        pdf.text(text, xPosition, yPosition);
+        xPosition += columnWidths[index];
+      });
+      yPosition += 5;
+
+      // Empty rows to maintain structure
+      for (let i = 0; i < 5; i++) {
+        xPosition = 10;
+        headers.forEach((_, index) => {
+          pdf.text('', xPosition, yPosition);
+          xPosition += columnWidths[index];
         });
-        yPosition += 6;
+        yPosition += 5;
+      }
+
+      // Subtotal
+      yPosition += 4;
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Sub-total', 10, yPosition);
+      pdf.text(`${machineData?.numberOfUnits || '1'} units`, 10 + 30 + 20, yPosition);
+      pdf.text(Math.round(totalBaseValue).toLocaleString(), 10 + 30 + 20 + 15 + 20, yPosition);
+      pdf.text(Math.round(depreciationCost).toLocaleString(), 10 + 30 + 20 + 15 + 20 + 25 + 15, yPosition);
+      pdf.text(Math.round(marketValue).toLocaleString(), 10 + 30 + 20 + 15 + 20 + 25 + 15 + 25, yPosition);
+
+      yPosition += 20;
+
+      // COMBINED TOTALS SECTION - Smaller fonts
+      pdf.setFontSize(9);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('COMBINED TOTALS', 20, yPosition);
+      yPosition += 10;
+
+      pdf.setFontSize(6);
+      pdf.text('TOTAL UNITS', 20, yPosition);
+      pdf.text(`${machineData?.numberOfUnits || '1'} units`, 45, yPosition);
+      
+      pdf.text('TOTAL BASE MARKET VALUE', 80, yPosition);
+      pdf.text(Math.round(totalBaseValue).toLocaleString(), 135, yPosition);
+      
+      pdf.text('TOTAL DEP', 160, yPosition); // Changed from 'TOTAL DEPRECIATION'
+      pdf.text(Math.round(depreciationCost).toLocaleString(), 190, yPosition, { align: 'right' });
+      yPosition += 4;
+
+      pdf.text('GRAND TOTAL', 160, yPosition);
+      pdf.text(Math.round(marketValue).toLocaleString(), 190, yPosition, { align: 'right' });
+
+      yPosition += 15;
+
+      // PROPERTY ASSESSMENT SECTION
+      pdf.setFontSize(10);
+      pdf.text('PROPERTY ASSESSMENT', 20, yPosition);
+      yPosition += 8;
+
+      // Assessment table
+      pdf.setFontSize(7);
+      const assessmentHeaders = ['Actual Use', 'Adj Mkt Val', 'Assess Level %', 'Assess Value'];
+      
+      xPosition = 20;
+      assessmentHeaders.forEach((header, index) => {
+        pdf.text(header, xPosition, yPosition);
+        xPosition += 42;
+      });
+      yPosition += 5;
+
+      // Assessment data - Use plain numbers
+      pdf.setFont('helvetica', 'normal');
+      const assessmentData = [
+        actualUse.substring(0, 15),
+        Math.round(marketValue).toLocaleString(),
+        assessmentLevel || '0%',
+        Math.round(assessmentValue).toLocaleString()
+      ];
+
+      xPosition = 20;
+      assessmentData.forEach((data, index) => {
+        pdf.text(String(data), xPosition, yPosition);
+        xPosition += 42;
       });
 
-      // Convert to Blob for native handling
+      // Empty assessment rows
+      for (let i = 0; i < 3; i++) {
+        yPosition += 5;
+        xPosition = 20;
+        assessmentHeaders.forEach(() => {
+          pdf.text('', xPosition, yPosition);
+          xPosition += 42;
+        });
+      }
+
+      yPosition += 15;
+
+      // TAXABLE/EXEMPT SECTION - Fix special characters
+      pdf.setFontSize(8);
+      pdf.text(`Taxable: ${isTaxable ? '[X]' : '[ ]'}`, 20, yPosition);
+      pdf.text(`Exempt: ${isExempt ? '[X]' : '[ ]'}`, 60, yPosition);
+      pdf.text(`Effectivity: ${currentQuarter} Qtr. ${currentYear} Yr.`, 100, yPosition);
+
+      yPosition += 12;
+
+      // SIGNATURE SECTION
+      pdf.text('Appraised by:', 20, yPosition);
+      pdf.text('Approved by:', 130, yPosition);
+      yPosition += 12;
+
+      pdf.line(20, yPosition, 100, yPosition);
+      pdf.line(130, yPosition, 190, yPosition);
+      yPosition += 6;
+
+      pdf.setFontSize(6);
+      pdf.text('Acting Provincial Assessor', 160, yPosition, { align: 'center' });
+
+      yPosition += 12;
+
+      // MEMORANDA
+      pdf.setFontSize(7);
+      pdf.text('MEMORANDA:', 20, yPosition);
+      yPosition += 4;
+      pdf.text('Date of Entry in the Record of Assessment ______ By: ____________', 20, yPosition);
+
+      // POWERED BY
+      yPosition += 8;
+      pdf.setFontSize(5);
+      pdf.text('Powered by: SPIDC', 190, yPosition, { align: 'right' });
+
+      // Convert to Blob for universal handling
       const pdfBlob = pdf.output('blob');
       
-      // Check if we're in a native context
-      if ((window as any).Capacitor?.isNativePlatform()) {
-        await saveAndOpenPdf(pdfBlob, 'MachineFAAS.pdf');
-      } else {
-        // Web browser fallback
-        const pdfUrl = URL.createObjectURL(pdfBlob);
-        const newWindow = window.open(pdfUrl, '_blank');
-        
-        if (!newWindow) {
-          alert('Please allow popups for this site to view the PDF directly in the browser.');
-        }
-        
-        // Clean up URL after some time
-        setTimeout(() => URL.revokeObjectURL(pdfUrl), 60000);
-      }
+      // Use the universal PDF handler
+      await saveAndOpenPdf(pdfBlob);
       
     } catch (error) {
       console.error("PDF generation failed", error);
@@ -219,7 +337,10 @@ const MachineFaasBackModal: React.FC<MachineFaasBackModalProps> = ({
     } finally {
       setIsGeneratingPdf(false);
     }
-  }, [isGeneratingPdf, machineData, formData, baseMarketValue, adjustedMarketValue, assessmentLevel]);
+  }, [
+    isGeneratingPdf, machineData, formData, baseMarketValue, adjustedMarketValue, 
+    assessmentLevel, isTaxable, isExempt, currentQuarter, currentYear
+  ]);
 
   // Calculate assessment value
   const calculateAssessmentValue = useCallback((marketValue: number, assessmentRate: string): number => {
