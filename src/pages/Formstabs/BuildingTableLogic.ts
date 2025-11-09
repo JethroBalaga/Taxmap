@@ -30,6 +30,7 @@ export const useBuildingTableLogic = (
 ) => {
     const isMountedRef = useRef(true);
     const [isInitialLoad, setIsInitialLoad] = useState(true);
+    const [recalculationTrigger, setRecalculationTrigger] = useState(0);
 
     // State declarations
     const [buildingInfoIds, setBuildingInfoIds] = useState<string[]>([]);
@@ -170,14 +171,74 @@ export const useBuildingTableLogic = (
         }
     }, [kindId, classification]);
 
+    // NEW: Function to recalculate assessment levels based on final adjusted values
+    const recalculateAssessmentLevels = useCallback(async (currentBuildingAdjustments: BuildingAdjustmentData[]) => {
+        if (!isMountedRef.current || buildingInfoIds.length === 0) return;
+        
+        console.log('Recalculating assessment levels with adjustments...');
+        
+        const assessmentMap = new Map<string, AssessmentLevelInfo>();
+        
+        for (const id of buildingInfoIds) {
+            const originalAdjustedValue = adjustedMarketValues.get(id) || 0;
+            
+            // Calculate current adjustments total
+            let currentAdjustmentTotal = 0;
+            for (const adj of currentBuildingAdjustments) {
+                if (adj.value_info_id === id) {
+                    const area = adj.area || 0;
+                    const completionPercent = parseFloat(adj.completion_percent) || 0;
+                    const depreciation = parseFloat(adj.depreciation) || 0;
+                    let adjustmentValue = 0;
+
+                    if (adj.buidlingsubcomponent) {
+                        const subcomponent = await getBuildingSubcomponentById(adj.buidlingsubcomponent);
+                        if (subcomponent) {
+                            const baseMarketValue = baseMarketValues.get(id) || 0;
+                            
+                            if (subcomponent.percent) {
+                                const percentageRate = subcomponent.rate / 100;
+                                adjustmentValue = baseMarketValue * percentageRate;
+                            } else {
+                                adjustmentValue = area * subcomponent.rate;
+                            }
+                        }
+                    }
+
+                    const completedValue = adjustmentValue * (completionPercent / 100);
+                    const adjustedValue = completedValue * (1 - (depreciation / 100));
+                    currentAdjustmentTotal += adjustedValue;
+                }
+            }
+            
+            const finalAdjustedValue = originalAdjustedValue + currentAdjustmentTotal;
+            
+            console.log(`Building ${id}: Original=${originalAdjustedValue}, Adjustments=${currentAdjustmentTotal}, Final=${finalAdjustedValue}`);
+            
+            const level = await getAssessmentLevelForBuilding(finalAdjustedValue);
+            if (level) {
+                assessmentMap.set(id, level);
+                console.log(`Building ${id}: New assessment level=${level.rate_percent}`);
+            } else {
+                console.log(`Building ${id}: No assessment level found for value=${finalAdjustedValue}`);
+            }
+        }
+        
+        if (isMountedRef.current) {
+            setAssessmentLevels(assessmentMap);
+        }
+    }, [buildingInfoIds, adjustedMarketValues, baseMarketValues, getAssessmentLevelForBuilding]);
+
     // Adjustments - UPDATED to use correct base values
-    const calculateAllAdjustments = useCallback(async () => {
+    const calculateAllAdjustments = useCallback(async (currentBuildingAdjustments: BuildingAdjustmentData[]) => {
         if (!isMountedRef.current) return;
+        
+        console.log('Calculating all adjustments...');
         
         const map = new Map<string, number>();
         buildingInfoIds.forEach(id => map.set(id, 0));
 
-        for (const adj of buildingAdjustments) {
+        for (const adj of currentBuildingAdjustments) {
             const buildingId = adj.value_info_id;
             const area = adj.area || 0;
             const completionPercent = parseFloat(adj.completion_percent) || 0;
@@ -210,12 +271,14 @@ export const useBuildingTableLogic = (
 
             const current = map.get(buildingId) || 0;
             map.set(buildingId, current + adjustedValue);
+            
+            console.log(`Adjustment ${adj.bldg_adjustment_id}: Value=${adjustedValue}, Total for building=${current + adjustedValue}`);
         }
 
         if (isMountedRef.current) {
             setTotalAdjustments(map);
         }
-    }, [buildingAdjustments, buildingInfoIds, baseMarketValues]);
+    }, [buildingInfoIds, baseMarketValues]);
 
     // Load Data Functions - UPDATED to pass storey to base calculations
     const loadBuildingData = useCallback(async () => {
@@ -285,6 +348,8 @@ export const useBuildingTableLogic = (
             
             if (isMountedRef.current) {
                 setBuildingAdjustments(filtered);
+                // Trigger recalculation after loading adjustments
+                setRecalculationTrigger(prev => prev + 1);
             }
         } catch (error) {
             console.error('Error loading building adjustments:', error);
@@ -320,12 +385,17 @@ export const useBuildingTableLogic = (
         loadAllData();
     }, [form_id]);
 
-    // Calculate adjustments when relevant data changes
+    // Calculate adjustments AND recalculate assessment levels when adjustments change - FIXED
     useEffect(() => {
-        if (!isInitialLoad && buildingInfoIds.length > 0) {
-            calculateAllAdjustments();
+        if (!isInitialLoad && buildingInfoIds.length > 0 && buildingAdjustments.length > 0) {
+            console.log('Adjustments changed, recalculating...');
+            const updateData = async () => {
+                await calculateAllAdjustments(buildingAdjustments);
+                await recalculateAssessmentLevels(buildingAdjustments);
+            };
+            updateData();
         }
-    }, [buildingAdjustments, buildingInfoIds, isInitialLoad, calculateAllAdjustments]);
+    }, [recalculationTrigger, isInitialLoad, buildingInfoIds.length]);
 
     // Event listeners for form uploaded
     useEffect(() => {

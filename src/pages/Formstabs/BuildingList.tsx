@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
     IonCard,
     IonCardContent,
@@ -34,7 +34,7 @@ interface BuildingListProps {
     totalAdjustments: Map<string, number>;
     onViewDetails: (buildingId: string) => void;
     onUpdateClick: (buildingId: string, buildingData: any) => void;
-    formData?: any; // Add formData prop
+    formData?: any;
 }
 
 // Interface for the table data (only what we want to display)
@@ -66,26 +66,22 @@ const BuildingList: React.FC<BuildingListProps> = ({
     totalAdjustments,
     onViewDetails,
     onUpdateClick,
-    formData // Receive formData
+    formData
 }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedBuildingId, setSelectedBuildingId] = useState<string | null>(null);
 
-    // Debug logging to identify the issue
-    React.useEffect(() => {
-        console.log('BuildingList Debug - FormData:', formData);
-        console.log('BuildingList Debug - Declarant prop:', declarant);
-        console.log('BuildingList Debug - All individual props:', {
-            form_id,
-            district,
-            declarant,
-            kind,
-            classification,
-            subclass,
-            actual_use,
-            area
-        });
-    }, [formData, declarant, form_id, district, kind, classification, subclass, actual_use, area]);
+    // Debug logging - Only log on initial mount and when formData changes significantly
+    useEffect(() => {
+        console.log('BuildingList mounted with formData:', formData);
+    }, []); // Empty dependency array - only run once on mount
+
+    // Separate effect for formData changes
+    useEffect(() => {
+        if (formData) {
+            console.log('BuildingList formData updated:', formData.id);
+        }
+    }, [formData?.id]); // Only depend on formData.id
 
     const handleSearch = (e: any) => {
         setSearchTerm(e.detail.value || '');
@@ -118,7 +114,7 @@ const BuildingList: React.FC<BuildingListProps> = ({
         return Math.round(assessedValue);
     };
 
-    // Prepare clean data for DynamicTable - match non-agri pattern
+    // Prepare clean data for DynamicTable - use FINAL adjusted value (base + adjustments)
     const tableData: BuildingTableData[] = buildingInfoIds.map((id) => {
         const buildingData = buildingDataList.get(id);
         const baseMarketValue = baseMarketValues.get(id) || 0;
